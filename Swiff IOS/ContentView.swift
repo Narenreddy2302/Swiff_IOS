@@ -7,6 +7,254 @@
 
 import SwiftUI
 import CoreData
+import PhotosUI
+
+// MARK: - Avatar System
+
+// Avatar Type - Supports multiple avatar sources
+enum AvatarType: Codable, Equatable {
+    case photo(Data)           // Photo from library or camera
+    case emoji(String)         // Emoji character
+    case initials(String, colorIndex: Int)  // Generated from name
+
+    // For backward compatibility with existing emoji avatars
+    init(legacyEmoji: String) {
+        self = .emoji(legacyEmoji)
+    }
+}
+
+// Avatar Sizes
+enum AvatarSize {
+    case small   // 24x24 - Used in shared subscriptions
+    case medium  // 32x32 - Used in group member selection
+    case large   // 48x48 - Used in person rows
+    case xlarge  // 64x64 - Used in detail views
+
+    var dimension: CGFloat {
+        switch self {
+        case .small: return 24
+        case .medium: return 32
+        case .large: return 48
+        case .xlarge: return 64
+        }
+    }
+
+    var fontSize: CGFloat {
+        switch self {
+        case .small: return 12
+        case .medium: return 16
+        case .large: return 24
+        case .xlarge: return 32
+        }
+    }
+}
+
+// Avatar Style
+enum AvatarStyle {
+    case gradient  // Gradient background (current PersonRowView style)
+    case solid     // Flat color background
+    case bordered  // White background with border
+}
+
+// Avatar Color Palette - Using Wise brand colors
+struct AvatarColorPalette {
+    static let colors: [Color] = [
+        Color(red: 0.624, green: 0.910, blue: 0.439),  // wiseBrightGreen
+        Color(red: 0.000, green: 0.725, blue: 1.000),  // wiseBlue
+        Color(red: 0.894, green: 0.506, blue: 0.251),  // Orange
+        Color(red: 0.647, green: 0.400, blue: 0.835),  // Purple
+        Color(red: 0.976, green: 0.459, blue: 0.529),  // Pink
+        Color(red: 0.086, green: 0.200, blue: 0.000),  // wiseForestGreen
+    ]
+
+    static func color(for index: Int) -> Color {
+        colors[index % colors.count]
+    }
+
+    static func colorIndex(for string: String) -> Int {
+        abs(string.hashValue) % colors.count
+    }
+}
+
+// MARK: - Avatar Generator Utilities
+
+struct AvatarGenerator {
+    // Generate initials from a name
+    static func generateInitials(from name: String) -> String {
+        let components = name.components(separatedBy: " ")
+        let initials = components.compactMap { $0.first }.prefix(2)
+        return String(initials).uppercased()
+    }
+
+    // Process and compress image data for avatar
+    static func processImage(_ image: UIImage, maxSize: CGFloat = 200) -> Data? {
+        // Resize to circle and compress
+        guard let resizedImage = image.resizeToCircle(size: maxSize) else { return nil}
+        return resizedImage.jpegData(compressionQuality: 0.8)
+    }
+
+    // Generate initials avatar image
+    static func generateInitialsImage(initials: String, colorIndex: Int, size: CGFloat) -> UIImage? {
+        let backgroundColor = AvatarColorPalette.color(for: colorIndex)
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size))
+
+        return renderer.image { context in
+            // Draw circle background
+            UIColor(backgroundColor).setFill()
+            let path = UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: size, height: size))
+            path.fill()
+
+            // Draw initials text
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: size * 0.4, weight: .semibold),
+                .foregroundColor: UIColor.white
+            ]
+
+            let textSize = initials.size(withAttributes: attributes)
+            let textRect = CGRect(
+                x: (size - textSize.width) / 2,
+                y: (size - textSize.height) / 2,
+                width: textSize.width,
+                height: textSize.height
+            )
+
+            initials.draw(in: textRect, withAttributes: attributes)
+        }
+    }
+}
+
+// UIImage Extension for avatar processing
+extension UIImage {
+    func resizeToCircle(size: CGFloat) -> UIImage? {
+        let rect = CGRect(x: 0, y: 0, width: size, height: size)
+        UIGraphicsBeginImageContextWithOptions(rect.size, false, 0)
+        defer { UIGraphicsEndImageContext() }
+
+        let path = UIBezierPath(ovalIn: rect)
+        path.addClip()
+
+        // Calculate the aspect ratio and draw
+        let aspectWidth = rect.width / self.size.width
+        let aspectHeight = rect.height / self.size.height
+        let aspectRatio = max(aspectWidth, aspectHeight)
+
+        let scaledWidth = self.size.width * aspectRatio
+        let scaledHeight = self.size.height * aspectRatio
+        let x = (rect.width - scaledWidth) / 2.0
+        let y = (rect.height - scaledHeight) / 2.0
+
+        self.draw(in: CGRect(x: x, y: y, width: scaledWidth, height: scaledHeight))
+
+        return UIGraphicsGetImageFromCurrentImageContext()
+    }
+}
+
+// MARK: - AvatarView Component
+
+struct AvatarView: View {
+    let avatarType: AvatarType
+    let size: AvatarSize
+    let style: AvatarStyle
+
+    init(avatarType: AvatarType, size: AvatarSize = .large, style: AvatarStyle = .gradient) {
+        self.avatarType = avatarType
+        self.size = size
+        self.style = style
+    }
+
+    var body: some View {
+        ZStack {
+            // Background
+            backgroundView
+
+            // Content
+            contentView
+        }
+        .frame(width: size.dimension, height: size.dimension)
+        .clipShape(Circle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityDescription)
+    }
+
+    @ViewBuilder
+    private var backgroundView: some View {
+        switch style {
+        case .gradient:
+            LinearGradient(
+                colors: [
+                    Color.wiseBrightGreen.opacity(0.2),
+                    Color.wiseBrightGreen.opacity(0.1)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+        case .solid:
+            if case .initials(_, let colorIndex) = avatarType {
+                AvatarColorPalette.color(for: colorIndex)
+            } else {
+                Color.wiseBrightGreen.opacity(0.1)
+            }
+
+        case .bordered:
+            Color.white
+                .overlay(
+                    Circle()
+                        .strokeBorder(Color.wiseBorder, lineWidth: 1)
+                )
+        }
+    }
+
+    @ViewBuilder
+    private var contentView: some View {
+        switch avatarType {
+        case .emoji(let emoji):
+            Text(emoji)
+                .font(.system(size: size.fontSize))
+
+        case .photo(let imageData):
+            if let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size.dimension, height: size.dimension)
+            } else {
+                placeholderView
+            }
+
+        case .initials(let initials, let colorIndex):
+            Text(initials)
+                .font(.system(size: size.fontSize, weight: .semibold))
+                .foregroundColor(.white)
+        }
+    }
+
+    private var placeholderView: some View {
+        Image(systemName: "person.circle.fill")
+            .resizable()
+            .scaledToFit()
+            .foregroundColor(.gray.opacity(0.5))
+            .frame(width: size.dimension * 0.6, height: size.dimension * 0.6)
+    }
+
+    private var accessibilityDescription: String {
+        switch avatarType {
+        case .emoji(let emoji):
+            return "Avatar: \(emoji)"
+        case .photo:
+            return "Profile photo"
+        case .initials(let initials, _):
+            return "Avatar with initials \(initials)"
+        }
+    }
+}
+
+// Convenience initializer for Person avatars
+extension AvatarView {
+    init(person: Person, size: AvatarSize = .large, style: AvatarStyle = .gradient) {
+        self.init(avatarType: person.avatarType, size: size, style: style)
+    }
+}
 
 // MARK: - Person Model
 struct Person: Identifiable, Codable {
@@ -14,17 +262,48 @@ struct Person: Identifiable, Codable {
     var name: String
     var email: String
     var phone: String
-    var avatar: String // Apple Memoji representation
+    var avatarType: AvatarType  // New flexible avatar system
     var balance: Double // Overall balance with this person
     var createdDate: Date
-    
-    init(name: String, email: String, phone: String, avatar: String) {
+
+    // Legacy support for emoji string
+    @available(*, deprecated, message: "Use avatarType instead")
+    var avatar: String {
+        get {
+            if case .emoji(let emoji) = avatarType {
+                return emoji
+            }
+            return "👤"
+        }
+        set {
+            avatarType = .emoji(newValue)
+        }
+    }
+
+    init(name: String, email: String, phone: String, avatarType: AvatarType) {
         self.name = name
         self.email = email
         self.phone = phone
-        self.avatar = avatar
+        self.avatarType = avatarType
         self.balance = 0.0
         self.createdDate = Date()
+    }
+
+    // Convenience init for emoji (backward compatibility)
+    init(name: String, email: String, phone: String, avatar: String) {
+        self.init(name: name, email: email, phone: phone, avatarType: .emoji(avatar))
+    }
+
+    // Generate initials from name
+    var initials: String {
+        let components = name.components(separatedBy: " ")
+        let initials = components.compactMap { $0.first }.prefix(2)
+        return String(initials).uppercased()
+    }
+
+    // Get avatar color index
+    var avatarColorIndex: Int {
+        AvatarColorPalette.colorIndex(for: name)
     }
 }
 
@@ -2093,26 +2372,41 @@ struct PeopleView: View {
     // Sample data with Apple Memoji
     static let samplePeople: [Person] = [
         {
+            // Using emoji avatar
             var person = Person(name: "Sarah Wilson", email: "sarah@example.com", phone: "+1234567890", avatar: "🧑🏻‍🦰")
             person.balance = 25.50 // They owe me money
             return person
         }(),
         {
-            var person = Person(name: "John Smith", email: "john@example.com", phone: "+1234567891", avatar: "👨🏼‍💼")
+            // Using initials avatar with color
+            var person = Person(
+                name: "John Smith",
+                email: "john@example.com",
+                phone: "+1234567891",
+                avatarType: .initials("JS", colorIndex: 0)
+            )
             person.balance = -15.75 // I owe them money
             return person
         }(),
         {
+            // Using emoji avatar
             var person = Person(name: "Mike Chen", email: "mike@example.com", phone: "+1234567892", avatar: "👨🏻‍💻")
             person.balance = 0.0 // Settled up
             return person
         }(),
         {
-            var person = Person(name: "Emma Davis", email: "emma@example.com", phone: "+1234567893", avatar: "👩🏽‍🎓")
+            // Using initials avatar with different color
+            var person = Person(
+                name: "Emma Davis",
+                email: "emma@example.com",
+                phone: "+1234567893",
+                avatarType: .initials("ED", colorIndex: 3)
+            )
             person.balance = 45.20 // They owe me money
             return person
         }(),
         {
+            // Using emoji avatar
             var person = Person(name: "Alex Johnson", email: "alex@example.com", phone: "+1234567894", avatar: "🧑🏼‍🎨")
             person.balance = -8.30 // I owe them money
             return person
@@ -2625,21 +2919,9 @@ struct PersonRowView: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            // Avatar
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [Color.wiseBrightGreen.opacity(0.2), Color.wiseBrightGreen.opacity(0.1)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Text(person.avatar)
-                        .font(.system(size: 24))
-                )
-            
+            // Avatar - Using new AvatarView component
+            AvatarView(person: person, size: .large, style: .gradient)
+
             // Person Details
             VStack(alignment: .leading, spacing: 4) {
                 Text(person.name)
@@ -2799,69 +3081,363 @@ struct GroupRowView: View {
     }
 }
 
-// MARK: - Add Person Sheet
-struct AddPersonSheet: View {
-    @Binding var showingAddPersonSheet: Bool
-    let onPersonAdded: (Person) -> Void
-    
-    @State private var name = ""
-    @State private var email = ""
-    @State private var phone = ""
-    @State private var selectedAvatar = "👨🏻‍💼"
-    
-    // Apple Memoji avatars with diverse skin tones and professional looks
-    let availableAvatars = [
+// MARK: - Avatar Picker Sheet
+
+struct AvatarPickerSheet: View {
+    @Binding var selectedAvatarType: AvatarType
+    @Binding var isPresented: Bool
+    let personName: String  // For generating initials
+
+    @State private var selectedTab = 0
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedEmoji = "👨🏻‍💼"
+    @State private var selectedColorIndex = 0
+    @State private var isProcessingImage = false
+
+    // Expanded emoji list with diverse options
+    private let availableEmojis = [
         "👨🏻‍💼", "👩🏻‍💼", "👨🏼‍💼", "👩🏼‍💼", "👨🏽‍💼", "👩🏽‍💼",
         "👨🏾‍💼", "👩🏾‍💼", "👨🏿‍💼", "👩🏿‍💼", "🧑🏻‍💻", "🧑🏼‍💻",
         "🧑🏽‍💻", "🧑🏾‍💻", "🧑🏿‍💻", "👨🏻‍🎓", "👩🏻‍🎓", "👨🏼‍🎓",
         "👩🏼‍🎓", "👨🏽‍🎓", "👩🏽‍🎓", "👨🏾‍🎓", "👩🏾‍🎓", "👨🏿‍🎓",
         "👩🏿‍🎓", "🧑🏻‍🎨", "🧑🏼‍🎨", "🧑🏽‍🎨", "🧑🏾‍🎨", "🧑🏿‍🎨",
-        "👨🏻‍⚕️", "👩🏻‍⚕️", "👨🏼‍⚕️", "👩🏼‍⚕️", "👨🏽‍⚕️", "👩🏽‍⚕️"
+        "👨🏻‍⚕️", "👩🏻‍⚕️", "👨🏼‍⚕️", "👩🏼‍⚕️", "👨🏽‍⚕️", "👩🏽‍⚕️",
+        "😊", "😎", "🤓", "😇", "🥳", "🤗", "😍", "🤩", "😺", "🐶",
+        "🦊", "🐼", "🦁", "🐯", "🐸", "🐙", "🦋", "🌸", "⭐️", "🔥"
     ]
-    
+
+    private var previewAvatarType: AvatarType {
+        switch selectedTab {
+        case 0: // Photo
+            if case .photo(let data) = selectedAvatarType, selectedPhotoItem == nil {
+                return .photo(data)
+            }
+            return .initials(AvatarGenerator.generateInitials(from: personName), colorIndex: 0)
+        case 1: // Emoji
+            return .emoji(selectedEmoji)
+        case 2: // Initials
+            return .initials(AvatarGenerator.generateInitials(from: personName), colorIndex: selectedColorIndex)
+        default:
+            return .emoji("👤")
+        }
+    }
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Preview Section
+                VStack(spacing: 16) {
+                    ZStack {
+                        // Preview avatar
+                        AvatarView(avatarType: previewAvatarType, size: .xlarge, style: .solid)
+
+                        // Loading overlay
+                        if isProcessingImage {
+                            Circle()
+                                .fill(Color.black.opacity(0.5))
+                                .frame(width: 64, height: 64)
+
+                            ProgressView()
+                                .tint(.white)
+                        }
+                    }
+
+                    Text("Choose Your Avatar")
+                        .font(.spotifyHeadingMedium)
+                        .foregroundColor(.wisePrimaryText)
+                }
+                .padding(.top, 20)
+                .padding(.bottom, 24)
+                .frame(maxWidth: .infinity)
+                .background(Color.wiseBorder.opacity(0.3))
+
+                // Tab Selector
+                Picker("Avatar Source", selection: $selectedTab) {
+                    Label("Photo", systemImage: "photo").tag(0)
+                    Label("Emoji", systemImage: "face.smiling").tag(1)
+                    Label("Initials", systemImage: "textformat").tag(2)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+                // Content based on selected tab
+                TabView(selection: $selectedTab) {
+                    // Photo Tab
+                    photoPickerView.tag(0)
+
+                    // Emoji Tab
+                    emojiGridView.tag(1)
+
+                    // Initials Tab
+                    initialsBuilderView.tag(2)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+            }
+            .navigationTitle("Select Avatar")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        isPresented = false
+                    }
+                    .font(.spotifyLabelLarge)
+                    .foregroundColor(.wiseSecondaryText)
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
+                        saveAvatar()
+                    }
+                    .font(.spotifyLabelLarge)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(Color.wiseForestGreen)
+                    )
+                    .disabled(isProcessingImage)
+                }
+            }
+        }
+    }
+
+    // MARK: - Photo Picker View
+    private var photoPickerView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                VStack(spacing: 12) {
+                    Image(systemName: "photo.on.rectangle")
+                        .font(.system(size: 48))
+                        .foregroundColor(.wiseForestGreen)
+
+                    Text("Choose from Photos")
+                        .font(.spotifyHeadingSmall)
+                        .foregroundColor(.wisePrimaryText)
+
+                    Text("Select any photo or saved Memoji from your library")
+                        .font(.spotifyBodySmall)
+                        .foregroundColor(.wiseSecondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.wiseBrightGreen.opacity(0.1))
+                        .stroke(Color.wiseBrightGreen.opacity(0.3), lineWidth: 2)
+                        .shadow(color: .wiseBrightGreen.opacity(0.1), radius: 8, x: 0, y: 4)
+                )
+            }
+            .padding(.horizontal, 20)
+            .onChange(of: selectedPhotoItem) { oldValue, newValue in
+                Task {
+                    await loadPhoto(from: newValue)
+                }
+            }
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Emoji Grid View
+    private var emojiGridView: some View {
+        ScrollView {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
+                ForEach(availableEmojis, id: \.self) { emoji in
+                    Button(action: { selectedEmoji = emoji }) {
+                        Text(emoji)
+                            .font(.system(size: 32))
+                            .frame(width: 52, height: 52)
+                            .background(
+                                Circle()
+                                    .fill(selectedEmoji == emoji ? Color.wiseForestGreen : Color.wiseBorder.opacity(0.3))
+                            )
+                            .overlay(
+                                Circle()
+                                    .strokeBorder(
+                                        selectedEmoji == emoji ? Color.wiseForestGreen : Color.clear,
+                                        lineWidth: 3
+                                    )
+                            )
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 20)
+        }
+    }
+
+    // MARK: - Initials Builder View
+    private var initialsBuilderView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            // Show generated initials
+            VStack(spacing: 12) {
+                Text("Your Initials")
+                    .font(.spotifyLabelLarge)
+                    .foregroundColor(.wiseSecondaryText)
+
+                Text(AvatarGenerator.generateInitials(from: personName))
+                    .font(.system(size: 48, weight: .bold))
+                    .foregroundColor(.wisePrimaryText)
+            }
+
+            // Color selection
+            VStack(spacing: 12) {
+                Text("Choose Color")
+                    .font(.spotifyHeadingSmall)
+                    .foregroundColor(.wisePrimaryText)
+
+                HStack(spacing: 16) {
+                    ForEach(0..<AvatarColorPalette.colors.count, id: \.self) { index in
+                        Button(action: { selectedColorIndex = index }) {
+                            Circle()
+                                .fill(AvatarColorPalette.color(for: index))
+                                .frame(width: 48, height: 48)
+                                .overlay(
+                                    Circle()
+                                        .strokeBorder(
+                                            selectedColorIndex == index ? Color.wisePrimaryText : Color.clear,
+                                            lineWidth: 3
+                                        )
+                                )
+                                .shadow(
+                                    color: selectedColorIndex == index ? Color.black.opacity(0.2) : Color.clear,
+                                    radius: 4, x: 0, y: 2
+                                )
+                        }
+                    }
+                }
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Helper Methods
+    private func loadPhoto(from item: PhotosPickerItem?) async {
+        guard let item = item else { return }
+
+        isProcessingImage = true
+        defer { isProcessingImage = false }
+
+        do {
+            if let data = try await item.loadTransferable(type: Data.self),
+               let uiImage = UIImage(data: data),
+               let processedData = AvatarGenerator.processImage(uiImage) {
+                selectedAvatarType = .photo(processedData)
+            }
+        } catch {
+            print("Error loading photo: \(error)")
+        }
+    }
+
+    private func saveAvatar() {
+        switch selectedTab {
+        case 0: // Photo - already set in loadPhoto
+            break
+        case 1: // Emoji
+            selectedAvatarType = .emoji(selectedEmoji)
+        case 2: // Initials
+            selectedAvatarType = .initials(
+                AvatarGenerator.generateInitials(from: personName),
+                colorIndex: selectedColorIndex
+            )
+        default:
+            break
+        }
+
+        isPresented = false
+    }
+}
+
+// MARK: - Add Person Sheet
+struct AddPersonSheet: View {
+    @Binding var showingAddPersonSheet: Bool
+    let onPersonAdded: (Person) -> Void
+
+    @State private var name = ""
+    @State private var email = ""
+    @State private var phone = ""
+    @State private var selectedAvatarType: AvatarType = .initials("", colorIndex: 0)
+    @State private var showingAvatarPicker = false
+
     private var isFormValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty &&
         !email.trimmingCharacters(in: .whitespaces).isEmpty
     }
-    
+
+    // Auto-update initials when name changes
+    private var currentInitials: String {
+        AvatarGenerator.generateInitials(from: name)
+    }
+
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
                     // Avatar Selection
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Choose Memoji")
+                        Text("Profile Avatar")
                             .font(.spotifyHeadingMedium)
                             .foregroundColor(.wisePrimaryText)
-                        
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
-                            ForEach(availableAvatars, id: \.self) { avatar in
-                                Button(action: { selectedAvatar = avatar }) {
-                                    Text(avatar)
-                                        .font(.system(size: 24))
-                                        .frame(width: 44, height: 44)
-                                        .background(
-                                            Circle()
-                                                .fill(selectedAvatar == avatar ? Color.wiseBrightGreen.opacity(0.2) : Color.wiseBorder.opacity(0.5))
-                                                .stroke(selectedAvatar == avatar ? Color.wiseBrightGreen : Color.clear, lineWidth: 2)
-                                        )
+
+                        Button(action: { showingAvatarPicker = true }) {
+                            HStack(spacing: 16) {
+                                // Show current avatar or default initials
+                                if case .initials = selectedAvatarType, !currentInitials.isEmpty {
+                                    AvatarView(
+                                        avatarType: .initials(currentInitials, colorIndex: AvatarColorPalette.colorIndex(for: name)),
+                                        size: .large,
+                                        style: .solid
+                                    )
+                                } else {
+                                    AvatarView(avatarType: selectedAvatarType, size: .large, style: .solid)
                                 }
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Choose Avatar")
+                                        .font(.spotifyHeadingSmall)
+                                        .foregroundColor(.wisePrimaryText)
+
+                                    Text("Select photo, emoji, or use initials")
+                                        .font(.spotifyBodySmall)
+                                        .foregroundColor(.wiseSecondaryText)
+                                }
+
+                                Spacer()
+
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.wiseSecondaryText)
                             }
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.wiseBorder.opacity(0.3))
+                            )
                         }
                     }
-                    
+
                     // Basic Information
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Basic Information")
                             .font(.spotifyHeadingMedium)
                             .foregroundColor(.wisePrimaryText)
-                        
+
                         // Name
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Name *")
                                 .font(.spotifyLabelMedium)
                                 .foregroundColor(.wiseSecondaryText)
-                            
+
                             TextField("e.g., John Smith", text: $name)
                                 .font(.spotifyBodyMedium)
                                 .foregroundColor(.wisePrimaryText)
@@ -2872,14 +3448,25 @@ struct AddPersonSheet: View {
                                         .fill(Color.wiseBorder.opacity(0.5))
                                         .stroke(Color.wiseBorder, lineWidth: 1)
                                 )
+                                .onChange(of: name) { oldValue, newValue in
+                                    // Auto-generate initials avatar as default
+                                    if case .initials = selectedAvatarType, !newValue.isEmpty {
+                                        selectedAvatarType = .initials(
+                                            AvatarGenerator.generateInitials(from: newValue),
+                                            colorIndex: AvatarColorPalette.colorIndex(for: newValue)
+                                        )
+                                    } else if case .initials = selectedAvatarType {
+                                        selectedAvatarType = .initials("", colorIndex: 0)
+                                    }
+                                }
                         }
-                        
+
                         // Email
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Email *")
                                 .font(.spotifyLabelMedium)
                                 .foregroundColor(.wiseSecondaryText)
-                            
+
                             TextField("e.g., john@example.com", text: $email)
                                 .font(.spotifyBodyMedium)
                                 .foregroundColor(.wisePrimaryText)
@@ -2893,13 +3480,13 @@ struct AddPersonSheet: View {
                                         .stroke(Color.wiseBorder, lineWidth: 1)
                                 )
                         }
-                        
+
                         // Phone
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Phone")
                                 .font(.spotifyLabelMedium)
                                 .foregroundColor(.wiseSecondaryText)
-                            
+
                             TextField("e.g., +1 234 567 8900", text: $phone)
                                 .font(.spotifyBodyMedium)
                                 .foregroundColor(.wisePrimaryText)
@@ -2913,7 +3500,7 @@ struct AddPersonSheet: View {
                                 )
                         }
                     }
-                    
+
                     Spacer(minLength: 50)
                 }
                 .padding(.horizontal, 20)
@@ -2929,7 +3516,7 @@ struct AddPersonSheet: View {
                     .font(.spotifyLabelLarge)
                     .foregroundColor(.wiseSecondaryText)
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Add") {
                         addPerson()
@@ -2945,17 +3532,42 @@ struct AddPersonSheet: View {
                     .disabled(!isFormValid)
                 }
             }
+            .sheet(isPresented: $showingAvatarPicker) {
+                AvatarPickerSheet(
+                    selectedAvatarType: $selectedAvatarType,
+                    isPresented: $showingAvatarPicker,
+                    personName: name.isEmpty ? "User" : name
+                )
+            }
+        }
+        .onAppear {
+            // Initialize with initials avatar
+            if !name.isEmpty {
+                selectedAvatarType = .initials(
+                    AvatarGenerator.generateInitials(from: name),
+                    colorIndex: AvatarColorPalette.colorIndex(for: name)
+                )
+            }
         }
     }
-    
+
     private func addPerson() {
+        // Ensure we have the latest initials if still using initials avatar
+        var finalAvatarType = selectedAvatarType
+        if case .initials = selectedAvatarType {
+            finalAvatarType = .initials(
+                AvatarGenerator.generateInitials(from: name),
+                colorIndex: AvatarColorPalette.colorIndex(for: name)
+            )
+        }
+
         let newPerson = Person(
             name: name.trimmingCharacters(in: .whitespaces),
             email: email.trimmingCharacters(in: .whitespaces),
             phone: phone.trimmingCharacters(in: .whitespaces),
-            avatar: selectedAvatar
+            avatarType: finalAvatarType
         )
-        
+
         onPersonAdded(newPerson)
         showingAddPersonSheet = false
     }
@@ -3065,14 +3677,8 @@ struct AddGroupSheet: View {
                                     }
                                 }) {
                                     HStack(spacing: 12) {
-                                        // Avatar
-                                        Circle()
-                                            .fill(Color.wiseBrightGreen.opacity(0.1))
-                                            .frame(width: 32, height: 32)
-                                            .overlay(
-                                                Text(person.avatar)
-                                                    .font(.system(size: 16))
-                                            )
+                                        // Avatar - Using new AvatarView component
+                                        AvatarView(person: person, size: .medium, style: .solid)
                                         
                                         // Person Details
                                         VStack(alignment: .leading, spacing: 2) {
@@ -4038,14 +4644,7 @@ struct EnhancedSharedSubscriptionRowView: View {
                     // Shared with avatars
                     HStack(spacing: -8) {
                         ForEach(sharedWithPeople.prefix(3), id: \.id) { person in
-                            Text(person.avatar)
-                                .font(.system(size: 16))
-                                .frame(width: 24, height: 24)
-                                .background(
-                                    Circle()
-                                        .fill(Color.white)
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
+                            AvatarView(person: person, size: .small, style: .bordered)
                         }
                         
                         if sharedWithPeople.count > 3 {
