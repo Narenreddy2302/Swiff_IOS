@@ -1,0 +1,2591 @@
+================================================================================
+                    SWIFF iOS - COMPREHENSIVE TASK LIST
+                          Created: November 18, 2024
+================================================================================
+
+PROJECT OVERVIEW:
+Swiff is an expense tracking and subscription management iOS app built with SwiftUI.
+Current Status: Well-designed prototype with strong UI/UX but lacking data persistence
+and complete CRUD functionality. Estimated total development: 7-9 weeks full-time.
+
+================================================================================
+                          PHASE 1: FOUNDATION (CRITICAL)
+                    Priority: P0 (Must complete before any other work)
+                         Estimated Time: 2-3 weeks
+================================================================================
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 1.1: DATA PERSISTENCE IMPLEMENTATION
+═══════════════════════════════════════════════════════════════════════════
+
+CRITICAL ISSUE: Currently NO data persists. All data resets on app restart.
+
+Task 1.1.1: Set Up Core Data / SwiftData Infrastructure
+──────────────────────────────────────────────────────────
+[ ] Research decision: Core Data vs SwiftData (iOS 17+)
+    - If targeting iOS 17+: Use SwiftData (modern, easier)
+    - If targeting iOS 16+: Use Core Data (more compatible)
+    - Document decision in project README
+
+[ ] Create new .xcdatamodeld file or SwiftData schema
+    - Name: SwiffDataModel.xcdatamodeld
+    - Location: Swiff IOS/Models/
+
+[ ] Remove or repurpose existing unused Swiff_IOS.xcdatamodeld
+    - Current Item entity is not used anywhere
+    - Clean up Persistence.swift boilerplate
+
+[ ] Set up PersistenceController properly
+    - Singleton pattern for shared instance
+    - Preview instance for SwiftUI previews
+    - In-memory store for testing
+    - Error handling for store loading failures
+
+Task 1.1.2: Create Core Data Entities
+──────────────────────────────────────────────────────────
+[ ] Create PersonEntity
+    Attributes:
+    - id: UUID (unique identifier)
+    - name: String (non-optional)
+    - email: String (non-optional)
+    - phone: String (optional)
+    - balance: Double (default: 0.0)
+    - createdDate: Date (default: now)
+    - avatarData: Binary Data (optional, for photo avatars)
+    - avatarEmoji: String (optional)
+    - avatarInitials: String (optional)
+    - avatarColorIndex: Int16 (default: 0)
+    - avatarType: String (enum: "photo", "emoji", "initials")
+
+    Relationships:
+    - groups: To-Many relationship with GroupEntity
+    - transactions: To-Many relationship with TransactionEntity
+    - sharedSubscriptions: To-Many relationship with SharedSubscriptionEntity
+
+[ ] Create GroupEntity
+    Attributes:
+    - id: UUID
+    - name: String (non-optional)
+    - groupDescription: String (optional, renamed from 'description')
+    - emoji: String (non-optional)
+    - createdDate: Date
+    - totalAmount: Double (default: 0.0)
+
+    Relationships:
+    - members: To-Many relationship with PersonEntity
+    - expenses: To-Many relationship with GroupExpenseEntity
+
+[ ] Create GroupExpenseEntity
+    Attributes:
+    - id: UUID
+    - title: String (non-optional)
+    - amount: Double (non-optional)
+    - paidByID: UUID (foreign key to PersonEntity)
+    - date: Date
+    - notes: String (optional)
+    - receiptPath: String (optional)
+    - isSettled: Boolean (default: false)
+    - categoryRawValue: String (stores TransactionCategory enum)
+
+    Relationships:
+    - group: To-One relationship with GroupEntity
+    - paidBy: To-One relationship with PersonEntity
+    - splitBetween: To-Many relationship with PersonEntity
+
+[ ] Create SubscriptionEntity
+    Attributes:
+    - id: UUID
+    - name: String (non-optional)
+    - subscriptionDescription: String (optional)
+    - price: Double (non-optional)
+    - billingCycle: String (enum stored as string)
+    - category: String (enum stored as string)
+    - icon: String (SF Symbol name)
+    - colorHex: String (hex color code)
+    - nextBillingDate: Date
+    - isActive: Boolean (default: true)
+    - isShared: Boolean (default: false)
+    - paymentMethod: String (enum stored as string)
+    - createdDate: Date
+    - lastBillingDate: Date (optional)
+    - totalSpent: Double (default: 0.0)
+    - notes: String (optional)
+    - website: String (optional)
+    - cancellationDate: Date (optional)
+
+    Relationships:
+    - sharedWith: To-Many relationship with PersonEntity
+
+[ ] Create TransactionEntity
+    Attributes:
+    - id: UUID
+    - title: String (non-optional)
+    - subtitle: String (optional)
+    - amount: Double (non-optional)
+    - categoryRawValue: String
+    - date: Date
+    - isRecurring: Boolean (default: false)
+    - tagsString: String (comma-separated tags)
+    - type: String ("expense" or "income")
+    - notes: String (optional)
+    - receiptPath: String (optional)
+
+    Relationships:
+    - relatedPerson: To-One relationship with PersonEntity (optional)
+
+[ ] Create SharedSubscriptionEntity
+    Attributes:
+    - id: UUID
+    - subscriptionID: UUID
+    - sharedByID: UUID
+    - costSplit: String (enum: "equal", "percentage", "fixed", "free")
+    - individualCost: Double
+    - isAccepted: Boolean (default: false)
+    - createdDate: Date
+    - notes: String (optional)
+
+    Relationships:
+    - sharedBy: To-One relationship with PersonEntity
+    - sharedWith: To-Many relationship with PersonEntity
+    - subscription: To-One relationship with SubscriptionEntity
+
+Task 1.1.3: Create NSManagedObject Subclasses or Codable Wrappers
+──────────────────────────────────────────────────────────
+[ ] Generate NSManagedObject subclasses for all entities
+    - Use Xcode: Editor > Create NSManagedObject Subclass
+    - Location: Swiff IOS/Models/CoreData/
+    - Check "Use scalar types for primitive data"
+
+[ ] OR implement Codable wrappers for SwiftData approach
+    - Create wrapper structs that conform to Codable
+    - Implement encoding/decoding logic
+    - Handle relationships properly
+
+[ ] Add convenience initializers
+    - PersonEntity.init(from person: Person)
+    - GroupEntity.init(from group: Group)
+    - SubscriptionEntity.init(from subscription: Subscription)
+    - TransactionEntity.init(from transaction: Transaction)
+
+[ ] Add toDomain() methods to convert back to struct models
+    - person.toDomain() -> Person
+    - Handles optional unwrapping safely
+    - Converts relationships to UUID arrays
+
+Task 1.1.4: Create Data Service Layer
+──────────────────────────────────────────────────────────
+[ ] Create PersistenceService.swift
+    Location: Swiff IOS/Services/PersistenceService.swift
+
+    Required methods:
+    - savePerson(_ person: Person)
+    - fetchAllPeople() -> [Person]
+    - updatePerson(_ person: Person)
+    - deletePerson(id: UUID)
+    - saveGroup(_ group: Group)
+    - fetchAllGroups() -> [Group]
+    - updateGroup(_ group: Group)
+    - deleteGroup(id: UUID)
+    - saveSubscription(_ subscription: Subscription)
+    - fetchAllSubscriptions() -> [Subscription]
+    - updateSubscription(_ subscription: Subscription)
+    - deleteSubscription(id: UUID)
+    - saveTransaction(_ transaction: Transaction)
+    - fetchAllTransactions() -> [Transaction]
+    - updateTransaction(_ transaction: Transaction)
+    - deleteTransaction(id: UUID)
+    - saveContext() throws
+    - Background context operations for large saves
+
+[ ] Implement error handling in PersistenceService
+    - Custom error enum: PersistenceError
+    - Cases: saveFailed, fetchFailed, deleteFailed, entityNotFound
+    - Propagate errors to ViewModels
+    - Log errors for debugging
+
+[ ] Add data validation in service layer
+    - Validate required fields before saving
+    - Check for duplicates where necessary
+    - Ensure data integrity (e.g., positive amounts)
+
+Task 1.1.5: Update App Launch to Load Persisted Data
+──────────────────────────────────────────────────────────
+[ ] Modify Swiff_IOSApp.swift
+    - Initialize PersistenceController on app launch
+    - Create @StateObject for app-level data managers
+    - Pass persistence context through environment
+
+[ ] Update ContentView to use persisted data
+    - Replace @State arrays with @FetchRequest or ViewModel
+    - Remove hardcoded sample data initialization
+    - Load data from persistence on .onAppear
+
+[ ] Handle first launch scenario
+    - Check if data exists
+    - If empty, optionally populate sample data
+    - Create "Getting Started" flow for new users
+
+Task 1.1.6: Implement Auto-Save Functionality
+──────────────────────────────────────────────────────────
+[ ] Add save operations after every create/edit/delete
+    - Save in AddPersonSheet after adding person
+    - Save in EditPersonSheet after editing
+    - Save after deleting person
+
+[ ] Implement debounced saving for performance
+    - Don't save on every keystroke
+    - Save after 0.5-1 second of inactivity
+    - Use Combine publishers for debouncing
+
+[ ] Add background context for heavy operations
+    - Use performBackgroundTask for bulk operations
+    - Merge changes to view context
+    - Show progress indicator for long operations
+
+[ ] Create automatic backup functionality
+    - Save backup to Documents folder weekly
+    - Implement restore from backup
+    - Add to Settings screen
+
+Task 1.1.7: Data Migration Strategy
+──────────────────────────────────────────────────────────
+[ ] Plan for future schema changes
+    - Enable lightweight migration in Core Data
+    - Create migration policies if needed
+    - Document migration steps
+
+[ ] Convert existing sample data to persistent data
+    - Create migration utility
+    - Move samplePeople to first-launch data seeding
+    - Same for groups, subscriptions
+
+[ ] Add versioning to data model
+    - Use Core Data model versions
+    - Test migration between versions
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 1.2: COMPLETE CRUD OPERATIONS
+═══════════════════════════════════════════════════════════════════════════
+
+Task 1.2.1: Implement Edit Person Functionality
+──────────────────────────────────────────────────────────
+[ ] Create EditPersonSheet.swift
+    Location: Swiff IOS/Views/People/EditPersonSheet.swift
+
+    Requirements:
+    - Accept existing Person as parameter
+    - Pre-populate all fields with current data
+    - Reuse avatar picker from AddPersonSheet
+    - Same validation as AddPersonSheet
+    - "Save" button updates existing person
+    - "Cancel" button dismisses without changes
+    - Unsaved changes alert if user tries to cancel with changes
+
+[ ] Add "Edit" button to PersonRowView or Person detail
+    - Toolbar button in person detail view
+    - Or swipe action on row (Edit action)
+    - Opens EditPersonSheet
+
+[ ] Implement update logic
+    - Call PersistenceService.updatePerson()
+    - Update UI immediately (optimistic update)
+    - Show success toast
+    - Handle errors gracefully
+
+[ ] Add field-level validation
+    - Name required (can't be empty)
+    - Email format validation
+    - Phone format validation (optional but if filled, validate)
+    - Show inline error messages
+
+Task 1.2.2: Implement Edit Group Functionality
+──────────────────────────────────────────────────────────
+[ ] Create EditGroupSheet.swift
+    Similar to AddGroupSheet but pre-populated
+
+    Requirements:
+    - Accept existing Group as parameter
+    - Pre-populate name, description, emoji
+    - Pre-select existing members
+    - Allow adding new members
+    - Allow removing existing members (with warning if they have expenses)
+    - Validation: at least 1 member, name required
+    - Save updates to persistence
+
+[ ] Add "Edit" button to group detail view
+    - Toolbar edit button
+    - Or swipe action on GroupRowView
+
+[ ] Handle member changes carefully
+    - Warning if removing member with unpaid expenses
+    - Recalculate balances after member changes
+    - Update all related GroupExpenses
+
+Task 1.2.3: Implement Edit Subscription Functionality
+──────────────────────────────────────────────────────────
+[ ] Create EditSubscriptionSheet.swift
+    Reuse most of AddSubscriptionSheet
+
+    Requirements:
+    - Accept existing Subscription as parameter
+    - Pre-populate all fields
+    - Keep billing history intact
+    - Allow changing all fields
+    - Update next billing date if billing cycle changes
+    - Validation same as add
+
+[ ] Add "Edit" button to subscription detail view
+    - Prominent toolbar button
+    - Keyboard shortcut support (⌘E)
+
+[ ] Track changes for history
+    - Record price changes in separate table
+    - Show "Price changed" indicator
+    - Alert user if significant price increase
+
+[ ] Handle shared subscription edits
+    - If shared, notify shared users of changes
+    - Recalculate individual costs if price changes
+
+Task 1.2.4: Implement Edit Transaction Functionality
+──────────────────────────────────────────────────────────
+[ ] Create EditTransactionSheet.swift
+    Reuse AddTransactionSheet with pre-filled data
+
+    Requirements:
+    - Pre-populate all fields
+    - Allow category change
+    - Allow amount change
+    - Allow tag editing
+    - Validate changes
+    - Update persistence
+
+[ ] Add "Edit" button to transaction detail view
+    - Swipe action on TransactionItemRow
+    - Or toolbar button in detail view
+
+[ ] Handle recurring transaction edits
+    - Option to edit single instance or all future instances
+    - Show warning dialog for edit scope
+
+Task 1.2.5: Implement Delete Functionality
+──────────────────────────────────────────────────────────
+[ ] Add swipe-to-delete to PersonRowView
+    - Swipe left to reveal delete button
+    - Red background with trash icon
+    - Haptic feedback on swipe
+    - Confirmation alert before delete
+    - Alert message: "Delete [Name]? This will remove all history."
+
+[ ] Add swipe-to-delete to GroupRowView
+    - Same pattern as person
+    - Warning: "Delete [Group Name]? All expenses will be removed."
+    - Check if group has unsettled balances
+    - Extra confirmation if balances exist
+
+[ ] Add swipe-to-delete to SubscriptionRowView
+    - Confirmation: "Delete [Subscription]? This action cannot be undone."
+    - Option to "Cancel Subscription" instead (keeps history)
+
+[ ] Add swipe-to-delete to TransactionItemRow
+    - Quick delete without confirmation for single transactions
+    - Hold to show context menu with more options
+
+[ ] Implement cascade delete logic
+    - Deleting person:
+      * Remove from all groups
+      * Remove from shared subscriptions
+      * Optionally delete related transactions (ask user)
+    - Deleting group:
+      * Delete all group expenses
+      * Recalculate member balances
+    - Deleting subscription:
+      * Remove shared subscription entries
+      * Keep billing history (soft delete)
+
+[ ] Add undo functionality
+    - Show toast: "[Item] deleted" with Undo button
+    - 5-second window to undo
+    - Restore from temporary storage
+    - Permanently delete after timeout
+
+[ ] Alternative: Context menu delete
+    - Long press on row
+    - Show context menu
+    - Options: Edit, Delete, Share, etc.
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 1.3: BUILD DETAIL VIEWS
+═══════════════════════════════════════════════════════════════════════════
+
+Task 1.3.1: Create Person Detail View
+──────────────────────────────────────────────────────────
+[ ] Create PersonDetailView.swift
+    Location: Swiff IOS/Views/People/PersonDetailView.swift
+
+    Layout sections (top to bottom):
+
+    1. Header Section:
+       - Large avatar (xlarge size, 64px)
+       - Person name (large title font)
+       - Contact info (email, phone)
+       - Quick action buttons:
+         * Call button (if phone exists)
+         * Email button
+         * Message button
+
+    2. Balance Card (prominent):
+       - Current balance amount (large, color-coded)
+       - Status text ("owes you" / "you owe" / "settled up")
+       - "Settle Up" button (if balance != 0)
+       - Balance history graph (sparkline)
+
+    3. Transaction History Section:
+       - Title: "Transaction History"
+       - Filter: All / Pending / Settled
+       - List of all transactions with this person
+       - Each transaction shows:
+         * Date
+         * Description
+         * Amount (+ if they paid, - if you paid)
+         * Status (paid/pending/settled)
+       - Tap transaction to see detail
+       - "Add Transaction" button at bottom
+
+    4. Groups Section:
+       - Title: "Shared Groups"
+       - List of groups this person is in
+       - Group name, member count, group balance
+       - Tap to navigate to group detail
+
+    5. Actions Section:
+       - Edit Person button
+       - Remove Person button (red, destructive)
+       - Archive Person option
+
+[ ] Add navigation from PersonRowView
+    - Wrap PersonRowView in NavigationLink
+    - Destination: PersonDetailView
+    - Pass person as parameter
+
+[ ] Implement "Settle Up" flow
+    - Show modal sheet
+    - Select payment method
+    - Enter amount (default: full balance)
+    - Confirm settlement
+    - Record settlement as transaction
+    - Update balance to 0
+    - Show success message
+
+[ ] Add contact integration
+    - Call: Use tel:// URL scheme
+    - Email: Use mailto:// URL scheme
+    - Message: Use sms:// URL scheme
+    - Check capability before showing button
+
+[ ] Implement transaction filtering
+    - Filter by status
+    - Filter by date range
+    - Sort by date (newest/oldest) or amount
+
+Task 1.3.2: Create Group Detail View
+──────────────────────────────────────────────────────────
+[ ] Create GroupDetailView.swift
+    Location: Swiff IOS/Views/Groups/GroupDetailView.swift
+
+    Layout sections:
+
+    1. Header Section:
+       - Large emoji icon (64px circle with gradient)
+       - Group name (large title)
+       - Group description (subtitle)
+       - Total group expense amount
+       - "Add Expense" button (prominent)
+
+    2. Members Section:
+       - Title: "Members ([count])"
+       - Horizontal scroll of member avatars with names
+       - Tap member to see their balance detail
+       - "Add Member" button
+
+    3. Balance Breakdown Card:
+       - Title: "Who Owes What"
+       - List of member balances:
+         * Member avatar and name
+         * Amount (green if owed to group, red if owes group)
+         * Settlement status
+       - "Simplify Debts" button (calculates optimal settlements)
+       - "Settle All" button (if balances exist)
+
+    4. Expenses List:
+       - Title: "Expenses"
+       - Filter: All / Unsettled / Settled
+       - Sort: Newest / Oldest / Amount
+       - Each expense shows:
+         * Title and category icon
+         * Amount and date
+         * Paid by (member name)
+         * Split between (avatars)
+         * Settlement status
+       - Tap to see expense detail
+       - Swipe to edit/delete
+
+    5. Settlement Suggestions (if balances exist):
+       - Title: "Settlement Suggestions"
+       - Optimal payment flow:
+         * "[Person A] pays $X to [Person B]"
+       - "Record Settlement" button for each suggestion
+
+    6. Actions Section:
+       - Edit Group button
+       - Export Group Report (PDF/CSV)
+       - Archive Group
+       - Delete Group (destructive)
+
+[ ] Add navigation from GroupRowView
+    - NavigationLink wrapper
+    - Pass group and people array
+
+[ ] Create Add Expense to Group sheet
+    - Title: "Add Group Expense"
+    - Fields:
+      * Expense title
+      * Amount
+      * Category
+      * Paid by (dropdown of group members)
+      * Split between (multi-select members, default: all)
+      * Split type (equal/unequal/percentage/shares)
+      * Date
+      * Notes
+      * Receipt photo (optional)
+    - Show live preview of split amounts
+    - Validation
+    - Save and update balances
+
+[ ] Implement expense splitting calculator
+    - Equal split: amount / number of people
+    - Unequal split: manual amount per person
+    - Percentage split: percentage per person
+    - Share-based: shares per person (e.g., 2:1:1)
+    - Validate total equals expense amount
+    - Show per-person amount in real-time
+
+[ ] Create expense detail modal
+    - Full expense information
+    - Who paid, who shared
+    - Split breakdown
+    - Receipt image if exists
+    - Edit/Delete buttons
+    - Mark as settled button
+
+[ ] Implement "Simplify Debts" algorithm
+    - Calculate net balances per member
+    - Find minimal number of transactions to settle
+    - Algorithm: Greedy approach or min-cost flow
+    - Display simplified payment plan
+
+[ ] Add settlement recording
+    - Record who paid whom
+    - Update balances
+    - Create settlement transaction
+    - Mark expense as settled
+    - Show confirmation
+
+Task 1.3.3: Create Subscription Detail View
+──────────────────────────────────────────────────────────
+[ ] Create SubscriptionDetailView.swift
+    Location: Swiff IOS/Views/Subscriptions/SubscriptionDetailView.swift
+
+    Layout sections:
+
+    1. Header Card:
+       - Large icon with custom color (xlarge)
+       - Subscription name (title)
+       - Service description
+       - Status badge (active/cancelled/paused)
+       - Category tag
+       - Website link (tap to open)
+
+    2. Billing Information Card:
+       - Next billing date with countdown
+         * "[X] days until renewal"
+         * Date and amount
+       - Billing cycle (monthly, yearly, etc.)
+       - Price per billing period
+       - Annual cost (calculated)
+       - Payment method with icon
+
+    3. Cost Analysis Card:
+       - Total spent to date
+       - Average monthly cost
+       - Cost per day breakdown
+       - Cost trend graph (if price history exists)
+       - Price change alerts (if any)
+
+    4. Billing History Section:
+       - Title: "Billing History"
+       - List of past billing dates and amounts
+       - Status: Paid / Failed / Pending
+       - Receipt link (if available)
+       - "Export History" button
+
+    5. Sharing Information (if isShared):
+       - Title: "Shared With"
+       - List of people sharing this subscription
+       - Cost per person
+       - Who manages the subscription
+       - "Manage Sharing" button
+
+    6. Additional Information:
+       - Creation date
+       - Notes section (editable)
+       - Custom fields
+
+    7. Quick Actions:
+       - Set Reminder button
+       - Add to Calendar button
+       - Share Subscription button
+       - View in Safari button
+
+    8. Primary Actions (toolbar):
+       - Edit button
+       - Pause/Resume button (toggle)
+       - Cancel Subscription (with flow)
+       - Delete button (destructive, bottom)
+
+[ ] Add navigation from SubscriptionRowView
+    - NavigationLink wrapper
+    - Pass subscription
+
+[ ] Create billing history data structure
+    - BillingHistory model
+    - date: Date
+    - amount: Double
+    - status: BillingStatus (paid/failed/pending)
+    - receiptURL: String?
+    - Auto-generate on renewal dates
+
+[ ] Implement cost trend graph
+    - Line chart showing price over time
+    - Use Swift Charts framework (iOS 16+)
+    - Highlight price changes
+    - Annotations for increases/decreases
+
+[ ] Create "Cancel Subscription" flow
+    - Confirmation dialog
+    - Reason selector (optional):
+      * Too expensive
+      * Not using anymore
+      * Found alternative
+      * Other (text field)
+    - Keep history option
+    - Set cancellation date
+    - Update status
+    - Show success message
+
+[ ] Implement "Pause Subscription" feature
+    - Set pause date
+    - Set resume date (optional)
+    - Update billing calculations
+    - Resume automatically on date
+
+[ ] Add reminder functionality
+    - Set reminder for X days before renewal
+    - Integration with Notification system
+    - Multiple reminder options
+
+[ ] Create sharing management
+    - View all shared users
+    - Add/remove users
+    - Adjust cost split
+    - Send sharing invitation
+
+Task 1.3.4: Create Transaction Detail View
+──────────────────────────────────────────────────────────
+[ ] Create TransactionDetailView.swift
+    Location: Swiff IOS/Views/Feed/TransactionDetailView.swift
+
+    Layout sections:
+
+    1. Header:
+       - Large category icon with color
+       - Transaction title (large)
+       - Transaction type badge (expense/income)
+       - Date and time
+
+    2. Amount Card:
+       - Large amount display (color-coded)
+       - Transaction type (in/out)
+       - Currency
+
+    3. Details Section:
+       - Category with icon
+       - Subcategory (if exists)
+       - Description/notes
+       - Tags (chips, editable)
+       - Recurring status (if recurring)
+       - Related person (if split transaction)
+
+    4. Receipt Section (if exists):
+       - Receipt image preview
+       - Tap to view full size
+       - OCR text extraction (future)
+       - Delete receipt option
+
+    5. Related Information:
+       - If part of group expense: Link to group
+       - If split with person: Link to person
+       - Related transactions (recurring series)
+
+    6. Actions:
+       - Edit button
+       - Duplicate transaction button
+       - Share transaction button
+       - Delete button (destructive)
+
+[ ] Add navigation from TransactionItemRow
+    - NavigationLink or sheet presentation
+    - Pass transaction
+
+[ ] Implement receipt image handling
+    - Display full-screen image on tap
+    - Zoom and pan gestures
+    - Share/export receipt
+    - Delete receipt option
+
+[ ] Add transaction sharing
+    - Generate shareable link or image
+    - Share via Messages, Email, etc.
+    - Include all transaction details
+
+[ ] Create duplicate transaction feature
+    - Copy all fields except date
+    - Open AddTransactionSheet with pre-filled data
+    - Useful for similar recurring expenses
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 1.4: INTEGRATE LIVE DATA
+═══════════════════════════════════════════════════════════════════════════
+
+Task 1.4.1: Update Home Dashboard with Real Data
+──────────────────────────────────────────────────────────
+[ ] Replace hardcoded financial overview values
+
+    Balance Card:
+    - Calculate: Total Income - Total Expenses
+    - Source: Sum all transactions where type = income minus type = expense
+    - Update in real-time when transactions added
+
+    Subscriptions Card:
+    - Calculate: Sum of all active subscriptions' monthly equivalents
+    - Formula: For each active subscription:
+      * Weekly: price × 4.33
+      * Monthly: price
+      * Quarterly: price ÷ 3
+      * Semi-annually: price ÷ 6
+      * Annually: price ÷ 12
+      * Lifetime: 0
+    - Update when subscriptions added/removed/modified
+
+    Income Card:
+    - Calculate: Sum of all income transactions
+    - Filter: transactionType = income
+    - Date range: Current month (make configurable)
+
+    Expenses Card:
+    - Calculate: Sum of all expense transactions
+    - Filter: transactionType = expense
+    - Date range: Current month
+
+[ ] Make date range selectable
+    - Add date range picker in header
+    - Options: This Month / Last Month / This Year / Custom Range
+    - Update all cards when range changes
+    - Store preference
+
+[ ] Add trend indicators
+    - Calculate month-over-month change
+    - Show up/down arrow with percentage
+    - Green for positive income trend
+    - Red for increasing expense trend
+    - Display: "↑ 12.5% vs last month"
+
+[ ] Create calculation service
+    File: Swiff IOS/Services/CalculationService.swift
+
+    Methods:
+    - calculateTotalBalance() -> Double
+    - calculateMonthlySubscriptions() -> Double
+    - calculateIncome(for dateRange) -> Double
+    - calculateExpenses(for dateRange) -> Double
+    - calculateTrend(current, previous) -> TrendData
+    - calculateNetWorth() -> Double
+
+Task 1.4.2: Update Recent Activity Feed
+──────────────────────────────────────────────────────────
+[ ] Replace sample activity data
+    - Remove hardcoded friendActivities array
+    - Generate from actual data:
+      * New transactions
+      * New people added
+      * New group expenses
+      * Settlements recorded
+      * Subscription renewals
+
+[ ] Create Activity model
+    struct Activity {
+        let id: UUID
+        let type: ActivityType
+        let personID: UUID?
+        let amount: Double?
+        let description: String
+        let date: Date
+    }
+
+    enum ActivityType {
+        case transactionAdded
+        case personAdded
+        case groupExpenseAdded
+        case settlementRecorded
+        case subscriptionRenewed
+        case subscriptionCancelled
+    }
+
+[ ] Implement activity generation
+    - Trigger on transaction creation
+    - Trigger on person added
+    - Trigger on group expense
+    - Store in ActivityEntity (new Core Data entity)
+    - Limit to last 50 activities
+
+[ ] Make activity cards tappable
+    - Navigate to relevant detail view
+    - Transaction activity -> Transaction detail
+    - Person activity -> Person detail
+    - Group activity -> Group detail
+    - Subscription activity -> Subscription detail
+
+Task 1.4.3: Update Recent Transactions List
+──────────────────────────────────────────────────────────
+[ ] Replace sample transactions
+    - Load from TransactionEntity
+    - Sort by date (newest first)
+    - Limit to 10 most recent
+    - Add "See All" button to navigate to Feed tab
+
+[ ] Make transaction rows tappable
+    - Navigate to TransactionDetailView
+    - Pass transaction data
+
+[ ] Add quick filters
+    - All / Income / Expenses
+    - Toggle buttons in section header
+
+Task 1.4.4: Update Subscription Stats
+──────────────────────────────────────────────────────────
+[ ] Recalculate subscription statistics
+    - Total monthly spend (sum of monthly equivalents)
+    - Total annual spend (monthly × 12)
+    - Next billing date (min of all next billing dates)
+    - Upcoming bills count (next 7 days)
+
+[ ] Update Quick Stats View
+    - Make data reactive to subscription changes
+    - Update immediately when subscription added/edited
+
+[ ] Connect Insights Sheet to real data
+    - Spending by category (calculate from subscriptions)
+    - Highest cost subscription (max price)
+    - Category percentages (category total / overall total)
+
+[ ] Connect Renewal Calendar to real data
+    - Group subscriptions by renewal date
+    - Show next 30 days
+    - Calculate daily totals
+    - Sort by date ascending
+
+Task 1.4.5: Create Reactive Data Flow
+──────────────────────────────────────────────────────────
+[ ] Implement ViewModels (MVVM pattern)
+
+    Create:
+    - HomeViewModel: Manages home dashboard state
+    - TransactionsViewModel: Manages transaction list and filters
+    - PeopleViewModel: Manages people and groups lists
+    - SubscriptionsViewModel: Manages subscription lists
+
+    Each ViewModel should:
+    - Conform to ObservableObject
+    - Use @Published for reactive properties
+    - Fetch data from PersistenceService
+    - Handle business logic
+    - Expose methods for CRUD operations
+    - Handle errors and loading states
+
+[ ] Update views to use ViewModels
+    - Replace @State arrays with @StateObject viewModels
+    - Use @ObservedObject for passed viewModels
+    - Bind UI to @Published properties
+    - Automatic UI updates when data changes
+
+[ ] Implement Combine publishers
+    - Subscribe to data changes
+    - Debounce search queries
+    - Merge multiple data streams
+    - Transform data for UI
+
+================================================================================
+                          PHASE 2: CORE FEATURES (HIGH PRIORITY)
+                              Estimated Time: 1.5-2 weeks
+================================================================================
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 2.1: GROUP EXPENSE MANAGEMENT
+═══════════════════════════════════════════════════════════════════════════
+
+Task 2.1.1: Create Add Expense to Group UI
+──────────────────────────────────────────────────────────
+[ ] Create AddGroupExpenseSheet.swift
+    Location: Swiff IOS/Views/Groups/AddGroupExpenseSheet.swift
+
+    Accept parameters:
+    - group: Group (the group this expense belongs to)
+    - people: [Person] (group members)
+
+    Form fields:
+
+    1. Expense Title* (TextField)
+       - Placeholder: "Dinner at Restaurant X"
+       - Validation: Required, not empty
+
+    2. Amount* (TextField with number pad)
+       - Placeholder: "$0.00"
+       - Currency formatted
+       - Validation: Required, > 0
+
+    3. Category (Picker)
+       - Use existing TransactionCategory
+       - Grid layout with icons
+       - Default: Food
+
+    4. Paid By* (Dropdown)
+       - List of group members with avatars
+       - Single selection
+       - Default: Current user (if in group)
+
+    5. Split Between (Multi-select)
+       - List of group members with checkboxes
+       - Avatars + names
+       - Select all by default
+       - Minimum: 1 person
+       - Show "Select All" / "Deselect All" buttons
+
+    6. Split Type (Segmented Control)
+       - Equal (default)
+       - Unequal (custom amounts)
+       - Percentage (percentage per person)
+       - Shares (ratio based, e.g., 2:1:1)
+
+    7. Split Details (Conditional on split type)
+
+       If Equal:
+       - Auto-calculate and display
+       - "Each person pays: $X.XX"
+
+       If Unequal:
+       - TextField for each selected person
+       - Running total validation
+       - Warning if total ≠ expense amount
+
+       If Percentage:
+       - Slider for each person
+       - Total must equal 100%
+       - Live validation
+
+       If Shares:
+       - Number input for each person
+       - Calculate proportional amounts
+       - Display amounts
+
+    8. Date (Date Picker)
+       - Default: Today
+       - Can select past dates
+
+    9. Notes (TextEditor)
+       - Optional
+       - Placeholder: "Add notes..."
+       - Multi-line
+
+    10. Receipt (Photo Picker)
+        - Optional
+        - Button: "Attach Receipt"
+        - Show thumbnail if attached
+        - Remove option
+
+    Live Preview Card:
+    - Show expense title and amount
+    - Show split breakdown
+    - "X people splitting $Y.YY"
+    - List of participants with amounts
+
+[ ] Implement split calculation logic
+    - Equal: amount / count
+    - Unequal: sum of custom amounts must equal total
+    - Percentage: (percentage / 100) × amount for each
+    - Shares: (individual shares / total shares) × amount
+
+[ ] Add validation
+    - Title not empty
+    - Amount > 0
+    - At least one person selected
+    - Split amounts valid
+    - If unequal: total equals expense amount
+    - If percentage: total equals 100%
+
+[ ] Save expense to group
+    - Create GroupExpense instance
+    - Add to group.expenses array
+    - Update member balances:
+      * Increase balance for payer: +amount
+      * Decrease balance for each participant: -(their share)
+    - Save to persistence
+    - Update group totalAmount
+    - Show success toast
+
+[ ] Add receipt handling
+    - Save photo to Documents directory
+    - Store file path in GroupExpense
+    - Compress image before saving
+    - Generate thumbnail
+
+Task 2.1.2: Create Balance Breakdown View
+──────────────────────────────────────────────────────────
+[ ] Add Balance Breakdown section to GroupDetailView
+
+    Card showing:
+    - Title: "Balance Summary"
+    - For each member:
+      * Avatar (small)
+      * Member name
+      * Balance amount (color-coded)
+        - Green if net positive (owed money)
+        - Red if net negative (owes money)
+        - Gray if settled (0)
+      * Balance description: "is owed" or "owes"
+    - Total group expenses at bottom
+
+[ ] Calculate member balances
+    Algorithm:
+    1. Initialize each member balance to 0
+    2. For each expense:
+       - Add full amount to payer's balance
+       - Subtract split amount from each participant
+    3. Display final balances
+
+[ ] Add visual indicators
+    - Progress bars showing balance magnitude
+    - Icons (↑ for owed, ↓ for owes)
+    - Sort by balance amount
+
+Task 2.1.3: Implement Settlement Suggestions
+──────────────────────────────────────────────────────────
+[ ] Create debt simplification algorithm
+
+    Algorithm (Greedy approach):
+    ```
+    1. Calculate net balance for each member
+    2. Create two lists: debtors (negative balance) and creditors (positive balance)
+    3. While both lists not empty:
+       a. Take max creditor and max debtor
+       b. Transfer min(creditor amount, debtor amount)
+       c. Create settlement suggestion
+       d. Remove if settled
+    4. Return list of settlements
+    ```
+
+[ ] Display settlement suggestions
+    - Card: "Suggested Settlements"
+    - For each suggestion:
+      * "[Debtor] pays $X to [Creditor]"
+      * Avatars for both people
+      * Amount prominently displayed
+      * "Record Settlement" button
+
+[ ] Create record settlement flow
+    - Button opens confirmation sheet
+    - Confirm payment details
+    - Select payment date (default: today)
+    - Optional: Payment method
+    - Optional: Add note
+    - Confirm button
+    - Update balances:
+      * Decrease debtor balance
+      * Decrease creditor balance
+    - Create settlement transaction
+    - Save to persistence
+    - Show success message
+
+Task 2.1.4: Create Expense Detail View
+──────────────────────────────────────────────────────────
+[ ] Create GroupExpenseDetailView.swift
+
+    Display:
+    1. Header:
+       - Expense title (large)
+       - Category icon and name
+       - Amount (large, prominent)
+       - Date
+       - Status badge (settled/unsettled)
+
+    2. Paid By Card:
+       - Avatar (large)
+       - Name
+       - "Paid $X.XX"
+
+    3. Split Between Card:
+       - List of participants with:
+         * Avatar
+         * Name
+         * Amount they owe
+         * Paid status (checkbox)
+       - Total participants count
+
+    4. Split Details:
+       - Split type (equal/unequal/etc.)
+       - Breakdown of amounts
+
+    5. Receipt (if exists):
+       - Image preview
+       - Tap to view full screen
+
+    6. Notes (if exists):
+       - Full notes text
+       - Expandable if long
+
+    7. Actions:
+       - Edit Expense button
+       - Mark as Settled button
+       - Delete Expense button (destructive)
+
+[ ] Add navigation from expense list
+    - Tap expense row in GroupDetailView
+    - Present as sheet or push
+
+[ ] Implement "Mark as Settled" functionality
+    - Confirmation dialog
+    - Update expense.isSettled = true
+    - Don't change balances (already calculated)
+    - Just marks for record-keeping
+    - Show success toast
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 2.2: TRANSACTION ENHANCEMENTS
+═══════════════════════════════════════════════════════════════════════════
+
+Task 2.2.1: Add Receipt Attachment
+──────────────────────────────────────────────────────────
+[ ] Update Transaction model
+    - Add receiptImagePath: String? property
+    - Add hasReceipt: Bool computed property
+
+[ ] Update TransactionEntity in Core Data
+    - Add receiptPath attribute (String, optional)
+
+[ ] Add receipt picker to AddTransactionSheet
+    - "Attach Receipt" button
+    - PhotosPicker integration
+    - Show thumbnail preview if attached
+    - Remove receipt button
+
+[ ] Implement receipt storage
+    - Save to Documents/Receipts/ folder
+    - Filename: receipt_[transactionID].jpg
+    - Compress image to < 2MB
+    - Generate thumbnail (200x200)
+
+[ ] Display receipt in TransactionDetailView
+    - Thumbnail in details section
+    - Tap to view full screen
+    - Pinch to zoom, pan gestures
+    - Share button
+    - Delete button
+
+[ ] Add receipt cleanup
+    - Delete image file when transaction deleted
+    - Cleanup orphaned receipts on app launch
+
+Task 2.2.2: Implement Recurring Transactions
+──────────────────────────────────────────────────────────
+[ ] Update Transaction model
+    - Add recurringFrequency: RecurringFrequency? enum
+      * None, Daily, Weekly, Biweekly, Monthly, Quarterly, Yearly
+    - Add recurringEndDate: Date? (optional end date)
+    - Add recurringGroupID: UUID? (links recurring instances)
+    - Add nextRecurrenceDate: Date? (when to create next)
+
+[ ] Create recurring transaction setup in AddTransactionSheet
+    - Toggle: "Make Recurring"
+    - If enabled, show:
+      * Frequency picker
+      * End date picker (optional)
+      * "Number of occurrences" option (alternative to end date)
+
+[ ] Implement automatic recurrence
+    - Background task or app launch check
+    - Check if nextRecurrenceDate <= today
+    - Create new transaction instance
+    - Link to original via recurringGroupID
+    - Calculate next recurrence date
+    - Schedule local notification (optional)
+
+[ ] Show recurring indicator in transaction rows
+    - Icon: ↻ (circular arrows)
+    - Tooltip on long press: "Recurring [Frequency]"
+
+[ ] Add recurring management
+    - In TransactionDetailView, if recurring:
+      * Show "Recurring [Frequency]" badge
+      * "View All Instances" button
+      * "Edit Future Recurrences" option
+      * "Stop Recurring" button
+
+[ ] Create RecurringTransactionsView
+    - List all recurring transaction templates
+    - Edit frequency, amount, end date
+    - Pause/resume recurring
+    - Stop recurring (keep past instances)
+
+Task 2.2.3: Add Transaction Split with People
+──────────────────────────────────────────────────────────
+[ ] Update Transaction model
+    - Add splitWith: [UUID]? (array of person IDs)
+    - Add splitType: SplitType? (equal/unequal)
+    - Add splitAmounts: [UUID: Double]? (custom amounts per person)
+    - Add isFullyPaid: Bool computed property
+
+[ ] Add split option in AddTransactionSheet
+    - Toggle: "Split with Someone"
+    - If enabled:
+      * "Select People" button
+      * Multi-select from people list
+      * Choose split type (equal/unequal)
+      * If unequal: Enter amount per person
+      * Show split breakdown preview
+
+[ ] Calculate split balances
+    - When transaction created:
+      * Update each person's balance
+      * If you paid full amount:
+        - Increase your balance with each person
+      * If split equally:
+        - Each person owes you (amount / count)
+
+[ ] Show split info in TransactionDetailView
+    - "Split With" section
+    - List of people with avatars
+    - Amount each owes
+    - "Request Payment" buttons
+
+[ ] Add payment tracking
+    - Checkbox for each person: "Paid"
+    - When all checked, mark transaction as fully paid
+    - Update balances as payments received
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 2.3: SEARCH & FILTER IMPROVEMENTS
+═══════════════════════════════════════════════════════════════════════════
+
+Task 2.3.1: Implement Global Search
+──────────────────────────────────────────────────────────
+[ ] Make Home screen search button functional
+    - Tap opens SearchView
+    - Present as sheet or navigate
+
+[ ] Create GlobalSearchView.swift
+    Location: Swiff IOS/Views/Search/GlobalSearchView.swift
+
+    Layout:
+    - Search bar at top (auto-focus on appear)
+    - Recent searches (if any)
+    - Search results categorized:
+      * People (matching name, email)
+      * Groups (matching name, description)
+      * Transactions (matching title, subtitle, notes)
+      * Subscriptions (matching name, description)
+    - Tap result to navigate to detail
+
+[ ] Implement search algorithm
+    - Case-insensitive search
+    - Search across multiple fields
+    - Fuzzy matching (optional, advanced)
+    - Rank results by relevance
+    - Limit results per category (5 each)
+
+[ ] Store recent searches
+    - Save in UserDefaults
+    - Limit to 10 recent
+    - Clear all option
+    - Tap to re-search
+
+[ ] Add search suggestions
+    - Based on recent searches
+    - Based on common categories
+    - Based on frequent contacts
+
+Task 2.3.2: Add Sorting Options
+──────────────────────────────────────────────────────────
+[ ] Add sort menu to People list
+    - Toolbar button: "Sort"
+    - Options:
+      * Name (A-Z)
+      * Name (Z-A)
+      * Balance (High to Low)
+      * Balance (Low to High)
+      * Recent Activity
+    - Save preference
+    - Update list immediately
+
+[ ] Add sort menu to Groups list
+    - Options:
+      * Name (A-Z)
+      * Name (Z-A)
+      * Member Count (High to Low)
+      * Total Amount (High to Low)
+      * Recent Activity
+
+[ ] Add sort menu to Subscriptions list
+    - Options:
+      * Name (A-Z)
+      * Name (Z-A)
+      * Price (High to Low)
+      * Price (Low to High)
+      * Next Billing (Soonest)
+      * Category
+      * Recently Added
+
+[ ] Add sort menu to Transactions list
+    - Options:
+      * Date (Newest)
+      * Date (Oldest)
+      * Amount (High to Low)
+      * Amount (Low to High)
+      * Category
+
+[ ] Persist sort preferences
+    - Use @AppStorage
+    - Per-list settings
+    - Restore on app launch
+
+Task 2.3.3: Enhance Filter UX
+──────────────────────────────────────────────────────────
+[ ] Create saved filters feature
+    - "Save Current Filter" button
+    - Name the filter
+    - Quick access to saved filters
+    - Edit/delete saved filters
+
+[ ] Add filter chips
+    - Active filters shown as chips above list
+    - Tap chip to remove filter
+    - "Clear All" button
+
+[ ] Create advanced filter sheet
+    - Multiple criteria at once
+    - Date range picker
+    - Amount range (min/max)
+    - Multiple category selection
+    - Multiple tag selection
+    - Combine with AND/OR logic
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 2.4: SETTINGS & PREFERENCES
+═══════════════════════════════════════════════════════════════════════════
+
+Task 2.4.1: Create Settings Screen
+──────────────────────────────────────────────────────────
+[ ] Create SettingsView.swift
+    Location: Swiff IOS/Views/Settings/SettingsView.swift
+
+    Sections (Form style):
+
+    1. Profile Section:
+       - User avatar (tap to change)
+       - User name (tap to edit)
+       - User email (tap to edit)
+
+    2. Preferences Section:
+       - Default currency
+         * Picker: USD, EUR, GBP, JPY, etc.
+       - Date format
+         * US (MM/DD/YYYY) vs International (DD/MM/YYYY)
+       - First day of week
+         * Sunday vs Monday
+       - Number format
+         * Comma vs period decimal separator
+
+    3. Notifications Section:
+       - Enable notifications (toggle)
+       - Subscription reminders (toggle)
+         * Days before: 1, 3, 7, 14
+       - Bill reminders (toggle)
+       - Payment reminders (toggle)
+       - Activity updates (toggle)
+
+    4. Appearance Section:
+       - Theme (picker)
+         * System (default)
+         * Light
+         * Dark
+       - App icon (selector)
+         * Default
+         * Alternate icons (if available)
+
+    5. Data & Privacy Section:
+       - Export data
+         * Export all data to JSON
+         * Export to CSV
+         * Email to self
+       - Import data
+         * Import from JSON backup
+       - Clear all data (destructive)
+         * Requires confirmation
+         * Cannot be undone warning
+
+    6. Security Section (future):
+       - Face ID / Touch ID lock
+       - Passcode lock
+       - Auto-lock timer
+
+    7. About Section:
+       - App version
+       - Build number
+       - Privacy policy (link)
+       - Terms of service (link)
+       - Contact support (email)
+       - Rate app (App Store link)
+       - Share app
+
+[ ] Add navigation to Settings
+    - From Home screen (profile button)
+    - Or add Settings tab to tab bar
+    - NavigationLink or present sheet
+
+[ ] Implement preference storage
+    - Use @AppStorage for each setting
+    - Apply immediately when changed
+    - No "Save" button needed (auto-save)
+
+Task 2.4.2: Implement Data Export
+──────────────────────────────────────────────────────────
+[ ] Create ExportService.swift
+    Location: Swiff IOS/Services/ExportService.swift
+
+[ ] Implement JSON export
+    - Export all data models:
+      * People array
+      * Groups array
+      * Subscriptions array
+      * Transactions array
+    - Create ExportData struct (Codable)
+    - Encode to JSON
+    - Save to Documents folder
+    - Share sheet to save or email
+
+[ ] Implement CSV export
+    - Separate CSV for each entity type:
+      * people.csv
+      * groups.csv
+      * subscriptions.csv
+      * transactions.csv
+    - Proper CSV formatting
+    - Handle commas in data
+    - Include headers
+    - Zip all CSVs together
+    - Share
+
+[ ] Add date range option for exports
+    - "Export All Time" vs "Export Date Range"
+    - Date range picker
+    - Filter data before export
+
+Task 2.4.3: Implement Data Import
+──────────────────────────────────────────────────────────
+[ ] Create ImportService.swift
+
+[ ] Implement JSON import
+    - File picker to select JSON
+    - Validate JSON structure
+    - Decode to models
+    - Conflict resolution:
+      * Replace all (destructive)
+      * Merge (add new, keep existing)
+      * Preview changes before import
+    - Show import summary
+    - Confirm before importing
+
+[ ] Add validation
+    - Check JSON format
+    - Validate required fields
+    - Check for corrupted data
+    - Show clear error messages
+
+[ ] Create restore from backup
+    - List available backups
+    - Show backup date and size
+    - Tap to restore
+    - Confirm restoration
+    - Restore process with progress
+
+================================================================================
+                        PHASE 3: POLISH & UX (MEDIUM PRIORITY)
+                              Estimated Time: 1-1.5 weeks
+================================================================================
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 3.1: ANIMATIONS & LOADING STATES
+═══════════════════════════════════════════════════════════════════════════
+
+Task 3.1.1: Add Loading States
+──────────────────────────────────────────────────────────
+[ ] Create loading indicators for all data fetches
+    - People list: Skeleton rows while loading
+    - Groups list: Skeleton cards
+    - Subscriptions list: Skeleton cards
+    - Transactions list: Skeleton rows
+
+[ ] Implement skeleton screens
+    - Create SkeletonView component
+    - Shimmer animation effect
+    - Match actual content layout
+    - Replace with real data smoothly
+
+[ ] Add progress indicators for operations
+    - Saving indicator (spinner on save button)
+    - "Saving..." text
+    - Success checkmark animation
+    - Error state with retry
+
+[ ] Create pull-to-refresh
+    - Add to all lists
+    - Spinner at top while refreshing
+    - Haptic feedback when triggered
+    - Smooth animation
+
+Task 3.1.2: Improve Animations
+──────────────────────────────────────────────────────────
+[ ] Add entrance animations
+    - Cards slide in from bottom with stagger
+    - Delay: 0.1s between cards
+    - Spring animation
+    - Only on first load
+
+[ ] Add transition animations
+    - Smooth tab switching
+    - Detail view push/pop
+    - Sheet presentation (custom transition)
+
+[ ] Add delete animations
+    - Row shrinks and fades out
+    - Other rows shift up smoothly
+    - 0.3s duration
+    - Bounce effect
+
+[ ] Add success animations
+    - Checkmark with scale effect
+    - Confetti for major actions (optional)
+    - Subtle celebration
+
+[ ] Number count-up animations
+    - Animate from 0 to final amount
+    - Duration: 1 second
+    - Easing: ease-out
+    - For dashboard amounts
+
+[ ] Add micro-interactions
+    - Button press scale down (0.95)
+    - Card shadow on press
+    - Switch toggle animation
+    - Slider track fill animation
+
+Task 3.1.3: Add Empty States
+──────────────────────────────────────────────────────────
+[ ] Design empty states for all lists
+    Already done for subscriptions, add for:
+
+    - Empty people list:
+      * Icon: person.badge.plus
+      * Title: "No People Yet"
+      * Message: "Add people to track shared expenses"
+      * Button: "Add Your First Person"
+
+    - Empty groups list:
+      * Icon: person.3.fill
+      * Title: "No Groups"
+      * Message: "Create groups to split expenses with multiple people"
+      * Button: "Create Your First Group"
+
+    - Empty transactions list:
+      * Icon: dollarsign.circle
+      * Title: "No Transactions"
+      * Message: "Start tracking your income and expenses"
+      * Button: "Add Transaction"
+
+    - Empty search results:
+      * Icon: magnifyingglass
+      * Title: "No Results"
+      * Message: "Try different keywords"
+      * Button: "Clear Search"
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 3.2: USER FEEDBACK MECHANISMS
+═══════════════════════════════════════════════════════════════════════════
+
+Task 3.2.1: Implement Toast Notifications
+──────────────────────────────────────────────────────────
+[ ] Create ToastView component
+    - Appears at bottom or top of screen
+    - Auto-dismisses after 3 seconds
+    - Swipe to dismiss
+    - Styles:
+      * Success (green with checkmark)
+      * Error (red with X)
+      * Info (blue with i)
+      * Warning (orange with !)
+
+[ ] Create ToastManager service
+    - Singleton to show toasts from anywhere
+    - Queue multiple toasts
+    - Methods:
+      * showSuccess(_ message: String)
+      * showError(_ message: String)
+      * showInfo(_ message: String)
+      * showWarning(_ message: String)
+
+[ ] Add toasts for all actions
+    - Create success: "Person added successfully"
+    - Update success: "Changes saved"
+    - Delete success: "Deleted" with undo button
+    - Error messages for failures
+    - Network errors (future)
+
+Task 3.2.2: Add Confirmation Dialogs
+──────────────────────────────────────────────────────────
+[ ] Create reusable ConfirmationDialog component
+    - Title
+    - Message
+    - Destructive button
+    - Cancel button
+    - Optional third button
+
+[ ] Add confirmations for destructive actions
+    - Delete person:
+      * "Delete [Name]?"
+      * "This will remove all history with this person."
+    - Delete group:
+      * "Delete [Group]?"
+      * "All expenses will be removed. This cannot be undone."
+    - Delete subscription:
+      * "Delete [Subscription]?"
+      * "Billing history will be lost."
+    - Cancel subscription:
+      * "Cancel [Subscription]?"
+      * "You can reactivate later if needed."
+    - Clear all data:
+      * "Clear All Data?"
+      * "This will permanently delete everything. This cannot be undone."
+      * Require typing "DELETE" to confirm
+
+Task 3.2.3: Implement Undo Functionality
+──────────────────────────────────────────────────────────
+[ ] Create UndoManager service
+    - Store deleted items temporarily
+    - 5-second window to undo
+    - Clear after timeout
+
+[ ] Add undo to delete operations
+    - After delete, show toast with "Undo" button
+    - If undo tapped:
+      * Restore item from temporary storage
+      * Re-save to persistence
+      * Show success toast
+    - After 5 seconds:
+      * Permanently delete
+      * Clear from undo storage
+
+[ ] Store deleted items
+    - In-memory storage
+    - UndoAction struct:
+      * type: UndoType (deletePerson, deleteGroup, etc.)
+      * data: Any (the deleted item)
+      * timestamp: Date
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 3.3: ACCESSIBILITY IMPROVEMENTS
+═══════════════════════════════════════════════════════════════════════════
+
+Task 3.3.1: Add Accessibility Labels
+──────────────────────────────────────────────────────────
+[ ] Add labels to all interactive elements
+    - Buttons: Clear description of action
+      * "Add person"
+      * "Edit subscription"
+      * "Delete transaction"
+    - Images: Describe content
+    - Icons: Explain purpose
+    - Custom controls: Describe function
+
+[ ] Add accessibility hints
+    - Complex interactions
+    - Non-obvious actions
+    - Help VoiceOver users understand
+
+[ ] Add accessibility values
+    - For elements with state
+    - Slider values
+    - Toggle states
+    - Selected/unselected
+
+[ ] Group related elements
+    - .accessibilityElement(children: .combine)
+    - For cards with multiple pieces of info
+    - Read as single cohesive unit
+
+Task 3.3.2: VoiceOver Optimization
+──────────────────────────────────────────────────────────
+[ ] Test entire app with VoiceOver enabled
+    - Navigate through all screens
+    - Perform all actions
+    - Verify all content readable
+    - Check reading order
+
+[ ] Fix any VoiceOver issues found
+    - Elements not announcing
+    - Wrong reading order
+    - Missing labels
+    - Confusing navigation
+
+[ ] Add VoiceOver rotor support
+    - Custom rotor for quick navigation
+    - Jump between transactions
+    - Jump between people
+    - Jump between subscriptions
+
+Task 3.3.3: Dynamic Type Support
+──────────────────────────────────────────────────────────
+[ ] Test app with all text size settings
+    - Settings > Accessibility > Display & Text Size
+    - Test from smallest to largest
+    - Verify layouts don't break
+
+[ ] Fix layout issues with large text
+    - Use scaledMetric for spacing
+    - Allow text wrapping
+    - Increase row heights
+    - Adjust minimum sizes
+
+[ ] Use relative font sizes
+    - .title, .body, .caption instead of fixed sizes
+    - Let system scale fonts
+
+Task 3.3.4: Support Reduce Motion
+──────────────────────────────────────────────────────────
+[ ] Check reduce motion preference
+    - @Environment(\.accessibilityReduceMotion)
+
+[ ] Disable animations when enabled
+    - Crossfade instead of slide
+    - Instant transitions
+    - No springy animations
+
+[ ] Keep critical animations
+    - Loading spinners still animate
+    - Progress bars still fill
+    - But smoother, less bouncy
+
+Task 3.3.5: High Contrast Mode Support
+──────────────────────────────────────────────────────────
+[ ] Check high contrast preference
+    - @Environment(\.accessibilityDifferentiateWithoutColor)
+
+[ ] Don't rely solely on color
+    - Add icons to color-coded items
+    - Add text labels
+    - Use patterns or textures
+
+[ ] Increase contrast ratios
+    - Text: 7:1 ratio minimum
+    - Interactive elements: Clear boundaries
+    - Sufficient color difference
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 3.4: ERROR HANDLING & VALIDATION
+═══════════════════════════════════════════════════════════════════════════
+
+Task 3.4.1: Comprehensive Error Handling
+──────────────────────────────────────────────────────────
+[ ] Create AppError enum
+    Cases:
+    - persistenceError(PersistenceError)
+    - validationError(ValidationError)
+    - networkError(NetworkError) // future
+    - unknownError(Error)
+
+[ ] Create user-friendly error messages
+    - Map technical errors to readable messages
+    - Example: CoreDataError -> "Could not save changes. Please try again."
+
+[ ] Add error presentation
+    - Show in alert dialog
+    - Include:
+      * Error title
+      * User-friendly message
+      * Suggested action
+      * "Try Again" button
+      * "Contact Support" button (copy error details)
+
+[ ] Implement error recovery
+    - Retry logic for transient errors
+    - Fallback to cached data
+    - Graceful degradation
+
+Task 3.4.2: Form Validation Enhancement
+──────────────────────────────────────────────────────────
+[ ] Add real-time validation
+    - Validate as user types (debounced)
+    - Show errors immediately
+    - Clear errors when fixed
+
+[ ] Create validation rules
+    - Email: Regex for valid email format
+    - Phone: International phone format
+    - Amount: Positive numbers only, max 2 decimals
+    - Name: Not empty, max 50 characters
+    - URL: Valid URL format
+
+[ ] Display inline validation errors
+    - Red border on invalid fields
+    - Error message below field
+    - Icon: exclamationmark.triangle
+
+[ ] Add field-level help
+    - Info icon with tooltip
+    - Example values
+    - Format requirements
+
+Task 3.4.3: Add Logging for Debugging
+──────────────────────────────────────────────────────────
+[ ] Create Logger service
+    - Use os.log or custom logger
+    - Log levels: debug, info, warning, error
+    - Timestamp all logs
+    - Include context
+
+[ ] Add strategic logging
+    - All CRUD operations
+    - Error occurrences
+    - User actions
+    - App lifecycle events
+
+[ ] Create debug menu (development only)
+    - View logs
+    - Clear cache
+    - Reset app state
+    - Toggle feature flags
+
+================================================================================
+                      PHASE 4: ADVANCED FEATURES (LOW PRIORITY)
+                            Estimated Time: 3-4 weeks
+================================================================================
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 4.1: NOTIFICATIONS SYSTEM
+═══════════════════════════════════════════════════════════════════════════
+
+Task 4.1.1: Set Up Local Notifications
+──────────────────────────────────────────────────────────
+[ ] Request notification permissions
+    - Ask on first launch or in Settings
+    - Explain why notifications are useful
+    - Handle granted/denied states
+
+[ ] Create NotificationService.swift
+    Location: Swiff IOS/Services/NotificationService.swift
+
+    Methods:
+    - scheduleSubscriptionRenewal(subscription: Subscription, daysBefore: Int)
+    - scheduleBillReminder(bill: Transaction, daysBefore: Int)
+    - schedulePaymentReminder(person: Person, amount: Double)
+    - cancelNotification(id: String)
+    - cancelAllNotifications()
+    - getPendingNotifications() -> [UNNotificationRequest]
+
+[ ] Implement notification scheduling
+    - Use UNUserNotificationCenter
+    - Create notification content
+    - Set trigger (date/time)
+    - Add to notification center
+
+Task 4.1.2: Subscription Renewal Reminders
+──────────────────────────────────────────────────────────
+[ ] Auto-schedule reminders on subscription creation
+    - Calculate reminder date (renewal date - X days)
+    - Default: 3 days before
+    - User configurable in Settings
+
+[ ] Notification content
+    - Title: "[Subscription Name] Renewing Soon"
+    - Body: "Your [subscription] will renew for $X.XX on [date]"
+    - Action buttons:
+      * "View Subscription"
+      * "Snooze" (remind tomorrow)
+
+[ ] Handle notification tap
+    - Deep link to subscription detail
+    - Mark notification as read
+
+[ ] Update reminders on subscription changes
+    - Reschedule if next billing date changes
+    - Cancel if subscription cancelled
+
+Task 4.1.3: Bill & Payment Reminders
+──────────────────────────────────────────────────────────
+[ ] Create bill due date tracking
+    - Add dueDate property to transactions
+    - Flag transactions as bills
+
+[ ] Schedule bill reminders
+    - X days before due date
+    - Configurable in Settings
+
+[ ] Payment reminders for balances
+    - If balance with person > threshold
+    - Remind to settle up
+    - Frequency: Weekly/Monthly
+
+Task 4.1.4: Notification Preferences
+──────────────────────────────────────────────────────────
+[ ] Add to Settings screen
+    - Enable/disable notifications
+    - Subscription reminders toggle
+    - Days before renewal (picker: 1, 3, 7, 14)
+    - Bill reminders toggle
+    - Payment reminders toggle
+    - Quiet hours (start/end time)
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 4.2: SUBSCRIPTION ENHANCEMENTS
+═══════════════════════════════════════════════════════════════════════════
+
+Task 4.2.1: Price Change Tracking
+──────────────────────────────────────────────────────────
+[ ] Create PriceHistory model
+    struct PriceHistory {
+        let id: UUID
+        let subscriptionID: UUID
+        let oldPrice: Double
+        let newPrice: Double
+        let changeDate: Date
+        let changePercentage: Double
+    }
+
+[ ] Create PriceHistoryEntity in Core Data
+
+[ ] Track price changes
+    - When subscription edited
+    - Compare old price to new price
+    - If different:
+      * Create PriceHistory entry
+      * Calculate percentage change
+      * Show notification (if enabled)
+
+[ ] Display price history in Subscription Detail
+    - Section: "Price History"
+    - List of changes with:
+      * Date
+      * Old price → New price
+      * Percentage change (red if increase, green if decrease)
+
+[ ] Price change alerts
+    - Notification when price increases
+    - Title: "[Subscription] Price Increased"
+    - Body: "Price increased by X% from $Y to $Z"
+
+Task 4.2.2: Free Trial Tracking
+──────────────────────────────────────────────────────────
+[ ] Add trial fields to Subscription model
+    - isFreeTrial: Bool
+    - trialEndDate: Date?
+    - trialDuration: Int? (days)
+    - hasConvertedFromTrial: Bool
+
+[ ] Add trial toggle to AddSubscriptionSheet
+    - "This is a free trial" switch
+    - If enabled:
+      * Trial end date picker
+      * Or duration in days
+      * Future price after trial
+
+[ ] Trial countdown in Subscription Detail
+    - Prominent card if on trial
+    - Days remaining: "5 days left in trial"
+    - Future price: "Will be $X.XX/month after trial"
+    - Reminder to cancel or keep
+
+[ ] Trial expiration notifications
+    - 3 days before trial ends
+    - 1 day before
+    - On expiration day
+    - Remind to cancel if not wanted
+
+[ ] Track trial conversions
+    - When trial ends:
+      * Update isFreeTrial = false
+      * Set hasConvertedFromTrial = true
+    - Analytics on conversion rate
+
+Task 4.2.3: Subscription Recommendations
+──────────────────────────────────────────────────────────
+[ ] Analyze subscription patterns
+    - Detect duplicate categories
+    - Example: Multiple streaming services
+
+[ ] Show recommendations
+    - "You have 3 streaming services. Consider consolidating."
+    - "Switch to annual plan for [Subscription] to save $X/year"
+    - "Similar subscriptions: [Alternative] is cheaper"
+
+[ ] Add "Explore Alternatives" feature
+    - Research common subscriptions
+    - Suggest cheaper alternatives
+    - Compare features
+
+Task 4.2.4: Subscription Pause Feature
+──────────────────────────────────────────────────────────
+[ ] Add pause capability
+    - Pause button in Subscription Detail
+    - Set pause start date
+    - Set resume date (optional)
+    - Update billing calculations
+
+[ ] Handle paused subscriptions
+    - Don't calculate in monthly total
+    - Show "Paused" badge
+    - Don't send renewal reminders
+    - Auto-resume on resume date
+
+[ ] Track pause history
+    - Record pause/resume events
+    - Show in subscription history
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 4.3: ANALYTICS & INSIGHTS
+═══════════════════════════════════════════════════════════════════════════
+
+Task 4.3.1: Spending Trends
+──────────────────────────────────────────────────────────
+[ ] Create spending trends chart
+    - Line chart: Spending over time
+    - X-axis: Time (months)
+    - Y-axis: Amount
+    - Multiple lines:
+      * Income (green)
+      * Expenses (red)
+      * Net (blue)
+    - Use Swift Charts framework
+
+[ ] Add trend analysis
+    - Calculate month-over-month change
+    - Show percentage increase/decrease
+    - Identify spending spikes
+    - Highlight unusual activity
+
+[ ] Create category breakdown chart
+    - Pie chart: Spending by category
+    - Show percentages
+    - Top 5 categories highlighted
+    - Tap slice for category details
+
+Task 4.3.2: Budget Tracking
+──────────────────────────────────────────────────────────
+[ ] Create Budget model
+    struct Budget {
+        let id: UUID
+        let category: TransactionCategory
+        let monthlyLimit: Double
+        let currentSpend: Double
+        let startDate: Date
+        let endDate: Date?
+    }
+
+[ ] Add budget creation
+    - Create BudgetSheet
+    - Select category
+    - Set monthly limit
+    - Set start month
+    - Optional end month
+
+[ ] Show budget progress
+    - Progress bars in category sections
+    - Color-coded:
+      * Green: Under 70%
+      * Yellow: 70-90%
+      * Orange: 90-100%
+      * Red: Over 100%
+    - Amount remaining
+
+[ ] Budget alerts
+    - Notification at 75%, 90%, 100%
+    - Warning when approaching limit
+    - Over-budget notification
+
+[ ] Budget insights
+    - Monthly budget summary
+    - Categories over budget
+    - Savings from staying under budget
+    - Suggestions to reduce spending
+
+Task 4.3.3: Financial Health Score
+──────────────────────────────────────────────────────────
+[ ] Create scoring algorithm
+    Factors:
+    - Income to expense ratio (40%)
+    - Subscription cost as % of income (20%)
+    - Savings rate (20%)
+    - Debt/balance with people (10%)
+    - Budget adherence (10%)
+
+    Score: 0-100
+
+[ ] Display health score
+    - Prominent card on Home
+    - Score with color:
+      * 0-40: Red (Poor)
+      * 41-60: Orange (Fair)
+      * 61-80: Yellow (Good)
+      * 81-100: Green (Excellent)
+    - Breakdown of score components
+
+[ ] Provide recommendations
+    - Based on weak areas
+    - Actionable tips
+    - Track score over time
+
+═══════════════════════════════════════════════════════════════════════════
+MILESTONE 4.4: INTEGRATION & AUTOMATION
+═══════════════════════════════════════════════════════════════════════════
+
+Task 4.4.1: iCloud Sync
+──────────────────────────────────────────────────────────
+[ ] Enable CloudKit
+    - Add CloudKit capability in Xcode
+    - Configure container
+    - Set up record types
+
+[ ] Sync Core Data to iCloud
+    - Use NSPersistentCloudKitContainer
+    - Handle conflicts
+    - Merge strategies
+
+[ ] Show sync status
+    - Syncing indicator
+    - Last synced time
+    - Sync errors
+
+[ ] Test across devices
+    - Changes sync immediately
+    - Offline changes sync when online
+    - No data loss
+
+Task 4.4.2: Home Screen Widgets
+──────────────────────────────────────────────────────────
+[ ] Create widget extension
+    - File > New > Target > Widget Extension
+
+[ ] Design widget layouts
+
+    Small widget:
+    - Current balance
+    - Up/down indicator
+
+    Medium widget:
+    - Balance + next 2 subscriptions renewing
+
+    Large widget:
+    - Balance
+    - Upcoming bills
+    - Recent transactions
+
+[ ] Implement widget updates
+    - Update timeline hourly
+    - Update on app changes
+    - Use WidgetCenter.shared.reloadAllTimelines()
+
+[ ] Add widget configuration
+    - Choose what data to display
+    - IntentConfiguration for user settings
+
+[ ] Handle widget taps
+    - Deep link to relevant view
+    - URL scheme: swiff://subscriptions, swiff://home
+
+Task 4.4.3: Siri Shortcuts
+──────────────────────────────────────────────────────────
+[ ] Add Intents extension
+    - File > New > Target > Intents Extension
+
+[ ] Define intents
+    - "Add expense"
+    - "Check balance"
+    - "Next subscription renewal"
+    - "Settle up with [Person]"
+
+[ ] Implement intent handlers
+    - AddExpenseIntent handler
+    - Return response with success/failure
+    - Update app data
+
+[ ] Add to Siri
+    - "Add to Siri" buttons in app
+    - Suggested shortcuts
+
+[ ] Test with Siri
+    - "Hey Siri, add expense to Swiff"
+    - "Hey Siri, check my balance in Swiff"
+
+Task 4.4.4: Calendar Integration
+──────────────────────────────────────────────────────────
+[ ] Add subscription renewals to Calendar
+    - "Add to Calendar" button in Subscription Detail
+    - Create calendar event
+    - Set reminder
+    - Use EventKit framework
+
+[ ] Request calendar permissions
+    - NSCalendarsUsageDescription in Info.plist
+    - Request when user taps button
+
+[ ] Sync events
+    - Update event when subscription changes
+    - Delete event when subscription cancelled
+
+================================================================================
+                          PHASE 5: FUTURE FEATURES
+                        (Post-MVP, Based on User Feedback)
+                          Estimated Time: 4+ weeks
+================================================================================
+
+These features can be implemented based on user demand and feedback:
+
+█ MULTI-CURRENCY SUPPORT
+  [ ] Support multiple currencies
+  [ ] Automatic exchange rate conversion
+  [ ] Currency per transaction
+  [ ] Default currency setting
+  [ ] Historical exchange rates
+
+█ BANK INTEGRATION (via Plaid or similar)
+  [ ] Connect bank accounts
+  [ ] Auto-import transactions
+  [ ] Balance sync
+  [ ] Categorization suggestions
+  [ ] Duplicate detection
+
+█ RECEIPT OCR SCANNING
+  [ ] Scan receipt with camera
+  [ ] Extract amount, date, merchant
+  [ ] Auto-populate transaction
+  [ ] Store original receipt image
+
+█ APPLE WATCH APP
+  [ ] Quick add transaction
+  [ ] Balance check
+  [ ] Upcoming bills
+  [ ] Payment reminders
+  [ ] Complications
+
+█ FAMILY SHARING
+  [ ] Share data across family
+  [ ] Separate profiles per person
+  [ ] Shared expenses
+  [ ] Individual subscriptions
+
+█ BUSINESS EXPENSE TRACKING
+  [ ] Business vs Personal toggle
+  [ ] Tax categories
+  [ ] Mileage tracking
+  [ ] Client/project tracking
+  [ ] Invoice generation
+
+█ INVESTMENT TRACKING
+  [ ] Track investments
+  [ ] Portfolio value
+  [ ] Gains/losses
+  [ ] Asset allocation
+
+█ BILL NEGOTIATION ASSISTANT
+  [ ] Analyze subscription costs
+  [ ] Find better deals
+  [ ] Contact info for cancellation
+  [ ] Scripts for negotiating
+
+█ SOCIAL FEATURES
+  [ ] Friends list
+  [ ] Activity feed
+  [ ] Payment requests
+  [ ] Social splitting
+
+█ GAMIFICATION
+  [ ] Achievement badges
+  [ ] Savings challenges
+  [ ] Streaks
+  [ ] Leaderboards (among friends)
+
+█ PREMIUM FEATURES (Monetization)
+  [ ] Unlimited subscriptions (free: 10 limit)
+  [ ] Advanced analytics
+  [ ] Custom categories
+  [ ] Multiple accounts
+  [ ] Priority support
+  [ ] Export features
+
+================================================================================
+                              CODE QUALITY TASKS
+                          (Ongoing, Throughout Development)
+================================================================================
+
+█ REFACTORING
+  [ ] Split ContentView.swift (currently 5596 lines)
+    - Separate files per view
+    - Models in separate files
+    - ViewModels in separate files
+    - Services in separate files
+    - Create folder structure:
+      * Views/Home/
+      * Views/Feed/
+      * Views/People/
+      * Views/Subscriptions/
+      * ViewModels/
+      * Models/
+      * Services/
+      * Utilities/
+
+  [ ] Extract design system constants
+    - Create DesignSystem.swift
+    - Define all colors as static properties
+    - Define all fonts as static properties
+    - Define spacing values
+    - Define shadow styles
+
+  [ ] Create reusable components
+    - PrimaryButton
+    - SecondaryButton
+    - FormField
+    - SectionHeader
+    - InfoCard
+    - etc.
+
+█ TESTING
+  [ ] Write unit tests
+    - Test all models
+    - Test ViewModels
+    - Test Services
+    - Test utilities
+    - Target: 70%+ code coverage
+
+  [ ] Write UI tests
+    - Test critical user flows
+    - Add person flow
+    - Create transaction flow
+    - Add subscription flow
+    - Settlement flow
+
+  [ ] Performance testing
+    - Test with 1000+ transactions
+    - Test with 100+ people
+    - Test with 50+ subscriptions
+    - Identify bottlenecks
+    - Optimize as needed
+
+█ DOCUMENTATION
+  [ ] Add code comments
+    - Document complex logic
+    - Explain algorithms
+    - Add TODO comments for future work
+
+  [ ] Create README.md
+    - Project description
+    - Features list
+    - Installation instructions
+    - Development setup
+    - Contributing guidelines
+
+  [ ] Document architecture
+    - MVVM pattern explanation
+    - Data flow diagram
+    - Core Data schema
+    - File organization
+
+  [ ] Create user guide (in-app)
+    - Onboarding screens
+    - Feature tutorials
+    - Help section
+    - FAQ
+
+█ CI/CD
+  [ ] Set up GitHub Actions
+    - Run tests on every push
+    - Build verification
+    - Code linting (SwiftLint)
+
+  [ ] Set up TestFlight
+    - Beta distribution
+    - Automated builds
+    - Version management
+
+================================================================================
+                              LAUNCH CHECKLIST
+                        (Before App Store Submission)
+================================================================================
+
+█ TECHNICAL REQUIREMENTS
+  [ ] All features thoroughly tested
+  [ ] No crashes or major bugs
+  [ ] Performance is acceptable (no lag, smooth scrolling)
+  [ ] Memory usage is reasonable
+  [ ] Battery usage is acceptable
+  [ ] Works offline (for local features)
+  [ ] Data persists correctly
+  [ ] Handles edge cases gracefully
+
+█ DESIGN REQUIREMENTS
+  [ ] Consistent design throughout
+  [ ] All text is readable
+  [ ] All icons are clear
+  [ ] Colors are accessible (sufficient contrast)
+  [ ] Layouts work on all device sizes:
+    - iPhone SE (smallest)
+    - iPhone 14/15 Pro Max (largest)
+    - iPad (if supporting)
+  [ ] Dark mode support
+  [ ] Dynamic Type support
+
+█ CONTENT REQUIREMENTS
+  [ ] All placeholder text removed
+  [ ] All sample data replaced or marked clearly
+  [ ] Privacy Policy written and linked
+  [ ] Terms of Service written and linked
+  [ ] App Store description written
+  [ ] App Store keywords researched
+  [ ] App Store screenshots created (all sizes)
+  [ ] App icon designed and added (all sizes)
+
+█ COMPLIANCE REQUIREMENTS
+  [ ] Privacy manifest (PrivacyInfo.xcprivacy) added
+  [ ] All required App Privacy labels completed
+  [ ] NSUserTrackingUsageDescription if using tracking
+  [ ] All third-party SDK privacy documented
+  [ ] GDPR compliance (if serving EU users)
+  [ ] COPPA compliance (if allowing under-13 users)
+
+█ APP STORE SUBMISSION
+  [ ] App Store Connect setup
+  [ ] Bundle ID registered
+  [ ] Certificates and provisioning profiles
+  [ ] Version number set (1.0.0)
+  [ ] Build number incremented
+  [ ] App screenshots uploaded (all languages)
+  [ ] App preview video (optional but recommended)
+  [ ] App description written
+  [ ] Keywords added
+  [ ] Category selected
+  [ ] Age rating completed
+  [ ] Pricing set (free or paid)
+  [ ] Availability regions selected
+  [ ] Export compliance information
+  [ ] Submit for review
+
+================================================================================
+                                PRIORITY MATRIX
+================================================================================
+
+Must Have (P0) - Cannot Launch Without:
+─────────────────────────────────────────
+✓ Data Persistence (Phase 1.1)
+✓ Complete CRUD (Phase 1.2)
+✓ Detail Views (Phase 1.3)
+✓ Live Data Integration (Phase 1.4)
+✓ Group Expense Management (Phase 2.1)
+
+Should Have (P1) - Important for Good UX:
+─────────────────────────────────────────
+○ Transaction Enhancements (Phase 2.2)
+○ Search & Filter (Phase 2.3)
+○ Settings (Phase 2.4)
+○ Loading States (Phase 3.1)
+○ User Feedback (Phase 3.2)
+○ Accessibility (Phase 3.3)
+
+Nice to Have (P2) - Enhance the Experience:
+─────────────────────────────────────────
+◇ Notifications (Phase 4.1)
+◇ Subscription Enhancements (Phase 4.2)
+◇ Analytics (Phase 4.3)
+
+Future (P3) - Post-Launch Based on Feedback:
+─────────────────────────────────────────
+□ Integration (Phase 4.4)
+□ Advanced Features (Phase 5)
+
+================================================================================
+                              ESTIMATION SUMMARY
+================================================================================
+
+Phase 1 (Foundation):           78-105 hours  (2-3 weeks)
+Phase 2 (Core Features):        53-67 hours   (1.5-2 weeks)
+Phase 3 (Polish):               43-55 hours   (1-1.5 weeks)
+Phase 4 (Advanced):            100-125 hours  (3-4 weeks)
+Phase 5 (Future):              160+ hours     (4+ weeks)
+Code Quality (Ongoing):         40-50 hours   (1-1.5 weeks)
+
+TOTAL for MVP (Phases 1-3):    174-227 hours  (4.5-6 weeks full-time)
+TOTAL for Full Launch (P0-P2): 274-352 hours  (7-9 weeks full-time)
+
+================================================================================
+                                 NEXT STEPS
+================================================================================
+
+IMMEDIATE ACTION ITEMS:
+1. Review this task list thoroughly
+2. Prioritize based on your goals and timeline
+3. Start with Phase 1, Milestone 1.1 (Data Persistence)
+4. Complete tasks in order within each milestone
+5. Test thoroughly after each milestone
+6. Commit to Git after each completed task
+7. Document any decisions or changes
+
+RECOMMENDED APPROACH:
+- Work through phases sequentially
+- Don't skip ahead to advanced features
+- Complete each milestone fully before moving on
+- Test after every significant change
+- Get user feedback early (TestFlight beta)
+- Iterate based on feedback
+
+DEVELOPMENT WORKFLOW:
+1. Read task requirements carefully
+2. Plan implementation approach
+3. Write code incrementally
+4. Test as you go
+5. Commit working code frequently
+6. Update this task list (mark completed with ✓)
+7. Document any blockers or issues
+
+================================================================================
+                                END OF TASK LIST
+        This is a living document - update as the project evolves
+================================================================================
+
+Last Updated: November 18, 2024
+Version: 1.0
+Total Tasks: 200+
+Estimated Total Effort: 274-352 hours (7-9 weeks full-time)
