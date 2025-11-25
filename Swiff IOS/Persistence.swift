@@ -3,55 +3,81 @@
 //  Swiff IOS
 //
 //  Created by Naren Reddy on 11/11/25.
+//  Updated on 11/18/25 for SwiftData support
 //
 
+import SwiftUI
+import SwiftData
+
+/// SwiftData Preview Container for SwiftUI Previews
+struct SwiftDataPreview {
+    @MainActor
+    static let previewContainer: ModelContainer = {
+        do {
+            let schema = Schema([
+                PersonModel.self,
+                GroupModel.self,
+                GroupExpenseModel.self,
+                SubscriptionModel.self,
+                SharedSubscriptionModel.self,
+                TransactionModel.self
+            ])
+
+            let configuration = ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: true // In-memory for previews
+            )
+
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+
+            // Add sample data for previews
+            let context = container.mainContext
+
+            // Sample Person
+            let samplePerson = PersonModel(
+                name: "John Doe",
+                email: "john@example.com",
+                phone: "+1234567890",
+                avatarType: .emoji("👨")
+            )
+            context.insert(samplePerson)
+
+            // Sample Subscription
+            let sampleSubscription = SubscriptionModel(
+                name: "Netflix",
+                description: "Streaming service",
+                price: 15.99,
+                billingCycle: .monthly,
+                category: .entertainment,
+                icon: "tv.fill",
+                color: "#E50914"
+            )
+            context.insert(sampleSubscription)
+
+            try context.save()
+
+            return container
+        } catch {
+            fatalError("Failed to create preview container: \(error)")
+        }
+    }()
+}
+
+// MARK: - Legacy Core Data Support (Deprecated)
+// Note: This app now uses SwiftData. Core Data support is deprecated.
+// Keeping this for reference during migration, can be removed later.
+
+/*
 import CoreData
 
 struct PersistenceController {
     static let shared = PersistenceController()
 
-    @MainActor
-    static let preview: PersistenceController = {
-        let result = PersistenceController(inMemory: true)
-        let viewContext = result.container.viewContext
-        for _ in 0..<10 {
-            let newItem = Item(context: viewContext)
-            newItem.timestamp = Date()
-        }
-        do {
-            try viewContext.save()
-        } catch {
-            // Replace this implementation with code to handle the error appropriately.
-            // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-            let nsError = error as NSError
-            fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
-        }
-        return result
-    }()
-
     let container: NSPersistentContainer
 
     init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: "Swiff_IOS")
-        if inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
-        }
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            if let error = error as NSError? {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-
-                /*
-                 Typical reasons for an error here include:
-                 * The parent directory does not exist, cannot be created, or disallows writing.
-                 * The persistent store is not accessible, due to permissions or data protection when the device is locked.
-                 * The device is out of space.
-                 * The store could not be migrated to the current model version.
-                 Check the error message to determine what the actual problem was.
-                 */
-                fatalError("Unresolved error \(error), \(error.userInfo)")
-            }
-        })
-        container.viewContext.automaticallyMergesChangesFromParent = true
+        // Legacy Core Data implementation
+        // This is no longer used. SwiftData is now the persistence layer.
     }
 }
+*/
