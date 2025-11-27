@@ -44,6 +44,7 @@ class UserSettings: ObservableObject {
         static let themeMode = "themeMode"
         static let accentColor = "accentColor"
         static let appIcon = "appIcon"
+        static let tabBarStyle = "tabBarStyle"
 
         // AGENT 5: Data management settings keys
         static let autoBackupEnabled = "autoBackupEnabled"
@@ -193,6 +194,13 @@ class UserSettings: ObservableObject {
         }
     }
 
+    /// Tab bar style: "labels" (default), "iconsOnly", or "selectedOnly"
+    @Published var tabBarStyle: String {
+        didSet {
+            defaults.set(tabBarStyle, forKey: Keys.tabBarStyle)
+        }
+    }
+
     // AGENT 5: Data management settings properties
     @Published var autoBackupEnabled: Bool {
         didSet {
@@ -302,6 +310,7 @@ class UserSettings: ObservableObject {
         self.themeMode = defaults.string(forKey: Keys.themeMode) ?? "System"
         self.accentColor = defaults.string(forKey: Keys.accentColor) ?? "Forest Green"
         self.appIcon = defaults.string(forKey: Keys.appIcon) ?? "Default"
+        self.tabBarStyle = defaults.string(forKey: Keys.tabBarStyle) ?? "labels"
 
         // AGENT 5: Load data management settings
         self.autoBackupEnabled = defaults.object(forKey: Keys.autoBackupEnabled) as? Bool ?? false
@@ -348,6 +357,7 @@ class UserSettings: ObservableObject {
         themeMode = "System"
         accentColor = "Forest Green"
         appIcon = "Default"
+        tabBarStyle = "labels"
 
         // AGENT 5: Reset data management settings
         autoBackupEnabled = false

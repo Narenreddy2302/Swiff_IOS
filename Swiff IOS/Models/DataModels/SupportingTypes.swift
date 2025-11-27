@@ -258,19 +258,19 @@ enum SubscriptionCategory: String, CaseIterable, Codable {
     var icon: String {
         switch self {
         case .entertainment: return "tv.fill"
-        case .productivity: return "macbook"
+        case .productivity: return "hammer.fill"
         case .fitness: return "heart.fill"
         case .health: return "cross.fill"
-        case .education: return "graduationcap.fill"
+        case .education: return "book.fill"
         case .news: return "newspaper.fill"
         case .music: return "music.note"
-        case .cloud: return "icloud.fill"
+        case .cloud: return "cloud.fill"
         case .gaming: return "gamecontroller.fill"
         case .design: return "paintbrush.fill"
-        case .development: return "hammer.fill"
-        case .finance: return "dollarsign.circle.fill"
-        case .utilities: return "wrench.and.screwdriver.fill"
-        case .other: return "app.fill"
+        case .development: return "chevron.left.forwardslash.chevron.right"
+        case .finance: return "banknote.fill"
+        case .utilities: return "wrench.fill"
+        case .other: return "ellipsis.circle.fill"
         }
     }
 
@@ -343,19 +343,19 @@ enum TransactionCategory: String, CaseIterable, Codable {
 
     var icon: String {
         switch self {
-        case .food: return "fork.knife.circle.fill"
+        case .food: return "fork.knife"
         case .dining: return "fork.knife"
         case .groceries: return "cart.fill"
-        case .transportation: return "car.circle.fill"
-        case .travel: return "airplane.circle.fill"
-        case .shopping: return "bag.circle.fill"
-        case .entertainment: return "tv.circle.fill"
-        case .bills: return "house.circle.fill"
-        case .utilities: return "bolt.circle.fill"
-        case .healthcare: return "cross.circle.fill"
+        case .transportation: return "car.fill"
+        case .travel: return "airplane"
+        case .shopping: return "bag.fill"
+        case .entertainment: return "tv.fill"
+        case .bills: return "house.fill"
+        case .utilities: return "bolt.fill"
+        case .healthcare: return "cross.fill"
         case .income: return "dollarsign.circle.fill"
-        case .transfer: return "arrow.left.arrow.right.circle.fill"
-        case .investment: return "chart.line.uptrend.xyaxis.circle.fill"
+        case .transfer: return "arrow.left.arrow.right"
+        case .investment: return "chart.line.uptrend.xyaxis"
         case .other: return "ellipsis.circle.fill"
         }
     }

@@ -455,7 +455,7 @@ struct ImprovedCategoryRow: View {
                             .foregroundColor(.wisePrimaryText)
                         
                         Text("\(Int(category.percentage))%")
-                            .font(.spotifyLabelSmall)
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundColor(.wiseSecondaryText)
                     }
                 }

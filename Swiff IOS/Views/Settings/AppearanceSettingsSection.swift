@@ -15,6 +15,7 @@ struct AppearanceSettingsSection: View {
     @State private var selectedThemeMode: ThemeMode = .system
     @State private var selectedAccentColor: AccentColor = .forestGreen
     @State private var selectedAppIcon: AppIcon = .default
+    @State private var selectedTabBarStyle: TabBarStyle = .labels
 
     var body: some View {
         Section {
@@ -91,6 +92,28 @@ struct AppearanceSettingsSection: View {
                 }
             }
 
+            // Tab bar style selector
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Tab Bar Style")
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+
+                HStack(spacing: 12) {
+                    ForEach(TabBarStyle.allCases, id: \.self) { style in
+                        TabBarStyleButton(
+                            style: style,
+                            isSelected: selectedTabBarStyle == style,
+                            action: {
+                                HapticManager.shared.selection()
+                                selectedTabBarStyle = style
+                                userSettings.tabBarStyle = style.rawValue
+                            }
+                        )
+                    }
+                }
+            }
+            .padding(.vertical, 8)
+
         } header: {
             Text("Appearance")
                 .font(.spotifyLabelSmall)
@@ -105,6 +128,7 @@ struct AppearanceSettingsSection: View {
             selectedThemeMode = ThemeMode(rawValue: userSettings.themeMode) ?? .system
             selectedAccentColor = AccentColor(rawValue: userSettings.accentColor) ?? .forestGreen
             selectedAppIcon = AppIcon(rawValue: userSettings.appIcon) ?? .default
+            selectedTabBarStyle = TabBarStyle(rawValue: userSettings.tabBarStyle) ?? .labels
         }
         .sheet(isPresented: $showingIconPicker) {
             AppIconPickerView()
@@ -264,6 +288,85 @@ struct AppIconCell: View {
                     .foregroundColor(isSelected ? .wiseForestGreen : .wisePrimaryText)
             }
         }
+    }
+}
+
+// Tab bar style enum
+enum TabBarStyle: String, CaseIterable {
+    case labels = "labels"
+    case iconsOnly = "iconsOnly"
+    case selectedOnly = "selectedOnly"
+
+    var displayName: String {
+        switch self {
+        case .labels: return "Labels"
+        case .iconsOnly: return "Icons Only"
+        case .selectedOnly: return "Selected Only"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .labels: return "text.below.photo"
+        case .iconsOnly: return "photo"
+        case .selectedOnly: return "text.below.photo.fill"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .labels: return "Always show text labels"
+        case .iconsOnly: return "Show only icons"
+        case .selectedOnly: return "Show label for selected tab"
+        }
+    }
+}
+
+// Tab bar style button
+struct TabBarStyleButton: View {
+    let style: TabBarStyle
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.wiseForestGreen.opacity(0.1) : Color.wiseBorder.opacity(0.3))
+                        .frame(height: 50)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(isSelected ? Color.wiseForestGreen : Color.wiseMidGray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                        )
+
+                    // Tab bar preview
+                    HStack(spacing: 8) {
+                        ForEach(0..<3, id: \.self) { index in
+                            VStack(spacing: 2) {
+                                Circle()
+                                    .fill(index == 1 ? Color.wiseForestGreen : Color.wiseMidGray)
+                                    .frame(width: 12, height: 12)
+
+                                // Show text based on style
+                                if style == .labels || (style == .selectedOnly && index == 1) {
+                                    Rectangle()
+                                        .fill(index == 1 ? Color.wiseForestGreen : Color.wiseMidGray)
+                                        .frame(width: 16, height: 3)
+                                        .cornerRadius(1)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Text(style.displayName)
+                    .font(.spotifyCaptionMedium)
+                    .foregroundColor(isSelected ? .wiseForestGreen : .wisePrimaryText)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

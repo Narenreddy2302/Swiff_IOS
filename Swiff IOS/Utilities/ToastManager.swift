@@ -186,16 +186,15 @@ struct ToastModifier: ViewModifier {
         ZStack {
             content
 
-            VStack {
-                Spacer()
-
-                if let toast = toastManager.currentToast {
+            if let toast = toastManager.currentToast {
+                VStack {
+                    Spacer()
                     ToastView(toast: toast) {
                         toastManager.dismiss()
                     }
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                     .animation(.spring(response: 0.3, dampingFraction: 0.7), value: toastManager.currentToast != nil)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 60)
                 }
             }
         }

@@ -99,8 +99,7 @@ struct StatisticsCardComponent: View {
                     Image(systemName: trend.icon)
                         .font(.system(size: 10, weight: .semibold))
                     Text(String(format: "%.1f%%", abs(trendValue)))
-                        .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.system(size: 10, weight: .bold))
                 }
                 .foregroundColor(trend.color)
                 .padding(.horizontal, 8)

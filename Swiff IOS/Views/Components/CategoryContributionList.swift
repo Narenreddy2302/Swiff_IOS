@@ -94,7 +94,7 @@ struct CategoryRow: View {
                         .foregroundColor(.wisePrimaryText)
 
                     Text(String(format: "%.1f%%", item.percentage))
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundColor(.wiseSecondaryText)
                 }
             }

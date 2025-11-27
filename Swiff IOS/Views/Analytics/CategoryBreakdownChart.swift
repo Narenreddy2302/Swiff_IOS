@@ -153,7 +153,7 @@ struct CategoryBreakdownChart: View {
                     let percentage = total > 0 ? (category.amount / total) * 100 : 0
 
                     Text(String(format: "%.1f%%", percentage))
-                        .font(.subheadline)
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.wiseMidGray)
                 }
             }
@@ -219,7 +219,7 @@ struct CategoryBreakdownChart: View {
                 let percentage = total > 0 ? (item.amount / total) * 100 : 0
 
                 Text(String(format: "%.0f%%", percentage))
-                    .font(.caption2.weight(.semibold))
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundColor(.wiseMidGray)
             }
             .padding(.horizontal, 8)
@@ -316,7 +316,7 @@ struct CategorySharePieChart: View {
                         .foregroundColor(.wiseCharcoal)
 
                     Text(String(format: "%.1f%%", share.percentage))
-                        .font(.subheadline)
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.wiseMidGray)
                 }
             }
@@ -338,7 +338,7 @@ struct CategorySharePieChart: View {
             Spacer()
 
             Text(String(format: "%.1f%%", share.percentage))
-                .font(.subheadline.weight(.semibold))
+                .font(.system(size: 15, weight: .bold))
                 .foregroundColor(.wiseMidGray)
         }
     }

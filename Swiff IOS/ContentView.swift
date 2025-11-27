@@ -62,22 +62,28 @@ struct ContentView: View {
     init() {
         // Configure tab bar appearance with adaptive colors for dark mode
         let appearance = UITabBarAppearance()
-        appearance.configureWithTransparentBackground()
+        appearance.configureWithDefaultBackground()
 
-        // Set transparent background
-        appearance.backgroundColor = UIColor.clear
+        // Set adaptive background color - solid colored background in dark mode
+        let backgroundColor = UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark ?
+                UIColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 1.0) : // Solid dark background in dark mode
+                UIColor.systemBackground   // Standard background in light mode
+        }
+        appearance.backgroundColor = backgroundColor
 
-        // Create adaptive colors for tab items that respond to dark/light mode
+        // Create adaptive colors for tab items - using brand colors
         let unselectedColor = UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark ?
-                UIColor(white: 1.0, alpha: 0.6) : // Light gray in dark mode
-                UIColor(white: 0.0, alpha: 0.6)   // Dark gray in light mode
+                UIColor(white: 1.0, alpha: 0.5) : // Semi-transparent white in dark mode
+                UIColor(red: 0.102, green: 0.102, blue: 0.102, alpha: 0.5) // wiseCharcoal with 0.5 opacity in light mode
         }
 
+        // Selected color uses wiseBrightGreen for brand consistency
         let selectedColor = UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark ?
-                UIColor(white: 1.0, alpha: 1.0) : // White in dark mode
-                UIColor(white: 0.0, alpha: 1.0)   // Black in light mode
+                UIColor(red: 0.624, green: 0.910, blue: 0.439, alpha: 1.0) : // wiseBrightGreen in dark mode
+                UIColor(red: 0.086, green: 0.200, blue: 0.0, alpha: 1.0)     // wiseForestGreen in light mode
         }
 
         // Configure unselected tab item appearance - adaptive
@@ -86,22 +92,26 @@ struct ContentView: View {
             .foregroundColor: unselectedColor
         ]
 
-        // Configure selected tab item appearance - adaptive
+        // Configure selected tab item appearance - white icons in dark mode
         appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
             .foregroundColor: selectedColor
         ]
 
-        // Remove separator line
-        appearance.shadowImage = UIImage()
-        appearance.shadowColor = .clear
+        // Add subtle separator line for definition
+        appearance.shadowImage = nil
+        appearance.shadowColor = UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark ?
+                UIColor(white: 0.2, alpha: 0.3) : // Subtle separator in dark mode
+                UIColor(white: 0.8, alpha: 0.3)   // Subtle separator in light mode
+        }
 
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
 
-        // Set transparent background and enable translucency
+        // Enable translucency to allow content to scroll underneath
         UITabBar.appearance().isTranslucent = true
-        UITabBar.appearance().backgroundColor = UIColor.clear
+        UITabBar.appearance().backgroundColor = backgroundColor
 
         // Set the tint color for selected items - adaptive
         UITabBar.appearance().tintColor = selectedColor
@@ -112,48 +122,87 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             HomeView(selectedTab: $selectedTab)
                 .tabItem {
-                    Image(systemName: "house.fill")
-                    Text("Home")
+                    Label {
+                        tabLabel("Home", tag: 0)
+                    } icon: {
+                        Image(systemName: "house.fill")
+                    }
                 }
                 .tag(0)
 
             RecentActivityView()
                 .tabItem {
-                    Image(systemName: "list.clipboard")
-                    Text("Feed")
+                    Label {
+                        tabLabel("Feed", tag: 1)
+                    } icon: {
+                        Image(systemName: "rectangle.stack.fill")
+                    }
                 }
                 .tag(1)
 
             PeopleView()
                 .tabItem {
-                    Image(systemName: "person.2.fill")
-                    Text("People")
+                    Label {
+                        tabLabel("People", tag: 2)
+                    } icon: {
+                        Image(systemName: "person.2.fill")
+                    }
                 }
                 .tag(2)
 
             SubscriptionsView()
                 .tabItem {
-                    Image(systemName: "creditcard.fill")
-                    Text("Subscriptions")
+                    Label {
+                        tabLabel("Subscriptions", tag: 3)
+                    } icon: {
+                        Image(systemName: "creditcard.fill")
+                    }
                 }
                 .tag(3)
 
             AnalyticsView()
                 .tabItem {
-                    Image(systemName: "chart.bar.fill")
-                    Text("Analytics")
+                    Label {
+                        tabLabel("Analytics", tag: 4)
+                    } icon: {
+                        Image(systemName: "chart.pie.fill")
+                    }
                 }
                 .tag(4)
         }
-        .tint(.wisePrimaryText) // Adaptive accent color for dark mode
+        .tint(.wiseBrightGreen) // Brand accent color for tab bar
         .preferredColorScheme(preferredColorSchemeValue)
         .dataManagerOverlays() // Add error handling and progress display
         .toast() // Add toast notification support
+        .onChange(of: selectedTab) { oldValue, newValue in
+            // TASK D-004: Haptic feedback on tab change
+            HapticManager.shared.selection()
+        }
         .onChange(of: spotlightNavigation.shouldNavigateToTab) { oldValue, newValue in
             // Handle Spotlight navigation to specific tab
             if let tab = newValue {
                 selectedTab = tab
             }
+        }
+    }
+
+    /// Returns the appropriate tab label based on tabBarStyle setting
+    /// - "labels": Always show labels (default)
+    /// - "iconsOnly": Never show labels
+    /// - "selectedOnly": Only show label for selected tab
+    @ViewBuilder
+    private func tabLabel(_ title: String, tag: Int) -> some View {
+        switch userSettings.tabBarStyle {
+        case "iconsOnly":
+            Text("")
+        case "selectedOnly":
+            if selectedTab == tag {
+                Text(title)
+            } else {
+                Text("")
+            }
+        default: // "labels"
+            Text(title)
         }
     }
 
@@ -181,6 +230,10 @@ struct HomeView: View {
     var body: some View {
         NavigationView {
             ZStack {
+                // Background that extends to all edges
+                Color.wiseBackground
+                    .ignoresSafeArea()
+                
                 ScrollView {
                     VStack(spacing: 0) {
                         // Top Header with Profile and Actions
@@ -207,22 +260,12 @@ struct HomeView: View {
 
                             // Top Subscriptions Section
                             TopSubscriptionsSection(selectedTab: $selectedTab)
-
-                            // Upcoming Renewals Section
-                            UpcomingRenewalsSection(selectedTab: $selectedTab)
-
-                            // Savings Opportunities Section
-                            SavingsOpportunitiesCard()
-
-                            Spacer(minLength: 100) // Bottom padding for tab bar
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 4)
                     }
                 }
                 .navigationBarHidden(true)
-                .background(Color.wiseBackground)
-
             }
         }
         .sheet(isPresented: $showingSettings) {
@@ -354,6 +397,7 @@ struct FinancialOverviewGrid: View {
         ], spacing: 8) {
             // Balance Card
             Button(action: {
+                HapticManager.shared.light()
                 showingBalanceDetail = true
             }) {
                 EnhancedFinancialCard(
@@ -368,6 +412,7 @@ struct FinancialOverviewGrid: View {
 
             // Subscriptions Card (replaced Difference)
             Button(action: {
+                HapticManager.shared.light()
                 selectedTab = 3 // Switch to Subscriptions tab
             }) {
                 EnhancedFinancialCard(
@@ -489,7 +534,7 @@ struct EnhancedFinancialCard: View {
                         .foregroundColor(trend.isPositive ? .wiseBrightGreen : .wiseError)
 
                     Text(String(format: "%.1f%%", abs(trend.percentage)))
-                        .font(.spotifyCaptionSmall)
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundColor(trend.isPositive ? .wiseBrightGreen : .wiseError)
                 }
                 .padding(.horizontal, 6)
@@ -1994,75 +2039,79 @@ struct RecentActivityView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Header with Search and Filter
-                FeedHeaderSection(
-                    searchText: $searchText,
-                    selectedFilter: $selectedFilter,
-                    showingFilterSheet: $showingFilterSheet,
-                    showingAddTransactionSheet: $showingAddTransactionSheet,
-                    showingAdvancedFilterSheet: $showingAdvancedFilterSheet,
-                    activeFilterCount: advancedFilter.activeFilterCount
-                )
-
-                // Category Filter Pills
-                CategoryFilterSection(
-                    selectedCategory: $selectedCategory
-                )
-
-                // Transaction List
-                if filteredTransactions.isEmpty {
-                    // Page 2: Enhanced Empty State
-                    EnhancedFeedEmptyState(
-                        onAddTransaction: { showingAddTransactionSheet = true },
-                        onAddSampleData: nil,
-                        isFiltered: advancedFilter.hasActiveFilters || selectedCategory != nil || selectedFilter != .all,
-                        filterSummary: advancedFilter.hasActiveFilters ? "\(advancedFilter.activeFilterCount) filter(s) applied" : nil
+            ZStack {
+                // Background that extends to all edges
+                Color.wiseBackground
+                    .ignoresSafeArea()
+                
+                VStack(spacing: 0) {
+                    // Header with Search and Filter
+                    FeedHeaderSection(
+                        searchText: $searchText,
+                        selectedFilter: $selectedFilter,
+                        showingFilterSheet: $showingFilterSheet,
+                        showingAddTransactionSheet: $showingAddTransactionSheet,
+                        showingAdvancedFilterSheet: $showingAdvancedFilterSheet,
+                        activeFilterCount: advancedFilter.activeFilterCount
                     )
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            // Page 2: Group transactions by date
-                            let groupedTransactions = filteredTransactions.groupedByDateSections()
-                            ForEach(groupedTransactions, id: \.sectionDate) { section in
-                                VStack(spacing: 12) {
-                                    // Page 2: Date Group Header
-                                    TransactionGroupHeader(
-                                        date: section.sectionDate,
-                                        transactionCount: section.transactions.count
-                                    )
 
-                                    ForEach(section.transactions) { transaction in
-                                        NavigationLink(destination: TransactionDetailView(transactionId: transaction.id)) {
-                                            FeedTransactionRow(transaction: transaction)
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
-                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                            Button(role: .destructive) {
-                                                transactionToDelete = transaction
-                                                showingDeleteAlert = true
-                                            } label: {
-                                                Label("Delete", systemImage: "trash")
+                    // Category Filter Pills
+                    CategoryFilterSection(
+                        selectedCategory: $selectedCategory
+                    )
+
+                    // Transaction List
+                    if filteredTransactions.isEmpty {
+                        // Page 2: Enhanced Empty State
+                        EnhancedFeedEmptyState(
+                            onAddTransaction: { showingAddTransactionSheet = true },
+                            onAddSampleData: nil,
+                            isFiltered: advancedFilter.hasActiveFilters || selectedCategory != nil || selectedFilter != .all,
+                            filterSummary: advancedFilter.hasActiveFilters ? "\(advancedFilter.activeFilterCount) filter(s) applied" : nil
+                        )
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                // Page 2: Group transactions by date
+                                let groupedTransactions = filteredTransactions.groupedByDateSections()
+                                ForEach(groupedTransactions, id: \.sectionDate) { section in
+                                    VStack(spacing: 12) {
+                                        // Page 2: Date Group Header
+                                        TransactionGroupHeader(
+                                            date: section.sectionDate,
+                                            transactionCount: section.transactions.count
+                                        )
+
+                                        ForEach(section.transactions) { transaction in
+                                            NavigationLink(destination: TransactionDetailView(transactionId: transaction.id)) {
+                                                FeedTransactionRow(transaction: transaction)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                                Button(role: .destructive) {
+                                                    HapticManager.shared.heavy()
+                                                    transactionToDelete = transaction
+                                                    showingDeleteAlert = true
+                                                } label: {
+                                                    Label("Delete", systemImage: "trash")
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-
-                            // Bottom padding for tab bar
-                            Spacer(minLength: 100)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                    }
-                    .refreshable {
-                        dataManager.loadAllData()
-                        ToastManager.shared.showSuccess("Refreshed")
+                        .refreshable {
+                            HapticManager.shared.pullToRefresh()
+                            dataManager.loadAllData()
+                            ToastManager.shared.showSuccess("Refreshed")
+                        }
                     }
                 }
+                .navigationBarHidden(true)
             }
-            .navigationBarHidden(true)
-            .background(Color.wiseBackground)
         }
         .alert("Delete Transaction?", isPresented: $showingDeleteAlert, presenting: transactionToDelete) { transaction in
             Button("Cancel", role: .cancel) {}
@@ -2830,30 +2879,34 @@ struct PeopleView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Fixed Header Section
-                PeopleHeaderSection(
-                    selectedTab: $selectedTab,
-                    showingAddPersonSheet: $showingAddPersonSheet,
-                    showingAddGroupSheet: $showingAddGroupSheet
-                )
-                .background(Color.wiseBackground)
-                .zIndex(1) // Keep header on top
+            ZStack {
+                // Background that extends to all edges
+                Color.wiseBackground
+                    .ignoresSafeArea()
                 
-                // Content
-                TabView(selection: $selectedTab) {
-                    // People Tab
-                    PeopleListView(people: dataManager.people)
-                        .tag(PeopleTab.people)
+                VStack(spacing: 0) {
+                    // Fixed Header Section
+                    PeopleHeaderSection(
+                        selectedTab: $selectedTab,
+                        showingAddPersonSheet: $showingAddPersonSheet,
+                        showingAddGroupSheet: $showingAddGroupSheet
+                    )
+                    .zIndex(1) // Keep header on top
+                    
+                    // Content
+                    TabView(selection: $selectedTab) {
+                        // People Tab
+                        PeopleListView(people: dataManager.people)
+                            .tag(PeopleTab.people)
 
-                    // Groups Tab
-                    GroupsListView(groups: dataManager.groups, people: dataManager.people)
-                        .tag(PeopleTab.groups)
+                        // Groups Tab
+                        GroupsListView(groups: dataManager.groups, people: dataManager.people)
+                            .tag(PeopleTab.groups)
+                    }
+                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 }
-                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                .navigationBarHidden(true)
             }
-            .navigationBarHidden(true)
-            .background(Color.wiseBackground)
         }
         .sheet(isPresented: $showingAddPersonSheet) {
             AddPersonSheet(
@@ -2928,6 +2981,7 @@ struct PeopleHeaderSection: View {
             HStack(spacing: 0) {
                 ForEach(PeopleView.PeopleTab.allCases, id: \.self) { tab in
                     Button(action: {
+                        HapticManager.shared.selection()
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedTab = tab
                         }
@@ -3093,7 +3147,7 @@ struct PeopleStatCard: View {
                             .foregroundColor(trend.isPositive ? .wiseBrightGreen : .wiseError)
                         
                         Text(String(format: "%.1f%%", abs(trend.percentage)))
-                            .font(.spotifyCaptionSmall)
+                            .font(.system(size: 10, weight: .bold))
                             .foregroundColor(trend.isPositive ? .wiseBrightGreen : .wiseError)
                     }
                     .padding(.horizontal, 6)
@@ -3605,6 +3659,7 @@ struct PeopleListView: View {
                                 .buttonStyle(PlainButtonStyle())
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button(role: .destructive) {
+                                        HapticManager.shared.heavy()
                                         personToDelete = person
                                         showingDeleteAlert = true
                                     } label: {
@@ -3612,6 +3667,7 @@ struct PeopleListView: View {
                                     }
 
                                     Button {
+                                        HapticManager.shared.light()
                                         editingPerson = person
                                         showingEditSheet = true
                                     } label: {
@@ -3622,6 +3678,7 @@ struct PeopleListView: View {
                                     // Show Settle Balance only if there's a non-zero balance
                                     if person.balance != 0 {
                                         Button {
+                                            HapticManager.shared.success()
                                             personToSettle = person
                                             showingSettleSheet = true
                                         } label: {
@@ -3632,12 +3689,11 @@ struct PeopleListView: View {
                                 }
                             }
                         }
-
-                        Spacer(minLength: 100)
                     }
                     .padding(.horizontal, 16)
                 }
                 .refreshable {
+                    HapticManager.shared.pullToRefresh()
                     dataManager.loadAllData()
                     ToastManager.shared.showSuccess("Refreshed")
                 }
@@ -4298,12 +4354,11 @@ struct GroupsListView: View {
                                 .tint(.blue)
                             }
                         }
-
-                        Spacer(minLength: 100)
                     }
                     .padding(.horizontal, 16)
                 }
                 .refreshable {
+                    HapticManager.shared.pullToRefresh()
                     dataManager.loadAllData()
                     ToastManager.shared.showSuccess("Refreshed")
                 }
@@ -5348,6 +5403,7 @@ struct SubscriptionsHeaderSectionEnhanced: View {
             HStack(spacing: 0) {
                 ForEach(SubscriptionsView.SubscriptionsTab.allCases, id: \.self) { tab in
                     Button(action: {
+                        HapticManager.shared.selection()
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedTab = tab
                         }
@@ -5727,6 +5783,7 @@ struct EnhancedPersonalSubscriptionsView: View {
                                 .buttonStyle(PlainButtonStyle())
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button(role: .destructive) {
+                                        HapticManager.shared.heavy()
                                         subscriptionToDelete = subscription
                                         showingDeleteAlert = true
                                     } label: {
@@ -5734,8 +5791,6 @@ struct EnhancedPersonalSubscriptionsView: View {
                                     }
                                 }
                             }
-
-                            Spacer(minLength: 100)
                         }
                         .padding(.horizontal, 16)
                     } else {
@@ -5751,6 +5806,7 @@ struct EnhancedPersonalSubscriptionsView: View {
                                 .buttonStyle(PlainButtonStyle())
                                 .contextMenu {
                                     Button(role: .destructive) {
+                                        HapticManager.shared.heavy()
                                         subscriptionToDelete = subscription
                                         showingDeleteAlert = true
                                     } label: {
@@ -5760,10 +5816,10 @@ struct EnhancedPersonalSubscriptionsView: View {
                             }
                         }
                         .padding(.horizontal, 16)
-                        .padding(.bottom, 100)
                     }
                 }
                 .refreshable {
+                    HapticManager.shared.pullToRefresh()
                     dataManager.loadAllData()
                     ToastManager.shared.showSuccess("Refreshed")
                 }
@@ -6165,8 +6221,6 @@ struct EnhancedSharedSubscriptionsView: View {
                                 people: people
                             )
                         }
-                        
-                        Spacer(minLength: 100)
                     }
                     .padding(.horizontal, 16)
                 }
@@ -7041,7 +7095,7 @@ struct CategoryBreakdownRow: View {
                     .foregroundColor(.wisePrimaryText)
                 
                 Text(String(format: "%.0f%%", percentage * 100))
-                    .font(.spotifyCaptionSmall)
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundColor(category.color)
             }
         }

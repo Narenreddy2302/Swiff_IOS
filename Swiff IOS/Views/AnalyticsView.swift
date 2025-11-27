@@ -62,7 +62,7 @@ struct AnalyticsView: View {
                     // Category breakdown list
                     categoryListSection
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 100)
+                        .padding(.bottom, 20)
                 }
             }
             .background(Color.wiseBackground.ignoresSafeArea())
@@ -85,6 +85,7 @@ struct AnalyticsView: View {
             
             // Date range picker button
             Button(action: {
+                HapticManager.shared.light()
                 showingDatePicker.toggle()
             }) {
                 HStack(spacing: 8) {
@@ -210,6 +211,7 @@ struct AnalyticsView: View {
         HStack(spacing: 0) {
             ForEach(ViewType.allCases, id: \.self) { viewType in
                 Button(action: {
+                    HapticManager.shared.selection()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         selectedViewType = viewType
                         resetAnimations()
@@ -683,12 +685,12 @@ struct IncomeBreakdownView: View {
                     }
                 }
 
-                Spacer(minLength: 100)
             }
             .padding(.top, 16)
         }
         .refreshable {
             // Refresh data
+            HapticManager.shared.pullToRefresh()
             dataManager.loadAllData()
             ToastManager.shared.showSuccess("Refreshed")
         }
@@ -887,12 +889,12 @@ struct ExpensesBreakdownView: View {
                 // Savings Opportunities
                 savingsOpportunitiesSection
 
-                Spacer(minLength: 100)
             }
             .padding(.top, 16)
         }
         .refreshable {
             // Refresh data
+            HapticManager.shared.pullToRefresh()
             dataManager.loadAllData()
             ToastManager.shared.showSuccess("Refreshed")
         }
