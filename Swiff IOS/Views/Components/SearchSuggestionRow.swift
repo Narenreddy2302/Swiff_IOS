@@ -33,35 +33,35 @@ struct SearchSuggestionRow: View {
                     HStack {
                         Text(result.title)
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.wisePrimaryText)
 
                         Spacer()
 
                         if !result.metadata.isEmpty {
                             Text(result.metadata)
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.wiseSecondaryText)
                         }
                     }
 
                     Text(result.subtitle)
                         .font(.system(size: 14))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.wiseSecondaryText)
                         .lineLimit(1)
                 }
 
                 // Type badge
                 Text(result.type.rawValue.dropLast()) // Remove 's' from plural
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.gray.opacity(0.1))
+                    .background(Color.wiseBorder.opacity(0.5))
                     .cornerRadius(8)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(Color.white)
+            .background(Color.wiseCardBackground)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -80,12 +80,12 @@ struct SearchHistoryRow: View {
                 // History icon
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 16))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
 
                 // Query text
                 Text(item.query)
                     .font(.system(size: 15))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.wisePrimaryText)
 
                 Spacer()
 
@@ -93,10 +93,10 @@ struct SearchHistoryRow: View {
                 if item.resultCount > 0 {
                     Text("\(item.resultCount)")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.wiseSecondaryText)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color.gray.opacity(0.1))
+                        .background(Color.wiseBorder.opacity(0.5))
                         .cornerRadius(8)
                 }
 
@@ -104,14 +104,14 @@ struct SearchHistoryRow: View {
                 Button(action: onDelete) {
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.wiseSecondaryText)
                         .frame(width: 20, height: 20)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(Color.white)
+            .background(Color.wiseCardBackground)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -127,21 +127,21 @@ struct SearchCategoryHeader: View {
         HStack(spacing: 8) {
             Image(systemName: type.icon)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.secondary)
+                .foregroundColor(.wiseSecondaryText)
 
             Text(type.rawValue)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.secondary)
+                .foregroundColor(.wiseSecondaryText)
 
             Text("(\(count))")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.secondary.opacity(0.7))
+                .foregroundColor(.wiseSecondaryText.opacity(0.7))
 
             Spacer()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(Color.gray.opacity(0.05))
+        .background(Color.wiseBorder.opacity(0.3))
     }
 }
 
@@ -158,23 +158,23 @@ struct EmptySearchState: View {
             // Icon
             ZStack {
                 Circle()
-                    .fill(Color.gray.opacity(0.1))
+                    .fill(Color.wiseBorder.opacity(0.5))
                     .frame(width: 80, height: 80)
 
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 36))
-                    .foregroundColor(.gray.opacity(0.5))
+                    .foregroundColor(.wiseMidGray.opacity(0.7))
             }
 
             // Message
             VStack(spacing: 8) {
                 Text("No Results Found")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.wisePrimaryText)
 
                 Text("We couldn't find anything matching '\(query)'")
                     .font(.system(size: 15))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
             }
@@ -183,7 +183,7 @@ struct EmptySearchState: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Search Tips:")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
 
                 VStack(alignment: .leading, spacing: 8) {
                     SearchTipRow(text: "Check your spelling")
@@ -193,7 +193,7 @@ struct EmptySearchState: View {
                 }
             }
             .padding(16)
-            .background(Color.gray.opacity(0.05))
+            .background(Color.wiseBorder.opacity(0.3))
             .cornerRadius(12)
             .padding(.horizontal, 32)
 
@@ -225,7 +225,7 @@ struct SearchTipRow: View {
 
             Text(text)
                 .font(.system(size: 14))
-                .foregroundColor(.secondary)
+                .foregroundColor(.wiseSecondaryText)
         }
     }
 }

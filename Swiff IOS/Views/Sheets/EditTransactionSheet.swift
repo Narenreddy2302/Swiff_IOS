@@ -556,7 +556,7 @@ struct TransactionCategoryPickerSheet: View {
                             .frame(maxWidth: .infinity)
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .fill(selectedCategory == category ? category.color.opacity(0.1) : Color.white)
+                                    .fill(selectedCategory == category ? category.color.opacity(0.1) : Color.wiseCardBackground)
                                     .stroke(selectedCategory == category ? category.color : Color.wiseBorder, lineWidth: selectedCategory == category ? 2 : 1)
                             )
                         }

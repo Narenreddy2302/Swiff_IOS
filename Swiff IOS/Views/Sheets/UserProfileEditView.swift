@@ -38,7 +38,10 @@ struct UserProfileEditView: View {
                             style: .solid
                         )
 
-                        Button(action: { showingAvatarPicker = true }) {
+                        Button(action: {
+                            HapticManager.shared.impact(.medium)
+                            showingAvatarPicker = true
+                        }) {
                             Text("Change Avatar")
                                 .font(.spotifyBodyMedium)
                                 .foregroundColor(.wiseBlue)
@@ -192,6 +195,7 @@ struct UserProfileEditView: View {
         updatedProfile.avatarType = selectedAvatarType
 
         profileManager.updateProfile(updatedProfile)
+        HapticManager.shared.success()
         hasChanges = false
         dismiss()
     }
@@ -244,6 +248,7 @@ struct AvatarTypePickerSheet: View {
             List {
                 Section {
                     Button(action: {
+                        HapticManager.shared.impact(.medium)
                         showingEmojiPicker = true
                     }) {
                         HStack(spacing: 16) {
@@ -294,6 +299,7 @@ struct AvatarTypePickerSheet: View {
                     }
 
                     Button(action: {
+                        HapticManager.shared.selection()
                         // Get initials from current name
                         if case .initials(let initials, let colorIndex) = tempAvatarType {
                             tempAvatarType = .initials(initials, colorIndex: colorIndex)
@@ -379,10 +385,12 @@ struct AvatarTypePickerSheet: View {
                     // Update avatar with processed image data
                     tempAvatarType = .photo(result.imageData)
                     selectedAvatarType = tempAvatarType
+                    HapticManager.shared.success()
                     onAvatarSelected()
 
                 } catch let error as PhotoLibraryError {
                     // Handle photo library specific errors
+                    HapticManager.shared.error()
                     photoErrorMessage = error.localizedDescription
 
                     if let suggestion = error.recoverySuggestion {
@@ -394,6 +402,7 @@ struct AvatarTypePickerSheet: View {
 
                 } catch {
                     // Handle other errors
+                    HapticManager.shared.error()
                     photoErrorMessage = "Failed to load photo: \(error.localizedDescription)"
                     showingPhotoError = true
                 }
@@ -470,6 +479,7 @@ struct EmojiPickerView: View {
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(emojis, id: \.self) { emoji in
                         Button(action: {
+                            HapticManager.shared.selection()
                             selectedEmoji = emoji
                             dismiss()
                         }) {

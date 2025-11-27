@@ -25,6 +25,10 @@ class ChartDataService: ObservableObject {
     // MARK: - Singleton
     static let shared = ChartDataService()
 
+    // MARK: - Color Scheme Support
+    /// Current color scheme - should be updated by views using this service
+    var colorScheme: ColorScheme = .light
+
     // MARK: - Dependencies
     private let dataManager = DataManager.shared
     private let analyticsService = AnalyticsService.shared
@@ -57,6 +61,16 @@ class ChartDataService: ObservableObject {
         cachedCategoryDistribution = nil
         cacheTimestamp = nil
         print("📊 Chart data cache cleared")
+    }
+
+    /// Update the color scheme and invalidate cache if changed
+    func updateColorScheme(_ newScheme: ColorScheme) {
+        if colorScheme != newScheme {
+            colorScheme = newScheme
+            // Invalidate category-related cache when color scheme changes
+            cachedCategoryData = nil
+            cachedCategoryDistribution = nil
+        }
     }
 
     /// Check if cache is valid
@@ -94,8 +108,8 @@ class ChartDataService: ObservableObject {
             formatter.dateFormat = "MMM d"
         }
 
-        let trendData = analyticsData.map { dateValue in
-            TrendDataPoint(
+        let trendData: [TrendDataPoint] = analyticsData.map { dateValue in
+            return TrendDataPoint(
                 date: dateValue.date,
                 amount: dateValue.amount,
                 label: formatter.string(from: dateValue.date)
@@ -153,7 +167,8 @@ class ChartDataService: ObservableObject {
     // MARK: - Task 4: Bar Chart Data
 
     /// Prepare category data for bar charts
-    func prepareCategoryData() -> [CategoryData] {
+    /// - Parameter colorScheme: Optional colorScheme override, uses instance colorScheme if nil
+    func prepareCategoryData(colorScheme: ColorScheme? = nil) -> [CategoryData] {
         if isCacheValid, let cached = cachedCategoryData {
             return cached
         }
@@ -161,13 +176,16 @@ class ChartDataService: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        let scheme = colorScheme ?? self.colorScheme
         let categoryBreakdown = analyticsService.calculateCategoryBreakdown()
 
-        let categoryData = categoryBreakdown.map { spending in
-            CategoryData(
+        let categoryData: [CategoryData] = categoryBreakdown.map { spending in
+            // Use adaptive category color based on color scheme
+            let adaptiveColor = Color.categoryColor(for: spending.category.rawValue, colorScheme: scheme)
+            return CategoryData(
                 category: spending.category.rawValue,
                 amount: spending.totalAmount,
-                color: spending.category.color.toHex() ?? "#999999",
+                color: adaptiveColor.toHex() ?? "#999999",
                 count: spending.count
             )
         }
@@ -262,7 +280,8 @@ class ChartDataService: ObservableObject {
     // MARK: - Task 4: Pie Chart Data
 
     /// Prepare category distribution data for pie charts
-    func prepareCategoryDistributionData() -> [CategoryShare] {
+    /// - Parameter colorScheme: Optional colorScheme override, uses instance colorScheme if nil
+    func prepareCategoryDistributionData(colorScheme: ColorScheme? = nil) -> [CategoryShare] {
         if isCacheValid, let cached = cachedCategoryDistribution {
             return cached
         }
@@ -270,14 +289,17 @@ class ChartDataService: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        let scheme = colorScheme ?? self.colorScheme
         let categoryBreakdown = analyticsService.calculateCategoryBreakdown()
 
-        let categoryShares = categoryBreakdown.map { spending in
-            CategoryShare(
+        let categoryShares: [CategoryShare] = categoryBreakdown.map { spending in
+            // Use adaptive category color based on color scheme
+            let adaptiveColor = Color.categoryColor(for: spending.category.rawValue, colorScheme: scheme)
+            return CategoryShare(
                 category: spending.category.rawValue,
                 amount: spending.totalAmount,
                 percentage: spending.percentage,
-                color: spending.category.color.toHex() ?? "#999999"
+                color: adaptiveColor.toHex() ?? "#999999"
             )
         }
 
@@ -429,6 +451,8 @@ class ChartDataService: ObservableObject {
 }
 
 // MARK: - Supporting Data Models
+// Note: TrendDataPoint, PriceDataPoint, CategoryData, SubscriptionData, MonthlyData, and CategoryShare
+// are defined in AnalyticsModels.swift
 
 struct BillingCycleData: Identifiable {
     let id = UUID()

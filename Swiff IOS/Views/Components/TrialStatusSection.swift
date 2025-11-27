@@ -20,7 +20,7 @@ struct TrialStatusSection: View {
             HStack {
                 Image(systemName: "gift.circle.fill")
                     .font(.system(size: 24))
-                    .foregroundColor(.orange)
+                    .foregroundColor(.wiseWarning)
 
                 Text("Free Trial Status")
                     .font(.spotifyHeadingLarge)
@@ -80,7 +80,7 @@ struct TrialStatusSection: View {
                         icon: "xmark.circle.fill",
                         title: "Status",
                         value: "Will be cancelled",
-                        color: .orange
+                        color: .wiseWarning
                     )
                 }
             }
@@ -144,31 +144,31 @@ struct TrialStatusSection: View {
 
     // AGENT 8: Helper computed properties
     private var trialUrgencyColor: Color {
-        guard let days = subscription.daysUntilTrialEnd else { return .red }
-        if days <= 1 { return .red }
-        else if days <= 3 { return .orange }
+        guard let days = subscription.daysUntilTrialEnd else { return .wiseError }
+        if days <= 1 { return .wiseError }
+        else if days <= 3 { return .wiseWarning }
         else { return .wiseForestGreen }
     }
 
     private var trialBackgroundColor: Color {
-        guard let days = subscription.daysUntilTrialEnd else { return Color.red.opacity(0.05) }
-        if days <= 1 { return Color.red.opacity(0.05) }
-        else if days <= 3 { return Color.orange.opacity(0.05) }
-        else { return Color.orange.opacity(0.02) }
+        guard let days = subscription.daysUntilTrialEnd else { return Color.wiseError.opacity(0.05) }
+        if days <= 1 { return Color.wiseError.opacity(0.05) }
+        else if days <= 3 { return Color.wiseWarning.opacity(0.05) }
+        else { return Color.wiseWarning.opacity(0.02) }
     }
 
     private var trialBorderColor: Color {
-        guard let days = subscription.daysUntilTrialEnd else { return .red }
-        if days <= 1 { return .red.opacity(0.3) }
-        else if days <= 3 { return .orange.opacity(0.3) }
-        else { return Color.orange.opacity(0.2) }
+        guard let days = subscription.daysUntilTrialEnd else { return .wiseError }
+        if days <= 1 { return Color.wiseError.opacity(0.3) }
+        else if days <= 3 { return Color.wiseWarning.opacity(0.3) }
+        else { return Color.wiseWarning.opacity(0.2) }
     }
 
     private var trialShadowColor: Color {
-        guard let days = subscription.daysUntilTrialEnd else { return Color.red.opacity(0.1) }
-        if days <= 1 { return Color.red.opacity(0.1) }
-        else if days <= 3 { return Color.orange.opacity(0.1) }
-        else { return Color.orange.opacity(0.05) }
+        guard let days = subscription.daysUntilTrialEnd else { return Color.wiseError.opacity(0.1) }
+        if days <= 1 { return Color.wiseError.opacity(0.1) }
+        else if days <= 3 { return Color.wiseWarning.opacity(0.1) }
+        else { return Color.wiseWarning.opacity(0.05) }
     }
 
     private func formatDate(_ date: Date) -> String {
@@ -272,9 +272,9 @@ struct TrialTimelineView: View {
 
                     // Progress Indicator
                     Circle()
-                        .fill(.white)
+                        .fill(Color.wiseCardBackground)
                         .frame(width: 24, height: 24)
-                        .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                        .shadow(color: Color.wiseShadowColor, radius: 4, x: 0, y: 2)
                         .offset(x: max(0, min(geometry.size.width - 24, geometry.size.width * CGFloat(progressPercentage) - 12)))
                         .overlay(
                             Circle()
@@ -316,16 +316,16 @@ struct TrialTimelineView: View {
     }
 
     private var progressColor: Color {
-        if progressPercentage >= 0.9 { return .red }
-        else if progressPercentage >= 0.7 { return .orange }
+        if progressPercentage >= 0.9 { return .wiseError }
+        else if progressPercentage >= 0.7 { return .wiseWarning }
         else { return .wiseForestGreen }
     }
 
     private var progressGradientColors: [Color] {
         if progressPercentage >= 0.9 {
-            return [.red, .red.opacity(0.7)]
+            return [.wiseError, Color.wiseError.opacity(0.7)]
         } else if progressPercentage >= 0.7 {
-            return [.orange, .orange.opacity(0.7)]
+            return [.wiseWarning, Color.wiseWarning.opacity(0.7)]
         } else {
             return [.wiseForestGreen, .wiseBrightGreen]
         }

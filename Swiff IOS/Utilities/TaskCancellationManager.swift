@@ -334,7 +334,7 @@ struct TaskActivityIndicator: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color.black.opacity(0.7))
+                .fill(Color.wiseOverlayColor.opacity(0.9))
         )
     }
 }

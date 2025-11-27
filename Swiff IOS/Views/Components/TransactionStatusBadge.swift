@@ -67,7 +67,7 @@ struct TransactionStatusBadge: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Small Size")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.wiseSecondaryText)
 
             HStack(spacing: 8) {
                 ForEach(PaymentStatus.allCases, id: \.self) { status in
@@ -79,7 +79,7 @@ struct TransactionStatusBadge: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Medium Size (Default)")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.wiseSecondaryText)
 
             HStack(spacing: 8) {
                 ForEach(PaymentStatus.allCases, id: \.self) { status in
@@ -91,7 +91,7 @@ struct TransactionStatusBadge: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Large Size")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.wiseSecondaryText)
 
             HStack(spacing: 8) {
                 ForEach(PaymentStatus.allCases, id: \.self) { status in
@@ -110,31 +110,32 @@ struct TransactionStatusBadge: View {
         // Mock transaction card
         HStack(spacing: 12) {
             Circle()
-                .fill(Color.blue.opacity(0.2))
+                .fill(Color.wiseBlue.opacity(0.2))
                 .frame(width: 48, height: 48)
                 .overlay(
                     Image(systemName: "fork.knife.circle.fill")
-                        .foregroundColor(.blue)
+                        .foregroundColor(.wiseBlue)
                 )
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Coffee at Starbucks")
                     .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.wisePrimaryText)
                 Text("Morning coffee • 2h ago")
                     .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
             }
 
             Spacer()
 
             Text("-$5.50")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundColor(.red)
+                .foregroundColor(.wiseError)
         }
         .padding()
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
+        .cardShadow()
 
         // Status badge positioned in top-right
         TransactionStatusBadge(status: .pending)
@@ -142,5 +143,5 @@ struct TransactionStatusBadge: View {
     }
     .padding()
     .frame(maxWidth: .infinity)
-    .background(Color.gray.opacity(0.1))
+    .background(Color.wiseBackground)
 }

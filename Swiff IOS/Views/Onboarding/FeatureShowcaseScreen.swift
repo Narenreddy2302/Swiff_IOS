@@ -33,13 +33,13 @@ struct FeatureShowcaseScreen: View {
             icon: "chart.bar.fill",
             title: "Visualize Your Spending",
             description: "See where your money goes with beautiful charts and insights. Make smarter financial decisions.",
-            color: Color.blue
+            color: Color.wiseBlue
         ),
         FeatureData(
             icon: "person.3.fill",
             title: "Split Expenses with Friends",
             description: "Share subscriptions and expenses with friends. Track who owes what and settle up easily.",
-            color: Color.purple
+            color: Color.wisePurple
         )
     ]
 
@@ -54,7 +54,7 @@ struct FeatureShowcaseScreen: View {
                 }) {
                     Text("Skip")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.wiseSecondaryText)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                 }
@@ -66,7 +66,7 @@ struct FeatureShowcaseScreen: View {
 
             // Feature Carousel
             TabView(selection: $currentPage) {
-                ForEach(features.indices, id: \.self) { index in
+                ForEach(features.indices, id: \.self) { (index: Int) in
                     FeatureCard(feature: features[index])
                         .tag(index)
                 }
@@ -82,7 +82,7 @@ struct FeatureShowcaseScreen: View {
             HStack(spacing: 8) {
                 ForEach(features.indices, id: \.self) { index in
                     Circle()
-                        .fill(currentPage == index ? Color.wiseForestGreen : Color.gray.opacity(0.3))
+                        .fill(currentPage == index ? Color.wiseForestGreen : Color.wiseMidGray.opacity(0.5))
                         .frame(width: 8, height: 8)
                         .scaleEffect(currentPage == index ? 1.2 : 1.0)
                         .animation(.smooth, value: currentPage)
@@ -116,11 +116,7 @@ struct FeatureShowcaseScreen: View {
             .padding(.bottom, 40)
             .accessibilityLabel(currentPage < features.count - 1 ? "Next feature" : "Continue to setup")
         }
-        .background(
-            colorScheme == .dark
-                ? Color.black
-                : Color.wiseBackground
-        )
+        .background(Color.wiseBackground)
     }
 }
 
@@ -155,12 +151,12 @@ struct FeatureCard: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.wisePrimaryText)
 
                 Text(feature.description)
                     .font(.body)
                     .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 20)

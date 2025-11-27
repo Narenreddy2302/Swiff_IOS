@@ -266,9 +266,9 @@ struct SubscriptionDetailView: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
 
@@ -406,12 +406,12 @@ struct SubscriptionDetailView: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
-    
+
     @ViewBuilder
     private func reminderSettingsCard(subscription: Subscription) -> some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -511,9 +511,9 @@ struct SubscriptionDetailView: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
 
@@ -595,9 +595,9 @@ struct SubscriptionDetailView: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
 
@@ -651,12 +651,12 @@ struct SubscriptionDetailView: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
-    
+
     @ViewBuilder
     private func detailsSection(subscription: Subscription) -> some View {
         if (subscription.website != nil && !(subscription.website?.isEmpty ?? true)) || !subscription.notes.isEmpty || subscription.cancellationDate != nil {
@@ -720,13 +720,13 @@ struct SubscriptionDetailView: View {
                 }
             }
             .padding(16)
-            .background(Color.white)
+            .background(Color.wiseCardBackground)
             .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .cardShadow()
             .padding(.horizontal, 16)
         }
     }
-    
+
     @ViewBuilder
     private func sharedInfoSection(subscription: Subscription) -> some View {
         if subscription.isShared && !sharedPeople.isEmpty {
@@ -761,13 +761,13 @@ struct SubscriptionDetailView: View {
                 }
             }
             .padding(16)
-            .background(Color.white)
+            .background(Color.wiseCardBackground)
             .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .cardShadow()
             .padding(.horizontal, 16)
         }
     }
-    
+
     @ViewBuilder
     private func actionsSection(subscription: Subscription) -> some View {
         VStack(spacing: 12) {
@@ -783,7 +783,7 @@ struct SubscriptionDetailView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .background(Color.orange)
+                    .background(Color.wiseWarning)
                     .cornerRadius(12)
                 }
             }

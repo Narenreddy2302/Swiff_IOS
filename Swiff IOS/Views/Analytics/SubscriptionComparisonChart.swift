@@ -16,6 +16,7 @@ struct SubscriptionComparisonChart: View {
     @StateObject private var chartDataService = ChartDataService.shared
     @StateObject private var analyticsService = AnalyticsService.shared
     @EnvironmentObject var dataManager: DataManager
+    @Environment(\.colorScheme) var colorScheme
 
     @State private var selectedSubscription: SubscriptionData?
     @State private var showMonthlyView = true // Toggle between monthly and annual
@@ -319,8 +320,8 @@ struct SubscriptionComparisonGrid: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .shadow(color: Color.wiseShadowColor, radius: 8, x: 0, y: 2)
         )
     }
 }

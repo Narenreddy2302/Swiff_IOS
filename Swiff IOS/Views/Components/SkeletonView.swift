@@ -104,7 +104,7 @@ struct SkeletonPersonRow: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(12)
     }
 }
@@ -132,7 +132,7 @@ struct SkeletonGroupRow: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(12)
     }
 }
@@ -155,7 +155,7 @@ struct SkeletonTransactionRow: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(12)
     }
 }
@@ -178,7 +178,7 @@ struct SkeletonSubscriptionRow: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(12)
     }
 }
@@ -257,7 +257,7 @@ struct SkeletonBalanceCard: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
+                .fill(Color.wiseCardBackground)
         )
     }
 }
@@ -280,7 +280,7 @@ struct SkeletonActivityCard: View {
             }
         }
         .padding(12)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(12)
     }
 }

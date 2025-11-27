@@ -68,16 +68,15 @@ class DataManager: ObservableObject {
             subscriptions = try persistenceService.fetchAllSubscriptions()
             transactions = try persistenceService.fetchAllTransactions()
 
-            // If database is empty and it's first launch, populate sample data
-            if !hasData && isFirstLaunch {
+            // If database is empty, populate sample data for easy visualization
+            if !hasData {
+                print("📊 Database is empty, populating sample data for visualization...")
                 try populateSampleData()
                 // Reload data after populating
                 people = try persistenceService.fetchAllPeople()
                 groups = try persistenceService.fetchAllGroups()
                 subscriptions = try persistenceService.fetchAllSubscriptions()
                 transactions = try persistenceService.fetchAllTransactions()
-
-                markFirstLaunchComplete()
             }
 
             isLoading = false
@@ -797,52 +796,77 @@ class DataManager: ObservableObject {
     // MARK: - Sample Data Population
 
     private func populateSampleData() throws {
-        print("📝 Populating sample data...")
+        print("📝 Populating comprehensive sample data...")
 
-        // Sample People
-        let samplePeople: [Person] = [
-            Person(
-                name: "Emma Wilson",
-                email: "emma.wilson@email.com",
-                phone: "+1 (555) 123-4567",
-                avatarType: .emoji("👩‍💼")
-            ),
-            Person(
-                name: "James Chen",
-                email: "james.chen@email.com",
-                phone: "+1 (555) 234-5678",
-                avatarType: .emoji("👨‍💻")
-            ),
-            Person(
-                name: "Sofia Rodriguez",
-                email: "sofia.rodriguez@email.com",
-                phone: "+1 (555) 345-6789",
-                avatarType: .emoji("👩‍🎨")
-            ),
-            Person(
-                name: "Michael Taylor",
-                email: "michael.taylor@email.com",
-                phone: "+1 (555) 456-7890",
-                avatarType: .emoji("👨‍🍳")
-            ),
-            Person(
-                name: "Aisha Patel",
-                email: "aisha.patel@email.com",
-                phone: "+1 (555) 567-8901",
-                avatarType: .emoji("👩‍⚕️")
-            )
-        ]
+        // Sample People with diverse avatars and balances
+        var emma = Person(
+            name: "Emma Wilson",
+            email: "emma.wilson@email.com",
+            phone: "+1 (555) 123-4567",
+            avatarType: .emoji("👩‍💼")
+        )
+        emma.balance = 45.50
+        
+        var james = Person(
+            name: "James Chen",
+            email: "james.chen@email.com",
+            phone: "+1 (555) 234-5678",
+            avatarType: .emoji("👨‍💻")
+        )
+        james.balance = -32.00
+        
+        var sofia = Person(
+            name: "Sofia Rodriguez",
+            email: "sofia.rodriguez@email.com",
+            phone: "+1 (555) 345-6789",
+            avatarType: .emoji("👩‍🎨")
+        )
+        sofia.balance = 120.75
+        
+        var michael = Person(
+            name: "Michael Taylor",
+            email: "michael.taylor@email.com",
+            phone: "+1 (555) 456-7890",
+            avatarType: .emoji("👨‍🍳")
+        )
+        michael.balance = -25.00
+        
+        var aisha = Person(
+            name: "Aisha Patel",
+            email: "aisha.patel@email.com",
+            phone: "+1 (555) 567-8901",
+            avatarType: .emoji("👩‍⚕️")
+        )
+        aisha.balance = 0.0
+        
+        var david = Person(
+            name: "David Kim",
+            email: "david.kim@email.com",
+            phone: "+1 (555) 678-9012",
+            avatarType: .emoji("👨‍🔬")
+        )
+        david.balance = 78.25
+        
+        var olivia = Person(
+            name: "Olivia Brown",
+            email: "olivia.brown@email.com",
+            phone: "+1 (555) 789-0123",
+            avatarType: .emoji("👩‍🏫")
+        )
+        olivia.balance = -15.50
+
+        let samplePeople = [emma, james, sofia, michael, aisha, david, olivia]
 
         // Save people first (no dependencies)
         for person in samplePeople {
             try persistenceService.savePerson(person)
         }
 
-        // Sample Subscriptions
+        // Comprehensive Sample Subscriptions
         var netflixSub = Subscription(
             name: "Netflix",
-            description: "Premium streaming service",
-            price: 15.99,
+            description: "Premium 4K streaming plan",
+            price: 19.99,
             billingCycle: .monthly,
             category: .entertainment,
             icon: "tv.fill",
@@ -852,20 +876,20 @@ class DataManager: ObservableObject {
         netflixSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 15, to: Date()) ?? Date()
 
         var spotifySub = Subscription(
-            name: "Spotify",
-            description: "Music streaming",
-            price: 9.99,
+            name: "Spotify Premium",
+            description: "Ad-free music streaming",
+            price: 10.99,
             billingCycle: .monthly,
             category: .entertainment,
             icon: "music.note",
             color: "#1DB954"
         )
         spotifySub.isActive = true
-        spotifySub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 20, to: Date()) ?? Date()
+        spotifySub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date()
 
         var gymSub = Subscription(
             name: "Gym Membership",
-            description: "Monthly gym access",
+            description: "24/7 fitness center access",
             price: 49.99,
             billingCycle: .monthly,
             category: .health,
@@ -874,111 +898,452 @@ class DataManager: ObservableObject {
         )
         gymSub.isActive = true
         gymSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
+        
+        var icloudSub = Subscription(
+            name: "iCloud+",
+            description: "200GB cloud storage",
+            price: 2.99,
+            billingCycle: .monthly,
+            category: .productivity,
+            icon: "cloud.fill",
+            color: "#007AFF"
+        )
+        icloudSub.isActive = true
+        icloudSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 12, to: Date()) ?? Date()
+        
+        var youtubeSub = Subscription(
+            name: "YouTube Premium",
+            description: "Ad-free videos & music",
+            price: 13.99,
+            billingCycle: .monthly,
+            category: .entertainment,
+            icon: "play.rectangle.fill",
+            color: "#FF0000"
+        )
+        youtubeSub.isActive = true
+        youtubeSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 8, to: Date()) ?? Date()
+        
+        var nytSub = Subscription(
+            name: "The New York Times",
+            description: "Digital news subscription",
+            price: 17.00,
+            billingCycle: .monthly,
+            category: .news,
+            icon: "newspaper.fill",
+            color: "#000000"
+        )
+        nytSub.isActive = true
+        nytSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 20, to: Date()) ?? Date()
+        
+        var hboSub = Subscription(
+            name: "HBO Max",
+            description: "Premium content streaming",
+            price: 15.99,
+            billingCycle: .monthly,
+            category: .entertainment,
+            icon: "sparkles.tv.fill",
+            color: "#7E22CE"
+        )
+        hboSub.isActive = true
+        hboSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 25, to: Date()) ?? Date()
+        
+        var duolingoSub = Subscription(
+            name: "Duolingo Plus",
+            description: "Language learning app",
+            price: 6.99,
+            billingCycle: .monthly,
+            category: .education,
+            icon: "character.book.closed.fill",
+            color: "#58CC02"
+        )
+        duolingoSub.isActive = true
+        duolingoSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 18, to: Date()) ?? Date()
+        
+        var adobeSub = Subscription(
+            name: "Adobe Creative Cloud",
+            description: "Full creative suite access",
+            price: 54.99,
+            billingCycle: .monthly,
+            category: .productivity,
+            icon: "paintbrush.fill",
+            color: "#FF0000"
+        )
+        adobeSub.isActive = true
+        adobeSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 10, to: Date()) ?? Date()
+        
+        var linkedinSub = Subscription(
+            name: "LinkedIn Premium",
+            description: "Career development tools",
+            price: 29.99,
+            billingCycle: .monthly,
+            category: .productivity,
+            icon: "briefcase.fill",
+            color: "#0A66C2"
+        )
+        linkedinSub.isActive = true
+        linkedinSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
 
-        let sampleSubscriptions = [netflixSub, spotifySub, gymSub]
+        let sampleSubscriptions = [netflixSub, spotifySub, gymSub, icloudSub, youtubeSub, 
+                                  nytSub, hboSub, duolingoSub, adobeSub, linkedinSub]
 
         for subscription in sampleSubscriptions {
             try persistenceService.saveSubscription(subscription)
         }
 
-        // Sample Transactions
-        let sampleTransactions: [Transaction] = [
-            Transaction(
-                id: UUID(),
-                title: "Salary",
-                subtitle: "Monthly income",
-                amount: 5000.00,
-                category: .income,
-                date: Date(),
-                isRecurring: true,
-                tags: ["work", "monthly"]
-            ),
-            Transaction(
-                id: UUID(),
-                title: "Rent",
-                subtitle: "Monthly rent payment",
-                amount: -1500.00,
-                category: .utilities,
-                date: Calendar.current.date(byAdding: .day, value: -5, to: Date())!,
-                isRecurring: true,
-                tags: ["housing", "monthly"]
-            ),
-            Transaction(
-                id: UUID(),
-                title: "Grocery Shopping",
-                subtitle: "Whole Foods",
-                amount: -125.50,
-                category: .groceries,
-                date: Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
-                isRecurring: false,
-                tags: ["food"]
-            ),
-            Transaction(
-                id: UUID(),
-                title: "Dinner at Restaurant",
-                subtitle: "Italian Bistro",
-                amount: -85.00,
-                category: .dining,
-                date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!,
-                isRecurring: false,
-                tags: ["food", "dining"]
-            )
-        ]
+        // Comprehensive Sample Transactions (last 30 days)
+        let now = Date()
+        var sampleTransactions: [Transaction] = []
+        
+        // Income transactions
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Salary",
+            subtitle: "Monthly paycheck - Tech Corp",
+            amount: 5250.00,
+            category: .income,
+            date: Calendar.current.date(byAdding: .day, value: -25, to: now)!,
+            isRecurring: true,
+            tags: ["work", "monthly", "salary"],
+            merchant: "Tech Corp"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Freelance Project",
+            subtitle: "Website design work",
+            amount: 850.00,
+            category: .income,
+            date: Calendar.current.date(byAdding: .day, value: -15, to: now)!,
+            isRecurring: false,
+            tags: ["freelance", "design"],
+            merchant: "Client Inc"
+        ))
+        
+        // Housing & Utilities
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Rent Payment",
+            subtitle: "Monthly rent",
+            amount: -1800.00,
+            category: .utilities,
+            date: Calendar.current.date(byAdding: .day, value: -28, to: now)!,
+            isRecurring: true,
+            tags: ["housing", "monthly"],
+            merchant: "Property Management Co"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Electricity Bill",
+            subtitle: "Monthly utility",
+            amount: -125.50,
+            category: .utilities,
+            date: Calendar.current.date(byAdding: .day, value: -20, to: now)!,
+            isRecurring: true,
+            tags: ["utilities", "monthly"],
+            merchant: "Power Company"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Internet Service",
+            subtitle: "Fiber optic 1Gbps",
+            amount: -79.99,
+            category: .utilities,
+            date: Calendar.current.date(byAdding: .day, value: -18, to: now)!,
+            isRecurring: true,
+            tags: ["utilities", "internet"],
+            merchant: "ISP Provider"
+        ))
+        
+        // Groceries
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Weekly Groceries",
+            subtitle: "Whole Foods Market",
+            amount: -156.32,
+            category: .groceries,
+            date: Calendar.current.date(byAdding: .day, value: -2, to: now)!,
+            isRecurring: false,
+            tags: ["food", "weekly"],
+            merchant: "Whole Foods"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Grocery Shopping",
+            subtitle: "Trader Joe's",
+            amount: -98.75,
+            category: .groceries,
+            date: Calendar.current.date(byAdding: .day, value: -9, to: now)!,
+            isRecurring: false,
+            tags: ["food"],
+            merchant: "Trader Joe's"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Farmers Market",
+            subtitle: "Fresh produce",
+            amount: -45.00,
+            category: .groceries,
+            date: Calendar.current.date(byAdding: .day, value: -6, to: now)!,
+            isRecurring: false,
+            tags: ["food", "fresh"],
+            merchant: "Downtown Farmers Market"
+        ))
+        
+        // Dining Out
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Dinner",
+            subtitle: "Italian Restaurant",
+            amount: -92.50,
+            category: .dining,
+            date: Calendar.current.date(byAdding: .day, value: -1, to: now)!,
+            isRecurring: false,
+            tags: ["food", "dining", "italian"],
+            merchant: "La Bella Vista"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Coffee Shop",
+            subtitle: "Morning latte",
+            amount: -5.75,
+            category: .dining,
+            date: Calendar.current.date(byAdding: .day, value: 0, to: now)!,
+            isRecurring: false,
+            tags: ["coffee", "morning"],
+            merchant: "Starbucks"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Lunch",
+            subtitle: "Sushi restaurant",
+            amount: -32.00,
+            category: .dining,
+            date: Calendar.current.date(byAdding: .day, value: -4, to: now)!,
+            isRecurring: false,
+            tags: ["food", "lunch", "sushi"],
+            merchant: "Tokyo Sushi Bar"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Brunch",
+            subtitle: "Weekend brunch with friends",
+            amount: -67.80,
+            category: .dining,
+            date: Calendar.current.date(byAdding: .day, value: -7, to: now)!,
+            isRecurring: false,
+            tags: ["food", "brunch", "friends"],
+            merchant: "Sunny Side Cafe"
+        ))
+        
+        // Transportation
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Gas Station",
+            subtitle: "Shell fuel",
+            amount: -58.20,
+            category: .transportation,
+            date: Calendar.current.date(byAdding: .day, value: -3, to: now)!,
+            isRecurring: false,
+            tags: ["car", "fuel"],
+            merchant: "Shell"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Uber Ride",
+            subtitle: "Downtown to airport",
+            amount: -35.00,
+            category: .transportation,
+            date: Calendar.current.date(byAdding: .day, value: -12, to: now)!,
+            isRecurring: false,
+            tags: ["rideshare", "airport"],
+            merchant: "Uber"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Parking Fee",
+            subtitle: "Downtown garage",
+            amount: -18.00,
+            category: .transportation,
+            date: Calendar.current.date(byAdding: .day, value: -5, to: now)!,
+            isRecurring: false,
+            tags: ["parking"],
+            merchant: "City Parking"
+        ))
+        
+        // Shopping
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Amazon Purchase",
+            subtitle: "Electronics & home goods",
+            amount: -234.99,
+            category: .shopping,
+            date: Calendar.current.date(byAdding: .day, value: -8, to: now)!,
+            isRecurring: false,
+            tags: ["online", "electronics"],
+            merchant: "Amazon"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Clothing Store",
+            subtitle: "New work outfits",
+            amount: -189.50,
+            category: .shopping,
+            date: Calendar.current.date(byAdding: .day, value: -14, to: now)!,
+            isRecurring: false,
+            tags: ["clothing", "work"],
+            merchant: "Nordstrom"
+        ))
+        
+        // Entertainment
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Movie Tickets",
+            subtitle: "IMAX screening",
+            amount: -42.00,
+            category: .entertainment,
+            date: Calendar.current.date(byAdding: .day, value: -10, to: now)!,
+            isRecurring: false,
+            tags: ["movies", "entertainment"],
+            merchant: "AMC Theaters"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Concert Tickets",
+            subtitle: "Live music event",
+            amount: -125.00,
+            category: .entertainment,
+            date: Calendar.current.date(byAdding: .day, value: -16, to: now)!,
+            isRecurring: false,
+            tags: ["concert", "music"],
+            merchant: "Ticketmaster"
+        ))
+        
+        // Healthcare
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Doctor Visit",
+            subtitle: "Annual checkup copay",
+            amount: -35.00,
+            category: .healthcare,
+            date: Calendar.current.date(byAdding: .day, value: -22, to: now)!,
+            isRecurring: false,
+            tags: ["healthcare", "medical"],
+            merchant: "Healthcare Clinic"
+        ))
+        
+        sampleTransactions.append(Transaction(
+            id: UUID(),
+            title: "Pharmacy",
+            subtitle: "Prescription refill",
+            amount: -25.50,
+            category: .healthcare,
+            date: Calendar.current.date(byAdding: .day, value: -11, to: now)!,
+            isRecurring: false,
+            tags: ["pharmacy", "medication"],
+            merchant: "CVS Pharmacy"
+        ))
 
         for transaction in sampleTransactions {
             try persistenceService.saveTransaction(transaction)
         }
 
-        // Sample Groups
+        // Sample Groups with detailed expenses
         var weekendTrip = Group(
-            name: "Weekend Trip",
-            description: "Mountain hiking adventure",
-            emoji: "🏔️",
-            members: [samplePeople[0].id, samplePeople[1].id, samplePeople[2].id]
+            name: "Weekend Getaway",
+            description: "Beach house vacation",
+            emoji: "🏖️",
+            members: [emma.id, james.id, sofia.id]
         )
 
         let hotelExpense = GroupExpense(
-            title: "Hotel Booking",
-            amount: 300.00,
-            paidBy: samplePeople[0].id,
-            splitBetween: [samplePeople[0].id, samplePeople[1].id, samplePeople[2].id],
+            title: "Beach House Rental",
+            amount: 450.00,
+            paidBy: emma.id,
+            splitBetween: [emma.id, james.id, sofia.id],
             category: .travel,
-            notes: "2 nights at Mountain Lodge",
+            notes: "3 nights at Ocean View",
+            receipt: nil,
+            isSettled: false
+        )
+        
+        let groceriesExpense = GroupExpense(
+            title: "Groceries for Trip",
+            amount: 180.00,
+            paidBy: james.id,
+            splitBetween: [emma.id, james.id, sofia.id],
+            category: .groceries,
+            notes: "Food and drinks for the weekend",
             receipt: nil,
             isSettled: false
         )
 
-        weekendTrip.expenses = [hotelExpense]
-        weekendTrip.totalAmount = 300.00
+        weekendTrip.expenses = [hotelExpense, groceriesExpense]
+        weekendTrip.totalAmount = 630.00
 
         var dinnerGroup = Group(
             name: "Dinner Club",
             description: "Monthly dinner meetups",
             emoji: "🍽️",
-            members: [samplePeople[1].id, samplePeople[3].id, samplePeople[4].id]
+            members: [michael.id, aisha.id, david.id]
         )
 
         let dinnerExpense = GroupExpense(
             title: "Italian Dinner",
-            amount: 150.00,
-            paidBy: samplePeople[1].id,
-            splitBetween: [samplePeople[1].id, samplePeople[3].id, samplePeople[4].id],
+            amount: 195.00,
+            paidBy: michael.id,
+            splitBetween: [michael.id, aisha.id, david.id],
             category: .dining,
-            notes: "Anniversary celebration",
+            notes: "Birthday celebration at La Trattoria",
             receipt: nil,
             isSettled: true
         )
 
         dinnerGroup.expenses = [dinnerExpense]
-        dinnerGroup.totalAmount = 150.00
+        dinnerGroup.totalAmount = 195.00
+        
+        var studyGroup = Group(
+            name: "Study Buddies",
+            description: "Course materials sharing",
+            emoji: "📚",
+            members: [olivia.id, james.id, aisha.id, david.id]
+        )
+        
+        let textbooksExpense = GroupExpense(
+            title: "Textbooks",
+            amount: 320.00,
+            paidBy: olivia.id,
+            splitBetween: [olivia.id, james.id, aisha.id, david.id],
+            category: .shopping,
+            notes: "Semester textbooks bundle",
+            receipt: nil,
+            isSettled: false
+        )
+        
+        studyGroup.expenses = [textbooksExpense]
+        studyGroup.totalAmount = 320.00
 
-        let sampleGroups = [weekendTrip, dinnerGroup]
+        let sampleGroups = [weekendTrip, dinnerGroup, studyGroup]
 
         for group in sampleGroups {
             try persistenceService.saveGroup(group)
         }
 
-        print("✅ Sample data populated successfully!")
+        print("✅ Comprehensive sample data populated successfully!")
+        print("   - 7 People with balances")
+        print("   - 10 Active subscriptions")
+        print("   - 25+ Transactions across various categories")
+        print("   - 3 Groups with multiple expenses")
     }
 
     // MARK: - Utility Methods
@@ -996,6 +1361,13 @@ class DataManager: ObservableObject {
 
     func resetToSampleData() throws {
         try clearAllData()
+        try populateSampleData()
+        loadAllData()
+    }
+    
+    /// Force populate sample data (useful for testing/demo)
+    func forcePopulateSampleData() throws {
+        print("🔄 Force populating sample data...")
         try populateSampleData()
         loadAllData()
     }

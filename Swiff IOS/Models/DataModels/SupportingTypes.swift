@@ -569,38 +569,415 @@ struct NotificationPreferences: Codable, Equatable {
     }
 }
 
-// MARK: - Wise Color System
+// MARK: - Wise Color System (Dark Mode Enhanced)
 
 extension Color {
-    // App Background
-    static let wiseBackground = Color(red: 1.0, green: 1.0, blue: 1.0) // #FFFFFF
+    // MARK: - Background Colors (Adaptive)
 
-    // Text Colors
-    static let wisePrimaryText = Color(red: 0.102, green: 0.102, blue: 0.102) // #1A1A1A
-    static let wiseSecondaryText = Color(red: 0.235, green: 0.235, blue: 0.235) // #3C3C3C
-    static let wiseBodyText = Color(red: 0.125, green: 0.129, blue: 0.137) // #202123
+    // App Background - adapts to color scheme
+    static let wiseBackground = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0) : // #000000 for dark
+            UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)   // #FFFFFF for light
+    })
 
-    // Brand Colors
+    // Card Background - adapts to color scheme
+    static let wiseCardBackground = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.15, green: 0.15, blue: 0.15, alpha: 1.0) : // #262626 for dark
+            UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)      // #FFFFFF for light
+    })
+
+    // Tertiary Background - for nested cards
+    static let wiseTertiaryBackground = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.11, green: 0.11, blue: 0.118, alpha: 1.0) : // #1C1C1E for dark
+            UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0)    // #FAFAFA for light
+    })
+
+    // Elevated Background - for modals/sheets
+    static let wiseElevatedBackground = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.173, green: 0.173, blue: 0.18, alpha: 1.0) : // #2C2C2E for dark
+            UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)        // #FFFFFF for light
+    })
+
+    // Grouped Background - for list backgrounds
+    static let wiseGroupedBackground = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0) :      // #000000 for dark
+            UIColor(red: 0.949, green: 0.949, blue: 0.969, alpha: 1.0)  // #F2F2F7 for light
+    })
+
+    // MARK: - Text Colors (Adaptive)
+
+    static let wisePrimaryText = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0) : // #FFFFFF for dark
+            UIColor(red: 0.102, green: 0.102, blue: 0.102, alpha: 1.0) // #1A1A1A for light
+    })
+
+    static let wiseSecondaryText = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.7, green: 0.7, blue: 0.7, alpha: 1.0) : // #B3B3B3 for dark
+            UIColor(red: 0.235, green: 0.235, blue: 0.235, alpha: 1.0) // #3C3C3C for light
+    })
+
+    static let wiseBodyText = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1.0) : // #E6E6E6 for dark
+            UIColor(red: 0.125, green: 0.129, blue: 0.137, alpha: 1.0) // #202123 for light
+    })
+
+    // Tertiary Text - for hints/disabled text
+    static let wiseTertiaryText = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.486, green: 0.486, blue: 0.502, alpha: 1.0) : // #7C7C80 for dark
+            UIColor(red: 0.557, green: 0.557, blue: 0.576, alpha: 1.0)   // #8E8E93 for light
+    })
+
+    // Link Text - for clickable links
+    static let wiseLinkText = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.039, green: 0.518, blue: 1.0, alpha: 1.0) :   // #0A84FF for dark
+            UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1.0)       // #007AFF for light
+    })
+
+    // Placeholder Text - for input placeholders
+    static let wisePlaceholderText = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.282, green: 0.282, blue: 0.29, alpha: 1.0) : // #48484A for dark
+            UIColor(red: 0.78, green: 0.78, blue: 0.8, alpha: 1.0)      // #C7C7CC for light
+    })
+
+    // MARK: - Brand Colors (Static)
+
     static let wiseBrightGreen = Color(red: 0.624, green: 0.910, blue: 0.439) // #9FE870
     static let wiseForestGreen = Color(red: 0.086, green: 0.200, blue: 0.0) // #163300
     static let wiseCharcoal = Color(red: 0.102, green: 0.102, blue: 0.102) // #1A1A1A (alias for primary text)
     static let wiseOrange = Color(red: 1.0, green: 0.596, blue: 0.0) // #FF9800 (alias for accent orange)
-    static let wisePurple = Color(red: 0.612, green: 0.337, blue: 0.835) // #9C56D5
+    // wisePurple is defined below with adaptive dark mode support
     static let wiseMidGray = Color(red: 0.600, green: 0.600, blue: 0.600) // #999999
 
-    // System Colors
-    static let wiseError = Color(red: 1.0, green: 0.267, blue: 0.212) // #FF4436
+    // MARK: - Status Colors (Adaptive)
+
+    // Success - green
+    static let wiseSuccess = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.188, green: 0.82, blue: 0.345, alpha: 1.0) :  // #30D158 for dark
+            UIColor(red: 0.204, green: 0.78, blue: 0.349, alpha: 1.0)    // #34C759 for light
+    })
+
+    // Warning - orange
+    static let wiseWarning = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 1.0, green: 0.624, blue: 0.039, alpha: 1.0) :   // #FF9F0A for dark
+            UIColor(red: 1.0, green: 0.584, blue: 0.0, alpha: 1.0)       // #FF9500 for light
+    })
+
+    // Error - red (adaptive)
+    static let wiseError = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 1.0, green: 0.271, blue: 0.227, alpha: 1.0) :   // #FF453A for dark
+            UIColor(red: 1.0, green: 0.231, blue: 0.188, alpha: 1.0)     // #FF3B30 for light
+    })
+
+    // Info - blue
+    static let wiseInfo = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.039, green: 0.518, blue: 1.0, alpha: 1.0) :   // #0A84FF for dark
+            UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1.0)       // #007AFF for light
+    })
+
+    // MARK: - Button Colors (Adaptive)
+
+    // Primary Button Background
+    static let wisePrimaryButton = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.624, green: 0.910, blue: 0.439, alpha: 1.0) : // wiseBrightGreen for dark
+            UIColor(red: 0.086, green: 0.200, blue: 0.0, alpha: 1.0)     // wiseForestGreen for light
+    })
+
+    // Primary Button Text
+    static let wisePrimaryButtonText = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.102, green: 0.102, blue: 0.102, alpha: 1.0) : // #1A1A1A for dark
+            UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)         // #FFFFFF for light
+    })
+
+    // Secondary Button Background
+    static let wiseSecondaryButton = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.227, green: 0.227, blue: 0.235, alpha: 1.0) : // #3A3A3C for dark
+            UIColor(red: 0.949, green: 0.949, blue: 0.969, alpha: 1.0)   // #F2F2F7 for light
+    })
+
+    // Secondary Button Text
+    static let wiseSecondaryButtonText = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0) :       // #FFFFFF for dark
+            UIColor(red: 0.102, green: 0.102, blue: 0.102, alpha: 1.0)   // #1A1A1A for light
+    })
+
+    // Destructive Button
+    static let wiseDestructiveButton = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 1.0, green: 0.271, blue: 0.227, alpha: 1.0) :   // #FF453A for dark
+            UIColor(red: 1.0, green: 0.231, blue: 0.188, alpha: 1.0)     // #FF3B30 for light
+    })
+
+    // Disabled Button
+    static let wiseDisabledButton = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.282, green: 0.282, blue: 0.29, alpha: 1.0) :  // #48484A for dark
+            UIColor(red: 0.776, green: 0.776, blue: 0.784, alpha: 1.0)   // #C6C6C8 for light
+    })
+
+    // MARK: - Border & Divider Colors (Adaptive)
+
+    // Primary Border
+    static let wiseBorder = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 1.0) : // #4D4D4D for dark
+            UIColor(red: 0.941, green: 0.945, blue: 0.953, alpha: 1.0) // #F0F1F3 for light
+    })
+
+    // Secondary Border - for subtle borders
+    static let wiseSecondaryBorder = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.22, green: 0.22, blue: 0.227, alpha: 1.0) :   // #38383A for dark
+            UIColor(red: 0.898, green: 0.898, blue: 0.918, alpha: 1.0)   // #E5E5EA for light
+    })
+
+    // Separator - for dividers
+    static let wiseSeparator = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.22, green: 0.22, blue: 0.227, alpha: 1.0) :   // #38383A for dark
+            UIColor(red: 0.776, green: 0.776, blue: 0.784, alpha: 1.0)   // #C6C6C8 for light
+    })
+
+    // Focus Border - for focus states
+    static let wiseFocusBorder = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.039, green: 0.518, blue: 1.0, alpha: 1.0) :   // #0A84FF for dark
+            UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1.0)       // #007AFF for light
+    })
+
+    // MARK: - Effect Colors
+
+    // Shadow Color - use with shadowOpacity helper
+    static let wiseShadowLight = Color.black.opacity(0.1)
+    static let wiseShadowDark = Color.black.opacity(0.3)
+
+    // Overlay Color - for dimming overlays
+    static let wiseOverlayLight = Color.black.opacity(0.4)
+    static let wiseOverlayDark = Color.black.opacity(0.6)
+
+    // MARK: - System Colors (Static)
+
     static let wiseBlue = Color(red: 0.0, green: 0.725, blue: 1.0) // #00B9FF
     static let wiseAccentBlue = Color(red: 0.0, green: 0.478, blue: 1.0) // #007AFF
     static let wiseAccentOrange = Color(red: 1.0, green: 0.596, blue: 0.0) // #FF9800
 
-    // Borders/Dividers
-    static let wiseBorder = Color(red: 0.941, green: 0.945, blue: 0.953) // #F0F1F3
-
     // Additional UI Colors
-    static let wiseCardBackground = Color(red: 0.980, green: 0.984, blue: 0.992) // #FAFBFD
     static let wiseGray = Color(red: 0.557, green: 0.557, blue: 0.576) // #8E8E93
     static let wiseGreen = Color(red: 0.204, green: 0.780, blue: 0.349) // #34C759
+
+    // Purple - adaptive for dark mode
+    static let wisePurple = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.733, green: 0.522, blue: 0.851, alpha: 1.0) : // #BB85D9 lighter for dark
+            UIColor(red: 0.608, green: 0.349, blue: 0.714, alpha: 1.0)   // #9B59B6 for light
+    })
+    
+    // Shadow color - adaptive for dark mode
+    static let wiseShadowColor = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(white: 0.0, alpha: 0.5) : // darker shadow for dark mode
+            UIColor(white: 0.0, alpha: 0.2)   // lighter shadow for light mode
+    })
+    
+    // Overlay color - adaptive for dark mode
+    static let wiseOverlayColor = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(white: 0.0, alpha: 0.6) : // darker overlay for dark mode
+            UIColor(white: 0.0, alpha: 0.4)   // lighter overlay for light mode
+    })
+
+    // MARK: - Category Colors (Dark Mode Enhanced)
+    // Each category has light/dark variants with reduced saturation for dark mode
+
+    // Entertainment - Purple
+    static let wiseCategoryEntertainment = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.733, green: 0.522, blue: 0.851, alpha: 1.0) : // #BB85D9 lighter for dark
+            UIColor(red: 0.608, green: 0.349, blue: 0.714, alpha: 1.0)   // #9B59B6 for light
+    })
+
+    // Productivity - Blue
+    static let wiseCategoryProductivity = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.431, green: 0.851, blue: 0.82, alpha: 1.0) :  // #6ED9D1 lighter for dark
+            UIColor(red: 0.306, green: 0.804, blue: 0.769, alpha: 1.0)   // #4ECDC4 for light
+    })
+
+    // Fitness & Health - Green/Mint
+    static let wiseCategoryFitness = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.659, green: 0.91, blue: 0.863, alpha: 1.0) :  // #A8E8DC lighter for dark
+            UIColor(red: 0.584, green: 0.882, blue: 0.827, alpha: 1.0)   // #95E1D3 for light
+    })
+
+    // Education - Coral
+    static let wiseCategoryEducation = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.961, green: 0.608, blue: 0.608, alpha: 1.0) : // #F59B9B lighter for dark
+            UIColor(red: 0.953, green: 0.506, blue: 0.506, alpha: 1.0)   // #F38181 for light
+    })
+
+    // News & Media - Lavender
+    static let wiseCategoryNews = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.729, green: 0.651, blue: 0.894, alpha: 1.0) : // #BAA6E4 lighter for dark
+            UIColor(red: 0.667, green: 0.588, blue: 0.855, alpha: 1.0)   // #AA96DA for light
+    })
+
+    // Music & Audio - Pink
+    static let wiseCategoryMusic = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.992, green: 0.78, blue: 0.859, alpha: 1.0) :  // #FDC7DB lighter for dark
+            UIColor(red: 0.988, green: 0.729, blue: 0.827, alpha: 1.0)   // #FCBAD3 for light
+    })
+
+    // Cloud Storage - Sky Blue
+    static let wiseCategoryCloud = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.722, green: 0.886, blue: 0.933, alpha: 1.0) : // #B8E2EE lighter for dark
+            UIColor(red: 0.659, green: 0.847, blue: 0.918, alpha: 1.0)   // #A8D8EA for light
+    })
+
+    // Gaming - Yellow
+    static let wiseCategoryGaming = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 1.0, green: 0.882, blue: 0.341, alpha: 1.0) :   // #FFE157 lighter for dark
+            UIColor(red: 1.0, green: 0.851, blue: 0.239, alpha: 1.0)     // #FFD93D for light
+    })
+
+    // Design & Creative - Green
+    static let wiseCategoryDesign = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.522, green: 0.851, blue: 0.6, alpha: 1.0) :   // #85D999 lighter for dark
+            UIColor(red: 0.42, green: 0.812, blue: 0.498, alpha: 1.0)    // #6BCF7F for light
+    })
+
+    // Development - Blue
+    static let wiseCategoryDevelopment = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.404, green: 0.667, blue: 1.0, alpha: 1.0) :   // #67AAFF lighter for dark
+            UIColor(red: 0.302, green: 0.588, blue: 1.0, alpha: 1.0)     // #4D96FF for light
+    })
+
+    // Finance - Orange/Gold
+    static let wiseCategoryFinance = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 1.0, green: 0.773, blue: 0.404, alpha: 1.0) :   // #FFC567 lighter for dark
+            UIColor(red: 1.0, green: 0.722, blue: 0.302, alpha: 1.0)     // #FFB84D for light
+    })
+
+    // Utilities - Light Blue
+    static let wiseCategoryUtilities = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.706, green: 0.816, blue: 1.0, alpha: 1.0) :   // #B4D0FF lighter for dark
+            UIColor(red: 0.627, green: 0.769, blue: 1.0, alpha: 1.0)     // #A0C4FF for light
+    })
+
+    // Food & Dining - Salmon
+    static let wiseCategoryFood = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 1.0, green: 0.706, blue: 0.706, alpha: 1.0) :   // #FFB4B4 lighter for dark
+            UIColor(red: 1.0, green: 0.643, blue: 0.643, alpha: 1.0)     // #FFA4A4 for light
+    })
+
+    // Transportation - Purple/Lavender
+    static let wiseCategoryTransportation = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.769, green: 0.718, blue: 0.902, alpha: 1.0) : // #C4B7E6 lighter for dark
+            UIColor(red: 0.706, green: 0.655, blue: 0.839, alpha: 1.0)   // #B4A7D6 for light
+    })
+
+    // Other - Gray
+    static let wiseCategoryOther = Color(uiColor: UIColor { traitCollection in
+        traitCollection.userInterfaceStyle == .dark ?
+            UIColor(red: 0.557, green: 0.557, blue: 0.576, alpha: 1.0) : // #8E8E93 for dark
+            UIColor(red: 0.776, green: 0.776, blue: 0.784, alpha: 1.0)   // #C6C6C8 for light
+    })
+
+    // MARK: - Chart Colors (Dark Mode Enhanced)
+    // Lighter, less saturated versions for dark mode charts
+
+    static let chartColorsLight: [Color] = [
+        Color(hex: "#FF6B6B"), // Red
+        Color(hex: "#4ECDC4"), // Teal
+        Color(hex: "#95E1D3"), // Mint
+        Color(hex: "#F38181"), // Coral
+        Color(hex: "#AA96DA"), // Lavender
+        Color(hex: "#FCBAD3"), // Pink
+        Color(hex: "#A8D8EA"), // Sky Blue
+        Color(hex: "#FFD93D"), // Yellow
+        Color(hex: "#6BCF7F"), // Green
+        Color(hex: "#4D96FF"), // Blue
+        Color(hex: "#FFB84D"), // Orange
+        Color(hex: "#A0C4FF"), // Light Blue
+        Color(hex: "#FFA4A4"), // Salmon
+        Color(hex: "#B4A7D6"), // Purple
+        Color(hex: "#C6C6C8")  // Gray
+    ]
+
+    static let chartColorsDark: [Color] = [
+        Color(hex: "#FF8585"), // Red (lighter)
+        Color(hex: "#6ED9D1"), // Teal (lighter)
+        Color(hex: "#A8E8DC"), // Mint (lighter)
+        Color(hex: "#F59B9B"), // Coral (lighter)
+        Color(hex: "#BAA6E4"), // Lavender (lighter)
+        Color(hex: "#FDC7DB"), // Pink (lighter)
+        Color(hex: "#B8E2EE"), // Sky Blue (lighter)
+        Color(hex: "#FFE157"), // Yellow (lighter)
+        Color(hex: "#85D999"), // Green (lighter)
+        Color(hex: "#67AAFF"), // Blue (lighter)
+        Color(hex: "#FFC567"), // Orange (lighter)
+        Color(hex: "#B4D0FF"), // Light Blue (lighter)
+        Color(hex: "#FFB4B4"), // Salmon (lighter)
+        Color(hex: "#C4B7E6"), // Purple (lighter)
+        Color(hex: "#8E8E93")  // Gray
+    ]
+
+    /// Get chart color for index based on color scheme
+    static func chartColor(at index: Int, colorScheme: ColorScheme) -> Color {
+        let colors = colorScheme == .dark ? chartColorsDark : chartColorsLight
+        return colors[index % colors.count]
+    }
+
+    /// Get category color with dark mode support
+    static func categoryColor(for category: String, colorScheme: ColorScheme? = nil) -> Color {
+        // These colors automatically adapt based on trait collection
+        switch category.lowercased() {
+        case "entertainment": return wiseCategoryEntertainment
+        case "productivity": return wiseCategoryProductivity
+        case "fitness", "fitness & health": return wiseCategoryFitness
+        case "education": return wiseCategoryEducation
+        case "news", "news & media": return wiseCategoryNews
+        case "music", "music & audio": return wiseCategoryMusic
+        case "cloud", "cloud storage": return wiseCategoryCloud
+        case "gaming": return wiseCategoryGaming
+        case "design", "design & creative": return wiseCategoryDesign
+        case "development": return wiseCategoryDevelopment
+        case "finance": return wiseCategoryFinance
+        case "utilities": return wiseCategoryUtilities
+        case "food", "food & dining": return wiseCategoryFood
+        case "transportation": return wiseCategoryTransportation
+        default: return wiseCategoryOther
+        }
+    }
 
     // MARK: - Hex Color Initializer
     

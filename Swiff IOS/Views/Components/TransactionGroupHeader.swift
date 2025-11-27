@@ -39,7 +39,7 @@ struct TransactionGroupHeader: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(Color.white.opacity(0.8))
+        .background(Color.wiseCardBackground.opacity(0.8))
     }
 
     // MARK: - Computed Properties
@@ -173,7 +173,7 @@ extension Array where Element == Transaction {
 
         Spacer()
     }
-    .background(Color.gray.opacity(0.05))
+    .background(Color.wiseBackground)
 }
 
 #Preview("With Transactions") {
@@ -185,11 +185,11 @@ extension Array where Element == Transaction {
             ForEach(0..<2) { index in
                 HStack {
                     Circle()
-                        .fill(Color.blue.opacity(0.2))
+                        .fill(Color.wiseBlue.opacity(0.2))
                         .frame(width: 48, height: 48)
                         .overlay(
                             Image(systemName: "fork.knife.circle.fill")
-                                .foregroundColor(.blue)
+                                .foregroundColor(.wiseBlue)
                         )
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -197,17 +197,17 @@ extension Array where Element == Transaction {
                             .font(.system(size: 16, weight: .semibold))
                         Text("Description • 2h ago")
                             .font(.system(size: 14))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.wiseSecondaryText)
                     }
 
                     Spacer()
 
                     Text("-$\(Double.random(in: 5...50), specifier: "%.2f")")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.red)
+                        .foregroundColor(.wiseError)
                 }
                 .padding()
-                .background(Color.white)
+                .background(Color.wiseCardBackground)
                 .cornerRadius(12)
             }
         }
@@ -215,5 +215,5 @@ extension Array where Element == Transaction {
 
         Spacer()
     }
-    .background(Color.gray.opacity(0.05))
+    .background(Color.wiseBackground)
 }

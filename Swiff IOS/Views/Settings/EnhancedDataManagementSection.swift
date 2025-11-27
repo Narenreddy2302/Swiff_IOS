@@ -215,7 +215,7 @@ struct EnhancedDataManagementSection: View {
             }) {
                 HStack {
                     Image(systemName: "arrow.down.circle.fill")
-                        .foregroundColor(.orange)
+                        .foregroundColor(.wiseWarning)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Import from Other Apps")
                             .foregroundColor(.wisePrimaryText)
@@ -262,7 +262,7 @@ struct EnhancedDataManagementSection: View {
             }) {
                 HStack {
                     Image(systemName: "trash.fill")
-                        .foregroundColor(.orange)
+                        .foregroundColor(.wiseWarning)
                     Text("Clear Cache")
                         .foregroundColor(.wisePrimaryText)
                     Spacer()

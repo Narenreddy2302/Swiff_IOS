@@ -193,12 +193,12 @@ struct RecentPriceIncreaseIndicator: View {
                 .font(.spotifyCaptionMedium)
                 .fontWeight(.medium)
         }
-        .foregroundColor(.orange)
+        .foregroundColor(.wiseWarning)
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .background(
             Capsule()
-                .fill(Color.orange.opacity(0.15))
+                .fill(Color.wiseWarning.opacity(0.15))
         )
     }
 }

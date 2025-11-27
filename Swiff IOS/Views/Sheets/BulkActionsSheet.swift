@@ -211,8 +211,8 @@ struct BulkActionButton: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
+                    .fill(Color.wiseCardBackground)
+                    .cardShadow()
             )
         }
     }
@@ -253,7 +253,7 @@ struct BulkCategoryPickerSheet: View {
                             .frame(maxWidth: .infinity)
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.white)
+                                    .fill(Color.wiseCardBackground)
                                     .stroke(Color.wiseBorder, lineWidth: 1)
                             )
                         }

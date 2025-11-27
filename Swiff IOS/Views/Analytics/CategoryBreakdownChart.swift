@@ -22,13 +22,14 @@ struct CategoryBreakdownChart: View {
     @StateObject private var chartDataService = ChartDataService.shared
     @StateObject private var analyticsService = AnalyticsService.shared
     @EnvironmentObject var dataManager: DataManager
+    @Environment(\.colorScheme) var colorScheme
 
     @State private var selectedCategory: CategoryData?
     @State private var highlightedCategory: String?
 
     // MARK: - Body
     var body: some View {
-        let categoryData = chartDataService.prepareCategoryData()
+        let categoryData = chartDataService.prepareCategoryData(colorScheme: colorScheme)
 
         VStack(alignment: .leading, spacing: 16) {
             if chartType == .pie {
@@ -148,7 +149,7 @@ struct CategoryBreakdownChart: View {
                         .font(.title3.bold())
                         .foregroundColor(.wiseCharcoal)
 
-                    let total = chartDataService.prepareCategoryData().reduce(0.0) { $0 + $1.amount }
+                    let total = chartDataService.prepareCategoryData(colorScheme: colorScheme).reduce(0.0) { $0 + $1.amount }
                     let percentage = total > 0 ? (category.amount / total) * 100 : 0
 
                     Text(String(format: "%.1f%%", percentage))
@@ -214,7 +215,7 @@ struct CategoryBreakdownChart: View {
 
                 Spacer()
 
-                let total = chartDataService.prepareCategoryData().reduce(0.0) { $0 + $1.amount }
+                let total = chartDataService.prepareCategoryData(colorScheme: colorScheme).reduce(0.0) { $0 + $1.amount }
                 let percentage = total > 0 ? (item.amount / total) * 100 : 0
 
                 Text(String(format: "%.0f%%", percentage))
@@ -246,11 +247,12 @@ struct CategoryBreakdownChart: View {
 struct CategorySharePieChart: View {
     @StateObject private var chartDataService = ChartDataService.shared
     @EnvironmentObject var dataManager: DataManager
+    @Environment(\.colorScheme) var colorScheme
 
     @State private var selectedSegment: CategoryShare?
 
     var body: some View {
-        let categoryShares = chartDataService.prepareCategoryDistributionData()
+        let categoryShares = chartDataService.prepareCategoryDistributionData(colorScheme: colorScheme)
 
         VStack(spacing: 16) {
             // Title and Total

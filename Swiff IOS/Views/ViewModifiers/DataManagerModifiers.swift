@@ -49,7 +49,7 @@ struct DataManagerProgressOverlay: ViewModifier {
 
             // Progress overlay
             if dataManager.isPerformingOperation {
-                Color.black.opacity(0.4)
+                Color.wiseOverlayColor
                     .ignoresSafeArea()
 
                 VStack(spacing: 20) {

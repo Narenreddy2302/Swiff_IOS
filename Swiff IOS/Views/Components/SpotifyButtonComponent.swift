@@ -55,8 +55,8 @@ enum ButtonVariant {
 
     var foregroundColor: Color {
         switch self {
-        case .primary: return .white
-        case .secondary: return .wiseForestGreen
+        case .primary: return .wisePrimaryButtonText
+        case .secondary: return .wisePrimaryButton
         case .tertiary: return .wisePrimaryText
         case .destructive: return .white
         }
@@ -65,34 +65,22 @@ enum ButtonVariant {
     func backgroundColor(isPressed: Bool) -> AnyView {
         switch self {
         case .primary:
-            return AnyView(
-                LinearGradient(
-                    gradient: Gradient(colors: [.wiseForestGreen, Color(red: 0.05, green: 0.15, blue: 0.0)]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+            return AnyView(Color.wisePrimaryButton)
         case .secondary:
-            return AnyView(Color.wiseForestGreen.opacity(0.1))
+            return AnyView(Color.wiseSecondaryButton)
         case .tertiary:
             return AnyView(Color.wiseBorder.opacity(isPressed ? 0.8 : 0.5))
         case .destructive:
-            return AnyView(
-                LinearGradient(
-                    gradient: Gradient(colors: [.wiseError, Color.red.opacity(0.8)]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+            return AnyView(Color.wiseDestructiveButton)
         }
     }
 
     var shadowColor: Color {
         switch self {
-        case .primary: return .wiseForestGreen
+        case .primary: return .wisePrimaryButton
         case .secondary: return .clear
         case .tertiary: return .clear
-        case .destructive: return .wiseError
+        case .destructive: return .wiseDestructiveButton
         }
     }
 }

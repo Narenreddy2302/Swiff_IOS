@@ -23,7 +23,7 @@ struct TrialAlertsCard: View {
                         Circle()
                             .fill(
                                 LinearGradient(
-                                    colors: [Color.orange.opacity(0.2), Color.orange.opacity(0.1)],
+                                    colors: [Color.wiseWarning.opacity(0.2), Color.wiseWarning.opacity(0.1)],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 )
@@ -32,7 +32,7 @@ struct TrialAlertsCard: View {
 
                         Image(systemName: "gift.fill")
                             .font(.system(size: 22))
-                            .foregroundColor(.orange)
+                            .foregroundColor(.wiseWarning)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -141,12 +141,12 @@ struct TrialAlertsCard: View {
         if let firstTrial = trialsEndingSoon.first,
            let days = firstTrial.daysUntilTrialEnd {
             if days <= 1 {
-                return LinearGradient(colors: [.red, .red.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                return LinearGradient(colors: [.wiseError, Color.wiseError.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
             } else if days <= 3 {
-                return LinearGradient(colors: [.orange, .orange.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                return LinearGradient(colors: [.wiseWarning, Color.wiseWarning.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
             }
         }
-        return LinearGradient(colors: [.orange, .orange.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+        return LinearGradient(colors: [.wiseWarning, Color.wiseWarning.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 
     private var borderColor: Color {
@@ -156,28 +156,28 @@ struct TrialAlertsCard: View {
 
         if let firstTrial = trialsEndingSoon.first,
            let days = firstTrial.daysUntilTrialEnd {
-            if days <= 1 { return Color.red.opacity(0.3) }
-            else if days <= 3 { return Color.orange.opacity(0.3) }
+            if days <= 1 { return Color.wiseError.opacity(0.3) }
+            else if days <= 3 { return Color.wiseWarning.opacity(0.3) }
         }
-        return Color.orange.opacity(0.2)
+        return Color.wiseWarning.opacity(0.2)
     }
 
     private var shadowColor: Color {
         if trialsEndingSoon.isEmpty {
-            return Color.black.opacity(0.05)
+            return Color.wiseShadowColor
         }
 
         if let firstTrial = trialsEndingSoon.first,
            let days = firstTrial.daysUntilTrialEnd {
-            if days <= 1 { return Color.red.opacity(0.1) }
-            else if days <= 3 { return Color.orange.opacity(0.1) }
+            if days <= 1 { return Color.wiseError.opacity(0.1) }
+            else if days <= 3 { return Color.wiseWarning.opacity(0.1) }
         }
-        return Color.orange.opacity(0.05)
+        return Color.wiseWarning.opacity(0.05)
     }
 
     private func countdownColor(days: Int) -> Color {
-        if days <= 1 { return .red }
-        else if days <= 3 { return .orange }
+        if days <= 1 { return .wiseError }
+        else if days <= 3 { return .wiseWarning }
         else { return .wiseSecondaryText }
     }
 }

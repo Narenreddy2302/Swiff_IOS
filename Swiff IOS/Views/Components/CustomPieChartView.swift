@@ -144,9 +144,9 @@ struct CustomPieChartView: View {
             }
         }
         .padding(20)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
     }
 
     private func formatCurrency(_ amount: Double) -> String {
@@ -380,6 +380,6 @@ struct ChartColorPalette {
         ChartDataItem(category: "D", amount: 350, color: .wisePurple, icon: nil)
     ]
 
-    return CompactPieChartView(data: sampleData, size: 200)
+    CompactPieChartView(data: sampleData, size: 200)
         .padding()
 }

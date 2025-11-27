@@ -137,7 +137,7 @@ struct IconButton: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 80, height: 80)
                             .clipShape(RoundedRectangle(cornerRadius: 18))
-                            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                            .shadow(color: Color.wiseShadowColor, radius: 8, x: 0, y: 4)
                     } else {
                         // Placeholder if image not available
                         RoundedRectangle(cornerRadius: 18)
@@ -154,7 +154,7 @@ struct IconButton: View {
                                     .font(.system(size: 36, weight: .semibold))
                                     .foregroundColor(.white)
                             )
-                            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                            .shadow(color: Color.wiseShadowColor, radius: 8, x: 0, y: 4)
                     }
 
                     // Checkmark Badge
@@ -164,7 +164,7 @@ struct IconButton: View {
                             .foregroundColor(.wiseForestGreen)
                             .background(
                                 Circle()
-                                    .fill(Color.white)
+                                    .fill(Color.wiseCardBackground)
                                     .frame(width: 20, height: 20)
                             )
                             .offset(x: 30, y: -30)
@@ -239,9 +239,9 @@ enum AlternateAppIcon: String, CaseIterable {
         case .primary: return .wiseBlue
         case .dark: return Color(white: 0.2)
         case .minimal: return .white
-        case .classic: return Color.green.opacity(0.7)
-        case .neon: return .pink
-        case .gold: return .orange
+        case .classic: return Color.wiseBrightGreen.opacity(0.7)
+        case .neon: return Color(red: 1.0, green: 0.4, blue: 0.7) // Pink
+        case .gold: return .wiseOrange
         }
     }
 

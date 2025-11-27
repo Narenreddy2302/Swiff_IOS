@@ -140,12 +140,12 @@ struct EditSubscriptionSheet: View {
                         // Subscription Preview Card
                         HStack(spacing: 16) {
                             Circle()
-                                .fill((Color(hex: selectedColor) ?? Color.gray).opacity(0.2))
+                                .fill((Color(hex: selectedColor) ?? Color.wiseMidGray).opacity(0.2))
                                 .frame(width: 48, height: 48)
                                 .overlay(
                                     Image(systemName: selectedIcon)
                                         .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(Color(hex: selectedColor) ?? .gray)
+                                        .foregroundColor(Color(hex: selectedColor) ?? .wiseMidGray)
                                 )
 
                             VStack(alignment: .leading, spacing: 4) {
@@ -184,9 +184,9 @@ struct EditSubscriptionSheet: View {
                             }
                         }
                         .padding(16)
-                        .background(Color.white)
+                        .background(Color.wiseCardBackground)
                         .cornerRadius(12)
-                        .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+                        .subtleShadow()
                     }
 
                     // Basic Information
@@ -311,7 +311,7 @@ struct EditSubscriptionSheet: View {
                             Button(action: { showingIconPicker.toggle() }) {
                                 HStack {
                                     Image(systemName: selectedIcon)
-                                        .foregroundColor(Color(hex: selectedColor) ?? .gray)
+                                        .foregroundColor(Color(hex: selectedColor) ?? .wiseMidGray)
                                     Text("Tap to change icon")
                                         .font(.spotifyBodyMedium)
                                         .foregroundColor(.wisePrimaryText)
@@ -335,11 +335,11 @@ struct EditSubscriptionSheet: View {
                                         }) {
                                             Image(systemName: icon)
                                                 .font(.system(size: 24))
-                                                .foregroundColor(selectedIcon == icon ? Color(hex: selectedColor) ?? .gray : .wiseSecondaryText)
+                                                .foregroundColor(selectedIcon == icon ? Color(hex: selectedColor) ?? .wiseMidGray : .wiseSecondaryText)
                                                 .frame(width: 50, height: 50)
                                                 .background(
                                                     selectedIcon == icon 
-                                                        ? (Color(hex: selectedColor) ?? Color.gray).opacity(0.1)
+                                                        ? (Color(hex: selectedColor) ?? Color.wiseMidGray).opacity(0.1)
                                                         : Color.wiseBorder.opacity(0.3)
                                                 )
                                                 .cornerRadius(8)
@@ -360,13 +360,13 @@ struct EditSubscriptionSheet: View {
                                 ForEach(availableColors, id: \.self) { colorHex in
                                     Button(action: { selectedColor = colorHex }) {
                                         Circle()
-                                            .fill(Color(hex: colorHex) ?? Color.gray)
+                                            .fill(Color(hex: colorHex) ?? Color.wiseMidGray)
                                             .frame(width: 40, height: 40)
                                             .overlay(
                                                 Circle()
                                                     .stroke(Color.white, lineWidth: selectedColor == colorHex ? 3 : 0)
                                             )
-                                            .shadow(color: .black.opacity(0.2), radius: selectedColor == colorHex ? 4 : 0)
+                                            .shadow(color: Color.wiseShadowColor, radius: selectedColor == colorHex ? 4 : 0)
                                     }
                                 }
                             }
@@ -456,7 +456,7 @@ struct EditSubscriptionSheet: View {
                                 HStack(spacing: 6) {
                                     Image(systemName: "gift.fill")
                                         .font(.system(size: 14))
-                                        .foregroundColor(.orange)
+                                        .foregroundColor(.wiseWarning)
                                     Text("Free Trial")
                                         .font(.spotifyBodyMedium)
                                         .foregroundColor(.wisePrimaryText)
@@ -466,7 +466,7 @@ struct EditSubscriptionSheet: View {
                                     .foregroundColor(.wiseSecondaryText)
                             }
                         }
-                        .tint(.orange)
+                        .tint(.wiseWarning)
 
                         if isFreeTrial {
                             // Trial Start Date
@@ -516,7 +516,7 @@ struct EditSubscriptionSheet: View {
                                 HStack {
                                     Image(systemName: "calendar.badge.clock")
                                         .font(.system(size: 16))
-                                        .foregroundColor(.orange)
+                                        .foregroundColor(.wiseWarning)
                                     Text("\(calculateTrialDuration()) days")
                                         .font(.spotifyBodyMedium)
                                         .foregroundColor(.wisePrimaryText)
@@ -526,8 +526,8 @@ struct EditSubscriptionSheet: View {
                                 .padding(.vertical, 12)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.orange.opacity(0.1))
-                                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                                        .fill(Color.wiseWarning.opacity(0.1))
+                                        .stroke(Color.wiseWarning.opacity(0.3), lineWidth: 1)
                                 )
                             }
 
@@ -536,16 +536,16 @@ struct EditSubscriptionSheet: View {
                                 HStack(spacing: 8) {
                                     Image(systemName: "exclamationmark.triangle.fill")
                                         .font(.system(size: 14))
-                                        .foregroundColor(.orange)
+                                        .foregroundColor(.wiseWarning)
                                     Text("Trial expires in less than 3 days!")
                                         .font(.spotifyCaptionMedium)
-                                        .foregroundColor(.orange)
+                                        .foregroundColor(.wiseWarning)
                                 }
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)
                                 .background(
                                     RoundedRectangle(cornerRadius: 8)
-                                        .fill(Color.orange.opacity(0.1))
+                                        .fill(Color.wiseWarning.opacity(0.1))
                                 )
                             }
 
@@ -738,7 +738,7 @@ struct EditSubscriptionSheet: View {
                 VStack(spacing: 12) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 48))
-                        .foregroundColor(.orange)
+                        .foregroundColor(.wiseWarning)
 
                     Text("Price Change Detected")
                         .font(.spotifyHeadingLarge)

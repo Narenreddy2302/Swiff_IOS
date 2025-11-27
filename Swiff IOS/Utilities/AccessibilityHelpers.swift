@@ -202,7 +202,7 @@ struct AccessibilityHelpers_Previews: PreviewProvider {
                 Spacer()
             }
             .padding(16)
-            .background(Color.white)
+            .background(Color.wiseCardBackground)
             .cornerRadius(12)
             .accessibleCard(
                 label: "Person card for John Doe, owes you 25 dollars",

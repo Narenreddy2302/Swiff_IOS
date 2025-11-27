@@ -32,22 +32,22 @@ struct TrialBadge: View {
         .shadow(color: badgeColor.opacity(0.3), radius: 2, x: 0, y: 1)
     }
 
-    // AGENT 8: Color-coded based on expiration urgency
+    // AGENT 8: Color-coded based on expiration urgency (adaptive for dark mode)
     private var badgeColor: Color {
         if isExpired {
-            return .red
+            return .wiseError
         }
 
         guard let days = daysRemaining else {
-            return .orange
+            return .wiseWarning
         }
 
         if days <= 1 {
-            return .red
+            return .wiseError
         } else if days <= 3 {
-            return .orange
+            return .wiseWarning
         } else {
-            return Color(hex: "#FFB800") ?? .orange // Gold color
+            return .wiseInfo // Blue for safe trials
         }
     }
 }
@@ -89,17 +89,17 @@ struct TrialCountdown: View {
 
     private var countdownColor: Color {
         if isExpired {
-            return .red
+            return .wiseError
         }
 
         guard let days = daysRemaining else {
-            return .orange
+            return .wiseWarning
         }
 
         if days <= 1 {
-            return .red
+            return .wiseError
         } else if days <= 3 {
-            return .orange
+            return .wiseWarning
         } else {
             return .wiseSecondaryText
         }

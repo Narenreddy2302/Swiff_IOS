@@ -151,7 +151,7 @@ struct MediumMonthlySpendingView: View {
 
                             Text(category.formattedPercentage)
                                 .font(.system(size: 10, weight: .semibold))
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color(red: 0.0, green: 0.725, blue: 1.0))
                         }
                     }
                 }
@@ -173,7 +173,7 @@ struct MediumMonthlySpendingView: View {
                                 x: .value("Month", data.month),
                                 y: .value("Amount", data.amount)
                             )
-                            .foregroundStyle(Color.blue.gradient)
+                            .foregroundStyle(Color(red: 0.0, green: 0.725, blue: 1.0).gradient)
                         }
                     }
                     .chartXAxis(.hidden)
@@ -222,7 +222,7 @@ struct LargeMonthlySpendingView: View {
 
                 Image(systemName: "chart.bar.fill")
                     .font(.system(size: 24))
-                    .foregroundColor(.blue)
+                    .foregroundColor(Color(red: 0.0, green: 0.725, blue: 1.0))
             }
             .padding(16)
 
@@ -242,7 +242,7 @@ struct LargeMonthlySpendingView: View {
                                 x: .value("Month", data.month),
                                 y: .value("Amount", data.amount)
                             )
-                            .foregroundStyle(Color.blue.gradient)
+                            .foregroundStyle(Color(red: 0.0, green: 0.725, blue: 1.0).gradient)
                         }
                     }
                     .chartYAxis {
@@ -293,7 +293,7 @@ struct LargeMonthlySpendingView: View {
 
                             Text(category.formattedPercentage)
                                 .font(.system(size: 10))
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color(red: 0.0, green: 0.725, blue: 1.0))
                                 .frame(width: 35, alignment: .trailing)
                         }
                     }
@@ -321,7 +321,7 @@ struct SimplifiedBarChart: View {
             ForEach(data, id: \.month) { item in
                 VStack(spacing: 2) {
                     Rectangle()
-                        .fill(Color.blue.gradient)
+                        .fill(Color(red: 0.0, green: 0.725, blue: 1.0).gradient)
                         .frame(width: 16, height: CGFloat(item.amount / maxAmount) * 80)
                         .cornerRadius(2)
 

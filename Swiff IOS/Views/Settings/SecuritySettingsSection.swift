@@ -119,7 +119,7 @@ struct SecuritySettingsSection: View {
                 Toggle(isOn: $userSettings.autoLockEnabled) {
                     HStack {
                         Image(systemName: "lock.rotation")
-                            .foregroundColor(.orange)
+                            .foregroundColor(.wiseWarning)
                             .frame(width: 24)
 
                         VStack(alignment: .leading, spacing: 4) {

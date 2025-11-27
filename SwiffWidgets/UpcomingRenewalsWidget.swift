@@ -119,7 +119,7 @@ struct SmallUpcomingRenewalsView: View {
             VStack(spacing: 8) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 32))
-                    .foregroundColor(.green)
+                    .foregroundColor(Color(red: 0.204, green: 0.780, blue: 0.349))
 
                 Text("All Set!")
                     .font(.system(size: 14, weight: .semibold))
@@ -236,7 +236,7 @@ struct LargeUpcomingRenewalsView: View {
 
                 Image(systemName: "calendar.badge.clock")
                     .font(.system(size: 24))
-                    .foregroundColor(.blue)
+                    .foregroundColor(Color(red: 0.0, green: 0.725, blue: 1.0))
             }
             .padding(16)
 
@@ -301,11 +301,11 @@ struct LargeUpcomingRenewalsView: View {
                     HStack {
                         Text("View All Subscriptions")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.blue)
+                            .foregroundColor(Color(red: 0.0, green: 0.725, blue: 1.0))
 
                         Image(systemName: "chevron.right")
                             .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(.blue)
+                            .foregroundColor(Color(red: 0.0, green: 0.725, blue: 1.0))
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)

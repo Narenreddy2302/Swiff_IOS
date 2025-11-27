@@ -176,8 +176,8 @@ struct ImportConflictResolutionSheet: View {
                     }
                 }
                 .padding(20)
-                .background(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: -2)
+                .background(Color.wiseCardBackground)
+                .shadow(color: Color.wiseShadowColor, radius: 10, x: 0, y: -2)
             }
             .background(Color.wiseBackground)
             .navigationBarTitleDisplayMode(.inline)
@@ -247,8 +247,8 @@ struct ConflictResolutionOption: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                    .shadow(color: Color.black.opacity(isSelected ? 0.1 : 0.05), radius: isSelected ? 8 : 4, x: 0, y: 2)
+                    .fill(Color.wiseCardBackground)
+                    .shadow(color: Color.wiseShadowColor, radius: isSelected ? 8 : 4, x: 0, y: 2)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(isSelected ? Color.wiseBrightGreen : Color.clear, lineWidth: 2)

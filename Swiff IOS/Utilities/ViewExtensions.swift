@@ -167,7 +167,7 @@ extension View {
         self.overlay {
             if isLoading {
                 ZStack {
-                    Color.black.opacity(0.4)
+                    Color.wiseOverlayColor
                         .ignoresSafeArea()
 
                     VStack(spacing: 16) {
@@ -179,7 +179,7 @@ extension View {
                     .padding(24)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.black.opacity(0.8))
+                            .fill(Color.wiseOverlayColor.opacity(0.95))
                     )
                 }
                 .transition(.opacity)

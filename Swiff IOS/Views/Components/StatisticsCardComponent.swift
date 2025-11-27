@@ -50,6 +50,7 @@ struct StatisticsCardComponent: View {
     let showIcon: Bool
 
     @State private var isPressed = false
+    @Environment(\.colorScheme) var colorScheme
 
     init(
         icon: String = "chart.bar.fill",
@@ -117,9 +118,9 @@ struct StatisticsCardComponent: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .scaleEffect(isPressed ? 0.98 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
     }
@@ -131,14 +132,16 @@ struct HorizontalStatisticsCard: View {
     let title: String
     let value: String
     let iconColor: Color
-    let backgroundColor: Color
+    let backgroundColor: Color?
+
+    @Environment(\.colorScheme) var colorScheme
 
     init(
         icon: String,
         title: String,
         value: String,
         iconColor: Color = .wiseForestGreen,
-        backgroundColor: Color = .white
+        backgroundColor: Color? = nil
     ) {
         self.icon = icon
         self.title = title
@@ -174,9 +177,9 @@ struct HorizontalStatisticsCard: View {
         }
         .padding(16)
         .frame(width: 180)
-        .background(backgroundColor)
+        .background(backgroundColor ?? Color.wiseCardBackground)
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
     }
 }
 
@@ -186,6 +189,8 @@ struct CompactStatisticsCard: View {
     let title: String
     let value: String
     let iconBackgroundColor: Color
+
+    @Environment(\.colorScheme) var colorScheme
 
     init(
         icon: String,
@@ -217,19 +222,23 @@ struct CompactStatisticsCard: View {
                     .textCase(.uppercase)
                     .foregroundColor(.wiseSecondaryText)
                     .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Text(value)
                     .font(.spotifyHeadingLarge)
                     .foregroundColor(.wisePrimaryText)
                     .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+                    .minimumScaleFactor(0.7)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
         .padding(.horizontal, 12)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
     }
 }
 

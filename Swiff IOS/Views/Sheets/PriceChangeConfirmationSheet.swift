@@ -173,9 +173,9 @@ struct PriceChangeConfirmationSheet: View {
             )
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
 
@@ -278,9 +278,9 @@ struct PriceChangeConfirmationSheet: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
 
@@ -308,9 +308,9 @@ struct PriceChangeConfirmationSheet: View {
                 )
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
 
@@ -357,9 +357,9 @@ struct PriceChangeConfirmationSheet: View {
                 .multilineTextAlignment(.center)
         }
         .padding(32)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
 

@@ -127,7 +127,7 @@ struct ThemePreviewButton: View {
                         .frame(height: 60)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(isSelected ? Color.wiseForestGreen : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                                .stroke(isSelected ? Color.wiseForestGreen : Color.wiseMidGray.opacity(0.5), lineWidth: isSelected ? 2 : 1)
                         )
 
                     // Theme preview content
@@ -201,7 +201,7 @@ struct ColorPickerButton: View {
                     )
                     .overlay(
                         Circle()
-                            .stroke(isSelected ? color.color : Color.gray.opacity(0.3), lineWidth: isSelected ? 3 : 1)
+                            .stroke(isSelected ? color.color : Color.wiseMidGray.opacity(0.5), lineWidth: isSelected ? 3 : 1)
                     )
 
                 if isSelected {
@@ -249,7 +249,7 @@ struct AppIconCell: View {
                     if icon.isPremium {
                         Image(systemName: "crown.fill")
                             .font(.system(size: 16))
-                            .foregroundColor(.yellow)
+                            .foregroundColor(Color(red: 1.0, green: 0.8, blue: 0.0)) // Gold crown color
                             .offset(x: -30, y: -30)
                     }
                 }

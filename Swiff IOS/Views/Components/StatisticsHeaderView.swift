@@ -43,7 +43,7 @@ struct StatisticsHeaderView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
-                .background(Color.white)
+                .background(Color.wiseCardBackground)
             }
             .buttonStyle(PlainButtonStyle())
 
@@ -135,9 +135,9 @@ struct StatisticsHeaderView: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
+        .cardShadow()
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
     }
@@ -225,7 +225,7 @@ struct StatisticCard: View {
         Transaction(title: "Groceries", subtitle: "Weekly shopping", amount: -120.30, category: .groceries, date: Date(), isRecurring: false, tags: []),
         Transaction(title: "Gas", subtitle: "Fuel", amount: -45.00, category: .transportation, date: Date(), isRecurring: false, tags: [])
     ])
-    .background(Color.gray.opacity(0.1))
+    .background(Color.wiseBackground)
 }
 
 #Preview("Expanded") {
@@ -237,10 +237,10 @@ struct StatisticCard: View {
         Transaction(title: "Freelance", subtitle: "Project payment", amount: 1500, category: .income, date: Date(), isRecurring: false, tags: []),
         Transaction(title: "Dinner", subtitle: "Restaurant", amount: -85.20, category: .dining, date: Date(), isRecurring: false, tags: [])
     ])
-    .background(Color.gray.opacity(0.1))
+    .background(Color.wiseBackground)
 }
 
 #Preview("Empty") {
     StatisticsHeaderView(transactions: [])
-        .background(Color.gray.opacity(0.1))
+        .background(Color.wiseBackground)
 }

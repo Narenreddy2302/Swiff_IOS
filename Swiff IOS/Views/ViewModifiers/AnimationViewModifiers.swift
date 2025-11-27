@@ -447,7 +447,7 @@ extension View {
 
         Text("Bounce on Appear")
             .padding()
-            .background(Color.blue)
+            .background(Color.wiseBlue)
             .foregroundColor(.white)
             .cornerRadius(8)
             .bounceOnAppear()

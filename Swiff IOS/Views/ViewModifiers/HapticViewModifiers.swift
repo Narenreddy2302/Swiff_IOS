@@ -261,20 +261,20 @@ extension ButtonStyle where Self == ContextualHapticButton {
         Button("Secondary Action") {}
             .buttonStyle(.secondaryHaptic)
             .padding()
-            .background(Color.gray.opacity(0.2))
+            .background(Color.wiseBorder.opacity(0.3))
             .cornerRadius(12)
 
         Button("Destructive Action") {}
             .buttonStyle(.destructiveHaptic)
             .padding()
-            .background(Color.red)
+            .background(Color.wiseError)
             .foregroundColor(.white)
             .cornerRadius(12)
 
         Button("Success Action") {}
             .buttonStyle(.successHaptic)
             .padding()
-            .background(Color.green)
+            .background(Color.wiseSuccess)
             .foregroundColor(.white)
             .cornerRadius(12)
     }

@@ -88,9 +88,9 @@ struct TransactionDetailView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 32)
-                    .background(Color.white)
+                    .background(Color.wiseCardBackground)
                     .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    .cardShadow()
                     .padding(.horizontal, 16)
 
                     // Details Section
@@ -198,9 +198,9 @@ struct TransactionDetailView: View {
                         }
                     }
                     .padding(16)
-                    .background(Color.white)
+                    .background(Color.wiseCardBackground)
                     .cornerRadius(16)
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    .cardShadow()
                     .padding(.horizontal, 16)
 
                     // Actions Section

@@ -58,7 +58,7 @@ struct SetupWizardView: View {
                     }) {
                         Text("Skip")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.wiseSecondaryText)
                     }
                     .accessibilityLabel("Skip setup")
 
@@ -66,7 +66,7 @@ struct SetupWizardView: View {
 
                     Text("Step \(currentStep + 1) of 3")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.wiseSecondaryText)
                 }
                 .padding(.horizontal, 32)
                 .padding(.top, 20)
@@ -75,7 +75,7 @@ struct SetupWizardView: View {
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
                         Rectangle()
-                            .fill(Color.gray.opacity(0.2))
+                            .fill(Color.wiseBorder.opacity(0.3))
                             .frame(height: 4)
 
                         Rectangle()
@@ -151,11 +151,7 @@ struct SetupWizardView: View {
             .padding(.horizontal, 32)
             .padding(.bottom, 40)
         }
-        .background(
-            colorScheme == .dark
-                ? Color.black
-                : Color.wiseBackground
-        )
+        .background(Color.wiseBackground)
     }
 
     // MARK: - Currency Step
@@ -175,7 +171,7 @@ struct SetupWizardView: View {
 
                 Text("Select your preferred currency for tracking expenses")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .multilineTextAlignment(.center)
             }
             .padding(.top, 40)
@@ -197,7 +193,7 @@ struct SetupWizardView: View {
                                     .font(.headline)
                                 Text(currency.code)
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(.wiseSecondaryText)
                             }
 
                             Spacer()
@@ -250,7 +246,7 @@ struct SetupWizardView: View {
 
                 Text("Get reminders before your subscriptions renew")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .multilineTextAlignment(.center)
             }
             .padding(.top, 40)
@@ -274,7 +270,7 @@ struct SetupWizardView: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(notificationsEnabled ? Color.green : Color.wiseBrightGreen)
+                .background(notificationsEnabled ? Color.wiseSuccess : Color.wiseBrightGreen)
                 .cornerRadius(16)
             }
             .buttonStyle(ScaleButtonStyle())
@@ -295,7 +291,7 @@ struct SetupWizardView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 80, height: 80)
-                    .foregroundColor(.blue)
+                    .foregroundColor(.wiseBlue)
 
                 Text("Import Data")
                     .font(.title2)
@@ -303,7 +299,7 @@ struct SetupWizardView: View {
 
                 Text("Choose how you'd like to start")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .multilineTextAlignment(.center)
             }
             .padding(.top, 40)
@@ -325,7 +321,7 @@ struct SetupWizardView: View {
                                     .font(.headline)
                                 Text(option.description)
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(.wiseSecondaryText)
                             }
 
                             Spacer()
@@ -375,7 +371,7 @@ struct SetupWizardView: View {
 
                 Text(text)
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.wisePrimaryText)
 
                 Spacer()
             }

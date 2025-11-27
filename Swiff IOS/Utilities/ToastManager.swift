@@ -34,10 +34,10 @@ struct Toast: Identifiable, Equatable {
 
         var color: Color {
             switch self {
-            case .success: return .wiseBrightGreen
+            case .success: return .wiseSuccess
             case .error: return .wiseError
-            case .warning: return Color(red: 1.0, green: 0.592, blue: 0.0)
-            case .info: return .wiseBlue
+            case .warning: return .wiseWarning
+            case .info: return .wiseInfo
             }
         }
     }
@@ -170,8 +170,8 @@ struct ToastView: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
+                .fill(Color.wiseElevatedBackground)
+                .shadow(color: Color.wiseShadowColor, radius: 10, x: 0, y: 4)
         )
         .padding(.horizontal, 16)
     }

@@ -70,7 +70,7 @@ struct PINEntryView: View {
                 HStack(spacing: 20) {
                     ForEach(0..<4, id: \.self) { index in
                         Circle()
-                            .fill(index < pin.count ? Color.wiseForestGreen : Color.gray.opacity(0.3))
+                            .fill(index < pin.count ? Color.wiseForestGreen : Color.wiseMidGray.opacity(0.5))
                             .frame(width: 20, height: 20)
                     }
                 }
@@ -196,7 +196,7 @@ struct NumberButton: View {
                 .frame(width: 80, height: 80)
                 .background(
                     Circle()
-                        .fill(Color.gray.opacity(0.1))
+                        .fill(Color.wiseBorder.opacity(0.5))
                 )
         }
     }

@@ -22,7 +22,7 @@ struct TrialsEndingSoonSection: View {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 20))
-                        .foregroundColor(.orange)
+                        .foregroundColor(.wiseWarning)
 
                     Text("Trials Ending Soon")
                         .font(.spotifyHeadingLarge)
@@ -82,8 +82,8 @@ struct TrialsEndingSoonSection: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.wiseBackground)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         )
+        .cardShadow()
     }
 }
 
@@ -211,22 +211,22 @@ struct TrialExpiringCard: View {
 
     // AGENT 8: Color coding based on urgency
     private func urgencyColor(days: Int) -> Color {
-        if days <= 1 { return .red }
-        else if days <= 3 { return .orange }
+        if days <= 1 { return .wiseError }
+        else if days <= 3 { return .wiseWarning }
         else { return .wiseSecondaryText }
     }
 
     private var urgencyBackgroundColor: Color {
         guard let days = subscription.daysUntilTrialEnd else { return .clear }
-        if days <= 1 { return Color.red.opacity(0.05) }
-        else if days <= 3 { return Color.orange.opacity(0.05) }
+        if days <= 1 { return Color.wiseError.opacity(0.05) }
+        else if days <= 3 { return Color.wiseWarning.opacity(0.05) }
         else { return .clear }
     }
 
     private var urgencyBorderColor: Color {
         guard let days = subscription.daysUntilTrialEnd else { return Color.wiseBorder }
-        if days <= 1 { return Color.red.opacity(0.3) }
-        else if days <= 3 { return Color.orange.opacity(0.3) }
+        if days <= 1 { return Color.wiseError.opacity(0.3) }
+        else if days <= 3 { return Color.wiseWarning.opacity(0.3) }
         else { return Color.wiseBorder }
     }
 }

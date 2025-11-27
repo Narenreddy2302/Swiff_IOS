@@ -82,7 +82,7 @@ struct SearchView: View {
                 // Search icon
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 16))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
 
                 // Text field
                 TextField("Search people, subscriptions, transactions...", text: $searchQuery)
@@ -94,13 +94,13 @@ struct SearchView: View {
                     Button(action: clearSearch) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 16))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.wiseSecondaryText)
                     }
                 }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(Color.gray.opacity(0.1))
+            .background(Color.wiseBorder.opacity(0.5))
             .cornerRadius(10)
             .padding(.horizontal, 16)
 
@@ -133,14 +133,14 @@ struct SearchView: View {
                                 .font(.system(size: 13, weight: .medium))
                             if searchFilters.isActive {
                                 Circle()
-                                    .fill(Color.red)
+                                    .fill(Color.wiseError)
                                     .frame(width: 6, height: 6)
                             }
                         }
-                        .foregroundColor(searchFilters.isActive ? .white : .primary)
+                        .foregroundColor(searchFilters.isActive ? .white : .wisePrimaryText)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(searchFilters.isActive ? Color.wiseBrightGreen : Color.gray.opacity(0.1))
+                        .background(searchFilters.isActive ? Color.wiseBrightGreen : Color.wiseBorder.opacity(0.5))
                         .cornerRadius(16)
                     }
 
@@ -167,10 +167,10 @@ struct SearchView: View {
                             Text(sortOption.rawValue)
                                 .font(.system(size: 13, weight: .medium))
                         }
-                        .foregroundColor(.primary)
+                        .foregroundColor(.wisePrimaryText)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.gray.opacity(0.1))
+                        .background(Color.wiseBorder.opacity(0.5))
                         .cornerRadius(16)
                     }
                 }
@@ -180,7 +180,7 @@ struct SearchView: View {
 
             Divider()
         }
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
     }
 
     // MARK: - Search History View
@@ -193,7 +193,7 @@ struct SearchView: View {
                     HStack {
                         Text("Recent Searches")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.wisePrimaryText)
 
                         Spacer()
 
@@ -201,7 +201,7 @@ struct SearchView: View {
                             searchHistory.clearHistory()
                         }
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.red)
+                        .foregroundColor(.wiseError)
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
@@ -225,7 +225,7 @@ struct SearchView: View {
                             }
                         }
                     }
-                    .background(Color.white)
+                    .background(Color.wiseCardBackground)
                     .cornerRadius(12)
                     .padding(.horizontal, 16)
                 } else {
@@ -233,15 +233,15 @@ struct SearchView: View {
                     VStack(spacing: 16) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 48))
-                            .foregroundColor(.gray.opacity(0.3))
+                            .foregroundColor(.wiseMidGray.opacity(0.5))
 
                         Text("Search Swiff")
                             .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.primary)
+                            .foregroundColor(.wisePrimaryText)
 
                         Text("Find people, subscriptions, and transactions")
                             .font(.system(size: 15))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.wiseSecondaryText)
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
@@ -253,7 +253,7 @@ struct SearchView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Try searching for:")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.wiseSecondaryText)
                             .padding(.horizontal, 16)
 
                         VStack(spacing: 8) {
@@ -323,7 +323,7 @@ struct SearchView: View {
                 // Results summary
                 Text("\(searchResults.count) result\(searchResults.count == 1 ? "" : "s")")
                     .font(.system(size: 13))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .padding(.vertical, 16)
             }
         }
@@ -338,7 +338,7 @@ struct SearchView: View {
 
             Text("Searching...")
                 .font(.system(size: 15))
-                .foregroundColor(.secondary)
+                .foregroundColor(.wiseSecondaryText)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.top, 100)
@@ -675,17 +675,17 @@ struct QuickSearchButton: View {
 
                 Text(title)
                     .font(.system(size: 15))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.wisePrimaryText)
 
                 Spacer()
 
                 Image(systemName: "arrow.up.left")
                     .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(Color.gray.opacity(0.05))
+            .background(Color.wiseBorder.opacity(0.3))
             .cornerRadius(10)
         }
         .buttonStyle(PlainButtonStyle())

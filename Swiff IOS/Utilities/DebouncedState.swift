@@ -234,26 +234,26 @@ struct SaveStatusIndicator: View {
                         .scaleEffect(0.7)
                     Text("Saving...")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.wiseSecondaryText)
                 }
 
             case .saved:
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundColor(.wiseSuccess)
                     Text("Saved")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.wiseSecondaryText)
                 }
                 .transition(.opacity)
 
             case .error(let message):
                 HStack(spacing: 4) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.red)
+                        .foregroundColor(.wiseError)
                     Text("Error: \(message)")
                         .font(.caption)
-                        .foregroundColor(.red)
+                        .foregroundColor(.wiseError)
                 }
             }
         }

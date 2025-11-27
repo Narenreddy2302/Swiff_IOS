@@ -158,8 +158,8 @@ struct ReminderSettingsSection: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
         .alert("Test Reminder Sent!", isPresented: $showingTestConfirmation) {
             Button("OK", role: .cancel) {}
@@ -207,9 +207,9 @@ struct DaysBeforeOption: View {
             .frame(width: 70, height: 70)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? Color.wiseForestGreen : Color.white)
+                    .fill(isSelected ? Color.wiseForestGreen : Color.wiseCardBackground)
                     .shadow(
-                        color: isSelected ? Color.wiseForestGreen.opacity(0.3) : Color.black.opacity(0.05),
+                        color: isSelected ? Color.wiseForestGreen.opacity(0.3) : Color.wiseShadowColor,
                         radius: isSelected ? 8 : 4,
                         x: 0,
                         y: 2

@@ -135,8 +135,8 @@ struct FilterButton: View {
             .padding(.vertical, 8)
             .background(
                 Capsule()
-                    .fill(isSelected ? Color.wiseForestGreen : Color.white)
-                    .shadow(color: .black.opacity(isSelected ? 0.1 : 0.03), radius: 4, x: 0, y: 2)
+                    .fill(isSelected ? Color.wiseForestGreen : Color.wiseCardBackground)
+                    .shadow(color: Color.wiseShadowColor, radius: 4, x: 0, y: 2)
             )
         }
     }
@@ -151,12 +151,12 @@ struct NotificationHistoryRow: View {
         HStack(alignment: .top, spacing: 16) {
             // Icon
             Circle()
-                .fill((Color(hex: entry.type.color) ?? Color.gray).opacity(0.2))
+                .fill((Color(hex: entry.type.color) ?? Color.wiseMidGray).opacity(0.2))
                 .frame(width: 44, height: 44)
                 .overlay(
                     Image(systemName: entry.type.icon)
                         .font(.system(size: 18))
-                        .foregroundColor(Color(hex: entry.type.color) ?? .gray)
+                        .foregroundColor(Color(hex: entry.type.color) ?? .wiseMidGray)
                 )
 
             VStack(alignment: .leading, spacing: 6) {

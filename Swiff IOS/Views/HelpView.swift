@@ -52,7 +52,7 @@ struct HelpView: View {
                             icon: "bell.fill",
                             title: "Notifications & Reminders",
                             subtitle: "Never miss a payment",
-                            color: .orange
+                            color: .wiseWarning
                         ) {
                             selectedCategory = .notifications
                         }
@@ -61,7 +61,7 @@ struct HelpView: View {
                             icon: "person.2.fill",
                             title: "Sharing & People",
                             subtitle: "Split costs with friends",
-                            color: .purple
+                            color: .wisePurple
                         ) {
                             selectedCategory = .sharing
                         }
@@ -79,7 +79,7 @@ struct HelpView: View {
                             icon: "lock.shield.fill",
                             title: "Privacy & Security",
                             subtitle: "Your data, your control",
-                            color: .red
+                            color: .wiseError
                         ) {
                             selectedCategory = .privacy
                         }
@@ -97,7 +97,7 @@ struct HelpView: View {
                             icon: "wrench.fill",
                             title: "Troubleshooting",
                             subtitle: "Fix common issues",
-                            color: .orange
+                            color: .wiseWarning
                         ) {
                             selectedCategory = .troubleshooting
                         }

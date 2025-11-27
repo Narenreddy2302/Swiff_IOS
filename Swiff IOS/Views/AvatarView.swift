@@ -68,7 +68,7 @@ struct AvatarView: View {
             }
 
         case .bordered:
-            Color.white
+            Color.wiseCardBackground
                 .overlay(
                     Circle()
                         .strokeBorder(Color.wiseBorder, lineWidth: 1)
@@ -108,7 +108,7 @@ struct AvatarView: View {
         Image(systemName: "person.circle.fill")
             .resizable()
             .scaledToFit()
-            .foregroundColor(.gray.opacity(0.5))
+            .foregroundColor(.wiseMidGray.opacity(0.5))
             .frame(width: size.dimension * 0.6, height: size.dimension * 0.6)
     }
 

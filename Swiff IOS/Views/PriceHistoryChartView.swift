@@ -127,9 +127,9 @@ struct PriceHistoryChartView: View {
             }
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
 
@@ -250,9 +250,9 @@ struct PriceHistoryChartView: View {
                     .foregroundColor(.wiseSecondaryText)
             }
             .padding(16)
-            .background(Color.white)
+            .background(Color.wiseCardBackground)
             .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .cardShadow()
             .padding(.horizontal, 16)
         } else {
             emptyChartView
@@ -277,9 +277,9 @@ struct PriceHistoryChartView: View {
         .frame(height: 300)
         .frame(maxWidth: .infinity)
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
 
@@ -303,9 +303,9 @@ struct PriceHistoryChartView: View {
                 }
             }
             .padding(16)
-            .background(Color.white)
+            .background(Color.wiseCardBackground)
             .cornerRadius(16)
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            .cardShadow()
             .padding(.horizontal, 16)
         }
     }

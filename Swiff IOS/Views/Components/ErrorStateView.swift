@@ -53,13 +53,13 @@ struct ErrorStateView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.wisePrimaryText)
                     .accessibilityAddTraits(.isHeader)
 
                 Text(error.message)
                     .font(.body)
                     .multilineTextAlignment(.center)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .lineLimit(nil)
                     .padding(.horizontal, 32)
             }
@@ -93,7 +93,7 @@ struct ErrorStateView: View {
                     }) {
                         Text("Dismiss")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.wiseSecondaryText)
                             .padding(.vertical, 12)
                     }
                     .accessibilityLabel("Dismiss error")
@@ -104,11 +104,7 @@ struct ErrorStateView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            colorScheme == .dark
-                ? Color.black.opacity(0.95)
-                : Color.wiseBackground
-        )
+        .background(Color.wiseBackground)
         .onAppear {
             // Shake animation on appear
             if !AccessibilitySettings.isReduceMotionEnabled {
@@ -245,13 +241,13 @@ enum AppError: Error {
     var color: Color {
         switch self {
         case .networkError:
-            return .orange
+            return .wiseWarning
         case .permissionDenied:
-            return .yellow
+            return .wiseWarning
         case .invalidInput:
-            return .orange
+            return .wiseWarning
         default:
-            return .red
+            return .wiseError
         }
     }
 }

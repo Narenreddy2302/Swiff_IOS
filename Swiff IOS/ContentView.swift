@@ -56,26 +56,40 @@ extension Font {
 struct ContentView: View {
     @EnvironmentObject var dataManager: DataManager
     @StateObject private var spotlightNavigation = SpotlightNavigationHandler()
+    @StateObject private var userSettings = UserSettings.shared
     @State private var selectedTab: Int = 0
 
     init() {
-        // Configure tab bar appearance with transparent background
+        // Configure tab bar appearance with adaptive colors for dark mode
         let appearance = UITabBarAppearance()
         appearance.configureWithTransparentBackground()
 
         // Set transparent background
         appearance.backgroundColor = UIColor.clear
 
-        // Configure unselected tab item appearance - pitch black
-        appearance.stackedLayoutAppearance.normal.iconColor = UIColor(Color.black.opacity(0.6))
+        // Create adaptive colors for tab items that respond to dark/light mode
+        let unselectedColor = UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark ?
+                UIColor(white: 1.0, alpha: 0.6) : // Light gray in dark mode
+                UIColor(white: 0.0, alpha: 0.6)   // Dark gray in light mode
+        }
+
+        let selectedColor = UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark ?
+                UIColor(white: 1.0, alpha: 1.0) : // White in dark mode
+                UIColor(white: 0.0, alpha: 1.0)   // Black in light mode
+        }
+
+        // Configure unselected tab item appearance - adaptive
+        appearance.stackedLayoutAppearance.normal.iconColor = unselectedColor
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-            .foregroundColor: UIColor(Color.black.opacity(0.6))
+            .foregroundColor: unselectedColor
         ]
 
-        // Configure selected tab item appearance - pitch black
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(Color.black)
+        // Configure selected tab item appearance - adaptive
+        appearance.stackedLayoutAppearance.selected.iconColor = selectedColor
         appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-            .foregroundColor: UIColor(Color.black)
+            .foregroundColor: selectedColor
         ]
 
         // Remove separator line
@@ -89,9 +103,9 @@ struct ContentView: View {
         UITabBar.appearance().isTranslucent = true
         UITabBar.appearance().backgroundColor = UIColor.clear
 
-        // Set the tint color for selected items
-        UITabBar.appearance().tintColor = UIColor(Color.black)
-        UITabBar.appearance().unselectedItemTintColor = UIColor(Color.black.opacity(0.6))
+        // Set the tint color for selected items - adaptive
+        UITabBar.appearance().tintColor = selectedColor
+        UITabBar.appearance().unselectedItemTintColor = unselectedColor
     }
 
     var body: some View {
@@ -131,7 +145,8 @@ struct ContentView: View {
                 }
                 .tag(4)
         }
-        .accentColor(.black)
+        .tint(.wisePrimaryText) // Adaptive accent color for dark mode
+        .preferredColorScheme(preferredColorSchemeValue)
         .dataManagerOverlays() // Add error handling and progress display
         .toast() // Add toast notification support
         .onChange(of: spotlightNavigation.shouldNavigateToTab) { oldValue, newValue in
@@ -141,12 +156,25 @@ struct ContentView: View {
             }
         }
     }
+
+    /// Computed property to determine the preferred color scheme based on user settings
+    private var preferredColorSchemeValue: ColorScheme? {
+        switch userSettings.themeMode.lowercased() {
+        case "light":
+            return .light
+        case "dark":
+            return .dark
+        default: // "system"
+            return nil
+        }
+    }
 }
 
 // MARK: - Home View
 struct HomeView: View {
     @Binding var selectedTab: Int
     @State private var showingSettings = false
+    @State private var showingProfile = false
     @State private var showingSearch = false
     @State private var showingQuickActions = false
 
@@ -158,6 +186,7 @@ struct HomeView: View {
                         // Top Header with Profile and Actions
                         TopHeaderSection(
                             showingSettings: $showingSettings,
+                            showingProfile: $showingProfile,
                             showingSearch: $showingSearch,
                             showingQuickActions: $showingQuickActions
                         )
@@ -170,17 +199,11 @@ struct HomeView: View {
                             // Four Card Grid
                             FinancialOverviewGrid(selectedTab: $selectedTab)
 
-                            // Subscription Statistics Card
-                            SubscriptionStatisticsCard()
-
                             // Recent Group Activity Section
                             RecentGroupActivitySection()
 
                             // Recent Transactions Section
                             RecentActivitySection()
-
-                            // Analytics Section - Insights
-                            InsightsCard()
 
                             // Top Subscriptions Section
                             TopSubscriptionsSection(selectedTab: $selectedTab)
@@ -205,6 +228,9 @@ struct HomeView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView()
         }
+        .sheet(isPresented: $showingProfile) {
+            ProfileView()
+        }
         .sheet(isPresented: $showingSearch) {
             SearchView()
         }
@@ -217,6 +243,7 @@ struct HomeView: View {
 // MARK: - Top Header Section
 struct TopHeaderSection: View {
     @Binding var showingSettings: Bool
+    @Binding var showingProfile: Bool
     @Binding var showingSearch: Bool
     @Binding var showingQuickActions: Bool
 
@@ -224,13 +251,17 @@ struct TopHeaderSection: View {
         HStack {
             // Profile Icon (left corner)
             Button(action: {
-                showingSettings = true
+                HapticManager.shared.impact(.medium)
+                showingProfile = true
             }) {
-                Image(systemName: "person.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(.wisePrimaryText)
-                    .frame(width: 44, height: 44)
+                AvatarView(
+                    avatarType: UserProfileManager.shared.profile.avatarType,
+                    size: .large,
+                    style: .solid
+                )
+                .frame(width: 32, height: 32)
             }
+            .buttonStyle(ScaleButtonStyle(scaleAmount: 0.9))
 
             Spacer()
 
@@ -241,22 +272,11 @@ struct TopHeaderSection: View {
 
             Spacer()
 
-            // Search and Add Buttons (right corner)
-            HStack(spacing: 16) {
-                Button(action: {
-                    showingSearch = true
-                }) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 20))
-                        .foregroundColor(.wisePrimaryText)
-                        .frame(width: 44, height: 44)
-                }
-
-                HeaderActionButton(icon: "plus.circle.fill", color: .wiseForestGreen) {
-                    HapticManager.shared.impact(.medium)
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        showingQuickActions = true
-                    }
+            // Add Button (right corner)
+            HeaderActionButton(icon: "plus.circle.fill", color: .wiseForestGreen) {
+                HapticManager.shared.impact(.medium)
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    showingQuickActions = true
                 }
             }
         }
@@ -439,8 +459,8 @@ struct FinancialCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
     }
 }
@@ -493,8 +513,8 @@ struct EnhancedFinancialCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
     }
 }
@@ -530,8 +550,8 @@ struct SubscriptionsCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                    .fill(Color.wiseCardBackground)
+                    .cardShadow()
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -828,7 +848,7 @@ struct AllActivityView: View {
                                 }
                             }
                             .padding(16)
-                            .background(Color.white)
+                            .background(Color.wiseCardBackground)
                             .cornerRadius(12)
                         }
                         .padding(.horizontal, 16)
@@ -905,12 +925,12 @@ struct FriendActivityCard: View {
                     .offset(x: 18, y: -18)
                     .overlay(
                         Circle()
-                            .stroke(Color.white, lineWidth: 2)
+                            .stroke(Color.wiseCardBackground, lineWidth: 2)
                             .frame(width: 12, height: 12)
                             .offset(x: 18, y: -18)
                     )
             }
-            
+
             // Activity details
             VStack(spacing: 2) {
                 if amount != "$0.00" {
@@ -1035,8 +1055,8 @@ struct QuickActionSheet: View {
                     VStack(spacing: 12) {
                         QuickActionRow(
                             icon: "plus.circle.fill",
-                            iconColor: .wiseBrightGreen,
                             title: "Add Transaction",
+                            iconColor: .wiseBrightGreen,
                             subtitle: "Record a new expense or income"
                         ) {
                             HapticManager.shared.impact(.light)
@@ -1045,8 +1065,8 @@ struct QuickActionSheet: View {
 
                         QuickActionRow(
                             icon: "creditcard.fill",
-                            iconColor: .wiseBlue,
                             title: "Add Subscription",
+                            iconColor: .wiseBlue,
                             subtitle: "Track a new subscription service"
                         ) {
                             HapticManager.shared.impact(.light)
@@ -1055,8 +1075,8 @@ struct QuickActionSheet: View {
 
                         QuickActionRow(
                             icon: "person.fill",
-                            iconColor: Color(red: 1.0, green: 0.592, blue: 0.0),
                             title: "Add Person",
+                            iconColor: Color(red: 1.0, green: 0.592, blue: 0.0),
                             subtitle: "Add a friend to track balances"
                         ) {
                             HapticManager.shared.impact(.light)
@@ -1065,8 +1085,7 @@ struct QuickActionSheet: View {
 
                         QuickActionRow(
                             icon: "person.2.fill",
-                            iconColor: .wiseForestGreen,
-                            title: "Add Group",
+                            title: "Add Group", iconColor: .wiseForestGreen,
                             subtitle: "Create a new group for shared expenses"
                         ) {
                             HapticManager.shared.impact(.light)
@@ -1128,57 +1147,7 @@ struct QuickActionSheet: View {
     }
 }
 
-// MARK: - Quick Action Row
-struct QuickActionRow: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let subtitle: String
-    let action: () -> Void
 
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                // Icon
-                ZStack {
-                    Circle()
-                        .fill(iconColor.opacity(0.15))
-                        .frame(width: 48, height: 48)
-
-                    Image(systemName: icon)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(iconColor)
-                }
-
-                // Title and subtitle
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.spotifyBodyLarge)
-                        .foregroundColor(.wisePrimaryText)
-
-                    Text(subtitle)
-                        .font(.spotifyCaptionMedium)
-                        .foregroundColor(.wiseSecondaryText)
-                        .multilineTextAlignment(.leading)
-                }
-
-                Spacer()
-
-                // Chevron
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.wiseSecondaryText.opacity(0.5))
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
 
 // MARK: - Insights Card
 struct InsightsCard: View {
@@ -1280,8 +1249,8 @@ struct InsightRow: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.04), radius: 6, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
     }
 }
@@ -1382,8 +1351,8 @@ struct TopSubscriptionCard: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
     }
 }
@@ -1452,6 +1421,85 @@ struct UpcomingRenewalsSection: View {
 }
 
 // MARK: - Upcoming Renewal Row
+struct UpcomingRenewalRow: View {
+    let subscription: Subscription
+    
+    var daysUntilRenewal: Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let renewalDate = calendar.startOfDay(for: subscription.nextBillingDate)
+        return calendar.dateComponents([.day], from: today, to: renewalDate).day ?? 0
+    }
+    
+    var urgencyColor: Color {
+        if daysUntilRenewal <= 2 {
+            return .wiseError
+        } else if daysUntilRenewal <= 4 {
+            return .wiseOrange
+        }
+        return .wiseBlue
+    }
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Icon
+            Circle()
+                .fill(Color(hex: subscription.color).opacity(0.1))
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Image(systemName: subscription.icon)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(Color(hex: subscription.color))
+                )
+            
+            // Details
+            VStack(alignment: .leading, spacing: 4) {
+                Text(subscription.name)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+                
+                HStack(spacing: 4) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 11))
+                        .foregroundColor(urgencyColor)
+                    
+                    if daysUntilRenewal == 0 {
+                        Text("Today")
+                            .font(.spotifyCaptionMedium)
+                            .foregroundColor(urgencyColor)
+                    } else if daysUntilRenewal == 1 {
+                        Text("Tomorrow")
+                            .font(.spotifyCaptionMedium)
+                            .foregroundColor(urgencyColor)
+                    } else {
+                        Text("In \(daysUntilRenewal) days")
+                            .font(.spotifyCaptionMedium)
+                            .foregroundColor(urgencyColor)
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            // Price
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(String(format: "$%.2f", subscription.price))
+                    .font(.spotifyNumberSmall)
+                    .foregroundColor(.wisePrimaryText)
+                
+                Text(subscription.billingCycle.shortName)
+                    .font(.spotifyCaptionSmall)
+                    .foregroundColor(.wiseSecondaryText)
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
+        )
+    }
+}
 
 // MARK: - Savings Opportunities Card
 struct SavingsOpportunitiesCard: View {
@@ -1541,7 +1589,7 @@ struct SavingsOpportunitiesCard: View {
                         .padding(.horizontal, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.white)
+                                .fill(Color.wiseCardBackground)
                         )
                     }
                 }
@@ -1678,8 +1726,8 @@ struct SubscriptionSpendingCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
     }
 }
@@ -1962,11 +2010,6 @@ struct RecentActivityView: View {
                     selectedCategory: $selectedCategory
                 )
 
-                // Page 2: Statistics Header (collapsible)
-                if !filteredTransactions.isEmpty {
-                    StatisticsHeaderView(transactions: filteredTransactions)
-                }
-
                 // Transaction List
                 if filteredTransactions.isEmpty {
                     // Page 2: Enhanced Empty State
@@ -2130,150 +2173,6 @@ struct FeedHeaderSection: View {
     }
 }
 
-// MARK: - Feed Stats Section
-struct FeedStatsSection: View {
-    let transactions: [Transaction]
-
-    var totalIncome: Double {
-        transactions.filter { !$0.isExpense }.reduce(0) { $0 + $1.amount }
-    }
-
-    var totalExpenses: Double {
-        abs(transactions.filter { $0.isExpense }.reduce(0) { $0 + $1.amount })
-    }
-
-    var netAmount: Double {
-        totalIncome - totalExpenses
-    }
-
-    // Calculate trend (placeholder - can be enhanced with actual historical data)
-    private var incomeTrend: TrendDirection {
-        .positive(5.2) // Placeholder
-    }
-
-    private var expensesTrend: TrendDirection {
-        .negative(2.1) // Placeholder
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Section Title
-            Text("OVERVIEW")
-                .font(.spotifyLabelSmall)
-                .textCase(.uppercase)
-                .foregroundColor(.wiseSecondaryText)
-                .padding(.horizontal, 16)
-
-            // 2x2 Grid matching Home screen format
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12)
-            ], spacing: 12) {
-                // Balance Card (Net Amount)
-                StatisticsCardComponent(
-                    icon: "dollarsign.circle",
-                    title: "Balance",
-                    value: formatCurrency(netAmount),
-                    trend: netAmount >= 0 ? .positive(abs(netAmount / max(totalIncome, 1)) * 100) : .negative(abs(netAmount / max(totalExpenses, 1)) * 100),
-                    iconColor: netAmount >= 0 ? .wiseBrightGreen : .wiseError
-                )
-
-                // Subscriptions Card (placeholder)
-                StatisticsCardComponent(
-                    icon: "star.circle",
-                    title: "Subscriptions",
-                    value: "$89.99",
-                    trend: .neutral,
-                    iconColor: .wiseBlue
-                )
-
-                // Income Card
-                StatisticsCardComponent(
-                    icon: "arrow.down.circle",
-                    title: "Income",
-                    value: formatCurrency(totalIncome),
-                    trend: incomeTrend,
-                    iconColor: .wiseBrightGreen
-                )
-
-                // Expenses Card
-                StatisticsCardComponent(
-                    icon: "arrow.up.circle",
-                    title: "Expenses",
-                    value: formatCurrency(totalExpenses),
-                    trend: expensesTrend,
-                    iconColor: .wiseOrange
-                )
-            }
-            .padding(.horizontal, 16)
-        }
-        .padding(.bottom, 16)
-    }
-
-    private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
-    }
-}
-
-// MARK: - Feed Stat Card
-struct FeedStatCard: View {
-    let title: String
-    let amount: Double
-    let icon: String
-    let color: Color
-    let isCount: Bool
-    
-    init(title: String, amount: Double, icon: String, color: Color, isCount: Bool = false) {
-        self.title = title
-        self.amount = amount
-        self.icon = icon
-        self.color = color
-        self.isCount = isCount
-    }
-    
-    var formattedAmount: String {
-        if isCount {
-            return String(Int(amount))
-        }
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter.string(from: NSNumber(value: abs(amount))) ?? "$0.00"
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(color)
-                
-                Spacer()
-            }
-            
-            Text(title)
-                .font(.spotifyLabelSmall)
-                .foregroundColor(.wiseSecondaryText)
-                .textCase(.uppercase)
-            
-            Text(formattedAmount)
-                .font(.spotifyNumberLarge)
-                .foregroundColor(.wisePrimaryText)
-        }
-        .padding(16)
-        .frame(width: 140, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-        )
-    }
-}
-
 // MARK: - Category Filter Section
 struct CategoryFilterSection: View {
     @Binding var selectedCategory: TransactionCategory?
@@ -2306,7 +2205,7 @@ struct CategoryFilterSection: View {
                         HStack(spacing: 6) {
                             Image(systemName: category.icon)
                                 .font(.system(size: 14))
-                                .foregroundColor(category.color)
+                                .foregroundColor(selectedCategory == category ? .white : category.color)
                             Text(category.rawValue)
                                 .font(.spotifyLabelSmall)
                         }
@@ -2423,8 +2322,8 @@ struct FeedTransactionRow: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+                    .fill(Color.wiseCardBackground)
+                    .subtleShadow()
             )
 
             // Page 2: Status Badge (top-right corner)
@@ -2886,7 +2785,7 @@ struct CategoryPickerSheet: View {
                             .frame(maxWidth: .infinity)
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .fill(selectedCategory == category ? category.color.opacity(0.1) : Color.white)
+                                    .fill(selectedCategory == category ? category.color.opacity(0.1) : Color.wiseCardBackground)
                                     .stroke(selectedCategory == category ? category.color : Color.wiseBorder, lineWidth: selectedCategory == category ? 2 : 1)
                             )
                         }
@@ -2929,65 +2828,17 @@ struct PeopleView: View {
         }
     }
     
-    // Sample data with Apple Memoji
-    static let samplePeople: [Person] = [
-        {
-            // Using emoji avatar
-            var person = Person(name: "Sarah Wilson", email: "sarah@example.com", phone: "+1234567890", avatar: "🧑🏻‍🦰")
-            person.balance = 25.50 // They owe me money
-            return person
-        }(),
-        {
-            // Using initials avatar with color
-            var person = Person(
-                name: "John Smith",
-                email: "john@example.com",
-                phone: "+1234567891",
-                avatarType: .initials("JS", colorIndex: 0)
-            )
-            person.balance = -15.75 // I owe them money
-            return person
-        }(),
-        {
-            // Using emoji avatar
-            var person = Person(name: "Mike Chen", email: "mike@example.com", phone: "+1234567892", avatar: "👨🏻‍💻")
-            person.balance = 0.0 // Settled up
-            return person
-        }(),
-        {
-            // Using initials avatar with different color
-            var person = Person(
-                name: "Emma Davis",
-                email: "emma@example.com",
-                phone: "+1234567893",
-                avatarType: .initials("ED", colorIndex: 3)
-            )
-            person.balance = 45.20 // They owe me money
-            return person
-        }(),
-        {
-            // Using emoji avatar
-            var person = Person(name: "Alex Johnson", email: "alex@example.com", phone: "+1234567894", avatar: "🧑🏼‍🎨")
-            person.balance = -8.30 // I owe them money
-            return person
-        }()
-    ]
-    
-    static let sampleGroups: [Group] = [
-        Group(name: "Weekend Trip", description: "Beach vacation with friends", emoji: "🏖️", members: [samplePeople[0].id, samplePeople[1].id, samplePeople[2].id]),
-        Group(name: "Roommates", description: "Monthly household expenses", emoji: "🏠", members: [samplePeople[0].id, samplePeople[3].id]),
-        Group(name: "Office Team", description: "Work lunch and coffee expenses", emoji: "💼", members: [samplePeople[1].id, samplePeople[2].id, samplePeople[4].id])
-    ]
-    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // Header
+                // Fixed Header Section
                 PeopleHeaderSection(
                     selectedTab: $selectedTab,
                     showingAddPersonSheet: $showingAddPersonSheet,
                     showingAddGroupSheet: $showingAddGroupSheet
                 )
+                .background(Color.wiseBackground)
+                .zIndex(1) // Keep header on top
                 
                 // Content
                 TabView(selection: $selectedTab) {
@@ -3050,11 +2901,11 @@ struct PeopleHeaderSection: View {
 
                 Spacer()
 
-                // Search and Add Buttons (matching Home/Feed design)
+                // Search and Add Buttons
                 HStack(spacing: 16) {
                     Button(action: {
-                        // Search action (can be implemented later)
                         HapticManager.shared.light()
+                        // Search action placeholder
                     }) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 20))
@@ -3118,6 +2969,162 @@ struct GroupsView: View {
     }
 }
 
+// MARK: - People Quick Stats View
+struct PeopleQuickStatsView: View {
+    let people: [Person]
+    
+    var totalOwedToYou: Double {
+        people.filter { $0.balance > 0 }.reduce(0) { $0 + $1.balance }
+    }
+    
+    var totalYouOwe: Double {
+        let negativeBalances = people.filter { $0.balance < 0 }
+        return abs(negativeBalances.reduce(0) { $0 + $1.balance })
+    }
+    
+    var netBalance: Double {
+        totalOwedToYou - totalYouOwe
+    }
+    
+    var numberOfPeople: Int {
+        people.count
+    }
+    
+    var activePeopleCount: Int {
+        people.filter { $0.balance != 0 }.count
+    }
+    
+    // Calculate trends (placeholder - in production, compare with previous period)
+    private func calculateTrend(for type: String) -> (percentage: Double, isPositive: Bool) {
+        switch type {
+        case "balance":
+            return netBalance >= 0 ? (5.2, true) : (2.1, false)
+        case "people":
+            return (0.0, true) // Neutral for count
+        case "owed":
+            return (3.5, true)
+        case "owing":
+            return (1.8, false)
+        default:
+            return (0, true)
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // 1x2 Grid with only owed amounts
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 12) {
+                // Owed to You Card
+                PeopleStatCard(
+                    title: "Owed to You",
+                    amount: totalOwedToYou,
+                    icon: "arrow.down.circle.fill",
+                    color: .wiseBrightGreen,
+                    isAmount: true,
+                    trend: calculateTrend(for: "owed")
+                )
+                
+                // You Owe Card
+                PeopleStatCard(
+                    title: "You Owe",
+                    amount: totalYouOwe,
+                    icon: "arrow.up.circle.fill",
+                    color: .wiseError,
+                    isAmount: true,
+                    trend: calculateTrend(for: "owing")
+                )
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+}
+
+// MARK: - People Stat Card
+struct PeopleStatCard: View {
+    let title: String
+    let amount: Double
+    let icon: String
+    let color: Color
+    let isAmount: Bool
+    let isCount: Bool
+    let trend: (percentage: Double, isPositive: Bool)
+    
+    init(title: String, amount: Double, icon: String, color: Color, isAmount: Bool = false, isCount: Bool = false, trend: (percentage: Double, isPositive: Bool) = (0.0, true)) {
+        self.title = title
+        self.amount = amount
+        self.icon = icon
+        self.color = color
+        self.isAmount = isAmount
+        self.isCount = isCount
+        self.trend = trend
+    }
+    
+    var formattedAmount: String {
+        if isCount {
+            return String(Int(amount))
+        } else if isAmount {
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .currency
+            formatter.currencySymbol = "$"
+            formatter.maximumFractionDigits = amount >= 1000 ? 0 : 2
+            return formatter.string(from: NSNumber(value: amount)) ?? "$0"
+        }
+        return String(format: "%.2f", amount)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(color)
+                
+                Spacer()
+                
+                // Trend indicator (only show if non-zero)
+                if trend.percentage != 0.0 {
+                    HStack(spacing: 2) {
+                        Image(systemName: trend.isPositive ? "arrow.up.right" : "arrow.down.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(trend.isPositive ? .wiseBrightGreen : .wiseError)
+                        
+                        Text(String(format: "%.1f%%", abs(trend.percentage)))
+                            .font(.spotifyCaptionSmall)
+                            .foregroundColor(trend.isPositive ? .wiseBrightGreen : .wiseError)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(
+                        Capsule()
+                            .fill((trend.isPositive ? Color.wiseBrightGreen : Color.wiseError).opacity(0.1))
+                    )
+                }
+            }
+            
+            Text(title.uppercased())
+                .font(.spotifyLabelSmall)
+                .foregroundColor(.wiseSecondaryText)
+                .textCase(.uppercase)
+            
+            Text(formattedAmount)
+                .font(.spotifyNumberLarge)
+                .foregroundColor(.wisePrimaryText)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
+        )
+    }
+}
+
+// MARK: - Subscriptions View
 struct SubscriptionsView: View {
     @EnvironmentObject var dataManager: DataManager
     @State private var selectedTab: SubscriptionsTab = .personal
@@ -3376,29 +3383,11 @@ struct BalanceSummaryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // 2x2 Grid matching Home screen format exactly
+            // 1x2 Grid with only owed amounts
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 8),
                 GridItem(.flexible(), spacing: 8)
             ], spacing: 8) {
-                // Net Balance Card
-                EnhancedFinancialCard(
-                    icon: "dollarsign.circle.fill",
-                    iconColor: netBalance >= 0 ? .wiseBrightGreen : .wiseError,
-                    title: "NET BALANCE",
-                    amount: formatCurrency(abs(netBalance)),
-                    trend: calculateTrend(for: "balance")
-                )
-
-                // People Count Card
-                EnhancedFinancialCard(
-                    icon: "person.2.circle.fill",
-                    iconColor: .wiseBlue,
-                    title: "PEOPLE",
-                    amount: "\(numberOfPeople)",
-                    trend: (0.0, true) // No trend for count
-                )
-
                 // Owed to You Card
                 EnhancedFinancialCard(
                     icon: "arrow.down.circle.fill",
@@ -3547,93 +3536,6 @@ struct PeopleListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Search Bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.wiseSecondaryText)
-                    .font(.system(size: 16))
-
-                TextField("Search people...", text: $searchText)
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wisePrimaryText)
-
-                if !searchText.isEmpty {
-                    Button(action: { searchText = "" }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.wiseSecondaryText)
-                            .font(.system(size: 16))
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.wiseBorder.opacity(0.5))
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
-
-            // Filter Pills and Sort Button
-            HStack(spacing: 12) {
-                // Filter Pills
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(PeopleFilter.allCases, id: \.self) { filter in
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    selectedFilter = filter
-                                }
-                            }) {
-                                Text(filter.rawValue)
-                                    .font(.spotifyBodySmall)
-                                    .foregroundColor(selectedFilter == filter ? .white : .wisePrimaryText)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 20)
-                                            .fill(selectedFilter == filter ? Color.wiseGreen : Color.wiseBorder.opacity(0.3))
-                                    )
-                            }
-                        }
-                    }
-                    .padding(.leading, 16)
-                }
-
-                // Sort Button
-                Button(action: {
-                    showingSortMenu = true
-                }) {
-                    Image(systemName: "arrow.up.arrow.down")
-                        .foregroundColor(.wisePrimaryText)
-                        .font(.system(size: 18, weight: .medium))
-                        .frame(width: 44, height: 36)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.wiseBorder.opacity(0.3))
-                        )
-                }
-                .padding(.trailing, 16)
-            }
-            .padding(.bottom, 16)
-            .confirmationDialog("Sort By", isPresented: $showingSortMenu, titleVisibility: .visible) {
-                ForEach(PeopleSort.allCases, id: \.self) { sort in
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedSort = sort
-                        }
-                    }) {
-                        HStack {
-                            Text(sort.rawValue)
-                            if selectedSort == sort {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
-                Button("Cancel", role: .cancel) {}
-            }
-
             // Balance Summary Header Card
             if !people.isEmpty {
                 BalanceSummaryCard(
@@ -3655,15 +3557,15 @@ struct PeopleListView: View {
                 VStack(spacing: 20) {
                     Spacer()
 
-                    Image(systemName: searchText.isEmpty ? "person.2" : "magnifyingglass")
+                    Image(systemName: "person.2")
                         .font(.system(size: 64))
                         .foregroundColor(.wiseSecondaryText.opacity(0.5))
 
-                    Text(searchText.isEmpty ? "No people yet" : "No people found")
+                    Text("No people yet")
                         .font(.spotifyHeadingMedium)
                         .foregroundColor(.wisePrimaryText)
 
-                    Text(searchText.isEmpty ? "Add your first person to start tracking expenses" : "Try a different search term")
+                    Text("Add your first person to start tracking expenses")
                         .font(.spotifyBodyMedium)
                         .foregroundColor(.wiseSecondaryText)
                         .multilineTextAlignment(.center)
@@ -3930,8 +3832,8 @@ struct PersonRowView: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .subtleShadow()
         )
     }
 }
@@ -4016,8 +3918,8 @@ struct SettleAllBalancesSheet: View {
                     .padding(16)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                            .fill(Color.wiseCardBackground)
+                            .cardShadow()
                     )
 
                     // People List
@@ -4059,7 +3961,7 @@ struct SettleAllBalancesSheet: View {
                     // Warning Message
                     HStack(spacing: 12) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.orange)
+                            .foregroundColor(.wiseWarning)
 
                         Text("This will mark all balances as settled. This action cannot be undone.")
                             .font(.spotifyBodySmall)
@@ -4068,7 +3970,7 @@ struct SettleAllBalancesSheet: View {
                     .padding(12)
                     .background(
                         RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.orange.opacity(0.1))
+                            .fill(Color.wiseWarning.opacity(0.1))
                     )
 
                     // Settle Button
@@ -4345,33 +4247,6 @@ struct GroupsListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Search Bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.wiseSecondaryText)
-                    .font(.system(size: 16))
-
-                TextField("Search groups...", text: $searchText)
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wisePrimaryText)
-
-                if !searchText.isEmpty {
-                    Button(action: { searchText = "" }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.wiseSecondaryText)
-                            .font(.system(size: 16))
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.wiseBorder.opacity(0.5))
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
-
             // Groups List
             if dataManager.isLoading && groups.isEmpty {
                 // Loading State
@@ -4381,15 +4256,15 @@ struct GroupsListView: View {
                 VStack(spacing: 20) {
                     Spacer()
 
-                    Image(systemName: searchText.isEmpty ? "person.3" : "magnifyingglass")
+                    Image(systemName: "person.3")
                         .font(.system(size: 64))
                         .foregroundColor(.wiseSecondaryText.opacity(0.5))
 
-                    Text(searchText.isEmpty ? "No groups yet" : "No groups found")
+                    Text("No groups yet")
                         .font(.spotifyHeadingMedium)
                         .foregroundColor(.wisePrimaryText)
 
-                    Text(searchText.isEmpty ? "Create your first group to track shared expenses" : "Try a different search term")
+                    Text("Create your first group to track shared expenses")
                         .font(.spotifyBodyMedium)
                         .foregroundColor(.wiseSecondaryText)
                         .multilineTextAlignment(.center)
@@ -4525,8 +4400,8 @@ struct GroupRowView: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .subtleShadow()
         )
     }
 }
@@ -4584,7 +4459,7 @@ struct AvatarPickerSheet: View {
                         // Loading overlay
                         if isProcessingImage {
                             Circle()
-                                .fill(Color.black.opacity(0.5))
+                                .fill(Color.wiseOverlayColor)
                                 .frame(width: 64, height: 64)
 
                             ProgressView()
@@ -4758,7 +4633,7 @@ struct AvatarPickerSheet: View {
                                         )
                                 )
                                 .shadow(
-                                    color: selectedColorIndex == index ? Color.black.opacity(0.2) : Color.clear,
+                                    color: selectedColorIndex == index ? Color.wiseShadowColor : Color.clear,
                                     radius: 4, x: 0, y: 2
                                 )
                         }
@@ -5517,8 +5392,42 @@ struct SubscriptionQuickStatsView: View {
         totalMonthlySpend * 12
     }
     
+    var activeCount: Int {
+        subscriptions.filter { $0.isActive }.count
+    }
+    
+    var averagePerSubscription: Double {
+        activeCount > 0 ? totalMonthlySpend / Double(activeCount) : 0
+    }
+    
     var body: some View {
-        EmptyView()
+        VStack(alignment: .leading, spacing: 12) {
+            // 1x2 Grid with only monthly and active
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 12) {
+                // Monthly Spend
+                SubscriptionStatCard(
+                    title: "Monthly",
+                    amount: totalMonthlySpend,
+                    icon: "calendar",
+                    color: .wiseBlue,
+                    isAmount: true
+                )
+                
+                // Active Subscriptions
+                SubscriptionStatCard(
+                    title: "Active",
+                    amount: Double(activeCount),
+                    icon: "star.circle",
+                    color: .wiseBrightGreen,
+                    isCount: true
+                )
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }
 
@@ -5573,11 +5482,11 @@ struct SubscriptionStatCard: View {
                 .foregroundColor(.wisePrimaryText)
         }
         .padding(16)
-        .frame(width: 110, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
     }
 }
@@ -5614,7 +5523,7 @@ struct SubscriptionsCategoryFilterSection: View {
                         HStack(spacing: 6) {
                             Image(systemName: category.icon)
                                 .font(.system(size: 14))
-                                .foregroundColor(category.color)
+                                .foregroundColor(selectedCategory == category ? .white : category.color)
                             Text(category.rawValue)
                                 .font(.spotifyLabelSmall)
                         }
@@ -5634,6 +5543,85 @@ struct SubscriptionsCategoryFilterSection: View {
     }
 }
 
+// MARK: - Subscription Statistics Card
+struct SubscriptionStatisticsCard: View {
+    @EnvironmentObject var dataManager: DataManager
+    
+    var totalMonthlySpend: Double {
+        dataManager.subscriptions
+            .filter { $0.isActive }
+            .reduce(0) { total, subscription in
+                total + subscription.monthlyEquivalent
+            }
+    }
+    
+    var activeCount: Int {
+        dataManager.subscriptions.filter { $0.isActive }.count
+    }
+    
+    var yearlyProjection: Double {
+        totalMonthlySpend * 12
+    }
+    
+    var averagePerSubscription: Double {
+        activeCount > 0 ? totalMonthlySpend / Double(activeCount) : 0
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Title
+            Text("OVERVIEW")
+                .font(.spotifyLabelSmall)
+                .textCase(.uppercase)
+                .foregroundColor(.wiseSecondaryText)
+            
+            // 2x2 Grid of statistics
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 12) {
+                // Monthly Spend
+                SubscriptionStatCard(
+                    title: "Monthly",
+                    amount: totalMonthlySpend,
+                    icon: "calendar",
+                    color: .wiseBlue,
+                    isAmount: true
+                )
+                
+                // Active Subscriptions
+                SubscriptionStatCard(
+                    title: "Active",
+                    amount: Double(activeCount),
+                    icon: "star.circle",
+                    color: .wiseBrightGreen,
+                    isCount: true
+                )
+                
+                // Yearly Projection
+                SubscriptionStatCard(
+                    title: "Yearly",
+                    amount: yearlyProjection,
+                    icon: "chart.line.uptrend.xyaxis",
+                    color: .wiseOrange,
+                    isAmount: true
+                )
+                
+                // Average per Subscription
+                SubscriptionStatCard(
+                    title: "Average",
+                    amount: averagePerSubscription,
+                    icon: "chart.bar",
+                    color: .wisePurple,
+                    isAmount: true
+                )
+            }
+        }
+    }
+}
+
+
+
 // MARK: - Enhanced Personal Subscriptions View
 struct EnhancedPersonalSubscriptionsView: View {
     @EnvironmentObject var dataManager: DataManager
@@ -5649,60 +5637,6 @@ struct EnhancedPersonalSubscriptionsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Statistics Card
-            SubscriptionStatisticsCard()
-                .environmentObject(dataManager)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
-
-            // Search and Filter Bar
-            HStack(spacing: 12) {
-                // Search Bar
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.wiseSecondaryText)
-                        .font(.system(size: 16))
-
-                    TextField("Search subscriptions...", text: $searchText)
-                        .font(.spotifyBodyMedium)
-                        .foregroundColor(.wisePrimaryText)
-
-                    if !searchText.isEmpty {
-                        Button(action: { searchText = "" }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.wiseSecondaryText)
-                                .font(.system(size: 16))
-                        }
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.wiseBorder.opacity(0.5))
-                )
-
-                // Filter Button
-                Button(action: { showingFilterSheet = true }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: selectedFilter.icon)
-                            .font(.system(size: 14))
-                        Text(selectedFilter == .all ? "All" : selectedFilter.rawValue)
-                            .font(.spotifyLabelSmall)
-                    }
-                    .foregroundColor(.wisePrimaryText)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(selectedFilter == .all ? Color.wiseBorder.opacity(0.5) : Color.wiseForestGreen.opacity(0.1))
-                            .stroke(selectedFilter == .all ? Color.clear : Color.wiseForestGreen, lineWidth: 1)
-                    )
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 12)
-
             // View Mode Toggle and Sort Menu
             HStack(spacing: 12) {
                 // View Mode Toggle
@@ -5860,7 +5794,7 @@ struct EnhancedSubscriptionRowView: View {
             if subscription.cancellationDate != nil {
                 return .wiseError
             } else {
-                return Color.orange
+                return Color.wiseWarning
             }
         }
         return .wiseBrightGreen
@@ -5922,13 +5856,13 @@ struct EnhancedSubscriptionRowView: View {
                             .offset(x: 18, y: -18)
                             .overlay(
                                 Circle()
-                                    .stroke(Color.white, lineWidth: 2)
+                                    .stroke(Color.wiseCardBackground, lineWidth: 2)
                                     .frame(width: 12, height: 12)
                                     .offset(x: 18, y: -18)
                             )
                     }
                 }
-                
+
                 // Subscription Details
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -5978,17 +5912,17 @@ struct EnhancedSubscriptionRowView: View {
                             HStack(spacing: 3) {
                                 Image(systemName: "gift.fill")
                                     .font(.system(size: 9))
-                                    .foregroundColor(Color.orange)
+                                    .foregroundColor(Color.wiseWarning)
 
                                 Text(subscription.trialStatus)
                                     .font(.spotifyCaptionSmall)
-                                    .foregroundColor(Color.orange)
+                                    .foregroundColor(Color.wiseWarning)
                             }
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(
                                 Capsule()
-                                    .fill(Color.orange.opacity(0.15))
+                                    .fill(Color.wiseWarning.opacity(0.15))
                             )
                         }
 
@@ -6037,8 +5971,8 @@ struct EnhancedSubscriptionRowView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+                    .fill(Color.wiseCardBackground)
+                    .subtleShadow()
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(isExpiringSoon ? Color.wiseError.opacity(0.3) : Color.clear, lineWidth: 1)
@@ -6061,7 +5995,7 @@ struct SubscriptionRowView: View {
             if subscription.cancellationDate != nil {
                 return .wiseError
             } else {
-                return Color.orange
+                return Color.wiseWarning
             }
         }
         return .wiseBrightGreen
@@ -6176,8 +6110,8 @@ struct SubscriptionRowView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+                    .fill(Color.wiseCardBackground)
+                    .subtleShadow()
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -6219,34 +6153,6 @@ struct EnhancedSharedSubscriptionsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Search Bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.wiseSecondaryText)
-                    .font(.system(size: 16))
-
-                TextField("Search shared subscriptions...", text: $searchText)
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wisePrimaryText)
-
-                if !searchText.isEmpty {
-                    Button(action: { searchText = "" }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.wiseSecondaryText)
-                            .font(.system(size: 16))
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.wiseBorder.opacity(0.5))
-            )
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 16)
-            
             // Shared Subscriptions List
             if sharedSubscriptions.isEmpty {
                 EmptySharedSubscriptionsView()
@@ -6285,7 +6191,7 @@ struct EnhancedSharedSubscriptionRowView: View {
     }
     
     var statusColor: Color {
-        sharedSubscription.isAccepted ? .wiseBrightGreen : Color.orange
+        sharedSubscription.isAccepted ? .wiseBrightGreen : Color.wiseWarning
     }
     
     var statusText: String {
@@ -6317,12 +6223,12 @@ struct EnhancedSharedSubscriptionRowView: View {
                     .offset(x: 18, y: -18)
                     .overlay(
                         Circle()
-                            .stroke(Color.white, lineWidth: 2)
+                            .stroke(Color.wiseCardBackground, lineWidth: 2)
                             .frame(width: 12, height: 12)
                             .offset(x: 18, y: -18)
                     )
             }
-            
+
             // Subscription Details
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -6400,11 +6306,11 @@ struct EnhancedSharedSubscriptionRowView: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .subtleShadow()
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(!sharedSubscription.isAccepted ? Color.orange.opacity(0.3) : Color.clear, lineWidth: 1)
+                        .stroke(!sharedSubscription.isAccepted ? Color.wiseWarning.opacity(0.3) : Color.clear, lineWidth: 1)
                 )
         )
     }
@@ -6472,8 +6378,8 @@ struct SharedSubscriptionRowView: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .subtleShadow()
         )
     }
 }
@@ -6578,8 +6484,8 @@ struct EnhancedAddSubscriptionSheet: View {
                         .padding(16)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white)
-                                .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
+                                .fill(Color.wiseCardBackground)
+                                .shadow(color: Color.wiseShadowColor, radius: 4, x: 0, y: 2)
                         )
                     }
                     
@@ -7041,8 +6947,8 @@ struct SubscriptionInsightsSheet: View {
                             .padding(16)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white)
-                                    .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 2)
+                                    .fill(Color.wiseCardBackground)
+                                    .cardShadow()
                             )
                         }
                     }
@@ -7097,8 +7003,8 @@ struct InsightStatCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
     }
 }
@@ -7267,8 +7173,8 @@ struct RenewalDateSection: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .subtleShadow()
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(isWithinWeek ? Color.wiseError.opacity(0.3) : Color.clear, lineWidth: 1)

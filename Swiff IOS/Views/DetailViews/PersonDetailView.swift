@@ -187,9 +187,9 @@ struct PersonDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .cardShadow()
         .padding(.horizontal, 16)
     }
 
@@ -583,9 +583,9 @@ struct GroupMembershipRow: View {
             }
         }
         .padding(12)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+        .subtleShadow()
     }
 }
 
@@ -625,9 +625,9 @@ struct PersonTransactionRow: View {
                 .foregroundColor(transaction.isExpense ? .wiseError : .wiseBrightGreen)
         }
         .padding(12)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+        .subtleShadow()
     }
 }
 
@@ -675,7 +675,7 @@ struct PersonTransactionTimelineRow: View {
                         .frame(width: 12, height: 12)
                         .overlay(
                             Circle()
-                                .stroke(Color.white, lineWidth: 2)
+                                .stroke(Color.wiseCardBackground, lineWidth: 2)
                         )
 
                     // Bottom line
@@ -739,8 +739,8 @@ struct PersonTransactionTimelineRow: View {
                     .padding(12)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+                            .fill(Color.wiseCardBackground)
+                            .subtleShadow()
                     )
                 }
             }
@@ -1145,8 +1145,8 @@ struct TransactionStatisticsCard: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
     }
 }
@@ -1210,8 +1210,8 @@ struct RecurringPatternsCard: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
     }
 
@@ -1516,8 +1516,8 @@ struct PaymentHistoryChart: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                .fill(Color.wiseCardBackground)
+                .cardShadow()
         )
     }
 

@@ -36,7 +36,7 @@ struct LoadingStateView: View {
             if let message = message {
                 Text(message)
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .multilineTextAlignment(.center)
             }
         }
@@ -72,7 +72,7 @@ struct ProgressBarView: View {
                 if let label = label {
                     Text(label)
                         .font(.subheadline)
-                        .foregroundColor(.primary)
+                        .foregroundColor(.wisePrimaryText)
                 }
 
                 Spacer()
@@ -80,7 +80,7 @@ struct ProgressBarView: View {
                 if showPercentage {
                     Text("\(Int(progress * 100))%")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.wiseSecondaryText)
                         .monospacedDigit()
                 }
             }
@@ -90,7 +90,7 @@ struct ProgressBarView: View {
                 ZStack(alignment: .leading) {
                     // Background
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.2))
+                        .fill(Color.wiseBorder.opacity(0.3))
                         .frame(height: 8)
 
                     // Progress Fill
@@ -158,7 +158,7 @@ struct BulkOperationProgressView: View {
 
                 Text("\(currentItem) of \(totalItems) \(itemName)")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
             }
 
             // Progress Bar
@@ -207,7 +207,7 @@ struct LoadingOverlay: ViewModifier {
                 .blur(radius: isLoading ? 2 : 0)
 
             if isLoading {
-                Color.black.opacity(0.3)
+                Color.wiseOverlayColor
                     .ignoresSafeArea()
 
                 VStack(spacing: 20) {
@@ -228,7 +228,7 @@ struct LoadingOverlay: ViewModifier {
                     }
                 }
                 .padding(24)
-                .background(Color.black.opacity(0.8))
+                .background(Color.wiseOverlayColor.opacity(0.95))
                 .cornerRadius(16)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(message ?? "Loading")
@@ -265,7 +265,7 @@ struct PullToRefreshIndicator: View {
                         SpinnerView()
                         Text("Refreshing...")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.wiseSecondaryText)
                     }
                 }
             }
@@ -297,7 +297,7 @@ struct DeterminateLoadingView: View {
             // Circular Progress
             ZStack {
                 Circle()
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 10)
+                    .stroke(Color.wiseBorder.opacity(0.3), lineWidth: 10)
                     .frame(width: 120, height: 120)
 
                 Circle()
@@ -332,7 +332,7 @@ struct DeterminateLoadingView: View {
                 if let subtitle = subtitle {
                     Text(subtitle)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.wiseSecondaryText)
                         .multilineTextAlignment(.center)
                 }
             }

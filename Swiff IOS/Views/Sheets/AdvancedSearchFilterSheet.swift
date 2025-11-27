@@ -134,7 +134,7 @@ struct AdvancedSearchFilterSheet: View {
             if availableCategories.isEmpty {
                 Text("No categories available")
                     .font(.system(size: 14))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .padding(.vertical, 8)
             } else {
                 FlowLayout(spacing: 8) {
@@ -188,7 +188,7 @@ struct AdvancedSearchFilterSheet: View {
                         tempFilters.endDate = nil
                     }
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.red)
+                    .foregroundColor(.wiseError)
                 }
             }
         }
@@ -237,7 +237,7 @@ struct AdvancedSearchFilterSheet: View {
                         tempFilters.maxAmount = nil
                     }
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.red)
+                    .foregroundColor(.wiseError)
                 }
             }
         }
@@ -329,7 +329,7 @@ struct AdvancedSearchFilterSheet: View {
 
             Text(title)
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.primary)
+                .foregroundColor(.wisePrimaryText)
         }
     }
 
@@ -397,22 +397,22 @@ struct FilterToggleRow: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 16))
-                    .foregroundColor(isSelected ? .wiseBrightGreen : .secondary)
+                    .foregroundColor(isSelected ? .wiseBrightGreen : .wiseSecondaryText)
                     .frame(width: 24)
 
                 Text(title)
                     .font(.system(size: 15))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.wisePrimaryText)
 
                 Spacer()
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 20))
-                    .foregroundColor(isSelected ? .wiseBrightGreen : .gray.opacity(0.3))
+                    .foregroundColor(isSelected ? .wiseBrightGreen : .wiseMidGray.opacity(0.5))
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(isSelected ? Color.wiseBrightGreen.opacity(0.1) : Color.gray.opacity(0.05))
+            .background(isSelected ? Color.wiseBrightGreen.opacity(0.1) : Color.wiseBorder.opacity(0.3))
             .cornerRadius(10)
         }
         .buttonStyle(PlainButtonStyle())
@@ -430,14 +430,14 @@ struct FilterChip: View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(isSelected ? .white : .primary)
+                .foregroundColor(isSelected ? .white : .wisePrimaryText)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.wiseBrightGreen : Color.gray.opacity(0.1))
+                .background(isSelected ? Color.wiseBrightGreen : Color.wiseBorder.opacity(0.5))
                 .cornerRadius(16)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(isSelected ? Color.clear : Color.gray.opacity(0.3), lineWidth: 1)
+                        .stroke(isSelected ? Color.clear : Color.wiseMidGray.opacity(0.5), lineWidth: 1)
                 )
         }
         .buttonStyle(PlainButtonStyle())

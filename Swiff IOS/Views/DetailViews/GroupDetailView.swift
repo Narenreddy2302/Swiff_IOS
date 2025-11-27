@@ -155,9 +155,9 @@ struct GroupDetailView: View {
                             }
                         }
                         .padding(16)
-                        .background(Color.white)
+                        .background(Color.wiseCardBackground)
                         .cornerRadius(16)
-                        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+                        .cardShadow()
                         .padding(.horizontal, 16)
                     }
 
@@ -433,9 +433,9 @@ struct ExpenseRowView: View {
                 .padding(.leading, 56)
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color.wiseCardBackground)
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.03), radius: 4, x: 0, y: 2)
+        .subtleShadow()
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             if !expense.isSettled {
                 Button {

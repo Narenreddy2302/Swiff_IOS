@@ -16,7 +16,7 @@ struct SubscriptionGridCardView: View {
             if subscription.cancellationDate != nil {
                 return .wiseError
             } else {
-                return Color.orange
+                return .wiseWarning
             }
         }
         return .wiseBrightGreen
@@ -146,7 +146,7 @@ struct SubscriptionGridCardView: View {
                     .padding(.vertical, 6)
                     .background(
                         Capsule()
-                            .fill(Color.orange.opacity(0.15))
+                            .fill(Color.wiseWarning.opacity(0.15))
                     )
                 } else if subscription.isActive {
                     // Countdown Badge for regular subscriptions
@@ -191,8 +191,8 @@ struct SubscriptionGridCardView: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.wiseCardBackground)
-                .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 2)
         )
+        .cardShadow()
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.wiseBorder.opacity(0.3), lineWidth: 1)

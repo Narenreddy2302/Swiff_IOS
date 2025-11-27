@@ -38,7 +38,7 @@ struct WelcomeScreen: View {
 
                 Text("Swiff")
                     .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .foregroundColor(.primary)
+                    .foregroundColor(.wisePrimaryText)
             }
             .opacity(textOpacity)
 
@@ -88,11 +88,7 @@ struct WelcomeScreen: View {
         }
         .padding(.horizontal, 32)
         .padding(.vertical, 60)
-        .background(
-            colorScheme == .dark
-                ? Color.black
-                : Color.wiseBackground
-        )
+        .background(Color.wiseBackground)
         .onAppear {
             withAnimation(.bouncy.delay(0.1)) {
                 logoScale = 1.0
