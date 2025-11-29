@@ -2274,94 +2274,69 @@ struct CategoryFilterSection: View {
     }
 }
 
-// MARK: - Feed Transaction Row
+// MARK: - Feed Transaction Row (Unified Design)
 struct FeedTransactionRow: View {
     let transaction: Transaction
     @State private var isPressed = false
 
+    // IMPORTANT: Expenses are RED, Income is GREEN
+    private var amountColor: Color {
+        transaction.isExpense ? .wiseError : .wiseBrightGreen
+    }
+
+    private var displayTitle: String {
+        // Use merchant name if available, otherwise use title
+        if let merchant = transaction.merchant, !merchant.isEmpty {
+            return merchant
+        }
+        return transaction.title
+    }
+
+    private var displaySubtitle: String {
+        // Show category as subtitle
+        return transaction.category.rawValue
+    }
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
+            // Main Unified Row
             HStack(spacing: 16) {
-                // Category Icon
-                Circle()
-                    .fill(transaction.category.color.opacity(0.1))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Image(systemName: transaction.category.icon)
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(transaction.category.color)
+                // Unified Icon Circle
+                ZStack {
+                    UnifiedIconCircle(
+                        icon: transaction.category.icon,
+                        color: transaction.category.color
                     )
 
-                // Transaction Details
+                    // Status indicators as small dots on the icon
+                    if transaction.isRecurring {
+                        Circle()
+                            .fill(Color.wiseBlue)
+                            .frame(width: 10, height: 10)
+                            .offset(x: 18, y: -18)
+                    }
+                }
+
+                // Text Content
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(transaction.title)
-                            .font(.spotifyBodyLarge)
-                            .foregroundColor(.wisePrimaryText)
+                    Text(displayTitle)
+                        .font(.spotifyBodyLarge)
+                        .foregroundColor(.wisePrimaryText)
+                        .lineLimit(1)
 
-                        Spacer()
-
-                        // Page 2: Indicators Row
-                        HStack(spacing: 6) {
-                            if transaction.isRecurring {
-                                Image(systemName: "repeat.circle.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.wiseBlue)
-                            }
-
-                            if transaction.hasReceipt {
-                                Image(systemName: "camera.circle.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.wiseForestGreen)
-                            }
-
-                            if transaction.isLinkedToSubscription {
-                                Image(systemName: "link.circle.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.wiseBlue)
-                            }
-                        }
-                    }
-
-                    // Page 2: Merchant name display (prominent)
-                    if let merchant = transaction.merchant, !merchant.isEmpty {
-                        Text(merchant)
-                            .font(.spotifyBodyMedium)
-                            .foregroundColor(.wisePrimaryText)
-                            .fontWeight(.semibold)
-                    }
-
-                    Text(transaction.subtitle)
+                    Text(displaySubtitle)
                         .font(.spotifyBodySmall)
                         .foregroundColor(.wiseSecondaryText)
-
-                    // Tags
-                    if !transaction.tags.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 4) {
-                                ForEach(transaction.tags, id: \.self) { tag in
-                                    Text(tag)
-                                        .font(.spotifyCaptionSmall)
-                                        .foregroundColor(.wiseSecondaryText)
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(
-                                            Capsule()
-                                                .fill(Color.wiseBorder.opacity(0.5))
-                                        )
-                                }
-                            }
-                        }
-                    }
+                        .lineLimit(1)
                 }
 
                 Spacer()
 
-                // Amount and Date
-                VStack(alignment: .trailing, spacing: 4) {
+                // Value Area
+                VStack(alignment: .trailing, spacing: 2) {
                     Text(transaction.amountWithSign)
                         .font(.spotifyNumberMedium)
-                        .foregroundColor(transaction.isExpense ? .wiseError : .wiseBrightGreen)
+                        .foregroundColor(amountColor)
 
                     Text(transaction.date, style: .time)
                         .font(.spotifyCaptionSmall)
@@ -2372,18 +2347,18 @@ struct FeedTransactionRow: View {
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.wiseCardBackground)
-                    .subtleShadow()
             )
+            .subtleShadow()
 
-            // Page 2: Status Badge (top-right corner)
+            // Status Badge (top-right corner) - only for non-completed transactions
             if transaction.paymentStatus != .completed {
                 TransactionStatusBadge(status: transaction.paymentStatus, size: .small)
                     .padding(8)
             }
         }
-        // Page 2: Tap animations and haptic feedback
-        .scaleEffect(isPressed ? 0.97 : 1.0)
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+        // Tap animations and haptic feedback
+        .scaleEffect(isPressed ? 0.98 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
         .onLongPressGesture(minimumDuration: 0, maximumDistance: .infinity, pressing: { pressing in
             isPressed = pressing
             if pressing {
@@ -3825,23 +3800,23 @@ struct PeopleListView: View {
     }
 }
 
-// MARK: - Person Row View
+// MARK: - Person Row View (Unified Design)
 struct PersonRowView: View {
     let person: Person
     let transactions: [Transaction]
 
-    // Computed properties for balance display
+    // IMPORTANT: Positive balance (owes you) = GREEN, Negative (you owe) = RED
     private var balanceColor: Color {
         if person.balance > 0 {
-            return .wiseBrightGreen // They owe me money - green
+            return .wiseBrightGreen // They owe you - GREEN
         } else if person.balance < 0 {
-            return .wiseError // I owe them money - red
+            return .wiseError // You owe them - RED
         } else {
-            return .wiseForestGreen // No one owes anything - dark green
+            return .wisePrimaryText // Settled - neutral
         }
     }
 
-    private var balanceText: String {
+    private var balanceLabel: String {
         if person.balance > 0 {
             return "owes you"
         } else if person.balance < 0 {
@@ -3851,36 +3826,50 @@ struct PersonRowView: View {
         }
     }
 
+    private var formattedBalance: String {
+        let amount = abs(person.balance)
+        if amount == 0 {
+            return "$0.00"
+        }
+        let sign = person.balance > 0 ? "+ " : "- "
+        return sign + formatCurrency(amount)
+    }
+
+    private var displaySubtitle: String {
+        // Show email if available, otherwise show last activity
+        if !person.email.isEmpty {
+            return person.email
+        }
+        return person.lastActivityText(transactions: transactions)
+    }
+
     var body: some View {
         HStack(spacing: 16) {
-            // Avatar - Using new AvatarView component
+            // Avatar as the icon (48x48 for .large size)
             AvatarView(person: person, size: .large, style: .gradient)
 
-            // Person Details
+            // Text Content
             VStack(alignment: .leading, spacing: 4) {
                 Text(person.name)
                     .font(.spotifyBodyLarge)
                     .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
 
-                Text(person.email)
+                Text(displaySubtitle)
                     .font(.spotifyBodySmall)
                     .foregroundColor(.wiseSecondaryText)
-
-                // Last activity
-                Text("Last activity: \(person.lastActivityText(transactions: transactions))")
-                    .font(.spotifyCaptionSmall)
-                    .foregroundColor(.wiseSecondaryText.opacity(0.7))
+                    .lineLimit(1)
             }
 
             Spacer()
 
-            // Balance
+            // Value Area
             VStack(alignment: .trailing, spacing: 2) {
-                Text(String(format: "$%.2f", abs(person.balance)))
+                Text(formattedBalance)
                     .font(.spotifyNumberMedium)
                     .foregroundColor(balanceColor)
 
-                Text(balanceText)
+                Text(balanceLabel)
                     .font(.spotifyCaptionSmall)
                     .foregroundColor(.wiseSecondaryText)
             }
@@ -3889,8 +3878,8 @@ struct PersonRowView: View {
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.wiseCardBackground)
-                .subtleShadow()
         )
+        .subtleShadow()
     }
 }
 
@@ -4395,59 +4384,49 @@ struct GroupsListView: View {
     }
 }
 
-// MARK: - Group Row View
+// MARK: - Group Row View (Unified Design)
 struct GroupRowView: View {
     let group: Group
     let people: [Person]
-    
-    var memberNames: String {
-        let names = group.members.compactMap { memberID in
-            people.first { $0.id == memberID }?.name
-        }
-        return names.prefix(3).joined(separator: ", ") + (names.count > 3 ? " +\(names.count - 3)" : "")
+
+    private var memberCountText: String {
+        return "\(group.members.count) member\(group.members.count == 1 ? "" : "s")"
     }
-    
+
+    private var expenseCountText: String {
+        return "\(group.expenses.count) expense\(group.expenses.count == 1 ? "" : "s")"
+    }
+
     var body: some View {
         HStack(spacing: 16) {
-            // Group Emoji
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [Color.wiseBlue.opacity(0.2), Color.wiseBlue.opacity(0.1)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Text(group.emoji)
-                        .font(.system(size: 24))
-                )
-            
-            // Group Details
+            // Unified Emoji Circle
+            UnifiedEmojiCircle(
+                emoji: group.emoji,
+                backgroundColor: .wiseBlue
+            )
+
+            // Text Content
             VStack(alignment: .leading, spacing: 4) {
                 Text(group.name)
                     .font(.spotifyBodyLarge)
                     .foregroundColor(.wisePrimaryText)
-                
-                Text(memberNames)
+                    .lineLimit(1)
+
+                Text(memberCountText)
                     .font(.spotifyBodySmall)
                     .foregroundColor(.wiseSecondaryText)
-                
-                Text("\(group.expenses.count) expenses")
-                    .font(.spotifyCaptionSmall)
-                    .foregroundColor(.wiseSecondaryText)
+                    .lineLimit(1)
             }
-            
+
             Spacer()
-            
-            // Total Amount
+
+            // Value Area
             VStack(alignment: .trailing, spacing: 2) {
-                Text(String(format: "$%.2f", group.totalAmount))
+                Text(formatCurrency(group.totalAmount))
                     .font(.spotifyNumberMedium)
                     .foregroundColor(.wisePrimaryText)
-                
-                Text("total")
+
+                Text(expenseCountText)
                     .font(.spotifyCaptionSmall)
                     .foregroundColor(.wiseSecondaryText)
             }
@@ -4456,8 +4435,8 @@ struct GroupRowView: View {
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.wiseCardBackground)
-                .subtleShadow()
         )
+        .subtleShadow()
     }
 }
 
@@ -5840,12 +5819,18 @@ struct EnhancedPersonalSubscriptionsView: View {
     }
 }
 
-// MARK: - Enhanced Subscription Row View
+// MARK: - Enhanced Subscription Row View (Unified Design)
 struct EnhancedSubscriptionRowView: View {
     let subscription: Subscription
     @State private var showingDetails = false
-    
-    var statusColor: Color {
+
+    // Icon color from subscription's custom color
+    private var iconColor: Color {
+        Color(hex: subscription.color)
+    }
+
+    // Status color for inactive/cancelled subscriptions
+    private var statusColor: Color {
         if !subscription.isActive {
             if subscription.cancellationDate != nil {
                 return .wiseError
@@ -5855,185 +5840,109 @@ struct EnhancedSubscriptionRowView: View {
         }
         return .wiseBrightGreen
     }
-    
-    var statusText: String {
-        if !subscription.isActive {
-            if subscription.cancellationDate != nil {
-                return "Cancelled"
-            } else {
-                return "Paused"
-            }
-        }
-        return "Active"
+
+    // Billing cycle label
+    private var priceLabel: String {
+        "/\(subscription.billingCycle.shortName)"
     }
-    
-    var nextBillingText: String {
-        if subscription.billingCycle == BillingCycle.lifetime {
-            return "Lifetime"
-        }
-        
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: subscription.nextBillingDate, relativeTo: Date())
-    }
-    
-    var isExpiringSoon: Bool {
+
+    // Check if subscription is expiring soon (within 7 days)
+    private var isExpiringSoon: Bool {
         let nextWeek = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
         return subscription.isActive && subscription.nextBillingDate <= nextWeek
     }
-    
-    var iconGradient: LinearGradient {
-        let baseColor = Color(hex: subscription.color)
-        return LinearGradient(
-            colors: [baseColor.opacity(0.2), baseColor.opacity(0.1)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-    
+
     var body: some View {
         Button(action: { showingDetails = true }) {
             HStack(spacing: 16) {
-                // App Icon with better styling
+                // Icon Area with status indicators
                 ZStack {
-                    Circle()
-                        .fill(iconGradient)
-                        .frame(width: 48, height: 48)
-                    
-                    Image(systemName: subscription.icon)
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(Color(hex: subscription.color))
-                    
-                    // Status indicator
+                    UnifiedIconCircle(
+                        icon: subscription.icon,
+                        color: iconColor
+                    )
+
+                    // Free trial indicator (orange dot top-right)
+                    if subscription.isFreeTrial && !subscription.isTrialExpired {
+                        Circle()
+                            .fill(Color.wiseWarning)
+                            .frame(width: 10, height: 10)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.wiseCardBackground, lineWidth: 1.5)
+                            )
+                            .offset(x: 18, y: -18)
+                    }
+
+                    // Shared indicator (blue dot bottom-right)
+                    if subscription.isShared {
+                        Circle()
+                            .fill(Color.wiseBlue)
+                            .frame(width: 10, height: 10)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.wiseCardBackground, lineWidth: 1.5)
+                            )
+                            .offset(x: 18, y: 18)
+                    }
+
+                    // Expiring soon indicator (red dot top-left)
                     if isExpiringSoon {
                         Circle()
                             .fill(Color.wiseError)
-                            .frame(width: 12, height: 12)
-                            .offset(x: 18, y: -18)
+                            .frame(width: 10, height: 10)
                             .overlay(
                                 Circle()
-                                    .stroke(Color.wiseCardBackground, lineWidth: 2)
-                                    .frame(width: 12, height: 12)
-                                    .offset(x: 18, y: -18)
+                                    .stroke(Color.wiseCardBackground, lineWidth: 1.5)
                             )
+                            .offset(x: -18, y: -18)
+                    }
+
+                    // Inactive/Cancelled indicator (status color dot bottom-left)
+                    if !subscription.isActive {
+                        Circle()
+                            .fill(statusColor)
+                            .frame(width: 10, height: 10)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.wiseCardBackground, lineWidth: 1.5)
+                            )
+                            .offset(x: -18, y: 18)
                     }
                 }
 
-                // Subscription Details
+                // Text Content
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(subscription.name)
-                            .font(.spotifyBodyLarge)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        Spacer()
-                        
-                        // Status Badge
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(statusColor)
-                                .frame(width: 8, height: 8)
-                            
-                            Text(statusText)
-                                .font(.spotifyCaptionSmall)
-                                .foregroundColor(statusColor)
-                        }
-                    }
-                    
-                    Text(subscription.description)
+                    Text(subscription.name)
+                        .font(.spotifyBodyLarge)
+                        .foregroundColor(.wisePrimaryText)
+                        .lineLimit(1)
+
+                    Text(subscription.category.rawValue.capitalized)
                         .font(.spotifyBodySmall)
                         .foregroundColor(.wiseSecondaryText)
                         .lineLimit(1)
-                    
-                    HStack {
-                        // Category tag
-                        HStack(spacing: 4) {
-                            Image(systemName: subscription.category.icon)
-                                .font(.system(size: 10))
-                                .foregroundColor(subscription.category.color)
-
-                            Text(subscription.category.rawValue)
-                                .font(.spotifyCaptionSmall)
-                                .foregroundColor(.wiseSecondaryText)
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(subscription.category.color.opacity(0.1))
-                        )
-
-                        // Trial Badge
-                        if subscription.isFreeTrial && !subscription.isTrialExpired {
-                            HStack(spacing: 3) {
-                                Image(systemName: "gift.fill")
-                                    .font(.system(size: 9))
-                                    .foregroundColor(Color.wiseWarning)
-
-                                Text(subscription.trialStatus)
-                                    .font(.spotifyCaptionSmall)
-                                    .foregroundColor(Color.wiseWarning)
-                            }
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(
-                                Capsule()
-                                    .fill(Color.wiseWarning.opacity(0.15))
-                            )
-                        }
-
-                        Spacer()
-
-                        // Next billing with better formatting
-                        if subscription.isActive {
-                            Text(nextBillingText)
-                                .font(.spotifyCaptionSmall)
-                                .foregroundColor(isExpiringSoon ? .wiseError : .wiseSecondaryText)
-                        }
-                    }
                 }
-                
+
                 Spacer()
-                
-                // Price with enhanced styling
+
+                // Value Area
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(String(format: "$%.2f", subscription.price))
+                    Text(formatCurrency(subscription.price))
                         .font(.spotifyNumberMedium)
                         .foregroundColor(.wisePrimaryText)
-                    
-                    Text("/\(subscription.billingCycle.shortName)")
+
+                    Text(priceLabel)
                         .font(.spotifyCaptionSmall)
                         .foregroundColor(.wiseSecondaryText)
-                    
-                    if subscription.isShared {
-                        HStack(spacing: 2) {
-                            Image(systemName: "person.2.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(.wiseBlue)
-                            
-                            Text("Shared")
-                                .font(.spotifyCaptionSmall)
-                                .foregroundColor(.wiseBlue)
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(Color.wiseBlue.opacity(0.1))
-                        )
-                    }
                 }
             }
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.wiseCardBackground)
-                    .subtleShadow()
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(isExpiringSoon ? Color.wiseError.opacity(0.3) : Color.clear, lineWidth: 1)
-                    )
             )
+            .subtleShadow()
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -6041,136 +5950,13 @@ struct EnhancedSubscriptionRowView: View {
 
 // MARK: - Color Extension for Hex Support
 
-// MARK: - Subscription Row View
+// MARK: - Subscription Row View (Unified Design - Legacy Wrapper)
+/// Legacy subscription row view - wraps EnhancedSubscriptionRowView for backward compatibility
 struct SubscriptionRowView: View {
     let subscription: Subscription
-    @State private var showingDetails = false
-    
-    var statusColor: Color {
-        if !subscription.isActive {
-            if subscription.cancellationDate != nil {
-                return .wiseError
-            } else {
-                return Color.wiseWarning
-            }
-        }
-        return .wiseBrightGreen
-    }
-    
-    var statusText: String {
-        if !subscription.isActive {
-            if subscription.cancellationDate != nil {
-                return "Cancelled"
-            } else {
-                return "Paused"
-            }
-        }
-        return "Active"
-    }
-    
-    var nextBillingText: String {
-        if subscription.billingCycle == BillingCycle.lifetime {
-            return "Lifetime"
-        }
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return "Next: \(formatter.string(from: subscription.nextBillingDate))"
-    }
-    
+
     var body: some View {
-        Button(action: { showingDetails = true }) {
-            HStack(spacing: 16) {
-                // App Icon
-                Circle()
-                    .fill(Color(hex: subscription.color).opacity(0.1))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Image(systemName: subscription.icon)
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(Color(hex: subscription.color))
-                    )
-                
-                // Subscription Details
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(subscription.name)
-                            .font(.spotifyBodyLarge)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        Spacer()
-                        
-                        // Status Badge
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(statusColor)
-                                .frame(width: 8, height: 8)
-                            
-                            Text(statusText)
-                                .font(.spotifyCaptionSmall)
-                                .foregroundColor(.wiseSecondaryText)
-                        }
-                    }
-                    
-                    Text(subscription.description)
-                        .font(.spotifyBodySmall)
-                        .foregroundColor(.wiseSecondaryText)
-                        .lineLimit(1)
-                    
-                    HStack {
-                        // Category
-                        HStack(spacing: 4) {
-                            Image(systemName: subscription.category.icon)
-                                .font(.system(size: 12))
-                                .foregroundColor(subscription.category.color)
-                            
-                            Text(subscription.category.rawValue)
-                                .font(.spotifyCaptionSmall)
-                                .foregroundColor(.wiseSecondaryText)
-                        }
-                        
-                        Spacer()
-                        
-                        // Next billing
-                        Text(nextBillingText)
-                            .font(.spotifyCaptionSmall)
-                            .foregroundColor(.wiseSecondaryText)
-                    }
-                }
-                
-                Spacer()
-                
-                // Price
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(String(format: "$%.2f", subscription.price))
-                        .font(.spotifyNumberMedium)
-                        .foregroundColor(.wisePrimaryText)
-                    
-                    Text("/\(subscription.billingCycle.shortName)")
-                        .font(.spotifyCaptionSmall)
-                        .foregroundColor(.wiseSecondaryText)
-                    
-                    if subscription.isShared {
-                        HStack(spacing: 2) {
-                            Image(systemName: "person.2.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(.wiseBlue)
-                            
-                            Text("Shared")
-                                .font(.spotifyCaptionSmall)
-                                .foregroundColor(.wiseBlue)
-                        }
-                    }
-                }
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.wiseCardBackground)
-                    .subtleShadow()
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
+        EnhancedSubscriptionRowView(subscription: subscription)
     }
 }
 

@@ -52,7 +52,7 @@ struct CategoryContributionList: View {
     }
 }
 
-// MARK: - Category Row
+// MARK: - Category Row (Unified Design with Progress Bar)
 
 struct CategoryRow: View {
     let item: ChartDataItem
@@ -63,82 +63,25 @@ struct CategoryRow: View {
         GradientColorHelper.gradientColor(for: item.percentage, isIncome: isIncome)
     }
 
+    private var subtitleText: String {
+        isIncome ? "Income" : "Expense"
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Top Row: Icon, Name, Amount
-            HStack(spacing: 12) {
-                // Category Icon with colored background
-                ZStack {
-                    Circle()
-                        .fill(gradientColor.opacity(0.15))
-                        .frame(width: 40, height: 40)
-
-                    if let icon = item.icon {
-                        Image(systemName: icon)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(gradientColor)
-                    }
-                }
-
-                // Category Name
-                Text(item.category)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.wisePrimaryText)
-
-                Spacer()
-
-                // Amount and Percentage
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(formatCurrency(item.amount))
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(.wisePrimaryText)
-
-                    Text(String(format: "%.1f%%", item.percentage))
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(.wiseSecondaryText)
-                }
-            }
-
-            // Progress Bar
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    // Background
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.wiseMidGray.opacity(0.1))
-                        .frame(height: 6)
-
-                    // Progress with gradient
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    gradientColor.opacity(0.6),
-                                    gradientColor
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(
-                            width: geometry.size.width * (item.percentage / 100),
-                            height: 6
-                        )
-                }
-            }
-            .frame(height: 6)
+        UnifiedListRowWithProgress(
+            title: item.category,
+            subtitle: subtitleText,
+            value: formatCurrency(item.amount),
+            valueColor: gradientColor,
+            percentage: item.percentage,
+            valueLabel: String(format: "%.1f%%", item.percentage),
+            isSelected: isSelected
+        ) {
+            UnifiedIconCircle(
+                icon: item.icon ?? "circle.fill",
+                color: gradientColor
+            )
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isSelected ? gradientColor.opacity(0.08) : Color.clear)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(
-                    isSelected ? gradientColor.opacity(0.4) : Color.clear,
-                    lineWidth: 2
-                )
-        )
         .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
 

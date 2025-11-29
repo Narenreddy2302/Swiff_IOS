@@ -14,36 +14,17 @@ struct TransactionGroupHeader: View {
     let transactionCount: Int
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(dateLabel)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.wisePrimaryText)
-
-                Text(fullDateString)
-                    .font(.system(size: 13))
-                    .foregroundColor(.wiseSecondaryText)
-            }
-
-            Spacer()
-
-            Text("\(transactionCount) transaction\(transactionCount == 1 ? "" : "s")")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.wiseSecondaryText)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(Color.wiseBorder.opacity(0.3))
-                )
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(Color.wiseCardBackground.opacity(0.8))
+        // Use UnifiedSectionHeader for consistent styling
+        UnifiedSectionHeader(
+            title: date.toSectionHeaderTitle(),
+            count: transactionCount,
+            countLabel: "transactions"
+        )
     }
+}
 
-    // MARK: - Computed Properties
-
+// MARK: - Legacy Computed Properties (kept for compatibility)
+extension TransactionGroupHeader {
     private var dateLabel: String {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
