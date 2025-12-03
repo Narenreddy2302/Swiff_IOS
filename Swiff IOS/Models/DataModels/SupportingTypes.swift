@@ -536,7 +536,7 @@ struct SubscriptionDocument: Identifiable, Codable, Equatable {
 // MARK: - Person Notification Types (Agent 13)
 
 /// Contact method for notifications to a person
-enum ContactMethod: String, CaseIterable, Codable {
+enum ContactMethod: String, CaseIterable, Codable, Sendable {
     case inApp = "In-App"
     case email = "Email"
     case sms = "SMS"
@@ -553,7 +553,7 @@ enum ContactMethod: String, CaseIterable, Codable {
 }
 
 /// Notification preferences for a person
-struct NotificationPreferences: Codable, Equatable {
+struct NotificationPreferences: Codable, Equatable, Sendable {
     var enableReminders: Bool
     var reminderFrequency: Int  // days between reminders
     var preferredContactMethod: ContactMethod
@@ -916,39 +916,39 @@ extension Color {
     // Lighter, less saturated versions for dark mode charts
 
     static let chartColorsLight: [Color] = [
-        Color(hex: "#FF6B6B"), // Red
-        Color(hex: "#4ECDC4"), // Teal
-        Color(hex: "#95E1D3"), // Mint
-        Color(hex: "#F38181"), // Coral
-        Color(hex: "#AA96DA"), // Lavender
-        Color(hex: "#FCBAD3"), // Pink
-        Color(hex: "#A8D8EA"), // Sky Blue
-        Color(hex: "#FFD93D"), // Yellow
-        Color(hex: "#6BCF7F"), // Green
-        Color(hex: "#4D96FF"), // Blue
-        Color(hex: "#FFB84D"), // Orange
-        Color(hex: "#A0C4FF"), // Light Blue
-        Color(hex: "#FFA4A4"), // Salmon
-        Color(hex: "#B4A7D6"), // Purple
-        Color(hex: "#C6C6C8")  // Gray
+        Color(hexString: "#FF6B6B"), // Red
+        Color(hexString: "#4ECDC4"), // Teal
+        Color(hexString: "#95E1D3"), // Mint
+        Color(hexString: "#F38181"), // Coral
+        Color(hexString: "#AA96DA"), // Lavender
+        Color(hexString: "#FCBAD3"), // Pink
+        Color(hexString: "#A8D8EA"), // Sky Blue
+        Color(hexString: "#FFD93D"), // Yellow
+        Color(hexString: "#6BCF7F"), // Green
+        Color(hexString: "#4D96FF"), // Blue
+        Color(hexString: "#FFB84D"), // Orange
+        Color(hexString: "#A0C4FF"), // Light Blue
+        Color(hexString: "#FFA4A4"), // Salmon
+        Color(hexString: "#B4A7D6"), // Purple
+        Color(hexString: "#C6C6C8")  // Gray
     ]
 
     static let chartColorsDark: [Color] = [
-        Color(hex: "#FF8585"), // Red (lighter)
-        Color(hex: "#6ED9D1"), // Teal (lighter)
-        Color(hex: "#A8E8DC"), // Mint (lighter)
-        Color(hex: "#F59B9B"), // Coral (lighter)
-        Color(hex: "#BAA6E4"), // Lavender (lighter)
-        Color(hex: "#FDC7DB"), // Pink (lighter)
-        Color(hex: "#B8E2EE"), // Sky Blue (lighter)
-        Color(hex: "#FFE157"), // Yellow (lighter)
-        Color(hex: "#85D999"), // Green (lighter)
-        Color(hex: "#67AAFF"), // Blue (lighter)
-        Color(hex: "#FFC567"), // Orange (lighter)
-        Color(hex: "#B4D0FF"), // Light Blue (lighter)
-        Color(hex: "#FFB4B4"), // Salmon (lighter)
-        Color(hex: "#C4B7E6"), // Purple (lighter)
-        Color(hex: "#8E8E93")  // Gray
+        Color(hexString: "#FF8585"), // Red (lighter)
+        Color(hexString: "#6ED9D1"), // Teal (lighter)
+        Color(hexString: "#A8E8DC"), // Mint (lighter)
+        Color(hexString: "#F59B9B"), // Coral (lighter)
+        Color(hexString: "#BAA6E4"), // Lavender (lighter)
+        Color(hexString: "#FDC7DB"), // Pink (lighter)
+        Color(hexString: "#B8E2EE"), // Sky Blue (lighter)
+        Color(hexString: "#FFE157"), // Yellow (lighter)
+        Color(hexString: "#85D999"), // Green (lighter)
+        Color(hexString: "#67AAFF"), // Blue (lighter)
+        Color(hexString: "#FFC567"), // Orange (lighter)
+        Color(hexString: "#B4D0FF"), // Light Blue (lighter)
+        Color(hexString: "#FFB4B4"), // Salmon (lighter)
+        Color(hexString: "#C4B7E6"), // Purple (lighter)
+        Color(hexString: "#8E8E93")  // Gray
     ]
 
     /// Get chart color for index based on color scheme
@@ -980,10 +980,11 @@ extension Color {
     }
 
     // MARK: - Hex Color Initializer
-    
-    /// Initialize Color from hex string
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+
+    /// Initialize Color from hex string (custom implementation)
+    /// Use `Color(hexString:)` to avoid conflicts with system-provided initializers
+    init(hexString: String) {
+        let hex = hexString.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
         let a, r, g, b: UInt64
@@ -995,7 +996,7 @@ extension Color {
         case 8: // ARGB (32-bit)
             (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
         default:
-            (a, r, g, b) = (1, 1, 1, 0)
+            (a, r, g, b) = (255, 128, 128, 128) // Default gray
         }
 
         self.init(

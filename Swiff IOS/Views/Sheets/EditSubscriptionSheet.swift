@@ -140,12 +140,12 @@ struct EditSubscriptionSheet: View {
                         // Subscription Preview Card
                         HStack(spacing: 16) {
                             Circle()
-                                .fill((Color(hex: selectedColor) ?? Color.wiseMidGray).opacity(0.2))
+                                .fill(Color(hexString: selectedColor).opacity(0.2))
                                 .frame(width: 48, height: 48)
                                 .overlay(
                                     Image(systemName: selectedIcon)
                                         .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(Color(hex: selectedColor) ?? .wiseMidGray)
+                                        .foregroundColor(Color(hexString: selectedColor))
                                 )
 
                             VStack(alignment: .leading, spacing: 4) {
@@ -311,7 +311,7 @@ struct EditSubscriptionSheet: View {
                             Button(action: { showingIconPicker.toggle() }) {
                                 HStack {
                                     Image(systemName: selectedIcon)
-                                        .foregroundColor(Color(hex: selectedColor) ?? .wiseMidGray)
+                                        .foregroundColor(Color(hexString: selectedColor))
                                     Text("Tap to change icon")
                                         .font(.spotifyBodyMedium)
                                         .foregroundColor(.wisePrimaryText)
@@ -335,11 +335,11 @@ struct EditSubscriptionSheet: View {
                                         }) {
                                             Image(systemName: icon)
                                                 .font(.system(size: 24))
-                                                .foregroundColor(selectedIcon == icon ? Color(hex: selectedColor) ?? .wiseMidGray : .wiseSecondaryText)
+                                                .foregroundColor(selectedIcon == icon ? Color(hexString: selectedColor) : .wiseSecondaryText)
                                                 .frame(width: 50, height: 50)
                                                 .background(
-                                                    selectedIcon == icon 
-                                                        ? (Color(hex: selectedColor) ?? Color.wiseMidGray).opacity(0.1)
+                                                    selectedIcon == icon
+                                                        ? Color(hexString: selectedColor).opacity(0.1)
                                                         : Color.wiseBorder.opacity(0.3)
                                                 )
                                                 .cornerRadius(8)
@@ -360,7 +360,7 @@ struct EditSubscriptionSheet: View {
                                 ForEach(availableColors, id: \.self) { colorHex in
                                     Button(action: { selectedColor = colorHex }) {
                                         Circle()
-                                            .fill(Color(hex: colorHex) ?? Color.wiseMidGray)
+                                            .fill(Color(hexString: colorHex))
                                             .frame(width: 40, height: 40)
                                             .overlay(
                                                 Circle()
@@ -501,7 +501,7 @@ struct EditSubscriptionSheet: View {
                                             .fill(Color.wiseBorder.opacity(0.5))
                                             .stroke(Color.wiseBorder, lineWidth: 1)
                                     )
-                                    .onChange(of: trialEndDate) { _ in
+                                    .onChange(of: trialEndDate) {
                                         // AGENT 8: Auto-calculate duration when end date changes
                                         trialDuration = calculateTrialDuration()
                                     }

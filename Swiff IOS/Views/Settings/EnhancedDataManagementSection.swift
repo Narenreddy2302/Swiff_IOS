@@ -316,7 +316,7 @@ struct EnhancedDataManagementSection: View {
     // AGENT 5: Create backup and update last backup date
     private func createBackup() {
         do {
-            let stats = try BackupService.shared.createBackup()
+            _ = try BackupService.shared.createBackup()
             userSettings.lastBackupDate = Date()
             ToastManager.shared.showSuccess("Backup created successfully")
         } catch {

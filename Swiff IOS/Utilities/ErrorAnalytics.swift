@@ -244,7 +244,7 @@ enum ExportFormat {
 // MARK: - Analytics Configuration
 
 /// Configuration for error analytics
-struct AnalyticsConfiguration {
+struct AnalyticsConfiguration: Sendable {
     let maxEventsStored: Int
     let retentionDays: Int
     let patternDetectionThreshold: Int

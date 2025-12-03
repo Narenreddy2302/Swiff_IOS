@@ -113,9 +113,9 @@ class SampleDataGenerator {
         return transactionData.enumerated().map { index, data in
             let (title, subtitle, amount, category) = data
             let daysAgo = Double(index * 2)
-            var date = Date().addingTimeInterval(-daysAgo * 86400)
+            let date = Date().addingTimeInterval(-daysAgo * 86400)
 
-            var transaction = Transaction(
+            let transaction = Transaction(
                 title: title,
                 subtitle: subtitle,
                 amount: abs(amount),

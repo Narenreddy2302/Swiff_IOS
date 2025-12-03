@@ -74,12 +74,12 @@ struct TrialAlertsCard: View {
                     HStack(spacing: 12) {
                         // Trial Icon
                         Circle()
-                            .fill(Color(hex: nextTrial.color).opacity(0.2))
+                            .fill(Color(hexString: nextTrial.color).opacity(0.2))
                             .frame(width: 40, height: 40)
                             .overlay(
                                 Image(systemName: nextTrial.icon)
                                     .font(.system(size: 18))
-                                    .foregroundColor(Color(hex: nextTrial.color))
+                                    .foregroundColor(Color(hexString: nextTrial.color))
                             )
 
                         VStack(alignment: .leading, spacing: 4) {

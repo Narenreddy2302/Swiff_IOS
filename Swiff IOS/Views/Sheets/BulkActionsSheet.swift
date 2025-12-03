@@ -423,7 +423,7 @@ struct ExportOptionsSheet: View {
     private func exportToCSV() {
         // CSV export logic will be handled by CSVExportService
         let csvService = CSVExportService()
-        csvService.exportTransactions(transactions)
+        _ = csvService.exportTransactions(transactions)
         HapticManager.shared.success()
         dismiss()
     }

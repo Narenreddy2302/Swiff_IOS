@@ -4,6 +4,7 @@
 //
 //  Created by Naren Reddy on 11/20/25.
 //  Detailed view for person with balance and transaction history
+//  Enhanced with comprehensive analytics, patterns, and interaction features
 //
 
 import SwiftUI
@@ -20,6 +21,7 @@ struct PersonDetailView: View {
     @State private var showingRecordPaymentSheet = false
     @State private var showingSendReminderSheet = false
     @State private var showingExportSheet = false
+    @State private var showingNotesSheet = false
 
     var person: Person? {
         dataManager.people.first { $0.id == personId }
@@ -28,7 +30,7 @@ struct PersonDetailView: View {
     var personTransactions: [Transaction] {
         guard let person = person else { return [] }
         let personName = person.name
-        
+
         // Filter transactions that mention this person
         let filtered = dataManager.transactions.filter { transaction -> Bool in
             let titleContains = transaction.title.contains(personName)
@@ -36,14 +38,14 @@ struct PersonDetailView: View {
             let mentionsPerson = titleContains || subtitleContains
             return mentionsPerson
         }
-        
+
         // Sort by date descending
         let sorted = filtered.sorted { firstTransaction, secondTransaction in
             let firstDate = firstTransaction.date
             let secondDate = secondTransaction.date
             return firstDate > secondDate
         }
-        
+
         return sorted
     }
 
@@ -85,6 +87,9 @@ struct PersonDetailView: View {
         .sheet(isPresented: $showingExportSheet) {
             exportSheet
         }
+        .sheet(isPresented: $showingNotesSheet) {
+            notesSheet
+        }
         .alert("Delete Person?", isPresented: $showingDeleteAlert) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
@@ -102,12 +107,46 @@ struct PersonDetailView: View {
     @ViewBuilder
     private func personDetailContent(for person: Person) -> some View {
         VStack(spacing: 24) {
+            // TASK 1.1 & 1.12: Enhanced header with relationship badge, last activity, and balance trend mini-chart
             personHeaderSection(for: person)
-            balanceCard(for: person)
+
+            // TASK 1.2 & Balance Card: Payment method preference and balance display
+            balanceCardWithTrend(for: person)
+
+            // TASK 1.3: Quick action buttons (Settle, Record, Remind, Call, Message, Email, WhatsApp)
             quickActionsSection(for: person)
+
+            // TASK 1.4: Transaction statistics card
             analyticsSection(for: person)
+
+            // TASK 1.5: Recurring pattern detection
+            if !personTransactions.isEmpty && personTransactions.count >= 3 {
+                RecurringPatternsCard(
+                    person: person,
+                    transactions: personTransactions
+                )
+                .padding(.horizontal, 16)
+            }
+
+            // TASK 1.6: Monthly payment history chart
+            if !personTransactions.isEmpty {
+                PaymentHistoryChart(
+                    person: person,
+                    transactions: personTransactions
+                )
+                .padding(.horizontal, 16)
+            }
+
+            // TASK 1.11: Group membership display
             groupsSection
+
+            // TASK 1.10: Notes section
+            notesSection(for: person)
+
+            // Transaction history with timeline
             transactionHistorySection(for: person)
+
+            // Delete button
             deletePersonButton
         }
     }
@@ -125,16 +164,45 @@ struct PersonDetailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    // MARK: - TASK 1.1 & 1.12: Enhanced Header with Relationship Badge, Last Activity, and Balance Trend
     @ViewBuilder
     private func personHeaderSection(for person: Person) -> some View {
         VStack(spacing: 16) {
-            // Avatar
+            // Avatar with size xxlarge
             AvatarView(person: person, size: .xxlarge, style: .solid)
 
             // Name
             Text(person.name)
                 .font(.spotifyDisplayMedium)
                 .foregroundColor(.wisePrimaryText)
+
+            // Relationship Type Badge (TASK 1.1)
+            if let relationshipType = person.relationshipType, !relationshipType.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: relationshipIcon(for: relationshipType))
+                        .font(.system(size: 10))
+                    Text(relationshipType)
+                        .font(.spotifyLabelSmall)
+                }
+                .foregroundColor(.wiseSecondaryText)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color.wiseBorder.opacity(0.3))
+                )
+            }
+
+            // Last Activity Indicator (TASK 1.1)
+            HStack(spacing: 6) {
+                Image(systemName: "clock.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.wiseSecondaryText)
+
+                Text("Last activity: \(person.lastActivityText(transactions: dataManager.transactions))")
+                    .font(.spotifyCaptionMedium)
+                    .foregroundColor(.wiseSecondaryText)
+            }
 
             // Contact Info
             VStack(spacing: 8) {
@@ -164,39 +232,81 @@ struct PersonDetailView: View {
         .padding(.top, 20)
     }
 
+    // Helper for relationship icons
+    private func relationshipIcon(for type: String) -> String {
+        switch type.lowercased() {
+        case "friend": return "person.2.fill"
+        case "family": return "house.fill"
+        case "coworker", "colleague": return "building.2.fill"
+        case "roommate": return "person.3.fill"
+        default: return "person.fill"
+        }
+    }
+
+    // MARK: - TASK 1.2 & 1.12: Balance Card with Payment Method and Trend Mini-Chart
     @ViewBuilder
-    private func balanceCard(for person: Person) -> some View {
-        VStack(spacing: 12) {
-            Text("Balance")
-                .font(.spotifyLabelLarge)
-                .foregroundColor(.wiseSecondaryText)
-
-            Text(String(format: "$%.2f", abs(person.balance)))
-                .font(.system(size: 48, weight: .bold, design: .rounded))
-                .foregroundColor(person.balance > 0 ? .wiseBrightGreen : person.balance < 0 ? .wiseError : .wisePrimaryText)
-
-            if person.balance != 0 {
-                Text(person.balance > 0 ? "owes you" : "you owe")
-                    .font(.spotifyBodyMedium)
+    private func balanceCardWithTrend(for person: Person) -> some View {
+        VStack(spacing: 16) {
+            // Main balance display
+            VStack(spacing: 12) {
+                Text("Balance")
+                    .font(.spotifyLabelLarge)
                     .foregroundColor(.wiseSecondaryText)
-            } else {
-                Text("settled up")
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wiseBrightGreen)
+
+                Text(String(format: "$%.2f", abs(person.balance)))
+                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .foregroundColor(person.balance > 0 ? .wiseBrightGreen : person.balance < 0 ? .wiseError : .wisePrimaryText)
+
+                if person.balance != 0 {
+                    Text(person.balance > 0 ? "owes you" : "you owe")
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wiseSecondaryText)
+                } else {
+                    Text("settled up")
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wiseBrightGreen)
+                }
+            }
+
+            // TASK 1.12: Balance Trend Mini-Chart (last 6 transactions)
+            if personTransactions.count >= 2 {
+                BalanceTrendMiniChart(transactions: personTransactions, currentBalance: person.balance)
+                    .frame(height: 60)
+                    .padding(.horizontal, 20)
+            }
+
+            // TASK 1.2: Payment Method Preference
+            if let paymentMethod = person.preferredPaymentMethod {
+                HStack(spacing: 8) {
+                    Image(systemName: paymentMethod.icon)
+                        .font(.system(size: 14))
+                        .foregroundColor(.wiseBlue)
+
+                    Text("Preferred: \(paymentMethod.rawValue)")
+                        .font(.spotifyLabelMedium)
+                        .foregroundColor(.wiseSecondaryText)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.wiseBlue.opacity(0.1))
+                )
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
+        .padding(.vertical, 24)
         .background(Color.wiseCardBackground)
         .cornerRadius(16)
         .cardShadow()
         .padding(.horizontal, 16)
     }
 
+    // MARK: - TASK 1.3: Quick Actions with Communication Buttons
     @ViewBuilder
     private func quickActionsSection(for person: Person) -> some View {
         VStack(spacing: 12) {
-            // Primary Actions
+            // Primary Actions (Settle Up, Record, Remind)
             HStack(spacing: 12) {
                 if person.balance != 0 {
                     PersonQuickActionButton(
@@ -209,55 +319,58 @@ struct PersonDetailView: View {
 
                 PersonQuickActionButton(
                     icon: "plus.circle.fill",
-                    title: "Record Payment",
+                    title: "Record",
                     color: .wiseForestGreen,
                     action: { showingRecordPaymentSheet = true }
                 )
 
                 PersonQuickActionButton(
                     icon: "bell.fill",
-                    title: "Send Reminder",
+                    title: "Remind",
                     color: .wiseBlue,
                     action: { showingSendReminderSheet = true }
                 )
             }
 
-            // Contact Actions
-            contactActionsRow(for: person)
+            // TASK 1.3: Communication Actions (Call, Message, Email, WhatsApp)
+            HStack(spacing: 12) {
+                if !person.phone.isEmpty {
+                    PersonQuickActionButton(
+                        icon: "phone.fill",
+                        title: "Call",
+                        color: .wiseGreen,
+                        action: { callPerson(person) }
+                    )
+
+                    PersonQuickActionButton(
+                        icon: "message.fill",
+                        title: "Message",
+                        color: .wiseBlue,
+                        action: { messagePerson(person) }
+                    )
+
+                    PersonQuickActionButton(
+                        icon: "phone.bubble.left.fill",
+                        title: "WhatsApp",
+                        color: Color(red: 0.0, green: 0.729, blue: 0.322),
+                        action: { whatsappPerson(person) }
+                    )
+                }
+
+                if !person.email.isEmpty {
+                    PersonQuickActionButton(
+                        icon: "envelope.fill",
+                        title: "Email",
+                        color: .wiseOrange,
+                        action: { emailPerson(person) }
+                    )
+                }
+            }
         }
         .padding(.horizontal, 16)
     }
 
-    @ViewBuilder
-    private func contactActionsRow(for person: Person) -> some View {
-        HStack(spacing: 12) {
-            if !person.phone.isEmpty {
-                PersonQuickActionButton(
-                    icon: "phone.fill",
-                    title: "Call",
-                    color: .wiseGreen,
-                    action: { callPerson(person) }
-                )
-
-                PersonQuickActionButton(
-                    icon: "message.fill",
-                    title: "Message",
-                    color: .wiseBlue,
-                    action: { messagePerson(person) }
-                )
-            }
-
-            if !person.email.isEmpty {
-                PersonQuickActionButton(
-                    icon: "envelope.fill",
-                    title: "Email",
-                    color: .wiseOrange,
-                    action: { emailPerson(person) }
-                )
-            }
-        }
-    }
-
+    // TASK 1.4: Transaction Statistics Card
     @ViewBuilder
     private func analyticsSection(for person: Person) -> some View {
         if !personTransactions.isEmpty {
@@ -267,37 +380,93 @@ struct PersonDetailView: View {
             )
             .padding(.horizontal, 16)
         }
-
-        if !personTransactions.isEmpty && personTransactions.count >= 3 {
-            RecurringPatternsCard(
-                person: person,
-                transactions: personTransactions
-            )
-            .padding(.horizontal, 16)
-        }
-
-        if !personTransactions.isEmpty {
-            PaymentHistoryChart(
-                person: person,
-                transactions: personTransactions
-            )
-            .padding(.horizontal, 16)
-        }
     }
 
+    // MARK: - TASK 1.11: Groups Section
     @ViewBuilder
     private var groupsSection: some View {
         if !personGroups.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Groups")
-                    .font(.spotifyHeadingMedium)
-                    .foregroundColor(.wisePrimaryText)
-                    .padding(.horizontal, 16)
+                HStack {
+                    Image(systemName: "person.3.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(.wiseBlue)
+
+                    Text("Shared Groups")
+                        .font(.spotifyHeadingMedium)
+                        .foregroundColor(.wisePrimaryText)
+
+                    Spacer()
+
+                    Text("\(personGroups.count)")
+                        .font(.spotifyLabelMedium)
+                        .foregroundColor(.wiseSecondaryText)
+                }
+                .padding(.horizontal, 16)
 
                 VStack(spacing: 12) {
                     ForEach(personGroups) { group in
                         GroupMembershipRow(group: group)
                     }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+
+    // MARK: - TASK 1.10: Notes Section
+    @ViewBuilder
+    private func notesSection(for person: Person) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "note.text")
+                    .font(.system(size: 18))
+                    .foregroundColor(.wiseOrange)
+
+                Text("Notes")
+                    .font(.spotifyHeadingMedium)
+                    .foregroundColor(.wisePrimaryText)
+
+                Spacer()
+
+                Button(action: { showingNotesSheet = true }) {
+                    Text(person.notes == nil || person.notes?.isEmpty == true ? "Add" : "Edit")
+                        .font(.spotifyLabelMedium)
+                        .foregroundColor(.wiseBlue)
+                }
+            }
+            .padding(.horizontal, 16)
+
+            if let notes = person.notes, !notes.isEmpty {
+                Text(notes)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wiseSecondaryText)
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.wiseCardBackground)
+                    )
+                    .padding(.horizontal, 16)
+            } else {
+                Button(action: { showingNotesSheet = true }) {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 16))
+                        Text("Add notes about \(person.name)")
+                            .font(.spotifyBodyMedium)
+                    }
+                    .foregroundColor(.wiseSecondaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.wiseBorder.opacity(0.2))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.wiseBorder, style: StrokeStyle(lineWidth: 1, dash: [5]))
+                            )
+                    )
                 }
                 .padding(.horizontal, 16)
             }
@@ -347,17 +516,12 @@ struct PersonDetailView: View {
     }
 
     private var transactionTimeline: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(personTransactions.enumerated()), id: \.element.id) { index, transaction in
-                PersonTransactionTimelineRow(
-                    transaction: transaction,
-                    isFirst: index == 0,
-                    isLast: index == personTransactions.count - 1,
-                    showDate: index == 0 || !Calendar.current.isDate(
-                        transaction.date,
-                        inSameDayAs: personTransactions[index - 1].date
-                    )
-                )
+        VStack(spacing: 12) {
+            ForEach(personTransactions) { transaction in
+                NavigationLink(destination: TransactionDetailView(transactionId: transaction.id)) {
+                    ListRowFactory.card(for: transaction, context: .person)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .padding(.horizontal, 16)
@@ -412,6 +576,7 @@ struct PersonDetailView: View {
         }
     }
 
+    // MARK: - TASK 1.7: Settle Up Sheet with Partial Settlement
     @ViewBuilder
     private var settleUpSheet: some View {
         if let person = person {
@@ -430,6 +595,7 @@ struct PersonDetailView: View {
         }
     }
 
+    // MARK: - TASK 1.8: Send Reminder Sheet (already implemented in SendReminderSheet.swift)
     @ViewBuilder
     private var sendReminderSheet: some View {
         if let person = person {
@@ -439,12 +605,31 @@ struct PersonDetailView: View {
         }
     }
 
+    // MARK: - TASK 1.9: Export to CSV Sheet
     @ViewBuilder
     private var exportSheet: some View {
         if let person = person {
             ExportTransactionsSheet(
                 person: person,
                 transactions: personTransactions
+            )
+        }
+    }
+
+    // MARK: - TASK 1.10: Notes Sheet
+    @ViewBuilder
+    private var notesSheet: some View {
+        if let person = person {
+            PersonNotesSheet(
+                person: person,
+                onSave: { updatedPerson in
+                    do {
+                        try dataManager.updatePerson(updatedPerson)
+                        showingNotesSheet = false
+                    } catch {
+                        dataManager.error = error
+                    }
+                }
             )
         }
     }
@@ -478,7 +663,7 @@ struct PersonDetailView: View {
         }
     }
 
-    // MARK: - Contact Actions
+    // MARK: - TASK 1.3: Contact Actions
     private func callPerson(_ person: Person) {
         let phoneNumber = person.phone.filter { $0.isNumber }
         if let url = URL(string: "tel://\(phoneNumber)") {
@@ -499,6 +684,24 @@ struct PersonDetailView: View {
         }
     }
 
+    private func whatsappPerson(_ person: Person) {
+        let phoneNumber = person.phone.replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: "(", with: "")
+            .replacingOccurrences(of: ")", with: "")
+
+        if let url = URL(string: "whatsapp://send?phone=\(phoneNumber)") {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            } else {
+                // Fallback to web WhatsApp
+                if let webURL = URL(string: "https://wa.me/\(phoneNumber)") {
+                    UIApplication.shared.open(webURL)
+                }
+            }
+        }
+    }
+
     private func deletePerson() {
         guard let person = person else { return }
         do {
@@ -510,13 +713,110 @@ struct PersonDetailView: View {
     }
 }
 
+// MARK: - TASK 1.12: Balance Trend Mini-Chart
+struct BalanceTrendMiniChart: View {
+    let transactions: [Transaction]
+    let currentBalance: Double
+
+    private var balanceHistory: [Double] {
+        // Calculate running balance from most recent transactions
+        var history: [Double] = []
+        var runningBalance = currentBalance
+
+        let recentTransactions = Array(transactions.prefix(6).reversed())
+
+        for transaction in recentTransactions {
+            history.append(runningBalance)
+            // Reverse the transaction to get previous balance
+            runningBalance -= transaction.amount
+        }
+
+        return history.reversed()
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            let maxValue = balanceHistory.map { abs($0) }.max() ?? 1
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let points = balanceHistory.count
+
+            ZStack {
+                // Background
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.wiseBorder.opacity(0.1))
+
+                // Zero line
+                Path { path in
+                    let y = height / 2
+                    path.move(to: CGPoint(x: 0, y: y))
+                    path.addLine(to: CGPoint(x: width, y: y))
+                }
+                .stroke(Color.wiseBorder, style: StrokeStyle(lineWidth: 1, dash: [3]))
+
+                // Trend line
+                if points >= 2 {
+                    Path { path in
+                        for (index, balance) in balanceHistory.enumerated() {
+                            let x = CGFloat(index) / CGFloat(points - 1) * width
+                            let normalizedValue = balance / maxValue
+                            let y = height / 2 - (CGFloat(normalizedValue) * height / 2 * 0.8)
+
+                            if index == 0 {
+                                path.move(to: CGPoint(x: x, y: y))
+                            } else {
+                                path.addLine(to: CGPoint(x: x, y: y))
+                            }
+                        }
+                    }
+                    .stroke(
+                        currentBalance >= 0 ? Color.wiseBrightGreen : Color.wiseError,
+                        style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+                    )
+
+                    // Gradient fill
+                    Path { path in
+                        for (index, balance) in balanceHistory.enumerated() {
+                            let x = CGFloat(index) / CGFloat(points - 1) * width
+                            let normalizedValue = balance / maxValue
+                            let y = height / 2 - (CGFloat(normalizedValue) * height / 2 * 0.8)
+
+                            if index == 0 {
+                                path.move(to: CGPoint(x: x, y: y))
+                            } else {
+                                path.addLine(to: CGPoint(x: x, y: y))
+                            }
+                        }
+
+                        // Close path to fill
+                        let lastX = CGFloat(points - 1) / CGFloat(points - 1) * width
+                        path.addLine(to: CGPoint(x: lastX, y: height / 2))
+                        path.addLine(to: CGPoint(x: 0, y: height / 2))
+                        path.closeSubpath()
+                    }
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                (currentBalance >= 0 ? Color.wiseBrightGreen : Color.wiseError).opacity(0.2),
+                                (currentBalance >= 0 ? Color.wiseBrightGreen : Color.wiseError).opacity(0.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Person Quick Action Button
 struct PersonQuickActionButton: View {
     let icon: String
     let title: String
     let color: Color
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
@@ -528,7 +828,7 @@ struct PersonQuickActionButton: View {
                             .font(.system(size: 24))
                             .foregroundColor(color)
                     )
-                
+
                 Text(title)
                     .font(.spotifyCaptionMedium)
                     .foregroundColor(.wisePrimaryText)
@@ -541,7 +841,7 @@ struct PersonQuickActionButton: View {
     }
 }
 
-// MARK: - Group Membership Row
+// MARK: - Group Membership Row (TASK 1.11 Enhanced)
 struct GroupMembershipRow: View {
     let group: Group
 
@@ -560,9 +860,23 @@ struct GroupMembershipRow: View {
                     .font(.spotifyBodyMedium)
                     .foregroundColor(.wisePrimaryText)
 
-                Text("\(group.members.count) members · \(group.expenses.count) expenses")
-                    .font(.spotifyCaptionMedium)
-                    .foregroundColor(.wiseSecondaryText)
+                HStack(spacing: 4) {
+                    Image(systemName: "person.2.fill")
+                        .font(.system(size: 10))
+                    Text("\(group.members.count) members")
+                        .font(.spotifyCaptionMedium)
+                        .foregroundColor(.wiseSecondaryText)
+
+                    Text("•")
+                        .font(.spotifyCaptionSmall)
+                        .foregroundColor(.wiseSecondaryText)
+
+                    Image(systemName: "dollarsign.circle.fill")
+                        .font(.system(size: 10))
+                    Text("\(group.expenses.count) expenses")
+                        .font(.spotifyCaptionMedium)
+                        .foregroundColor(.wiseSecondaryText)
+                }
             }
 
             Spacer()
@@ -748,7 +1062,7 @@ struct PersonTransactionTimelineRow: View {
     }
 }
 
-// MARK: - Settle Up Sheet
+// MARK: - TASK 1.7: Settle Up Sheet with Partial Settlement Option
 struct SettleUpSheet: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataManager: DataManager
@@ -756,41 +1070,149 @@ struct SettleUpSheet: View {
     let person: Person
     let onSettled: () -> Void
 
+    @State private var settlementType: SettlementType = .full
+    @State private var partialAmount: String = ""
+
+    enum SettlementType {
+        case full
+        case partial
+    }
+
+    private var totalBalance: Double {
+        abs(person.balance)
+    }
+
+    private var settlementAmount: Double {
+        if settlementType == .full {
+            return totalBalance
+        } else {
+            return min(Double(partialAmount) ?? 0, totalBalance)
+        }
+    }
+
+    private var isValid: Bool {
+        if settlementType == .full {
+            return true
+        } else {
+            return settlementAmount > 0 && settlementAmount <= totalBalance
+        }
+    }
+
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
-                Spacer()
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Person Info
+                    VStack(spacing: 12) {
+                        AvatarView(person: person, size: .xlarge, style: .solid)
 
-                // Amount Display
-                VStack(spacing: 12) {
-                    Text(person.balance > 0 ? "\(person.name) owes you" : "You owe \(person.name)")
-                        .font(.spotifyHeadingMedium)
-                        .foregroundColor(.wisePrimaryText)
-
-                    Text(String(format: "$%.2f", abs(person.balance)))
-                        .font(.system(size: 64, weight: .bold, design: .rounded))
-                        .foregroundColor(person.balance > 0 ? .wiseBrightGreen : .wiseError)
-                }
-
-                Spacer()
-
-                // Settle Button
-                Button(action: settleUp) {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 18))
-                        Text("Mark as Settled")
-                            .font(.spotifyBodyLarge)
-                            .fontWeight(.semibold)
+                        Text(person.name)
+                            .font(.spotifyHeadingMedium)
+                            .foregroundColor(.wisePrimaryText)
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.wiseBrightGreen)
-                    .cornerRadius(12)
+                    .padding(.top, 20)
+
+                    // Settlement Type Picker
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Settlement Type")
+                            .font(.spotifyLabelMedium)
+                            .foregroundColor(.wiseSecondaryText)
+
+                        Picker("Type", selection: $settlementType) {
+                            Text("Full Settlement").tag(SettlementType.full)
+                            Text("Partial Settlement").tag(SettlementType.partial)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    // Amount Display
+                    VStack(spacing: 12) {
+                        if settlementType == .full {
+                            Text(person.balance > 0 ? "\(person.name) owes you" : "You owe \(person.name)")
+                                .font(.spotifyHeadingMedium)
+                                .foregroundColor(.wisePrimaryText)
+
+                            Text(String(format: "$%.2f", totalBalance))
+                                .font(.system(size: 64, weight: .bold, design: .rounded))
+                                .foregroundColor(person.balance > 0 ? .wiseBrightGreen : .wiseError)
+                        } else {
+                            Text("Enter partial amount")
+                                .font(.spotifyHeadingMedium)
+                                .foregroundColor(.wisePrimaryText)
+
+                            HStack {
+                                Text("$")
+                                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                                    .foregroundColor(.wisePrimaryText)
+
+                                TextField("0.00", text: $partialAmount)
+                                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                                    .foregroundColor(.wisePrimaryText)
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.horizontal, 20)
+
+                            Text("Total balance: $\(String(format: "%.2f", totalBalance))")
+                                .font(.spotifyBodyMedium)
+                                .foregroundColor(.wiseSecondaryText)
+                        }
+                    }
+                    .padding(.vertical, 20)
+
+                    // Remaining Balance Info (for partial)
+                    if settlementType == .partial && settlementAmount > 0 {
+                        VStack(spacing: 8) {
+                            HStack {
+                                Text("Settling:")
+                                    .font(.spotifyBodyMedium)
+                                    .foregroundColor(.wiseSecondaryText)
+                                Spacer()
+                                Text(String(format: "$%.2f", settlementAmount))
+                                    .font(.spotifyBodyMedium)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.wisePrimaryText)
+                            }
+
+                            HStack {
+                                Text("Remaining:")
+                                    .font(.spotifyBodyMedium)
+                                    .foregroundColor(.wiseSecondaryText)
+                                Spacer()
+                                Text(String(format: "$%.2f", totalBalance - settlementAmount))
+                                    .font(.spotifyBodyMedium)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.wiseError)
+                            }
+                        }
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.wiseBorder.opacity(0.2))
+                        )
+                    }
+
+                    Spacer(minLength: 40)
+
+                    // Settle Button
+                    Button(action: settleUp) {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 18))
+                            Text(settlementType == .full ? "Mark as Settled" : "Record Partial Payment")
+                                .font(.spotifyBodyLarge)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(isValid ? Color.wiseBrightGreen : Color.wiseDisabledButton)
+                        .cornerRadius(12)
+                    }
+                    .disabled(!isValid)
+                    .padding(.bottom, 20)
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 40)
             }
             .background(Color.wiseBackground)
             .navigationTitle("Settle Up")
@@ -808,10 +1230,35 @@ struct SettleUpSheet: View {
 
     private func settleUp() {
         var updatedPerson = person
-        updatedPerson.balance = 0.0
+
+        if settlementType == .full {
+            updatedPerson.balance = 0.0
+        } else {
+            // For partial settlement, reduce the balance by the settlement amount
+            if person.balance > 0 {
+                // Person owes you - reduce what they owe
+                updatedPerson.balance -= settlementAmount
+            } else {
+                // You owe the person - reduce what you owe
+                updatedPerson.balance += settlementAmount
+            }
+        }
 
         do {
             try dataManager.updatePerson(updatedPerson)
+
+            // Create settlement transaction
+            let transaction = Transaction(
+                title: settlementType == .full ? "Settlement with \(person.name)" : "Partial payment from \(person.name)",
+                subtitle: settlementType == .full ? "Full settlement" : String(format: "$%.2f partial payment", settlementAmount),
+                amount: person.balance > 0 ? -settlementAmount : settlementAmount,
+                category: .transfer,
+                date: Date(),
+                isRecurring: false,
+                tags: ["settlement"]
+            )
+            try dataManager.addTransaction(transaction)
+
             onSettled()
         } catch {
             dataManager.error = error
@@ -980,7 +1427,7 @@ struct RecordPaymentSheet: View {
     }
 }
 
-// MARK: - Export Transactions Sheet
+// MARK: - TASK 1.9: Export Transactions Sheet
 struct ExportTransactionsSheet: View {
     @Environment(\.dismiss) var dismiss
     let person: Person
@@ -1075,7 +1522,88 @@ struct ExportTransactionsSheet: View {
     }
 }
 
-// MARK: - Transaction Statistics Card
+// MARK: - TASK 1.10: Person Notes Sheet
+struct PersonNotesSheet: View {
+    @Environment(\.dismiss) var dismiss
+
+    let person: Person
+    let onSave: (Person) -> Void
+
+    @State private var notes: String = ""
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // Header
+                VStack(spacing: 12) {
+                    AvatarView(person: person, size: .large, style: .solid)
+
+                    Text("Notes about \(person.name)")
+                        .font(.spotifyHeadingMedium)
+                        .foregroundColor(.wisePrimaryText)
+                }
+                .padding(.top, 20)
+
+                // Text Editor
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Add notes, reminders, or details about this person")
+                        .font(.spotifyLabelMedium)
+                        .foregroundColor(.wiseSecondaryText)
+
+                    TextEditor(text: $notes)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wisePrimaryText)
+                        .frame(minHeight: 200)
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.wiseBorder.opacity(0.3))
+                                .stroke(Color.wiseBorder, lineWidth: 1)
+                        )
+                }
+                .padding(.horizontal, 20)
+
+                Spacer()
+            }
+            .background(Color.wiseBackground)
+            .navigationTitle("Notes")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(.wiseSecondaryText)
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        saveNotes()
+                    }
+                    .font(.spotifyLabelLarge)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(Color.wiseForestGreen)
+                    )
+                }
+            }
+            .onAppear {
+                notes = person.notes ?? ""
+            }
+        }
+    }
+
+    private func saveNotes() {
+        var updatedPerson = person
+        updatedPerson.notes = notes.isEmpty ? nil : notes
+        onSave(updatedPerson)
+    }
+}
+
+// MARK: - TASK 1.4: Transaction Statistics Card
 struct TransactionStatisticsCard: View {
     let person: Person
     let transactions: [Transaction]
@@ -1101,16 +1629,22 @@ struct TransactionStatisticsCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Transaction Statistics")
-                .font(.spotifyHeadingMedium)
-                .foregroundColor(.wisePrimaryText)
+            HStack {
+                Image(systemName: "chart.bar.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.wiseGreen)
+
+                Text("Transaction Statistics")
+                    .font(.spotifyHeadingMedium)
+                    .foregroundColor(.wisePrimaryText)
+            }
 
             // Grid of 4 statistics
             VStack(spacing: 12) {
                 // Row 1
                 HStack(spacing: 12) {
                     StatisticBox(
-                        title: "Total Transactions",
+                        title: "Total",
                         value: "\(totalTransactions)",
                         icon: "doc.text.fill",
                         color: .wiseBlue
@@ -1127,14 +1661,14 @@ struct TransactionStatisticsCard: View {
                 // Row 2
                 HStack(spacing: 12) {
                     StatisticBox(
-                        title: "Paid to Them",
+                        title: "Paid To",
                         value: String(format: "$%.2f", totalPaidToThem),
                         icon: "arrow.up.circle.fill",
                         color: .wiseError
                     )
 
                     StatisticBox(
-                        title: "Received from Them",
+                        title: "Received",
                         value: String(format: "$%.2f", totalReceivedFromThem),
                         icon: "arrow.down.circle.fill",
                         color: .wiseBrightGreen
@@ -1151,7 +1685,7 @@ struct TransactionStatisticsCard: View {
     }
 }
 
-// MARK: - Recurring Patterns Card
+// MARK: - TASK 1.5: Recurring Patterns Card
 struct RecurringPatternsCard: View {
     let person: Person
     let transactions: [Transaction]
@@ -1395,7 +1929,7 @@ struct RecurringPatternRow: View {
     }
 }
 
-// MARK: - Payment History Chart
+// MARK: - TASK 1.6: Payment History Chart
 struct PaymentHistoryChart: View {
     let person: Person
     let transactions: [Transaction]
@@ -1579,9 +2113,6 @@ struct PaymentHistoryChart: View {
         return formatter.string(from: date)
     }
 }
-
-// MARK: - Monthly Data Model
-// Note: MonthlyData is defined in AnalyticsModels.swift
 
 // MARK: - Statistic Box Component
 struct StatisticBox: View {

@@ -148,82 +148,52 @@ struct NotificationHistoryRow: View {
     let entry: NotificationHistoryEntry
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // Icon
-            Circle()
-                .fill((Color(hex: entry.type.color) ?? Color.wiseMidGray).opacity(0.2))
-                .frame(width: 44, height: 44)
-                .overlay(
-                    Image(systemName: entry.type.icon)
-                        .font(.system(size: 18))
-                        .foregroundColor(Color(hex: entry.type.color) ?? .wiseMidGray)
-                )
+        HStack(alignment: .center, spacing: 16) {
+            // Icon using UnifiedIconCircle
+            UnifiedIconCircle(
+                icon: entry.type.icon,
+                color: Color(hexString: entry.type.color),
+                size: 48,
+                iconSize: 20
+            )
 
-            VStack(alignment: .leading, spacing: 6) {
+            // Content
+            VStack(alignment: .leading, spacing: 4) {
                 // Title
                 Text(entry.title)
                     .font(.spotifyBodyMedium)
                     .foregroundColor(.wisePrimaryText)
 
-                // Body
-                Text(entry.body)
+                // Subtitle: "notificationType • relativeTime"
+                Text(subtitleText)
                     .font(.spotifyBodySmall)
                     .foregroundColor(.wiseSecondaryText)
-                    .lineLimit(2)
-
-                // Metadata
-                HStack(spacing: 12) {
-                    // Date
-                    HStack(spacing: 4) {
-                        Image(systemName: "calendar")
-                            .font(.system(size: 10))
-                        Text(entry.sentDate.formatted(date: .abbreviated, time: .shortened))
-                            .font(.spotifyCaptionSmall)
-                    }
-
-                    // Type
-                    HStack(spacing: 4) {
-                        Image(systemName: "tag")
-                            .font(.system(size: 10))
-                        Text(entry.type.rawValue)
-                            .font(.spotifyCaptionSmall)
-                    }
-
-                    // Opened status
-                    if entry.wasOpened {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 10))
-                                .foregroundColor(.wiseForestGreen)
-                            Text("Opened")
-                                .font(.spotifyCaptionSmall)
-                                .foregroundColor(.wiseForestGreen)
-                        }
-                    }
-                }
-                .foregroundColor(.wiseSecondaryText)
-
-                // Action taken
-                if entry.action != .none {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.right.circle.fill")
-                            .font(.system(size: 10))
-                        Text("Action: \(entry.action.rawValue)")
-                            .font(.spotifyCaptionSmall)
-                    }
-                    .foregroundColor(.wiseBlue)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(Color.wiseBlue.opacity(0.1))
-                    )
-                }
+                    .lineLimit(1)
             }
 
             Spacer()
+
+            // Value: Show "Opened" for read notifications
+            if entry.wasOpened {
+                Text("Opened")
+                    .font(.spotifyBodySmall)
+                    .foregroundColor(.wiseSecondaryText)
+            }
         }
+        .padding(.horizontal, 16)
         .padding(.vertical, 12)
+    }
+
+    private var subtitleText: String {
+        let typeText = entry.type.rawValue
+        let timeText = relativeTime(from: entry.sentDate)
+        return "\(typeText) • \(timeText)"
+    }
+
+    private func relativeTime(from date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: date, relativeTo: Date())
     }
 }
 

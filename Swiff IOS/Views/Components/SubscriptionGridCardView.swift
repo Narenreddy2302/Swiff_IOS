@@ -74,8 +74,8 @@ struct SubscriptionGridCardView: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color(hex: subscription.color).opacity(0.3),
-                                    Color(hex: subscription.color).opacity(0.1)
+                                    Color(hexString: subscription.color).opacity(0.3),
+                                    Color(hexString: subscription.color).opacity(0.1)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -85,7 +85,7 @@ struct SubscriptionGridCardView: View {
                         .overlay(
                             Image(systemName: subscription.icon)
                                 .font(.system(size: 28, weight: .medium))
-                                .foregroundColor(Color(hex: subscription.color))
+                                .foregroundColor(Color(hexString: subscription.color))
                         )
 
                     // AGENT 8: Trial Badge in top-left corner

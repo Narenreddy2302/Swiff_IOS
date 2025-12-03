@@ -150,28 +150,28 @@ struct NetworkRetryConfiguration: Sendable {
     let maxDelay: TimeInterval
     let multiplier: Double
 
-    nonisolated(unsafe) static let `default` = NetworkRetryConfiguration(
+    static let `default` = NetworkRetryConfiguration(
         maxRetries: 3,
         baseDelay: 1.0,
         maxDelay: 10.0,
         multiplier: 2.0
     )
 
-    nonisolated(unsafe) static let aggressive = NetworkRetryConfiguration(
+    static let aggressive = NetworkRetryConfiguration(
         maxRetries: 5,
         baseDelay: 0.5,
         maxDelay: 5.0,
         multiplier: 1.5
     )
 
-    nonisolated(unsafe) static let conservative = NetworkRetryConfiguration(
+    static let conservative = NetworkRetryConfiguration(
         maxRetries: 2,
         baseDelay: 2.0,
         maxDelay: 15.0,
         multiplier: 3.0
     )
 
-    func delay(forAttempt attempt: Int) -> TimeInterval {
+    nonisolated func delay(forAttempt attempt: Int) -> TimeInterval {
         let delay = baseDelay * pow(multiplier, Double(attempt - 1))
         return min(delay, maxDelay)
     }

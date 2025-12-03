@@ -25,7 +25,7 @@ struct NotificationSettingsSection: View {
                         if notificationManager.permissionStatus == .denied {
                             notificationManager.openSettings()
                         } else {
-                            await notificationManager.requestPermission()
+                            _ = await notificationManager.requestPermission()
                         }
                     }
                 }) {

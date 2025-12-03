@@ -38,8 +38,7 @@ struct SpendingTrendChart: View {
     
     private var chartData: [ChartDataPoint] {
         let calendar = Calendar.current
-        let now = Date()
-        
+
         // Group transactions by day/week/month based on dateRange
         let groupedData: [Date: Double]
         

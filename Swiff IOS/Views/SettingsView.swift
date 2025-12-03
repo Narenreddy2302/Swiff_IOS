@@ -86,7 +86,7 @@ struct SettingsView: View {
                                 if notificationManager.permissionStatus == .denied {
                                     notificationManager.openSettings()
                                 } else {
-                                    await notificationManager.requestPermission()
+                                    _ = await notificationManager.requestPermission()
                                 }
                             }
                         }) {
@@ -426,7 +426,7 @@ struct SettingsView: View {
 
     private func createBackup() {
         do {
-            let stats = try BackupService.shared.createBackup()
+            _ = try BackupService.shared.createBackup()
             ToastManager.shared.showSuccess("Backup created successfully")
             showingBackupSuccess = true
         } catch {

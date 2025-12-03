@@ -46,8 +46,8 @@ struct PriceHistoryChartView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color(hex: subscription.color).opacity(0.3),
-                            Color(hex: subscription.color).opacity(0.1)
+                            Color(hexString: subscription.color).opacity(0.3),
+                            Color(hexString: subscription.color).opacity(0.1)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -57,7 +57,7 @@ struct PriceHistoryChartView: View {
                 .overlay(
                     Image(systemName: subscription.icon)
                         .font(.system(size: 40))
-                        .foregroundColor(Color(hex: subscription.color))
+                        .foregroundColor(Color(hexString: subscription.color))
                 )
 
             Text(subscription.name)
@@ -227,7 +227,7 @@ struct PriceHistoryChartView: View {
 
                         Spacer()
 
-                        if let changePercentage = selected.changePercentage {
+                        if selected.changePercentage != nil {
                             CompactPriceChangeBadge(
                                 priceChange: PriceChange(
                                     subscriptionId: subscription.id,

@@ -48,8 +48,8 @@ class ReminderService: ObservableObject {
 
     // MARK: - Initialization
 
-    private init(notificationManager: NotificationManager = .shared) {
-        self.notificationManager = notificationManager
+    @MainActor private init() {
+        self.notificationManager = NotificationManager.shared
         self.preferences = ReminderPreferences()
         self.statistics = ReminderStatistics()
 

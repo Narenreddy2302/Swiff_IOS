@@ -20,7 +20,7 @@ struct UnifiedIconCircle: View {
 
     var body: some View {
         Circle()
-            .fill(color.opacity(0.1))
+            .fill(color.opacity(0.2))
             .frame(width: size, height: size)
             .overlay(
                 Image(systemName: icon)
@@ -56,6 +56,29 @@ struct UnifiedEmojiCircle: View {
     }
 }
 
+// MARK: - Outlined Icon Circle
+
+/// A variant of UnifiedIconCircle with outlined (stroke) style instead of filled.
+/// Used for card-based layouts inspired by Wise/Revolut design.
+struct OutlinedIconCircle: View {
+    let icon: String              // SF Symbol name
+    let color: Color              // Stroke and icon color
+    var size: CGFloat = 48        // Circle diameter
+    var strokeWidth: CGFloat = 2  // Border width
+    var iconSize: CGFloat = 20    // Icon size
+
+    var body: some View {
+        Circle()
+            .stroke(color, lineWidth: strokeWidth)
+            .frame(width: size, height: size)
+            .overlay(
+                Image(systemName: icon)
+                    .font(.system(size: iconSize, weight: .medium))
+                    .foregroundColor(color)
+            )
+    }
+}
+
 // MARK: - Preview
 
 #Preview("Icon Circles") {
@@ -77,6 +100,16 @@ struct UnifiedEmojiCircle: View {
             UnifiedEmojiCircle(emoji: "🏠", backgroundColor: .wiseBlue)
             UnifiedEmojiCircle(emoji: "🎉", backgroundColor: .wiseBrightGreen)
             UnifiedEmojiCircle(emoji: "✈️", backgroundColor: .wiseOrange)
+        }
+
+        Text("OutlinedIconCircle Examples")
+            .font(.headline)
+            .padding(.top)
+
+        HStack(spacing: 16) {
+            OutlinedIconCircle(icon: "dollarsign.circle.fill", color: .wiseBrightGreen)
+            OutlinedIconCircle(icon: "cart.fill", color: .orange)
+            OutlinedIconCircle(icon: "car.fill", color: .wiseBlue)
         }
 
         Text("Size Variations")

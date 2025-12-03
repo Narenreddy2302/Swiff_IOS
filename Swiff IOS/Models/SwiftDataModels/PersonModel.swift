@@ -96,11 +96,8 @@ final class PersonModel {
         self.personNotes = notes
 
         // Encode notification preferences
-        if let encoded = try? JSONEncoder().encode(notificationPreferences) {
-            self.notificationPreferencesData = encoded
-        } else {
-            self.notificationPreferencesData = nil
-        }
+        // Use a simple encoding approach that avoids MainActor isolation issues
+        self.notificationPreferencesData = Self.encodeNotificationPreferences(notificationPreferences)
     }
 
     // Convert to domain model
@@ -117,14 +114,8 @@ final class PersonModel {
             avatarType = .emoji("👤")
         }
 
-        // Decode notification preferences
-        let notifPrefs: NotificationPreferences
-        if let data = notificationPreferencesData,
-           let decoded = try? JSONDecoder().decode(NotificationPreferences.self, from: data) {
-            notifPrefs = decoded
-        } else {
-            notifPrefs = NotificationPreferences()
-        }
+        // Decode notification preferences using static helper to avoid MainActor isolation issues
+        let notifPrefs = Self.decodeNotificationPreferences(notificationPreferencesData)
 
         // Decode preferred payment method
         let prefPaymentMethod = preferredPaymentMethodRaw != nil ? PaymentMethod(rawValue: preferredPaymentMethodRaw!) : nil
@@ -191,7 +182,25 @@ final class PersonModel {
                 expense.splitBetweenIDs.contains(personId)
             }
         )
-        
+
         return (try? context.fetch(descriptor)) ?? []
+    }
+
+    // MARK: - Static Encoding/Decoding Helpers
+
+    /// Encode NotificationPreferences to Data
+    /// NotificationPreferences is Sendable and Codable, so this is safe in any context
+    private static func encodeNotificationPreferences(_ prefs: NotificationPreferences) -> Data? {
+        try? JSONEncoder().encode(prefs)
+    }
+
+    /// Decode NotificationPreferences from Data
+    /// NotificationPreferences is Sendable and Codable, so this is safe in any context
+    private static func decodeNotificationPreferences(_ data: Data?) -> NotificationPreferences {
+        guard let data = data,
+              let prefs = try? JSONDecoder().decode(NotificationPreferences.self, from: data) else {
+            return NotificationPreferences(enableReminders: true, reminderFrequency: 7, preferredContactMethod: .inApp)
+        }
+        return prefs
     }
 }

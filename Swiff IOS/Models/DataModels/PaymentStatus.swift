@@ -40,4 +40,14 @@ enum PaymentStatus: String, CaseIterable, Codable {
     var badgeBackgroundColor: Color {
         color.opacity(0.15)
     }
+
+    var displayText: String {
+        switch self {
+        case .pending: return "Pending"
+        case .completed: return "Successful"
+        case .failed: return "Failed"
+        case .refunded: return "Refunded"
+        case .cancelled: return "Cancelled"
+        }
+    }
 }

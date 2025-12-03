@@ -88,7 +88,7 @@ struct SubscriptionDetailView: View {
     var body: some View {
         ScrollView {
             if let subscription = subscription {
-                let subscriptionColor = Color(hex: subscription.color)
+                let subscriptionColor = Color(hexString: subscription.color)
                 
                 VStack(spacing: 24) {
                     headerSection(subscription: subscription, subscriptionColor: subscriptionColor)
@@ -115,6 +115,7 @@ struct SubscriptionDetailView: View {
                     spendingStatsCard(subscription: subscription)
                     detailsSection(subscription: subscription)
                     sharedInfoSection(subscription: subscription)
+                    cancellationInstructionsSection(subscription: subscription)
                     actionsSection(subscription: subscription)
                 }
                 .onAppear {
@@ -572,7 +573,7 @@ struct SubscriptionDetailView: View {
             }
 
             // Usage stats if there's data
-            if subscription.usageCount > 0, let lastUsed = subscription.lastUsedDate {
+            if subscription.usageCount > 0, subscription.lastUsedDate != nil {
                 Divider()
 
                 let daysSinceCreation = Calendar.current.dateComponents([.day], from: subscription.createdDate, to: Date()).day ?? 1
@@ -666,16 +667,22 @@ struct SubscriptionDetailView: View {
                     .foregroundColor(.wisePrimaryText)
 
                 if let website = subscription.website, !website.isEmpty {
-                    HStack {
-                        Image(systemName: "link")
-                            .foregroundColor(.wiseBlue)
-                        Text(website)
-                            .font(.spotifyBodyMedium)
-                            .foregroundColor(.wiseBlue)
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 12))
-                            .foregroundColor(.wiseBlue)
+                    Button(action: {
+                        if let url = URL(string: website.hasPrefix("http") ? website : "https://\(website)") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "link")
+                                .foregroundColor(.wiseBlue)
+                            Text(website)
+                                .font(.spotifyBodyMedium)
+                                .foregroundColor(.wiseBlue)
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 12))
+                                .foregroundColor(.wiseBlue)
+                        }
                     }
                 }
 
@@ -757,6 +764,105 @@ struct SubscriptionDetailView: View {
                             }
                             .padding(.vertical, 8)
                         }
+                    }
+                }
+            }
+            .padding(16)
+            .background(Color.wiseCardBackground)
+            .cornerRadius(16)
+            .cardShadow()
+            .padding(.horizontal, 16)
+        }
+    }
+
+    // MARK: - Task 5.12: Cancellation Instructions Section
+    @ViewBuilder
+    private func cancellationInstructionsSection(subscription: Subscription) -> some View {
+        if let instructions = subscription.cancellationInstructions, !instructions.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Image(systemName: "info.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(.wiseWarning)
+                    Text("How to Cancel")
+                        .font(.spotifyHeadingMedium)
+                        .foregroundColor(.wisePrimaryText)
+                    Spacer()
+
+                    // Cancellation difficulty badge
+                    if let difficulty = subscription.cancellationDifficulty {
+                        HStack(spacing: 4) {
+                            Image(systemName: difficulty.icon)
+                                .font(.system(size: 12))
+                            Text(difficulty.rawValue)
+                                .font(.spotifyLabelSmall)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(difficulty.color)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(difficulty.color.opacity(0.15))
+                        .cornerRadius(12)
+                    }
+                }
+
+                // Instructions text
+                Text(instructions)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+                    .lineSpacing(4)
+
+                // Cancellation deadline if available
+                if let deadline = subscription.cancellationDeadline {
+                    Divider()
+
+                    HStack {
+                        Image(systemName: "calendar.badge.exclamationmark")
+                            .font(.system(size: 16))
+                            .foregroundColor(.wiseError)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Cancellation Deadline")
+                                .font(.spotifyLabelSmall)
+                                .foregroundColor(.wiseSecondaryText)
+
+                            Text(deadline, style: .date)
+                                .font(.spotifyBodyMedium)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.wiseError)
+                        }
+
+                        Spacer()
+
+                        let daysUntilDeadline = Calendar.current.dateComponents([.day], from: Date(), to: deadline).day ?? 0
+                        if daysUntilDeadline >= 0 {
+                            Text("\(daysUntilDeadline) days left")
+                                .font(.spotifyLabelMedium)
+                                .foregroundColor(.wiseError)
+                        }
+                    }
+                }
+
+                // Website link if available
+                if let website = subscription.website, !website.isEmpty {
+                    Divider()
+
+                    Button(action: {
+                        if let url = URL(string: website.hasPrefix("http") ? website : "https://\(website)") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "safari.fill")
+                                .font(.system(size: 14))
+                            Text("Open Website to Cancel")
+                                .font(.spotifyLabelMedium)
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.wiseBlue)
+                        .cornerRadius(10)
                     }
                 }
             }

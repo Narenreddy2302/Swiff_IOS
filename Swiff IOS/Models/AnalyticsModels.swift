@@ -318,7 +318,7 @@ struct CategoryData: Identifiable, Codable, Plottable {
     }
 
     var swiftUIColor: Color {
-        Color(hex: color) ?? .gray
+        Color(hexString: color)
     }
     
     // Plottable conformance
@@ -371,7 +371,7 @@ struct CategoryShare: Identifiable, Codable, Plottable {
     }
 
     var swiftUIColor: Color {
-        Color(hex: color) ?? .gray
+        Color(hexString: color)
     }
     
     // Plottable conformance
@@ -517,7 +517,7 @@ struct CategoryGrowth: Identifiable, Codable {
     let colorHex: String  // Store as hex string for Codable compliance
 
     var color: Color {  // Computed property for SwiftUI Color
-        Color(hex: colorHex) ?? .gray
+        Color(hexString: colorHex)
     }
 
     init(category: String, thisYear: Double, lastYear: Double, percentageChange: Double, color: Color) {
@@ -568,7 +568,7 @@ struct SubscriptionAnalytics: Identifiable, Codable {
     let trialEndDate: Date?
 
     var color: Color {  // Computed property for SwiftUI Color
-        Color(hex: colorHex) ?? .gray
+        Color(hexString: colorHex)
     }
 
     init(id: UUID, name: String, monthlyAmount: Double, yearlyAmount: Double, billingCycle: String, category: String, icon: String, color: String, usageCount: Int, lastUsedDate: Date?, createdDate: Date, isFreeTrial: Bool, trialEndDate: Date?) {

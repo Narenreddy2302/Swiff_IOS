@@ -14,12 +14,9 @@ struct TransactionGroupHeader: View {
     let transactionCount: Int
 
     var body: some View {
-        // Use UnifiedSectionHeader for consistent styling
-        UnifiedSectionHeader(
-            title: date.toSectionHeaderTitle(),
-            count: transactionCount,
-            countLabel: "transactions"
-        )
+        // Use UnifiedSectionHeader with new date-based styling
+        // Shows "Today", "Yesterday", "16 January" format (no count badge)
+        UnifiedSectionHeader(date: date, style: .relative)
     }
 }
 

@@ -81,6 +81,9 @@ class BiometricAuthenticationService: ObservableObject {
                 biometricType = .faceID
             case .touchID:
                 biometricType = .touchID
+            case .opticID:
+                // Vision Pro uses opticID
+                biometricType = .faceID // Treat as face-based auth
             case .none:
                 biometricType = .none
                 isAvailable = false

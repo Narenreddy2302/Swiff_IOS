@@ -16,33 +16,20 @@ struct SearchSuggestionRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
-                // Icon with colored background
-                ZStack {
-                    Circle()
-                        .fill(Color(hex: result.color).opacity(0.15))
-                        .frame(width: 40, height: 40)
-
-                    Image(systemName: result.icon)
-                        .font(.system(size: 18))
-                        .foregroundColor(Color(hex: result.color))
-                }
+            HStack(spacing: 16) {
+                // Icon with colored background using UnifiedIconCircle
+                UnifiedIconCircle(
+                    icon: result.icon,
+                    color: Color(hexString: result.color),
+                    size: 48,
+                    iconSize: 20
+                )
 
                 // Content
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(result.title)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.wisePrimaryText)
-
-                        Spacer()
-
-                        if !result.metadata.isEmpty {
-                            Text(result.metadata)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.wiseSecondaryText)
-                        }
-                    }
+                    Text(result.title)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.wisePrimaryText)
 
                     Text(result.subtitle)
                         .font(.system(size: 14))
@@ -50,18 +37,17 @@ struct SearchSuggestionRow: View {
                         .lineLimit(1)
                 }
 
-                // Type badge
-                Text(result.type.rawValue.dropLast()) // Remove 's' from plural
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.wiseSecondaryText)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.wiseBorder.opacity(0.5))
-                    .cornerRadius(8)
+                Spacer()
+
+                // Metadata/Amount on the right
+                if !result.metadata.isEmpty {
+                    Text(result.metadata)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.wiseSecondaryText)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            .background(Color.wiseCardBackground)
         }
         .buttonStyle(PlainButtonStyle())
     }

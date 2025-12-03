@@ -5,7 +5,8 @@
 //
 //  Completely redesigned with wallet-style interface matching screenshot
 //  Features: Circular progress ring, category breakdown, savings/expenses tabs
-//  Updated: 2025-11-26
+//  Enhanced with all 12 tasks for comprehensive analytics dashboard
+//  Updated: 2025-11-29
 //
 
 import SwiftUI
@@ -20,16 +21,19 @@ struct AnalyticsView: View {
     @Environment(\.colorScheme) var colorScheme
 
     @State private var selectedDateRange: DateRange = .month
-    @State private var selectedViewType: ViewType = .incomes
+    @State private var selectedViewType: ViewType = .expenses
     @State private var showingDatePicker = false
     @State private var animateProgress = false
     @State private var animateCategories = false
+    @State private var animateAmount = false
+    @State private var animateCards = false
+    @State private var selectedCategory: AnalyticsCategoryData?
     @Namespace private var animation
 
     enum ViewType: String, CaseIterable {
         case incomes = "Incomes"
         case expenses = "Expenses"
-        
+
         var icon: String {
             switch self {
             case .incomes: return "arrow.down.circle.fill"
@@ -43,46 +47,65 @@ struct AnalyticsView: View {
         NavigationView {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    // Header with "Wallet" title and date range picker
+                    // Task 6.1: Header with "Analytics." title and date range picker button
                     headerSection
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
                         .padding(.bottom, 16)
-                    
-                    // Circular progress ring with amount
+
+                    // Task 6.2 & 6.3: Circular progress ring with animated category segments and center display
                     circularProgressSection
                         .padding(.horizontal, 20)
                         .padding(.bottom, 24)
-                    
-                    // Savings/Expenses tabs
+
+                    // Task 6.4: Incomes/Expenses tab selector with icons
                     categoryTabsSection
                         .padding(.horizontal, 20)
                         .padding(.bottom, 20)
-                    
-                    // Category breakdown list
+
+                    // Task 6.5 & 6.6: Animated category list rows with percentage badges and empty state
                     categoryListSection
                         .padding(.horizontal, 20)
                         .padding(.bottom, 20)
+
+                    // Show additional sections only for expenses
+                    if selectedViewType == .expenses {
+                        // Task 6.7: Spending forecast section with trend prediction
+                        spendingForecastSection
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+
+                        // Task 6.8: Subscription summary cards (active count, monthly cost)
+                        subscriptionOverviewSection
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+
+                        // Task 6.9, 6.10, 6.11: Savings opportunities, unused subscriptions, annual conversion suggestions
+                        savingsOpportunitiesSection
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                    }
                 }
             }
             .background(Color.wiseBackground.ignoresSafeArea())
             .navigationBarHidden(true)
         }
+        .navigationViewStyle(StackNavigationViewStyle())
         .onAppear {
             triggerAnimations()
         }
     }
-    
-    // MARK: - Header Section
-    
+
+    // MARK: - Task 6.1: Header Section
+
     private var headerSection: some View {
         HStack(alignment: .center) {
             Text("Analytics.")
                 .font(.spotifyDisplayLarge)
                 .foregroundColor(.wisePrimaryText)
-            
+
             Spacer()
-            
+
             // Date range picker button
             Button(action: {
                 HapticManager.shared.light()
@@ -92,7 +115,7 @@ struct AnalyticsView: View {
                     Text(selectedDateRange.displayName)
                         .font(.spotifyBodyMedium)
                         .foregroundColor(.wisePrimaryText)
-                    
+
                     Image(systemName: "chevron.down")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.wiseSecondaryText)
@@ -128,21 +151,24 @@ struct AnalyticsView: View {
             }
         }
     }
-    
-    // MARK: - Circular Progress Section
-    
+
+    // MARK: - Task 6.2 & 6.3: Circular Progress Section
+
     private var circularProgressSection: some View {
         VStack(spacing: 20) {
             ZStack {
-                // Background circle
+                // Background circle with subtle pulse
                 Circle()
                     .stroke(
                         Color.wiseSeparator.opacity(0.3),
                         lineWidth: 16
                     )
                     .frame(width: 280, height: 280)
-                
-                // Animated category segments
+                    .scaleEffect(animateProgress ? 1.0 : 0.95)
+                    .opacity(animateProgress ? 1.0 : 0.5)
+                    .animation(.easeOut(duration: 0.6), value: animateProgress)
+
+                // Task 6.2: Animated category segments with premium smooth animation
                 let categories = getCurrentCategories()
                 ForEach(Array(categories.enumerated()), id: \.offset) { index, category in
                     Circle()
@@ -159,60 +185,70 @@ struct AnalyticsView: View {
                         )
                         .frame(width: 280, height: 280)
                         .rotationEffect(.degrees(-90))
+                        .shadow(color: category.color.opacity(0.3), radius: 4, x: 0, y: 2)
                         .animation(
-                            .spring(response: 1.0, dampingFraction: 0.7)
-                                .delay(Double(index) * 0.1),
+                            .interpolatingSpring(stiffness: 100, damping: 15)
+                                .delay(Double(index) * 0.08),
                             value: animateProgress
                         )
                 }
-                
-                // Center content with amount
+
+                // Task 6.3: Center display with current month, total amount, and period label
                 VStack(spacing: 8) {
                     Text(currentMonthName())
                         .font(.spotifyBodyMedium)
                         .foregroundColor(.wiseSecondaryText)
-                    
-                    // Large amount display
+                        .opacity(animateAmount ? 1 : 0)
+                        .offset(y: animateAmount ? 0 : -10)
+                        .animation(.easeOut(duration: 0.5).delay(0.2), value: animateAmount)
+
+                    // Large amount display with smooth counter animation
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
                         Text("$")
                             .font(.system(size: 32, weight: .bold))
                             .foregroundColor(.wisePrimaryText)
-                        
+
                         let totalAmount = calculateTotalAmount()
                         let integerPart = Int(totalAmount)
                         let decimalPart = Int((totalAmount - Double(integerPart)) * 100)
-                        
+
                         Text("\(integerPart)")
                             .font(.system(size: 64, weight: .bold))
                             .foregroundColor(.wisePrimaryText)
-                        
+
                         Text(".\(String(format: "%02d", decimalPart))")
                             .font(.system(size: 32, weight: .bold))
                             .foregroundColor(.wiseSecondaryText)
                     }
-                    .opacity(animateProgress ? 1 : 0)
-                    .scaleEffect(animateProgress ? 1 : 0.8)
-                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.3), value: animateProgress)
-                    
+                    .opacity(animateAmount ? 1 : 0)
+                    .scaleEffect(animateAmount ? 1 : 0.5)
+                    .blur(radius: animateAmount ? 0 : 10)
+                    .animation(
+                        .interpolatingSpring(stiffness: 120, damping: 18)
+                            .delay(0.4),
+                        value: animateAmount
+                    )
+
                     Text("total this period")
                         .font(.spotifyBodyMedium)
                         .foregroundColor(.wiseSecondaryText)
-                        .opacity(animateProgress ? 1 : 0)
-                        .animation(.easeIn(duration: 0.3).delay(0.5), value: animateProgress)
+                        .opacity(animateAmount ? 1 : 0)
+                        .offset(y: animateAmount ? 0 : 10)
+                        .animation(.easeOut(duration: 0.5).delay(0.6), value: animateAmount)
                 }
             }
             .padding(.vertical, 20)
         }
     }
-    
-    // MARK: - Category Tabs Section
-    
+
+    // MARK: - Task 6.4: Category Tabs Section
+
     private var categoryTabsSection: some View {
         HStack(spacing: 0) {
             ForEach(ViewType.allCases, id: \.self) { viewType in
                 Button(action: {
                     HapticManager.shared.selection()
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    withAnimation(.interpolatingSpring(stiffness: 200, damping: 20)) {
                         selectedViewType = viewType
                         resetAnimations()
                     }
@@ -230,7 +266,14 @@ struct AnalyticsView: View {
                     .background(
                         RoundedRectangle(cornerRadius: 25)
                             .fill(selectedViewType == viewType ? Color.wiseForestGreen : Color.clear)
+                            .shadow(
+                                color: selectedViewType == viewType ? Color.wiseForestGreen.opacity(0.3) : .clear,
+                                radius: 8,
+                                x: 0,
+                                y: 4
+                            )
                     )
+                    .scaleEffect(selectedViewType == viewType ? 1.0 : 0.98)
                 }
             }
         }
@@ -239,47 +282,228 @@ struct AnalyticsView: View {
                 .fill(Color.wiseBorder.opacity(0.5))
         )
     }
-    
-    // MARK: - Category List Section
-    
+
+    // MARK: - Task 6.5 & 6.6: Category List Section
+
     private var categoryListSection: some View {
         VStack(spacing: 0) {
             let categories = getCurrentCategories()
-            
+
             if categories.isEmpty {
+                // Task 6.6: Empty state for no data scenarios
                 emptyCategoryState
             } else {
+                // Task 6.5: Animated category list rows with percentage badges
                 ForEach(Array(categories.enumerated()), id: \.element.id) { index, category in
-                    WalletCategoryRow(
-                        category: category,
-                        animate: animateCategories,
-                        index: index
-                    )
+                    // Task 6.12: Category drill-down navigation to filtered transaction list
+                    Button(action: {
+                        HapticManager.shared.light()
+                        selectedCategory = category
+                    }) {
+                        WalletCategoryRow(
+                            category: category,
+                            animate: animateCategories,
+                            index: index
+                        )
+                    }
+                    .buttonStyle(PlainButtonStyle())
                     .opacity(animateCategories ? 1 : 0)
-                    .offset(y: animateCategories ? 0 : 20)
+                    .offset(y: animateCategories ? 0 : 30)
+                    .blur(radius: animateCategories ? 0 : 5)
                     .animation(
-                        .spring(response: 0.6, dampingFraction: 0.75)
-                            .delay(Double(index) * 0.08),
+                        .interpolatingSpring(stiffness: 150, damping: 20)
+                            .delay(Double(index) * 0.06),
                         value: animateCategories
                     )
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.9).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+                }
+            }
+        }
+        .sheet(item: $selectedCategory) { category in
+            NavigationView {
+                FilteredTransactionListView(
+                    category: category,
+                    dateRange: selectedDateRange,
+                    isExpense: selectedViewType == .expenses
+                )
+                .environmentObject(dataManager)
+            }
+        }
+    }
+
+    // MARK: - Task 6.7: Spending Forecast Section
+
+    private var spendingForecastSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("SPENDING FORECAST")
+                .font(.spotifyLabelSmall)
+                .textCase(.uppercase)
+                .foregroundColor(.wiseSecondaryText)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 16) {
+                    Circle()
+                        .fill(Color.wiseBlue.opacity(0.2))
+                        .frame(width: 48, height: 48)
+                        .overlay(
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .foregroundColor(.wiseBlue)
+                                .font(.system(size: 20))
+                        )
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Next Month Prediction")
+                            .font(.spotifyHeadingSmall)
+                            .foregroundColor(.wisePrimaryText)
+
+                        Text("Based on current spending trends")
+                            .font(.spotifyBodySmall)
+                            .foregroundColor(.wiseSecondaryText)
+                    }
+
+                    Spacer()
+                }
+
+                let forecast = AnalyticsService.shared.forecastSpending(months: 1)
+                if let nextMonth = forecast.first {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(formatCurrency(nextMonth.predictedAmount))
+                            .font(.spotifyNumberLarge)
+                            .foregroundColor(.wiseBlue)
+
+                        Spacer()
+
+                        HStack(spacing: 4) {
+                            Image(systemName: getTrendIcon())
+                                .font(.system(size: 12, weight: .semibold))
+                            Text(getTrendPercentage())
+                                .font(.spotifyBodyMedium)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(getTrendColor())
+                    }
+
+                    // Confidence indicator with smooth fill animation
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Confidence")
+                                .font(.spotifyCaptionSmall)
+                                .foregroundColor(.wiseSecondaryText)
+
+                            Spacer()
+
+                            Text("\(Int(nextMonth.confidence * 100))%")
+                                .font(.spotifyCaptionSmall)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.wisePrimaryText)
+                        }
+
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                Capsule()
+                                    .fill(Color.wiseSeparator.opacity(0.3))
+                                    .frame(height: 4)
+
+                                Capsule()
+                                    .fill(Color.wiseBlue)
+                                    .frame(width: animateCards ? geometry.size.width * nextMonth.confidence : 0, height: 4)
+                                    .animation(.interpolatingSpring(stiffness: 100, damping: 18).delay(0.3), value: animateCards)
+                            }
+                        }
+                        .frame(height: 4)
+                    }
+                }
+            }
+            .padding(16)
+            .background(Color.wiseCardBackground)
+            .cornerRadius(12)
+            .cardShadow()
+            .scaleEffect(animateCards ? 1.0 : 0.95)
+            .opacity(animateCards ? 1.0 : 0)
+            .animation(.interpolatingSpring(stiffness: 120, damping: 18).delay(0.8), value: animateCards)
+        }
+    }
+
+    // MARK: - Task 6.8: Subscription Overview Section
+
+    private var subscriptionOverviewSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("SUBSCRIPTION OVERVIEW")
+                .font(.spotifyLabelSmall)
+                .textCase(.uppercase)
+                .foregroundColor(.wiseSecondaryText)
+
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 12) {
+                StatisticsCardComponent(
+                    icon: "star.circle.fill",
+                    title: "Active",
+                    value: "\(activeSubscriptionsCount)",
+                    iconColor: .wiseBrightGreen
+                )
+
+                StatisticsCardComponent(
+                    icon: "dollarsign.circle.fill",
+                    title: "Monthly",
+                    value: formatCurrency(totalSubscriptionCost),
+                    iconColor: .wiseBlue
+                )
+            }
+        }
+    }
+
+    // MARK: - Task 6.9, 6.10, 6.11: Savings Opportunities Section
+
+    private var savingsOpportunitiesSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("SAVINGS OPPORTUNITIES")
+                .font(.spotifyLabelSmall)
+                .textCase(.uppercase)
+                .foregroundColor(.wiseSecondaryText)
+
+            let suggestions = AnalyticsService.shared.generateSavingsOpportunities()
+            let unusedSubs = AnalyticsService.shared.detectUnusedSubscriptions(threshold: 60)
+            let annualSuggestions = AnalyticsService.shared.suggestAnnualConversions()
+
+            if suggestions.isEmpty && unusedSubs.isEmpty && annualSuggestions.isEmpty {
+                emptyInsightsView
+            } else {
+                // Task 6.9: Display savings opportunities
+                ForEach(suggestions.prefix(3)) { suggestion in
+                    SavingsSuggestionCard(suggestion: suggestion)
+                }
+
+                // Task 6.10: Unused subscriptions alert card
+                if !unusedSubs.isEmpty {
+                    unusedSubscriptionsCard(subscriptions: unusedSubs)
+                }
+
+                // Task 6.11: Annual conversion suggestions with potential savings
+                if !annualSuggestions.isEmpty {
+                    annualConversionCard(suggestions: annualSuggestions)
                 }
             }
         }
     }
-    
-    // MARK: - Empty States
-    
+
+    // MARK: - Task 6.6: Empty States
+
     private var emptyCategoryState: some View {
         VStack(spacing: 16) {
             Image(systemName: "chart.pie")
                 .font(.system(size: 48))
                 .foregroundColor(.wiseSecondaryText.opacity(0.5))
-            
-            Text("No data available")
+
+            Text("No transactions yet")
                 .font(.spotifyHeadingMedium)
                 .foregroundColor(.wisePrimaryText)
-            
-            Text("Add some transactions to see your \(selectedViewType == .incomes ? "incomes" : "expenses") breakdown")
+
+            Text("Add your first transaction to see \(selectedViewType == .incomes ? "income" : "expense") analytics")
                 .font(.spotifyBodyMedium)
                 .foregroundColor(.wiseSecondaryText)
                 .multilineTextAlignment(.center)
@@ -287,37 +511,183 @@ struct AnalyticsView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
     }
-    
-    // MARK: - Helper Methods
-    
-    private func triggerAnimations() {
-        // Reset first
-        animateProgress = false
-        animateCategories = false
-        
-        // Trigger with delays
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            withAnimation {
-                animateProgress = true
+
+    private var emptyInsightsView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.wiseBrightGreen)
+
+            Text("You're doing great!")
+                .font(.spotifyHeadingMedium)
+                .foregroundColor(.wisePrimaryText)
+
+            Text("No savings opportunities detected at this time.")
+                .font(.spotifyBodyMedium)
+                .foregroundColor(.wiseSecondaryText)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+        .background(Color.wiseCardBackground)
+        .cornerRadius(16)
+        .cardShadow()
+    }
+
+    // MARK: - Task 6.10: Unused Subscriptions Card
+
+    private func unusedSubscriptionsCard(subscriptions: [Subscription]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                Circle()
+                    .fill(Color.wiseOrange.opacity(0.2))
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.wiseOrange)
+                            .font(.system(size: 20))
+                    )
+
+                Text("Unused Subscriptions")
+                    .font(.spotifyHeadingMedium)
+                    .foregroundColor(.wisePrimaryText)
+
+                Spacer()
+            }
+
+            Text("\(subscriptions.count) subscription\(subscriptions.count == 1 ? "" : "s") haven't been used in 60+ days")
+                .font(.spotifyBodyMedium)
+                .foregroundColor(.wiseSecondaryText)
+
+            ForEach(subscriptions.prefix(3)) { subscription in
+                HStack {
+                    Text(subscription.name)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wisePrimaryText)
+                    Spacer()
+                    Text(formatCurrency(subscription.monthlyEquivalent) + "/mo")
+                        .font(.spotifyBodyMedium)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.wiseError)
+                }
+                .padding(.vertical, 4)
+            }
+
+            if subscriptions.count > 3 {
+                Text("+ \(subscriptions.count - 3) more")
+                    .font(.spotifyCaptionSmall)
+                    .foregroundColor(.wiseSecondaryText)
             }
         }
+        .padding(16)
+        .background(Color.wiseCardBackground)
+        .cornerRadius(12)
+        .cardShadow()
+    }
+
+    // MARK: - Task 6.11: Annual Conversion Card
+
+    private func annualConversionCard(suggestions: [AnnualSuggestion]) -> some View {
+        let totalSavings = suggestions.reduce(0.0) { $0 + $1.annualSavings }
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                Circle()
+                    .fill(Color.wiseBrightGreen.opacity(0.2))
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: "arrow.2.circlepath.circle.fill")
+                            .foregroundColor(.wiseBrightGreen)
+                            .font(.system(size: 20))
+                    )
+
+                Text("Switch to Annual Plans")
+                    .font(.spotifyHeadingMedium)
+                    .foregroundColor(.wisePrimaryText)
+
+                Spacer()
+            }
+
+            Text("Save \(formatCurrency(totalSavings)) per year")
+                .font(.spotifyNumberLarge)
+                .foregroundColor(.wiseBrightGreen)
+
+            Text("\(suggestions.count) subscription\(suggestions.count == 1 ? "" : "s") could save money with annual billing")
+                .font(.spotifyBodyMedium)
+                .foregroundColor(.wiseSecondaryText)
+
+            ForEach(suggestions.prefix(3)) { suggestion in
+                HStack {
+                    Text(suggestion.subscription.name)
+                        .font(.spotifyBodySmall)
+                        .foregroundColor(.wisePrimaryText)
+                    Spacer()
+                    Text("Save \(formatCurrency(suggestion.annualSavings))/yr")
+                        .font(.spotifyBodySmall)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.wiseBrightGreen)
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .padding(16)
+        .background(Color.wiseCardBackground)
+        .cornerRadius(12)
+        .cardShadow()
+    }
+
+    // MARK: - Helper Methods
+
+    private func triggerAnimations() {
+        // Reset all animation states first
+        animateProgress = false
+        animateAmount = false
+        animateCategories = false
+        animateCards = false
+
+        // Choreographed animation sequence for premium feel
+        // 1. Start with background circle (immediate)
+        withAnimation(.easeOut(duration: 0.6)) {
+            animateProgress = true
+        }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        // 2. Amount display fades in as progress animates
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation {
+                animateAmount = true
+            }
+        }
+
+        // 3. Category list items appear after circular animation completes
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             withAnimation {
                 animateCategories = true
             }
         }
-    }
-    
-    private func resetAnimations() {
-        animateProgress = false
-        animateCategories = false
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        // 4. Cards and additional content animate last
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            withAnimation {
+                animateCards = true
+            }
+        }
+    }
+
+    private func resetAnimations() {
+        // Smooth reset with quick fade out
+        withAnimation(.easeOut(duration: 0.2)) {
+            animateProgress = false
+            animateAmount = false
+            animateCategories = false
+            animateCards = false
+        }
+
+        // Trigger new animations after brief delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             triggerAnimations()
         }
     }
-    
+
     private func getCurrentCategories() -> [AnalyticsCategoryData] {
         switch selectedViewType {
         case .incomes:
@@ -326,7 +696,7 @@ struct AnalyticsView: View {
             return prepareExpenseCategories()
         }
     }
-    
+
     private func calculateTotalAmount() -> Double {
         switch selectedViewType {
         case .incomes:
@@ -335,7 +705,7 @@ struct AnalyticsView: View {
             return calculateTotalExpenses()
         }
     }
-    
+
     private func startAngle(for index: Int, in categories: [AnalyticsCategoryData]) -> CGFloat {
         guard !categories.isEmpty, index >= 0, index < categories.count else { return 0 }
         let previousSegments = categories.prefix(index)
@@ -349,33 +719,67 @@ struct AnalyticsView: View {
         let total = segmentsUpToIndex.reduce(0.0) { $0 + $1.percentage }
         return CGFloat(min(max(total / 100.0, 0), 1))
     }
-    
+
     private func currentMonthName() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMMM yyyy"
         return formatter.string(from: Date())
     }
-    
+
     private func calculateTotalIncomes() -> Double {
         let transactions = getFilteredTransactions()
         return transactions.filter { !$0.isExpense }.reduce(0.0) { $0 + $1.amount }
     }
-    
+
     private func calculateTotalExpenses() -> Double {
         let transactions = getFilteredTransactions()
         return transactions.filter { $0.isExpense }.reduce(0.0) { $0 + abs($1.amount) }
     }
-    
+
     private func getFilteredTransactions() -> [Transaction] {
         let startDate = selectedDateRange.startDate
         let endDate = selectedDateRange.endDate
-        
+
         return dataManager.transactions
             .filter { $0.date >= startDate && $0.date <= endDate }
     }
-    
+
+    private var activeSubscriptionsCount: Int {
+        dataManager.subscriptions.filter { $0.isActive }.count
+    }
+
+    private var totalSubscriptionCost: Double {
+        dataManager.subscriptions
+            .filter { $0.isActive }
+            .reduce(0.0) { $0 + $1.monthlyEquivalent }
+    }
+
+    private func getTrendIcon() -> String {
+        let analysis = AnalyticsService.shared.getTrendAnalysis(for: selectedDateRange)
+        return analysis.isIncreasing ? "arrow.up.right" : "arrow.down.right"
+    }
+
+    private func getTrendColor() -> Color {
+        let analysis = AnalyticsService.shared.getTrendAnalysis(for: selectedDateRange)
+        return analysis.isIncreasing ? .wiseError : .wiseBrightGreen
+    }
+
+    private func getTrendPercentage() -> String {
+        let analysis = AnalyticsService.shared.getTrendAnalysis(for: selectedDateRange)
+        let percentage = abs(analysis.percentageChange)
+        return String(format: "%.1f%%", percentage)
+    }
+
+    private func formatCurrency(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.maximumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
+    }
+
     // MARK: - Category Data Preparation
-    
+
     private func prepareIncomesCategories() -> [AnalyticsCategoryData] {
         let transactions = getFilteredTransactions()
         let incomeTransactions = transactions.filter { !$0.isExpense }
@@ -437,53 +841,197 @@ struct AnalyticsView: View {
     }
 }
 
+// MARK: - Task 6.12: Filtered Transaction List View
+
+struct FilteredTransactionListView: View {
+    let category: AnalyticsCategoryData
+    let dateRange: DateRange
+    let isExpense: Bool
+
+    @EnvironmentObject var dataManager: DataManager
+    @Environment(\.dismiss) var dismiss
+
+    private var filteredTransactions: [Transaction] {
+        let startDate = dateRange.startDate
+        let endDate = dateRange.endDate
+
+        return dataManager.transactions
+            .filter { transaction in
+                transaction.date >= startDate &&
+                transaction.date <= endDate &&
+                transaction.category.rawValue == category.name &&
+                transaction.isExpense == isExpense
+            }
+            .sorted { $0.date > $1.date }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.wisePrimaryText)
+                        .frame(width: 32, height: 32)
+                        .background(Color.wiseCardBackground)
+                        .clipShape(Circle())
+                }
+
+                Spacer()
+
+                VStack(spacing: 4) {
+                    HStack(spacing: 8) {
+                        Image(systemName: category.icon)
+                            .foregroundColor(category.color)
+                        Text(category.name)
+                            .font(.spotifyHeadingMedium)
+                            .foregroundColor(.wisePrimaryText)
+                    }
+
+                    Text("\(filteredTransactions.count) transactions")
+                        .font(.spotifyCaptionSmall)
+                        .foregroundColor(.wiseSecondaryText)
+                }
+
+                Spacer()
+
+                Color.clear.frame(width: 32, height: 32)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+
+            Divider()
+                .background(Color.wiseSeparator)
+
+            // Transaction list
+            if filteredTransactions.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "tray")
+                        .font(.system(size: 48))
+                        .foregroundColor(.wiseSecondaryText.opacity(0.5))
+
+                    Text("No transactions found")
+                        .font(.spotifyHeadingSmall)
+                        .foregroundColor(.wisePrimaryText)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(filteredTransactions) { transaction in
+                            TransactionHistoryRow(transaction: transaction)
+                                .padding(.horizontal, 20)
+
+                            if transaction.id != filteredTransactions.last?.id {
+                                Divider()
+                                    .padding(.leading, 76)
+                                    .background(Color.wiseSeparator)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 8)
+                }
+            }
+        }
+        .background(Color.wiseBackground.ignoresSafeArea())
+        .navigationBarHidden(true)
+    }
+}
+
 // MARK: - Wallet Category Row Component
 
 struct WalletCategoryRow: View {
     let category: AnalyticsCategoryData
     let animate: Bool
     let index: Int
-    
+
+    @EnvironmentObject var dataManager: DataManager
+    @State private var hovered = false
+
+    private var transactionCount: Int {
+        // Count transactions in this category
+        let filtered = dataManager.transactions.filter { transaction in
+            transaction.category.rawValue == category.name
+        }
+        return filtered.count
+    }
+
     var body: some View {
-        HStack(spacing: 16) {
-            // Icon
+        HStack(spacing: 12) {
+            // Icon - UnifiedIconCircle style (48x48) with pulse effect
             ZStack {
                 Circle()
-                    .fill(category.color.opacity(0.15))
-                    .frame(width: 44, height: 44)
-                
+                    .fill(category.color.opacity(0.2))
+                    .frame(width: 48, height: 48)
+                    .scaleEffect(hovered ? 1.05 : 1.0)
+
                 Image(systemName: category.icon)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 20, weight: .medium))
                     .foregroundColor(category.color)
+                    .scaleEffect(hovered ? 1.1 : 1.0)
             }
-            
-            // Category name
-            Text(category.name)
-                .font(.spotifyBodyLarge)
-                .foregroundColor(.wisePrimaryText)
-            
+            .animation(.interpolatingSpring(stiffness: 300, damping: 20), value: hovered)
+
+            // Category name and subtitle
+            VStack(alignment: .leading, spacing: 4) {
+                Text(category.name)
+                    .font(.spotifyBodyLarge)
+                    .foregroundColor(.wisePrimaryText)
+
+                // Subtitle: "23 transactions • 34.5%"
+                Text("\(transactionCount) transaction\(transactionCount == 1 ? "" : "s") • \(String(format: "%.1f", category.percentage))%")
+                    .font(.spotifyBodySmall)
+                    .foregroundColor(.wiseSecondaryText)
+            }
+
             Spacer()
-            
-            // Percentage badge
-            Text("\(Int(category.percentage))%")
-                .font(.spotifyLabelLarge)
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(category.color)
-                )
+
+            // Amount with subtle scale on hover
+            Text(formatCurrency(category.amount))
+                .font(.spotifyNumberMedium)
+                .foregroundColor(.wisePrimaryText)
+                .scaleEffect(hovered ? 1.05 : 1.0)
+                .animation(.interpolatingSpring(stiffness: 300, damping: 20), value: hovered)
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 16)
-        .background(Color.wiseCardBackground)
-        .cornerRadius(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.wiseCardBackground)
+                .shadow(
+                    color: hovered ? category.color.opacity(0.15) : .clear,
+                    radius: hovered ? 12 : 0,
+                    x: 0,
+                    y: hovered ? 6 : 0
+                )
+        )
+        .scaleEffect(hovered ? 1.02 : 1.0)
+        .animation(.interpolatingSpring(stiffness: 300, damping: 20), value: hovered)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if !hovered {
+                        HapticManager.shared.light()
+                        hovered = true
+                    }
+                }
+                .onEnded { _ in
+                    hovered = false
+                }
+        )
+    }
+
+    private func formatCurrency(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.maximumFractionDigits = 0
+        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
     }
 }
 
 // MARK: - Supporting Types
-// Note: AnalyticsCategoryData is defined in AnalyticsComponents.swift
 
 struct CategorySegment {
     let color: Color
@@ -497,22 +1045,26 @@ struct CategoryProgressRow: View {
     let isExpense: Bool
     let colorScheme: ColorScheme
     let animate: Bool
-    
+
     @State private var animatedWidth: CGFloat = 0
-    
+    @State private var animatedPercentage: Int = 0
+
     var body: some View {
         HStack(spacing: 16) {
-            // Icon with background
+            // Icon with background and subtle pulse
             ZStack {
                 Circle()
                     .fill(category.color.opacity(0.15))
                     .frame(width: 52, height: 52)
-                
+                    .scaleEffect(animate ? 1.0 : 0.8)
+
                 Image(systemName: category.icon)
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundColor(category.color)
+                    .scaleEffect(animate ? 1.0 : 0.5)
             }
-            
+            .animation(.interpolatingSpring(stiffness: 150, damping: 18).delay(0.1), value: animate)
+
             // Content
             VStack(alignment: .leading, spacing: 8) {
                 // Name and Percentage Badge
@@ -523,8 +1075,8 @@ struct CategoryProgressRow: View {
 
                     Spacer()
 
-                    // Percentage Badge
-                    Text("\(Int(category.percentage))%")
+                    // Percentage Badge with animated counter
+                    Text("\(animatedPercentage)%")
                         .font(.spotifyLabelLarge)
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
@@ -532,24 +1084,32 @@ struct CategoryProgressRow: View {
                         .background(
                             Capsule()
                                 .fill(category.color)
+                                .scaleEffect(animate ? 1.0 : 0.8)
                         )
                 }
-                
-                // Progress Bar
+
+                // Progress Bar with smooth fill animation
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
                         // Background Track
                         Capsule()
                             .fill(Color.wiseSeparator.opacity(0.5))
                             .frame(height: 8)
-                        
-                        // Progress Fill
+
+                        // Progress Fill with gradient shimmer effect
                         Capsule()
-                            .fill(category.color)
+                            .fill(
+                                LinearGradient(
+                                    colors: [category.color, category.color.opacity(0.8)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
                             .frame(
                                 width: geometry.size.width * animatedWidth,
                                 height: 8
                             )
+                            .shadow(color: category.color.opacity(0.4), radius: 4, x: 0, y: 2)
                     }
                 }
                 .frame(height: 8)
@@ -559,18 +1119,39 @@ struct CategoryProgressRow: View {
         .background(Color.wiseCardBackground)
         .cornerRadius(16)
         .cardShadow()
+        .scaleEffect(animate ? 1.0 : 0.95)
+        .opacity(animate ? 1.0 : 0)
         .onAppear {
             if animate {
-                withAnimation(.spring(response: 1.0, dampingFraction: 0.7).delay(0.1)) {
-                    animatedWidth = CGFloat(category.percentage / 100.0)
-                }
+                animateProgressBar()
             }
         }
         .onChange(of: animate) { oldValue, newValue in
             if newValue {
                 animatedWidth = 0
-                withAnimation(.spring(response: 1.0, dampingFraction: 0.7).delay(0.1)) {
-                    animatedWidth = CGFloat(category.percentage / 100.0)
+                animatedPercentage = 0
+                animateProgressBar()
+            }
+        }
+    }
+    
+    private func animateProgressBar() {
+        // Smooth progress bar fill
+        withAnimation(.interpolatingSpring(stiffness: 100, damping: 18).delay(0.2)) {
+            animatedWidth = CGFloat(category.percentage / 100.0)
+        }
+        
+        // Animated percentage counter
+        let targetPercentage = Int(category.percentage)
+        let duration: Double = 0.8
+        let steps = 30
+        let increment = targetPercentage / steps
+        
+        for i in 0...steps {
+            DispatchQueue.main.asyncAfter(deadline: .now() + (duration / Double(steps)) * Double(i)) {
+                animatedPercentage = min(increment * i, targetPercentage)
+                if i == steps {
+                    animatedPercentage = targetPercentage
                 }
             }
         }
@@ -581,7 +1162,7 @@ struct CategoryProgressRow: View {
 
 struct TransactionHistoryRow: View {
     let transaction: Transaction
-    
+
     var body: some View {
         HStack(spacing: 16) {
             // Icon
@@ -589,12 +1170,12 @@ struct TransactionHistoryRow: View {
                 Circle()
                     .fill(iconBackgroundColor)
                     .frame(width: 44, height: 44)
-                
+
                 Image(systemName: transaction.category.icon)
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(iconColor)
             }
-            
+
             // Details
             VStack(alignment: .leading, spacing: 4) {
                 Text(transaction.title)
@@ -617,21 +1198,21 @@ struct TransactionHistoryRow: View {
         .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
-    
+
     private var iconColor: Color {
         return transaction.category.color
     }
-    
+
     private var iconBackgroundColor: Color {
         iconColor.opacity(0.15)
     }
-    
+
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd MMMM yyyy"
         return formatter.string(from: date)
     }
-    
+
     private func formatCurrency(_ amount: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
@@ -641,608 +1222,48 @@ struct TransactionHistoryRow: View {
     }
 }
 
-// MARK: - Income Breakdown View (Full Page)
-
-struct IncomeBreakdownView: View {
-    let dateRange: DateRange
-    let incomeData: [ChartDataItem]
-    @EnvironmentObject var dataManager: DataManager
-
-    @State private var selectedCategory: String?
-
-    private var totalIncome: Double {
-        incomeData.reduce(0) { $0 + $1.amount }
-    }
-
-    private var averageIncome: Double {
-        guard !incomeData.isEmpty else { return 0 }
-        return totalIncome / Double(incomeData.count)
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Category Pie Chart and Contribution List
-                if incomeData.isEmpty {
-                    emptyIncomeState
-                } else {
-                    VStack(spacing: 16) {
-                        CategoryPieChart(
-                            data: incomeData,
-                            total: totalIncome,
-                            isIncome: true,
-                            dateRange: dateRange.displayName
-                        )
-                        .padding(.horizontal, 16)
-
-                        CategoryContributionList(
-                            data: incomeData,
-                            total: totalIncome,
-                            isIncome: true,
-                            selectedCategory: $selectedCategory
-                        )
-                        .padding(.horizontal, 16)
-                    }
-                }
-
-            }
-            .padding(.top, 16)
-        }
-        .refreshable {
-            // Refresh data
-            HapticManager.shared.pullToRefresh()
-            dataManager.loadAllData()
-            ToastManager.shared.showSuccess("Refreshed")
-        }
-    }
-
-    // MARK: - Empty State
-    
-    private var emptyIncomeState: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            
-            Image(systemName: "arrow.down.circle")
-                .font(.system(size: 64))
-                .foregroundColor(.wiseSecondaryText.opacity(0.5))
-            
-            VStack(spacing: 8) {
-                Text("No Income Data")
-                    .font(.spotifyHeadingMedium)
-                    .foregroundColor(.wisePrimaryText)
-                
-                Text("No income transactions found for the selected period")
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wiseSecondaryText)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            }
-            
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
-    }
-}
-
-// MARK: - Income Flow Chart View
-
-struct IncomeFlowChartView: View {
-    let data: [ChartDataItem]
-    
-    private var totalAmount: Double {
-        data.reduce(0) { $0 + $1.amount }
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Title
-            Text("Income Breakdown")
-                .font(.spotifyHeadingLarge)
-                .foregroundColor(.wisePrimaryText)
-            
-            // Total Amount
-            Text(formatCurrency(totalAmount))
-                .font(.spotifyNumberLarge)
-                .foregroundColor(.wiseBrightGreen)
-            
-            // Flow Chart
-            Chart(data) { item in
-                BarMark(
-                    x: .value("Amount", item.amount)
-                )
-                .foregroundStyle(item.color.gradient)
-                .cornerRadius(8)
-                .annotation(position: .trailing, alignment: .leading) {
-                    Text(formatCurrency(item.amount))
-                        .font(.spotifyCaptionMedium)
-                        .foregroundColor(.wiseSecondaryText)
-                }
-            }
-            .chartXAxis(.hidden)
-            .chartYAxis {
-                AxisMarks(position: .leading) { value in
-                    let index = value.index
-                    if index < data.count {
-                        AxisValueLabel {
-                            HStack(spacing: 6) {
-                                if let icon = data[index].icon {
-                                    Image(systemName: icon)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(data[index].color)
-                                }
-                                Text(data[index].category)
-                                    .font(.spotifyBodySmall)
-                                    .foregroundColor(.wisePrimaryText)
-                            }
-                        }
-                    }
-                }
-            }
-            .frame(height: max(CGFloat(data.count) * 45, 200))
-            
-            // Category Legend
-            VStack(spacing: 8) {
-                ForEach(data) { item in
-                    HStack {
-                        Circle()
-                            .fill(item.color)
-                            .frame(width: 8, height: 8)
-                        
-                        if let icon = item.icon {
-                            Image(systemName: icon)
-                                .font(.system(size: 12))
-                                .foregroundColor(item.color)
-                        }
-                        
-                        Text(item.category)
-                            .font(.spotifyCaptionMedium)
-                            .foregroundColor(.wiseSecondaryText)
-                        
-                        Spacer()
-                        
-                        Text(formatCurrency(item.amount))
-                            .font(.spotifyCaptionMedium)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.wisePrimaryText)
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .background(Color.wiseCardBackground)
-        .cornerRadius(16)
-        .cardShadow()
-    }
-
-    private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
-    }
-}
-
-// MARK: - Expenses Breakdown View (Full Page)
-
-struct ExpensesBreakdownView: View {
-    let dateRange: DateRange
-    let expenseData: [ChartDataItem]
-    let subscriptions: [Subscription]
-    let savingsOpportunities: [SavingsSuggestion]
-    let unusedSubscriptions: [Subscription]
-    let annualSuggestions: [AnnualSuggestion]
-    @EnvironmentObject var dataManager: DataManager
-
-    @State private var selectedCategory: String?
-
-    private var totalExpenses: Double {
-        expenseData.reduce(0) { $0 + $1.amount }
-    }
-
-    private var averageExpense: Double {
-        guard !expenseData.isEmpty else { return 0 }
-        return totalExpenses / Double(expenseData.count)
-    }
-
-    private var totalSubscriptionCost: Double {
-        subscriptions.filter { $0.isActive }.reduce(0) { $0 + $1.monthlyEquivalent }
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Category Pie Chart and Contribution List
-                if expenseData.isEmpty {
-                    emptyExpenseState
-                } else {
-                    VStack(spacing: 16) {
-                        CategoryPieChart(
-                            data: expenseData,
-                            total: totalExpenses,
-                            isIncome: false,
-                            dateRange: dateRange.displayName
-                        )
-                        .padding(.horizontal, 16)
-
-                        CategoryContributionList(
-                            data: expenseData,
-                            total: totalExpenses,
-                            isIncome: false,
-                            selectedCategory: $selectedCategory
-                        )
-                        .padding(.horizontal, 16)
-                    }
-                }
-
-                // Subscription Summary
-                subscriptionSummarySection
-
-                // Savings Opportunities
-                savingsOpportunitiesSection
-
-            }
-            .padding(.top, 16)
-        }
-        .refreshable {
-            // Refresh data
-            HapticManager.shared.pullToRefresh()
-            dataManager.loadAllData()
-            ToastManager.shared.showSuccess("Refreshed")
-        }
-    }
-
-    // MARK: - Subscription Summary Section
-    
-    private var subscriptionSummarySection: some View {
-        let activeSubscriptions = subscriptions.filter { $0.isActive }
-        
-        return VStack(alignment: .leading, spacing: 12) {
-            Text("SUBSCRIPTION OVERVIEW")
-                .font(.spotifyLabelSmall)
-                .textCase(.uppercase)
-                .foregroundColor(.wiseSecondaryText)
-                .padding(.horizontal, 16)
-            
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12)
-            ], spacing: 12) {
-                StatisticsCardComponent(
-                    icon: "star.circle.fill",
-                    title: "Active",
-                    value: "\(activeSubscriptions.count)",
-                    iconColor: .wiseBrightGreen
-                )
-                
-                StatisticsCardComponent(
-                    icon: "dollarsign.circle.fill",
-                    title: "Monthly",
-                    value: formatCurrency(totalSubscriptionCost),
-                    iconColor: .wiseBlue
-                )
-            }
-            .padding(.horizontal, 16)
-        }
-    }
-    
-    // MARK: - Savings Opportunities Section
-    
-    private var savingsOpportunitiesSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Savings Opportunities")
-                .font(.spotifyHeadingLarge)
-                .foregroundColor(.wisePrimaryText)
-                .padding(.horizontal, 16)
-            
-            if savingsOpportunities.isEmpty && unusedSubscriptions.isEmpty && annualSuggestions.isEmpty {
-                emptyInsightsView
-                    .padding(.horizontal, 16)
-            } else {
-                // Display opportunities
-                ForEach(savingsOpportunities.prefix(5)) { suggestion in
-                    SavingsSuggestionCard(suggestion: suggestion)
-                        .padding(.horizontal, 16)
-                }
-                
-                // Unused Subscriptions
-                if !unusedSubscriptions.isEmpty {
-                    unusedSubscriptionsCard(subscriptions: unusedSubscriptions)
-                        .padding(.horizontal, 16)
-                }
-                
-                // Annual Conversion Suggestions
-                if !annualSuggestions.isEmpty {
-                    annualConversionCard(suggestions: annualSuggestions)
-                        .padding(.horizontal, 16)
-                }
-            }
-        }
-    }
-    
-    // MARK: - Empty States
-    
-    private var emptyExpenseState: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            
-            Image(systemName: "arrow.up.circle")
-                .font(.system(size: 64))
-                .foregroundColor(.wiseSecondaryText.opacity(0.5))
-            
-            VStack(spacing: 8) {
-                Text("No Expense Data")
-                    .font(.spotifyHeadingMedium)
-                    .foregroundColor(.wisePrimaryText)
-                
-                Text("No expense transactions found for the selected period")
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wiseSecondaryText)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            }
-            
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    private var emptyInsightsView: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.wiseBrightGreen)
-            
-            Text("You're doing great!")
-                .font(.spotifyHeadingMedium)
-                .foregroundColor(.wisePrimaryText)
-            
-            Text("No savings opportunities detected at this time.")
-                .font(.spotifyBodyMedium)
-                .foregroundColor(.wiseSecondaryText)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
-        .background(Color.wiseCardBackground)
-        .cornerRadius(16)
-        .cardShadow()
-    }
-
-    // MARK: - Insight Cards
-
-    private func unusedSubscriptionsCard(subscriptions: [Subscription]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 16) {
-                Circle()
-                    .fill(Color.wiseOrange.opacity(0.2))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.wiseOrange)
-                            .font(.system(size: 20))
-                    )
-
-                Text("Unused Subscriptions")
-                    .font(.spotifyHeadingMedium)
-                    .foregroundColor(.wisePrimaryText)
-
-                Spacer()
-            }
-
-            Text("\(subscriptions.count) subscription\(subscriptions.count == 1 ? "" : "s") haven't been used recently")
-                .font(.spotifyBodyMedium)
-                .foregroundColor(.wiseSecondaryText)
-
-            ForEach(subscriptions.prefix(3)) { subscription in
-                HStack {
-                    Text(subscription.name)
-                        .font(.spotifyBodyMedium)
-                        .foregroundColor(.wisePrimaryText)
-                    Spacer()
-                    Text(formatCurrency(subscription.monthlyEquivalent) + "/mo")
-                        .font(.spotifyBodyMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.wiseError)
-                }
-                .padding(.vertical, 4)
-            }
-        }
-        .padding(16)
-        .background(Color.wiseCardBackground)
-        .cornerRadius(12)
-        .cardShadow()
-    }
-
-    private func annualConversionCard(suggestions: [AnnualSuggestion]) -> some View {
-        let totalSavings = suggestions.reduce(0.0) { $0 + $1.annualSavings }
-
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 16) {
-                Circle()
-                    .fill(Color.wiseBrightGreen.opacity(0.2))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Image(systemName: "arrow.2.circlepath.circle.fill")
-                            .foregroundColor(.wiseBrightGreen)
-                            .font(.system(size: 20))
-                    )
-
-                Text("Switch to Annual Plans")
-                    .font(.spotifyHeadingMedium)
-                    .foregroundColor(.wisePrimaryText)
-
-                Spacer()
-            }
-
-            Text("Save \(formatCurrency(totalSavings)) per year")
-                .font(.spotifyNumberLarge)
-                .foregroundColor(.wiseBrightGreen)
-
-            Text("\(suggestions.count) subscription\(suggestions.count == 1 ? "" : "s") could save money with annual billing")
-                .font(.spotifyBodyMedium)
-                .foregroundColor(.wiseSecondaryText)
-        }
-        .padding(16)
-        .background(Color.wiseCardBackground)
-        .cornerRadius(12)
-        .cardShadow()
-    }
-    
-    private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
-    }
-}
-
-// MARK: - Expense Flow Chart View
-
-struct ExpenseFlowChartView: View {
-    let data: [ChartDataItem]
-    
-    private var totalAmount: Double {
-        data.reduce(0) { $0 + $1.amount }
-    }
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Title
-            Text("Expense Breakdown")
-                .font(.spotifyHeadingLarge)
-                .foregroundColor(.wisePrimaryText)
-            
-            // Total Amount
-            Text(formatCurrency(totalAmount))
-                .font(.spotifyNumberLarge)
-                .foregroundColor(.wiseError)
-            
-            // Flow Chart
-            Chart(data) { item in
-                BarMark(
-                    x: .value("Amount", item.amount)
-                )
-                .foregroundStyle(item.color.gradient)
-                .cornerRadius(8)
-                .annotation(position: .trailing, alignment: .leading) {
-                    Text(formatCurrency(item.amount))
-                        .font(.spotifyCaptionMedium)
-                        .foregroundColor(.wiseSecondaryText)
-                }
-            }
-            .chartXAxis(.hidden)
-            .chartYAxis {
-                AxisMarks(position: .leading) { value in
-                    let index = value.index
-                    if index < data.count {
-                        AxisValueLabel {
-                            HStack(spacing: 6) {
-                                if let icon = data[index].icon {
-                                    Image(systemName: icon)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(data[index].color)
-                                }
-                                Text(data[index].category)
-                                    .font(.spotifyBodySmall)
-                                    .foregroundColor(.wisePrimaryText)
-                            }
-                        }
-                    }
-                }
-            }
-            .frame(height: max(CGFloat(data.count) * 45, 200))
-            
-            // Category Legend
-            VStack(spacing: 8) {
-                ForEach(data) { item in
-                    HStack {
-                        Circle()
-                            .fill(item.color)
-                            .frame(width: 8, height: 8)
-                        
-                        if let icon = item.icon {
-                            Image(systemName: icon)
-                                .font(.system(size: 12))
-                                .foregroundColor(item.color)
-                        }
-                        
-                        Text(item.category)
-                            .font(.spotifyCaptionMedium)
-                            .foregroundColor(.wiseSecondaryText)
-                        
-                        Spacer()
-                        
-                        Text(formatCurrency(item.amount))
-                            .font(.spotifyCaptionMedium)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.wisePrimaryText)
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .background(Color.wiseCardBackground)
-        .cornerRadius(16)
-        .cardShadow()
-    }
-
-    private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
-    }
-}
+// Note: StatisticsCardComponent is defined in Components/StatisticsCardComponent.swift
 
 // MARK: - Savings Suggestion Card
 
 struct SavingsSuggestionCard: View {
     let suggestion: SavingsSuggestion
-    @EnvironmentObject var dataManager: DataManager
 
     var body: some View {
         HStack(spacing: 16) {
-            // Icon with proper spacing (no overlap)
-            Circle()
-                .fill(colorForType(suggestion.type).opacity(0.2))
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Image(systemName: iconForType(suggestion.type))
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(colorForType(suggestion.type))
-                )
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(Color.wiseBrightGreen.opacity(0.15))
+                    .frame(width: 48, height: 48)
 
-            // Content with proper spacing
-            VStack(alignment: .leading, spacing: 6) {
-                Text(suggestion.type.rawValue)
-                    .font(.spotifyHeadingSmall)
+                Image(systemName: iconForType(suggestion.type))
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.wiseBrightGreen)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(suggestion.title)
+                    .font(.spotifyBodyMedium)
                     .foregroundColor(.wisePrimaryText)
 
                 Text(suggestion.description)
-                    .font(.spotifyBodyMedium)
+                    .font(.spotifyCaptionMedium)
                     .foregroundColor(.wiseSecondaryText)
                     .lineLimit(2)
-
-                if suggestion.potentialSavings > 0 {
-                    Text("Save \(formatCurrency(suggestion.potentialSavings))")
-                        .font(.spotifyBodyMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.wiseBrightGreen)
-                }
             }
 
-            Spacer(minLength: 8)
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("Save")
+                    .font(.spotifyCaptionSmall)
+                    .foregroundColor(.wiseSecondaryText)
+
+                Text(formatSavings(suggestion.potentialSavings))
+                    .font(.spotifyNumberMedium)
+                    .foregroundColor(.wiseBrightGreen)
+            }
         }
         .padding(16)
         .background(Color.wiseCardBackground)
@@ -1252,25 +1273,20 @@ struct SavingsSuggestionCard: View {
 
     private func iconForType(_ type: SuggestionType) -> String {
         switch type {
-        case .unused, .unusedSubscription: return "pause.circle.fill"
-        case .annualConversion, .switchToAnnual: return "arrow.2.circlepath.circle.fill"
-        case .priceIncrease: return "arrow.up.circle.fill"
-        case .alternative: return "lightbulb.fill"
-        case .trialEnding: return "hourglass"
+        case .unused:
+            return "xmark.circle"
+        case .priceIncrease:
+            return "arrow.up.right.circle"
+        case .annualConversion:
+            return "calendar.circle"
+        case .alternative:
+            return "doc.on.doc"
+        case .trialEnding:
+            return "clock"
         }
     }
 
-    private func colorForType(_ type: SuggestionType) -> Color {
-        switch type {
-        case .unused, .unusedSubscription: return .wiseOrange
-        case .annualConversion, .switchToAnnual: return .wiseBrightGreen
-        case .priceIncrease: return .wiseError
-        case .alternative: return .wiseBlue
-        case .trialEnding: return .wisePurple
-        }
-    }
-
-    private func formatCurrency(_ amount: Double) -> String {
+    private func formatSavings(_ amount: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = "USD"
