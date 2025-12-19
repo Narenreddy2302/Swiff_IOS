@@ -49,6 +49,26 @@ extension Animation {
 
     /// Animation for deletion
     static let deletion = Animation.easeOut(duration: 0.2)
+
+    // MARK: - Analytics-Specific Animations
+
+    /// For circular ring segment reveal with slight overshoot
+    static let ringSegment = Animation.spring(response: 0.55, dampingFraction: 0.72)
+
+    /// For number counter completion with subtle settle
+    static let counterSettle = Animation.spring(response: 0.3, dampingFraction: 0.65)
+
+    /// For category row entrance with natural feel
+    static let categoryEntrance = Animation.spring(response: 0.38, dampingFraction: 0.74)
+
+    /// For premium card reveal with subtle bounce
+    static let premiumCardAppear = Animation.spring(response: 0.4, dampingFraction: 0.72)
+
+    /// For tab indicator movement
+    static let tabIndicator = Animation.spring(response: 0.35, dampingFraction: 0.7)
+
+    /// For progress bar fill animation
+    static let progressFill = Animation.spring(response: 0.6, dampingFraction: 0.8)
 }
 
 // MARK: - Transition Presets

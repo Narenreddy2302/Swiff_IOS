@@ -11,15 +11,15 @@ import Foundation
 // MARK: - Business Rule Error
 
 enum BusinessRuleError: LocalizedError {
-    case expenseSplitMismatch(expected: Currency, actual: Currency)
-    case paymentOverpayment(amount: Currency, balance: Currency)
-    case paymentExceedsBalance(payment: Currency, balance: Currency)
+    case expenseSplitMismatch(expected: MoneyAmount, actual: MoneyAmount)
+    case paymentOverpayment(amount: MoneyAmount, balance: MoneyAmount)
+    case paymentExceedsBalance(payment: MoneyAmount, balance: MoneyAmount)
     case invalidDateRange(start: Date, end: Date)
     case subscriptionNotActive(status: String)
     case emptyGroup(groupName: String)
     case duplicateMember(memberName: String)
-    case negativeBalance(amount: Currency)
-    case insufficientBalance(required: Currency, available: Currency)
+    case negativeBalance(amount: MoneyAmount)
+    case insufficientBalance(required: MoneyAmount, available: MoneyAmount)
     case invalidBillingCycle(cycle: String)
     case futureTransaction(date: Date)
     case expenseWithoutParticipants
@@ -101,9 +101,9 @@ enum BusinessRuleValidator {
     ///   - tolerance: Acceptable difference due to rounding (default: 0.01)
     /// - Returns: BusinessRuleResult
     static func validateExpenseSplit(
-        totalAmount: Currency,
-        splitAmounts: [Currency],
-        tolerance: Currency = Currency(double: 0.01)
+        totalAmount: MoneyAmount,
+        splitAmounts: [MoneyAmount],
+        tolerance: MoneyAmount = MoneyAmount(double: 0.01)
     ) -> BusinessRuleResult {
         // Check if there are any participants
         guard !splitAmounts.isEmpty else {
@@ -111,7 +111,7 @@ enum BusinessRuleValidator {
         }
 
         // Calculate sum of splits
-        let splitSum = splitAmounts.reduce(Currency.zero) { result, amount in
+        let splitSum = splitAmounts.reduce(MoneyAmount.zero) { result, amount in
             result + amount
         }
 
@@ -131,9 +131,9 @@ enum BusinessRuleValidator {
     ///   - participantCount: Number of participants
     /// - Returns: Array of split amounts if valid
     static func distributeExpenseEvenly(
-        totalAmount: Currency,
+        totalAmount: MoneyAmount,
         participantCount: Int
-    ) throws -> [Currency] {
+    ) throws -> [MoneyAmount] {
         guard participantCount > 0 else {
             throw BusinessRuleError.expenseWithoutParticipants
         }
@@ -150,8 +150,8 @@ enum BusinessRuleValidator {
     ///   - allowOverpayment: Whether overpayment is allowed (default: false)
     /// - Returns: BusinessRuleResult
     static func validatePayment(
-        paymentAmount: Currency,
-        currentBalance: Currency,
+        paymentAmount: MoneyAmount,
+        currentBalance: MoneyAmount,
         allowOverpayment: Bool = false
     ) -> BusinessRuleResult {
         // Payment must be positive
@@ -173,9 +173,9 @@ enum BusinessRuleValidator {
     ///   - paymentAmount: Payment amount
     /// - Returns: New balance
     static func calculateBalanceAfterPayment(
-        currentBalance: Currency,
-        paymentAmount: Currency
-    ) -> Currency {
+        currentBalance: MoneyAmount,
+        paymentAmount: MoneyAmount
+    ) -> MoneyAmount {
         return currentBalance - paymentAmount
     }
 
@@ -301,7 +301,7 @@ enum BusinessRuleValidator {
     /// Validate balance is non-negative
     /// - Parameter balance: Balance to validate
     /// - Returns: BusinessRuleResult
-    static func validateNonNegativeBalance(_ balance: Currency) -> BusinessRuleResult {
+    static func validateNonNegativeBalance(_ balance: MoneyAmount) -> BusinessRuleResult {
         guard !balance.isNegative else {
             return .invalid(.negativeBalance(amount: balance))
         }
@@ -315,8 +315,8 @@ enum BusinessRuleValidator {
     ///   - availableBalance: Available balance
     /// - Returns: BusinessRuleResult
     static func validateSufficientBalance(
-        requiredAmount: Currency,
-        availableBalance: Currency
+        requiredAmount: MoneyAmount,
+        availableBalance: MoneyAmount
     ) -> BusinessRuleResult {
         guard availableBalance >= requiredAmount else {
             return .invalid(.insufficientBalance(required: requiredAmount, available: availableBalance))
@@ -355,8 +355,8 @@ enum BusinessRuleValidator {
     ///   - participantIDs: Participant IDs
     /// - Returns: Array of validation results
     static func validateExpenseCreation(
-        totalAmount: Currency,
-        splitAmounts: [Currency],
+        totalAmount: MoneyAmount,
+        splitAmounts: [MoneyAmount],
         date: Date,
         participantIDs: [UUID]
     ) -> [BusinessRuleResult] {
@@ -391,10 +391,10 @@ enum BusinessRuleValidator {
     ///   - payerName: Payer name
     /// - Returns: Array of validation results
     static func validatePaymentCreation(
-        amount: Currency,
+        amount: MoneyAmount,
         payerID: UUID,
         payeeID: UUID,
-        currentBalance: Currency,
+        currentBalance: MoneyAmount,
         date: Date,
         payerName: String
     ) -> [BusinessRuleResult] {
@@ -434,9 +434,9 @@ enum BusinessRuleValidator {
 
 // MARK: - Business Rule Extensions
 
-extension Currency {
+extension MoneyAmount {
     /// Validate this amount is suitable for a payment
-    func validateAsPayment(against balance: Currency) -> BusinessRuleResult {
+    func validateAsPayment(against balance: MoneyAmount) -> BusinessRuleResult {
         return BusinessRuleValidator.validatePayment(
             paymentAmount: self,
             currentBalance: balance
@@ -468,11 +468,11 @@ extension Date {
 
  1. Validate expense split:
  ```swift
- let total = Currency(double: 100.00)
+ let total = MoneyAmount(double: 100.00)
  let splits = [
-     Currency(double: 33.33),
-     Currency(double: 33.33),
-     Currency(double: 33.34)
+     MoneyAmount(double: 33.33),
+     MoneyAmount(double: 33.33),
+     MoneyAmount(double: 33.34)
  ]
 
  let result = BusinessRuleValidator.validateExpenseSplit(
@@ -489,8 +489,8 @@ extension Date {
 
  2. Validate payment:
  ```swift
- let payment = Currency(double: 50.00)
- let balance = Currency(double: 100.00)
+ let payment = MoneyAmount(double: 50.00)
+ let balance = MoneyAmount(double: 100.00)
 
  let result = BusinessRuleValidator.validatePayment(
      paymentAmount: payment,
@@ -501,7 +501,7 @@ extension Date {
  3. Validate complete expense:
  ```swift
  let results = BusinessRuleValidator.validateExpenseCreation(
-     totalAmount: Currency(double: 100.00),
+     totalAmount: MoneyAmount(double: 100.00),
      splitAmounts: splits,
      date: Date(),
      participantIDs: [id1, id2, id3]
@@ -517,7 +517,7 @@ extension Date {
 
  4. Using extensions:
  ```swift
- let amount = Currency(double: 50.00)
+ let amount = MoneyAmount(double: 50.00)
  let result = amount.validateAsPayment(against: balance)
 
  let date = Date()

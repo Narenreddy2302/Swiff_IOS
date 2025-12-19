@@ -2,15 +2,15 @@
 //  TransactionCard.swift
 //  Swiff IOS
 //
-//  Card-based transaction display with outlined icon, status, and amount
+//  Row-based transaction display with icon status indicator
 //
 
 import SwiftUI
 
 // MARK: - Transaction Card
 
-/// Card-based transaction display with outlined icon, status, and amount.
-/// Shows status line format: "Successful • Visa • 3366 • 12th July, 2024"
+/// Row-based transaction display with icon status indicator.
+/// Shows category icon with plus/minus badge, title, status, amount, and relative time.
 struct TransactionCard: View {
     let transaction: Transaction
     let context: CardContext
@@ -19,8 +19,8 @@ struct TransactionCard: View {
 
     // MARK: - Computed Properties
 
-    private var statusColor: Color {
-        transaction.paymentStatus.color
+    private var isIncoming: Bool {
+        !transaction.isExpense
     }
 
     private var statusText: String {
@@ -31,20 +31,19 @@ struct TransactionCard: View {
         context.icon(for: transaction, subscription: subscription)
     }
 
-    private var iconColor: Color {
-        context.color(for: transaction, subscription: subscription)
-    }
-
-    private var amountText: String {
-        transaction.formattedAmount
-    }
-
     private var amountColor: Color {
-        transaction.isExpense ? .wisePrimaryText : .wiseBrightGreen
+        isIncoming ? .wiseSuccess : .wiseError
     }
 
-    private var paymentMethodText: String {
-        transaction.paymentMethod?.shortName ?? "Card"
+    private var formattedAmountWithSign: String {
+        let sign = isIncoming ? "+" : "-"
+        return "\(sign)\(transaction.formattedAmount)"
+    }
+
+    private var relativeTime: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: transaction.date, relativeTo: Date())
     }
 
     // MARK: - Body
@@ -52,72 +51,71 @@ struct TransactionCard: View {
     var body: some View {
         Button(action: { onTap?() }) {
             HStack(spacing: 12) {
-                // Outlined Icon Circle
-                OutlinedIconCircle(
-                    icon: iconName,
-                    color: iconColor,
-                    size: 48,
-                    strokeWidth: 2,
-                    iconSize: 20
-                )
+                // Icon with status indicator
+                iconWithStatusIndicator
 
-                // Text Content
+                // Title and status
                 VStack(alignment: .leading, spacing: 4) {
-                    // Title
                     Text(transaction.title)
                         .font(.spotifyBodyLarge)
                         .foregroundColor(.wisePrimaryText)
                         .lineLimit(1)
 
-                    // Status Line
-                    statusLine
+                    Text(statusText)
+                        .font(.spotifyBodySmall)
+                        .foregroundColor(.wiseSecondaryText)
                 }
 
-                Spacer(minLength: 8)
+                Spacer()
 
-                // Amount
-                Text(amountText)
-                    .font(.spotifyNumberMedium)
-                    .foregroundColor(amountColor)
-                    .lineLimit(1)
+                // Amount and time
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(formattedAmountWithSign)
+                        .font(.spotifyNumberMedium)
+                        .foregroundColor(amountColor)
+
+                    Text(relativeTime)
+                        .font(.spotifyBodySmall)
+                        .foregroundColor(.wiseSecondaryText)
+                }
             }
-            .padding(16)
+            .padding(.vertical, 8)
             .background(Color.wiseCardBackground)
-            .cornerRadius(16)
-            .cardShadow()
+            .cornerRadius(12)
         }
-        .buttonStyle(CardButtonStyle())
+        .buttonStyle(PlainButtonStyle())
     }
 
-    // MARK: - Status Line View
+    // MARK: - Icon with Status Indicator
 
-    @ViewBuilder
-    private var statusLine: some View {
-        HStack(spacing: 4) {
-            // Status
-            Text(statusText)
-                .font(.spotifyBodySmall)
-                .foregroundColor(statusColor)
+    private var iconWithStatusIndicator: some View {
+        ZStack(alignment: .bottomTrailing) {
+            // Main icon circle
+            Circle()
+                .fill(Color(.systemGray6))
+                .frame(width: 48, height: 48)
+                .overlay(
+                    Image(systemName: iconName)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.wisePrimaryText)
+                )
 
-            Text("•")
-                .font(.spotifyBodySmall)
-                .foregroundColor(.wiseSecondaryText)
-
-            // Payment Method
-            Text(paymentMethodText)
-                .font(.spotifyBodySmall)
-                .foregroundColor(.wiseSecondaryText)
-
-            Text("•")
-                .font(.spotifyBodySmall)
-                .foregroundColor(.wiseSecondaryText)
-
-            // Date
-            Text(transaction.date.cardFormattedDate)
-                .font(.spotifyBodySmall)
-                .foregroundColor(.wiseSecondaryText)
+            // Status indicator (plus/minus badge)
+            Circle()
+                .fill(Color.wiseCardBackground)
+                .frame(width: 18, height: 18)
+                .overlay(
+                    Circle()
+                        .fill(isIncoming ? Color.wiseSuccess : Color.wiseError)
+                        .frame(width: 14, height: 14)
+                        .overlay(
+                            Image(systemName: isIncoming ? "plus" : "minus")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.white)
+                        )
+                )
+                .offset(x: 2, y: 2)
         }
-        .lineLimit(1)
     }
 }
 
@@ -125,6 +123,7 @@ struct TransactionCard: View {
 
 #Preview("TransactionCard") {
     VStack(spacing: 12) {
+        // Expense transaction
         TransactionCard(
             transaction: Transaction(
                 id: UUID(),
@@ -135,6 +134,37 @@ struct TransactionCard: View {
                 date: Date(),
                 isRecurring: false,
                 tags: []
+            ),
+            context: .feed
+        )
+
+        // Income transaction
+        TransactionCard(
+            transaction: Transaction(
+                id: UUID(),
+                title: "Salary Deposit",
+                subtitle: "Monthly income",
+                amount: 5000.00,
+                category: .income,
+                date: Date().addingTimeInterval(-3600),
+                isRecurring: false,
+                tags: []
+            ),
+            context: .feed
+        )
+
+        // Pending transaction
+        TransactionCard(
+            transaction: Transaction(
+                id: UUID(),
+                title: "Online Purchase",
+                subtitle: "Shopping",
+                amount: -150.00,
+                category: .shopping,
+                date: Date().addingTimeInterval(-86400),
+                isRecurring: false,
+                tags: [],
+                paymentStatus: .pending
             ),
             context: .feed
         )

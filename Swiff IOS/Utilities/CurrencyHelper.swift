@@ -30,10 +30,10 @@ enum CurrencyError: LocalizedError {
     }
 }
 
-// MARK: - Currency (Decimal-based)
+// MARK: - MoneyAmount (Decimal-based)
 
-/// Thread-safe, precision-preserving currency representation using Decimal
-struct Currency: Codable, Equatable, Comparable, Hashable {
+/// Thread-safe, precision-preserving monetary amount representation using Decimal
+struct MoneyAmount: Codable, Equatable, Comparable, Hashable {
 
     // MARK: - Properties
 
@@ -99,8 +99,8 @@ struct Currency: Codable, Equatable, Comparable, Hashable {
     }
 
     /// Absolute value
-    var abs: Currency {
-        return Currency(Swift.abs(amount))
+    var abs: MoneyAmount {
+        return MoneyAmount(Swift.abs(amount))
     }
 
     // MARK: - Formatting
@@ -139,67 +139,67 @@ struct Currency: Codable, Equatable, Comparable, Hashable {
 
     // MARK: - Arithmetic Operations
 
-    /// Add two currency values
-    static func + (lhs: Currency, rhs: Currency) -> Currency {
-        return Currency(lhs.amount + rhs.amount)
+    /// Add two monetary amounts
+    static func + (lhs: MoneyAmount, rhs: MoneyAmount) -> MoneyAmount {
+        return MoneyAmount(lhs.amount + rhs.amount)
     }
 
-    /// Subtract two currency values
-    static func - (lhs: Currency, rhs: Currency) -> Currency {
-        return Currency(lhs.amount - rhs.amount)
+    /// Subtract two monetary amounts
+    static func - (lhs: MoneyAmount, rhs: MoneyAmount) -> MoneyAmount {
+        return MoneyAmount(lhs.amount - rhs.amount)
     }
 
-    /// Multiply currency by Decimal
-    static func * (lhs: Currency, rhs: Decimal) -> Currency {
-        return Currency(lhs.amount * rhs)
+    /// Multiply monetary amount by Decimal
+    static func * (lhs: MoneyAmount, rhs: Decimal) -> MoneyAmount {
+        return MoneyAmount(lhs.amount * rhs)
     }
 
-    /// Multiply currency by Int
-    static func * (lhs: Currency, rhs: Int) -> Currency {
-        return Currency(lhs.amount * Decimal(rhs))
+    /// Multiply monetary amount by Int
+    static func * (lhs: MoneyAmount, rhs: Int) -> MoneyAmount {
+        return MoneyAmount(lhs.amount * Decimal(rhs))
     }
 
-    /// Divide currency by Decimal
-    static func / (lhs: Currency, rhs: Decimal) throws -> Currency {
+    /// Divide monetary amount by Decimal
+    static func / (lhs: MoneyAmount, rhs: Decimal) throws -> MoneyAmount {
         guard rhs != 0 else {
             throw CurrencyError.divisionByZero
         }
-        return Currency(lhs.amount / rhs)
+        return MoneyAmount(lhs.amount / rhs)
     }
 
-    /// Divide currency by Int
-    static func / (lhs: Currency, rhs: Int) throws -> Currency {
+    /// Divide monetary amount by Int
+    static func / (lhs: MoneyAmount, rhs: Int) throws -> MoneyAmount {
         guard rhs != 0 else {
             throw CurrencyError.divisionByZero
         }
-        return Currency(lhs.amount / Decimal(rhs))
+        return MoneyAmount(lhs.amount / Decimal(rhs))
     }
 
     // MARK: - Compound Assignment
 
-    static func += (lhs: inout Currency, rhs: Currency) {
-        lhs = Currency(lhs.amount + rhs.amount)
+    static func += (lhs: inout MoneyAmount, rhs: MoneyAmount) {
+        lhs = MoneyAmount(lhs.amount + rhs.amount)
     }
 
-    static func -= (lhs: inout Currency, rhs: Currency) {
-        lhs = Currency(lhs.amount - rhs.amount)
+    static func -= (lhs: inout MoneyAmount, rhs: MoneyAmount) {
+        lhs = MoneyAmount(lhs.amount - rhs.amount)
     }
 
     // MARK: - Comparison
 
-    static func < (lhs: Currency, rhs: Currency) -> Bool {
+    static func < (lhs: MoneyAmount, rhs: MoneyAmount) -> Bool {
         return lhs.amount < rhs.amount
     }
 
-    static func > (lhs: Currency, rhs: Currency) -> Bool {
+    static func > (lhs: MoneyAmount, rhs: MoneyAmount) -> Bool {
         return lhs.amount > rhs.amount
     }
 
-    static func <= (lhs: Currency, rhs: Currency) -> Bool {
+    static func <= (lhs: MoneyAmount, rhs: MoneyAmount) -> Bool {
         return lhs.amount <= rhs.amount
     }
 
-    static func >= (lhs: Currency, rhs: Currency) -> Bool {
+    static func >= (lhs: MoneyAmount, rhs: MoneyAmount) -> Bool {
         return lhs.amount >= rhs.amount
     }
 
@@ -216,7 +216,7 @@ struct Currency: Codable, Equatable, Comparable, Hashable {
     func rounded(
         toPlaces places: Int = 2,
         mode: RoundingMode = .nearest
-    ) -> Currency {
+    ) -> MoneyAmount {
         let roundingMode: NSDecimalNumber.RoundingMode
 
         switch mode {
@@ -242,7 +242,7 @@ struct Currency: Codable, Equatable, Comparable, Hashable {
         let decimal = NSDecimalNumber(decimal: amount)
         let rounded = decimal.rounding(accordingToBehavior: handler)
 
-        return Currency(rounded.decimalValue)
+        return MoneyAmount(rounded.decimalValue)
     }
 
     // MARK: - Codable
@@ -281,18 +281,18 @@ struct Currency: Codable, Equatable, Comparable, Hashable {
 
 enum CurrencyHelper {
 
-    /// Convert Double to Currency safely
-    static func fromDouble(_ value: Double) -> Currency {
-        return Currency(double: value)
+    /// Convert Double to MoneyAmount safely
+    static func fromDouble(_ value: Double) -> MoneyAmount {
+        return MoneyAmount(double: value)
     }
 
-    /// Convert Currency to Double (for backward compatibility)
-    static func toDouble(_ currency: Currency) -> Double {
-        return currency.doubleValue
+    /// Convert MoneyAmount to Double (for backward compatibility)
+    static func toDouble(_ amount: MoneyAmount) -> Double {
+        return amount.doubleValue
     }
 
-    /// Parse currency from string
-    static func parse(_ string: String) throws -> Currency {
+    /// Parse monetary amount from string
+    static func parse(_ string: String) throws -> MoneyAmount {
         // Remove currency symbols and whitespace
         let cleaned = string
             .replacingOccurrences(of: "$", with: "")
@@ -301,32 +301,32 @@ enum CurrencyHelper {
             .replacingOccurrences(of: ",", with: "")
             .trimmingCharacters(in: .whitespaces)
 
-        guard let currency = Currency(string: cleaned) else {
+        guard let amount = MoneyAmount(string: cleaned) else {
             throw CurrencyError.invalidAmount(string)
         }
 
-        return currency
+        return amount
     }
 
     /// Calculate percentage
-    static func percentage(_ amount: Currency, percent: Decimal) -> Currency {
+    static func percentage(_ amount: MoneyAmount, percent: Decimal) -> MoneyAmount {
         return amount * (percent / 100)
     }
 
     /// Apply discount
-    static func applyDiscount(_ amount: Currency, percent: Decimal) -> Currency {
+    static func applyDiscount(_ amount: MoneyAmount, percent: Decimal) -> MoneyAmount {
         let discount = percentage(amount, percent: percent)
         return amount - discount
     }
 
     /// Apply tax
-    static func applyTax(_ amount: Currency, percent: Decimal) -> Currency {
+    static func applyTax(_ amount: MoneyAmount, percent: Decimal) -> MoneyAmount {
         let tax = percentage(amount, percent: percent)
         return amount + tax
     }
 
     /// Split amount evenly
-    static func splitEvenly(_ amount: Currency, ways: Int) throws -> [Currency] {
+    static func splitEvenly(_ amount: MoneyAmount, ways: Int) throws -> [MoneyAmount] {
         guard ways > 0 else {
             throw CurrencyError.divisionByZero
         }
@@ -343,8 +343,8 @@ enum CurrencyHelper {
         // Distribute remainder (usually a few cents)
         var index = 0
         while !remainder.isZero && index < ways {
-            splits[index] += Currency(double: 0.01)
-            remainder -= Currency(double: 0.01)
+            splits[index] += MoneyAmount(double: 0.01)
+            remainder -= MoneyAmount(double: 0.01)
             index += 1
         }
 
@@ -354,28 +354,28 @@ enum CurrencyHelper {
 
 // MARK: - Extensions
 
-extension Currency: CustomStringConvertible {
+extension MoneyAmount: CustomStringConvertible {
     var description: String {
         return formatted()
     }
 }
 
-extension Currency: ExpressibleByIntegerLiteral {
+extension MoneyAmount: ExpressibleByIntegerLiteral {
     init(integerLiteral value: Int) {
         self.amount = Decimal(value)
     }
 }
 
-extension Currency: ExpressibleByFloatLiteral {
+extension MoneyAmount: ExpressibleByFloatLiteral {
     init(floatLiteral value: Double) {
         self.amount = Decimal(value)
     }
 }
 
-// MARK: - Common Currency Values
+// MARK: - Common MoneyAmount Values
 
-extension Currency {
-    static let zero = Currency(0)
-    static let one = Currency(1)
-    static let hundred = Currency(100)
+extension MoneyAmount {
+    static let zero = MoneyAmount(0)
+    static let one = MoneyAmount(1)
+    static let hundred = MoneyAmount(100)
 }

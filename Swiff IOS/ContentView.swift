@@ -32,20 +32,20 @@ extension Font {
     static let spotifyHeadingMedium = Font.custom("Helvetica Neue", size: 18).weight(.bold)
     static let spotifyHeadingSmall = Font.custom("Helvetica Neue", size: 16).weight(.bold)
     
-    // Body Text - Clean and readable
-    static let spotifyBodyLarge = Font.custom("Helvetica Neue", size: 16).weight(.medium)
-    static let spotifyBodyMedium = Font.custom("Helvetica Neue", size: 14).weight(.medium)
-    static let spotifyBodySmall = Font.custom("Helvetica Neue", size: 13).weight(.regular)
+    // Body Text - Clean and readable (SF Font)
+    static let spotifyBodyLarge = Font.system(size: 16, weight: .medium)
+    static let spotifyBodyMedium = Font.system(size: 14, weight: .medium)
+    static let spotifyBodySmall = Font.system(size: 13, weight: .regular)
     
-    // Labels - For cards and metadata
-    static let spotifyLabelLarge = Font.custom("Helvetica Neue", size: 14).weight(.semibold)
-    static let spotifyLabelMedium = Font.custom("Helvetica Neue", size: 12).weight(.semibold)
-    static let spotifyLabelSmall = Font.custom("Helvetica Neue", size: 11).weight(.semibold)
+    // Labels - For cards and metadata (SF Font)
+    static let spotifyLabelLarge = Font.system(size: 14, weight: .semibold)
+    static let spotifyLabelMedium = Font.system(size: 12, weight: .semibold)
+    static let spotifyLabelSmall = Font.system(size: 11, weight: .semibold)
     
-    // Captions - Supporting information
-    static let spotifyCaptionLarge = Font.custom("Helvetica Neue", size: 12).weight(.medium)
-    static let spotifyCaptionMedium = Font.custom("Helvetica Neue", size: 11).weight(.regular)
-    static let spotifyCaptionSmall = Font.custom("Helvetica Neue", size: 10).weight(.regular)
+    // Captions - Supporting information (SF Font)
+    static let spotifyCaptionLarge = Font.system(size: 12, weight: .medium)
+    static let spotifyCaptionMedium = Font.system(size: 11, weight: .regular)
+    static let spotifyCaptionSmall = Font.system(size: 10, weight: .regular)
     
     // Numbers - For financial amounts
     static let spotifyNumberLarge = Font.custom("Helvetica Neue", size: 24).weight(.black)
@@ -226,6 +226,7 @@ struct HomeView: View {
     @State private var showingProfile = false
     @State private var showingSearch = false
     @State private var showingQuickActions = false
+    @State private var showingAddSplitBill = false
 
     var body: some View {
         NavigationView {
@@ -258,8 +259,6 @@ struct HomeView: View {
                             // Recent Transactions Section
                             RecentActivitySection()
 
-                            // Top Subscriptions Section
-                            TopSubscriptionsSection(selectedTab: $selectedTab)
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 4)
@@ -1071,78 +1070,92 @@ struct QuickActionSheet: View {
     @State private var showingAddPerson = false
     @State private var showingAddGroup = false
 
+    private var preferredColorSchemeValue: ColorScheme? {
+        switch UserSettings.shared.themeMode.lowercased() {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil
+        }
+    }
+
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("Quick Actions")
-                        .font(.spotifyHeadingLarge)
-                        .foregroundColor(.wisePrimaryText)
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                Text("Quick Actions")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.wisePrimaryText)
 
-                    Spacer()
+                Spacer()
 
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(.wiseSecondaryText)
-                    }
+                Button(action: {
+                    HapticManager.shared.light()
+                    dismiss()
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.wiseSecondaryText.opacity(0.6))
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                .buttonStyle(ScaleButtonStyle(scaleAmount: 0.96))
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 28)
+            .padding(.bottom, 20)
 
-                Divider()
+            Divider()
+                .background(Color.wiseSecondaryText.opacity(0.12))
 
-                // Quick Action Options
-                ScrollView {
-                    VStack(spacing: 12) {
-                        QuickActionRow(
-                            icon: "plus.circle.fill",
-                            title: "Add Transaction",
-                            iconColor: .wiseBrightGreen,
-                            subtitle: "Record a new expense or income"
-                        ) {
-                            HapticManager.shared.impact(.light)
-                            showingAddTransaction = true
-                        }
+            // Actions - NO container, edge-to-edge
+            VStack(spacing: 0) {
+                QuickActionRowV2(
+                    icon: "plus.circle.fill",
+                    title: "Add Transaction",
+                    subtitle: "Record a new expense or income",
+                    iconColor: .wiseBrightGreen,
+                    showDivider: true
+                ) {
+                    showingAddTransaction = true
+                }
 
-                        QuickActionRow(
-                            icon: "creditcard.fill",
-                            title: "Add Subscription",
-                            iconColor: .wiseBlue,
-                            subtitle: "Track a new subscription service"
-                        ) {
-                            HapticManager.shared.impact(.light)
-                            showingAddSubscription = true
-                        }
+                QuickActionRowV2(
+                    icon: "creditcard.fill",
+                    title: "Add Subscription",
+                    subtitle: "Track a new subscription service",
+                    iconColor: .wiseBlue,
+                    showDivider: true
+                ) {
+                    showingAddSubscription = true
+                }
 
-                        QuickActionRow(
-                            icon: "person.fill",
-                            title: "Add Person",
-                            iconColor: Color(red: 1.0, green: 0.592, blue: 0.0),
-                            subtitle: "Add a friend to track balances"
-                        ) {
-                            HapticManager.shared.impact(.light)
-                            showingAddPerson = true
-                        }
+                QuickActionRowV2(
+                    icon: "person.fill",
+                    title: "Add Person",
+                    subtitle: "Add a friend to track balances",
+                    iconColor: Color(red: 1.0, green: 0.592, blue: 0.0),
+                    showDivider: true
+                ) {
+                    showingAddPerson = true
+                }
 
-                        QuickActionRow(
-                            icon: "person.2.fill",
-                            title: "Add Group", iconColor: .wiseForestGreen,
-                            subtitle: "Create a new group for shared expenses"
-                        ) {
-                            HapticManager.shared.impact(.light)
-                            showingAddGroup = true
-                        }
-                    }
-                    .padding(20)
+                QuickActionRowV2(
+                    icon: "person.2.fill",
+                    title: "Add Group",
+                    subtitle: "Create a new group for shared expenses",
+                    iconColor: .wiseForestGreen,
+                    showDivider: false
+                ) {
+                    showingAddGroup = true
                 }
             }
-            .background(Color.wiseBackground)
-            .navigationBarHidden(true)
+
+            Spacer(minLength: 0)
         }
+        .background(Color.wiseCardBackground)
+        .presentationDetents([.height(420)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(20)
+        .presentationBackgroundInteraction(.disabled)
+        .preferredColorScheme(preferredColorSchemeValue)
         .sheet(isPresented: $showingAddTransaction) {
             AddTransactionSheet(
                 showingAddTransactionSheet: $showingAddTransaction,
@@ -1156,7 +1169,7 @@ struct QuickActionSheet: View {
             )
         }
         .sheet(isPresented: $showingAddSubscription) {
-            EnhancedAddSubscriptionSheet(
+            AddSubscriptionSheet(
                 showingAddSubscriptionSheet: $showingAddSubscription,
                 onSubscriptionAdded: { newSubscription in
                     do {
@@ -1168,17 +1181,10 @@ struct QuickActionSheet: View {
             )
         }
         .sheet(isPresented: $showingAddPerson) {
-            AddPersonSheet(
-                showingAddPersonSheet: $showingAddPerson,
-                editingPerson: nil,
-                onPersonAdded: { person in
-                    do {
-                        try dataManager.addPerson(person)
-                    } catch {
-                        dataManager.error = error
-                    }
-                }
-            )
+            AddPersonSheet(isPresented: $showingAddPerson)
+                .environmentObject(dataManager)
+                .presentationDetents([.height(220)])
+                .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingAddGroup) {
             AddGroupSheet(showingAddGroupSheet: $showingAddGroup, editingGroup: nil, people: dataManager.people, onGroupAdded: { group in
@@ -1188,6 +1194,9 @@ struct QuickActionSheet: View {
                     dataManager.error = error
                 }
             })
+            .environmentObject(dataManager)
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
     }
 }
@@ -1294,108 +1303,6 @@ struct InsightRow: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color.wiseCardBackground)
-                .cardShadow()
-        )
-    }
-}
-
-// MARK: - Top Subscriptions Section
-struct TopSubscriptionsSection: View {
-    @Binding var selectedTab: Int
-    @EnvironmentObject var dataManager: DataManager
-
-    var topSubscriptions: [Subscription] {
-        dataManager.subscriptions
-            .filter { $0.isActive }
-            .sorted { $0.monthlyEquivalent > $1.monthlyEquivalent }
-            .prefix(5)
-            .map { $0 }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Top Subscriptions")
-                    .font(.spotifyHeadingLarge)
-                    .foregroundColor(.wisePrimaryText)
-
-                Spacer()
-
-                Button("View All") {
-                    selectedTab = 3 // Switch to Subscriptions tab
-                }
-                .font(.spotifyLabelMedium)
-                .foregroundColor(.wiseForestGreen)
-            }
-
-            if topSubscriptions.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "creditcard.slash")
-                        .font(.system(size: 32))
-                        .foregroundColor(.wiseSecondaryText.opacity(0.5))
-
-                    Text("No active subscriptions")
-                        .font(.spotifyBodyMedium)
-                        .foregroundColor(.wiseSecondaryText)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 32)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(topSubscriptions) { subscription in
-                            NavigationLink(destination: SubscriptionDetailView(subscriptionId: subscription.id)) {
-                                TopSubscriptionCard(subscription: subscription)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                    .padding(.horizontal, 2)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Top Subscription Card
-struct TopSubscriptionCard: View {
-    let subscription: Subscription
-
-    var body: some View {
-        VStack(spacing: 8) {
-            // Icon with gradient background
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [subscription.category.color.opacity(0.2), subscription.category.color.opacity(0.1)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 48, height: 48)
-
-                Image(systemName: subscription.category.icon)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(subscription.category.color)
-            }
-
-            // Name
-            Text(subscription.name)
-                .font(.spotifyLabelMedium)
-                .foregroundColor(.wisePrimaryText)
-                .lineLimit(1)
-
-            // Price
-            Text("$\(String(format: "%.2f", subscription.monthlyEquivalent))/mo")
-                .font(.spotifyNumberSmall)
-                .foregroundColor(.wiseSecondaryText)
-        }
-        .frame(width: 90)
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
                 .fill(Color.wiseCardBackground)
                 .cardShadow()
         )
@@ -1529,7 +1436,7 @@ struct UpcomingRenewalRow: View {
                 .font(.spotifyNumberMedium)
                 .foregroundColor(.wisePrimaryText)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 12)
         .padding(.vertical, 12)
     }
 }
@@ -1949,7 +1856,7 @@ struct TransactionItemRow: View {
                 .font(.spotifyNumberMedium)
                 .foregroundColor(isExpense ? .wisePrimaryText : .wiseBrightGreen)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 12)
         .padding(.vertical, 12)
     }
 }
@@ -2439,29 +2346,43 @@ struct FeedFilterSheet: View {
 struct AddTransactionSheet: View {
     @Binding var showingAddTransactionSheet: Bool
     let onTransactionAdded: (Transaction) -> Void
-    
+
+    @EnvironmentObject var dataManager: DataManager
+
+    // Basic transaction fields
     @State private var title = ""
-    @State private var subtitle = ""
     @State private var amount = ""
-    @State private var selectedCategory: TransactionCategory = .other
+    @State private var selectedCategory: TransactionCategory = .food
     @State private var transactionType: TransactionType = .expense
-    @State private var isRecurring = false
-    @State private var selectedDate = Date()
-    @State private var tags: [String] = []
-    @State private var newTag = ""
-    @State private var showingCategoryPicker = false
-    
+    @State private var notes = ""
+
+    // Split transaction fields (always active in new design)
+    @State private var selectedPayer: Person?
+    @State private var selectedParticipants: Set<UUID> = []
+    @State private var splitType: SplitType = .equally
+    @State private var participantAmounts: [UUID: Double] = [:]
+    @State private var participantPercentages: [UUID: Double] = [:]
+    @State private var participantShares: [UUID: Int] = [:]
+
+    // Validation
+    @State private var validationMessage: String?
+    @State private var validationType: ValidationBanner.BannerType = .info
+
+    // UI state for people selection
+    @State private var showingPaidByPicker = false
+    @State private var showingParticipantPicker = false
+
     enum TransactionType: String, CaseIterable {
         case expense = "Expense"
         case income = "Income"
-        
+
         var color: Color {
             switch self {
             case .expense: return .wiseError
             case .income: return .wiseBrightGreen
             }
         }
-        
+
         var icon: String {
             switch self {
             case .expense: return "arrow.down.circle.fill"
@@ -2469,318 +2390,642 @@ struct AddTransactionSheet: View {
             }
         }
     }
-    
+
     private var isFormValid: Bool {
-        !title.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !subtitle.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !amount.trimmingCharacters(in: .whitespaces).isEmpty &&
-        Double(amount) != nil
+        // Basic validation
+        guard !title.trimmingCharacters(in: .whitespaces).isEmpty,
+              !amount.trimmingCharacters(in: .whitespaces).isEmpty,
+              Double(amount) != nil else {
+            return false
+        }
+
+        // Split validation - require at least one participant
+        guard !selectedParticipants.isEmpty else { return false }
+
+        if let validation = validateSplitConfiguration() {
+            guard validation.isValid else { return false }
+        }
+
+        return true
     }
-    
+
     var body: some View {
-        NavigationView {
+        VStack(spacing: 0) {
+            // Custom Header
+            sheetHeader
+
             ScrollView {
-                VStack(spacing: 24) {
-                    // Transaction Type Selector
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Transaction Type")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        HStack(spacing: 12) {
-                            ForEach(TransactionType.allCases, id: \.self) { type in
-                                Button(action: { transactionType = type }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: type.icon)
-                                            .font(.system(size: 16))
-                                        Text(type.rawValue)
-                                            .font(.spotifyBodyMedium)
-                                    }
-                                    .foregroundColor(transactionType == type ? .white : type.color)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .frame(maxWidth: .infinity)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(transactionType == type ? type.color : type.color.opacity(0.1))
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Basic Information
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Basic Information")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        // Title
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Title *")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            TextField("e.g., Coffee at Starbucks", text: $title)
-                                .font(.spotifyBodyMedium)
-                                .foregroundColor(.wisePrimaryText)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                        }
-                        
-                        // Subtitle
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Description *")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            TextField("e.g., Downtown Location", text: $subtitle)
-                                .font(.spotifyBodyMedium)
-                                .foregroundColor(.wisePrimaryText)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                        }
-                        
-                        // Amount
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Amount *")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            TextField("0.00", text: $amount)
-                                .font(.spotifyBodyMedium)
-                                .foregroundColor(.wisePrimaryText)
-                                .keyboardType(.decimalPad)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                        }
-                    }
-                    
+                VStack(spacing: 20) {
+                    // Transaction Name
+                    transactionNameSection
+
+                    // Total Amount with Currency
+                    amountSection
+
                     // Category Selection
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Category")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        Button(action: { showingCategoryPicker = true }) {
-                            HStack(spacing: 12) {
-                                Circle()
-                                    .fill(selectedCategory.color.opacity(0.1))
-                                    .frame(width: 32, height: 32)
-                                    .overlay(
-                                        Image(systemName: selectedCategory.icon)
-                                            .font(.system(size: 16))
-                                            .foregroundColor(selectedCategory.color)
-                                    )
-                                
-                                Text(selectedCategory.rawValue)
-                                    .font(.spotifyBodyMedium)
-                                    .foregroundColor(.wisePrimaryText)
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.spotifyCaptionMedium)
-                                    .foregroundColor(.wiseSecondaryText)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.wiseBorder.opacity(0.5))
-                                    .stroke(Color.wiseBorder, lineWidth: 1)
-                            )
-                        }
+                    categorySection
+
+                    // Paid By
+                    paidBySection
+
+                    // Split With
+                    splitWithSection
+
+                    // Split Method
+                    splitMethodSection
+
+                    // Notes
+                    notesSection
+
+                    // Validation Banner
+                    if let message = validationMessage {
+                        ValidationBanner(type: validationType, message: message)
                     }
-                    
-                    // Date and Options
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Additional Options")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        // Date Picker
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Date")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            DatePicker("", selection: $selectedDate, displayedComponents: [.date])
-                                .datePickerStyle(.compact)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                        }
-                        
-                        // Recurring Toggle
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Recurring Transaction")
-                                    .font(.spotifyBodyMedium)
-                                    .foregroundColor(.wisePrimaryText)
-                                
-                                Text("Mark as recurring expense/income")
-                                    .font(.spotifyCaptionMedium)
-                                    .foregroundColor(.wiseSecondaryText)
-                            }
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: $isRecurring)
-                                .tint(.wiseBrightGreen)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.wiseBorder.opacity(0.5))
-                                .stroke(Color.wiseBorder, lineWidth: 1)
-                        )
-                    }
-                    
-                    // Tags Section
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Tags")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        // Add Tag Input
-                        HStack {
-                            TextField("Add a tag", text: $newTag)
-                                .font(.spotifyBodySmall)
-                                .foregroundColor(.wisePrimaryText)
-                            
-                            Button(action: addTag) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.wiseBrightGreen)
-                            }
-                            .disabled(newTag.trimmingCharacters(in: .whitespaces).isEmpty)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.wiseBorder.opacity(0.5))
-                                .stroke(Color.wiseBorder, lineWidth: 1)
-                        )
-                        
-                        // Tags Display
-                        if !tags.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 8) {
-                                    ForEach(tags, id: \.self) { tag in
-                                        HStack(spacing: 4) {
-                                            Text(tag)
-                                                .font(.spotifyCaptionSmall)
-                                                .foregroundColor(.wisePrimaryText)
-                                            
-                                            Button(action: { removeTag(tag) }) {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .font(.system(size: 14))
-                                                    .foregroundColor(.wiseSecondaryText)
-                                            }
-                                        }
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(
-                                            Capsule()
-                                                .fill(Color.wiseBorder)
-                                        )
-                                    }
-                                }
-                                .padding(.horizontal, 2)
-                            }
-                        }
-                    }
-                    
+
+                    // Submit Button
+                    submitButton
+
                     Spacer(minLength: 50)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
                 .padding(.top, 20)
             }
-            .navigationTitle("Add Transaction")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        showingAddTransactionSheet = false
-                    }
-                    .font(.spotifyLabelLarge)
-                    .foregroundColor(.wiseSecondaryText)
+        }
+        .background(Color.wiseBackground)
+        .onChange(of: selectedCategory) { _, newCategory in
+            transactionType = (newCategory == .income) ? .income : .expense
+        }
+        .onChange(of: amount) { _, _ in
+            updateValidationMessage()
+        }
+        .onChange(of: selectedParticipants) { _, _ in
+            updateValidationMessage()
+        }
+        .onChange(of: splitType) { _, newType in
+            resetSplitInputs()
+            initializeSplitDefaults(for: newType)
+            updateValidationMessage()
+        }
+    }
+
+    // MARK: - View Sections
+
+    private var sheetHeader: some View {
+        HStack {
+            Text("New Split")
+                .font(.spotifyHeadingMedium)
+                .foregroundColor(.wisePrimaryText)
+
+            Spacer()
+
+            Button(action: { showingAddTransactionSheet = false }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.wisePrimaryText)
+                    .frame(width: 32, height: 32)
+                    .background(Color.wiseBorder.opacity(0.3))
+                    .clipShape(Circle())
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+    }
+
+    private var transactionNameSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FormSectionHeader(title: "Transaction Name", isRequired: false)
+
+            TextField("e.g., Dinner at Mario's", text: $title)
+                .font(.spotifyBodyMedium)
+                .foregroundColor(.wisePrimaryText)
+                .padding(16)
+                .background(Color.wiseCardBackground)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.wiseBorder, lineWidth: 1)
+                )
+        }
+    }
+
+    private var amountSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FormSectionHeader(title: "Total Amount", isRequired: false)
+
+            HStack(spacing: 12) {
+                // Amount input
+                HStack(spacing: 8) {
+                    Text("$")
+                        .font(.spotifyBodyLarge)
+                        .foregroundColor(.wiseSecondaryText)
+
+                    TextField("0.00", text: $amount)
+                        .font(.spotifyBodyLarge)
+                        .foregroundColor(.wisePrimaryText)
+                        .keyboardType(.decimalPad)
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Add") {
-                        addTransaction()
+                .padding(16)
+                .background(Color.wiseCardBackground)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.wiseBorder, lineWidth: 1)
+                )
+
+                // Currency selector (static for now)
+                HStack(spacing: 4) {
+                    Text("USD")
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wisePrimaryText)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12))
+                        .foregroundColor(.wiseSecondaryText)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .background(Color.wiseCardBackground)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.wiseBorder, lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    private var categorySection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FormSectionHeader(title: "Category", isRequired: false)
+
+            CategoryHorizontalSelector(selectedCategory: $selectedCategory)
+        }
+    }
+
+    private var paidBySection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FormSectionHeader(title: "Paid By", isRequired: false)
+
+            HStack(spacing: 12) {
+                // Input field styled button
+                Menu {
+                    ForEach(Array(dataManager.people), id: \.id) { (person: Person) in
+                        Button(action: {
+                            HapticManager.shared.light()
+                            selectedPayer = person
+                        }) {
+                            HStack {
+                                Text(person.avatarType.displayValue)
+                                Text(person.name)
+                                if selectedPayer?.id == person.id {
+                                    Spacer()
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
                     }
-                    .font(.spotifyLabelLarge)
-                    .foregroundColor(isFormValid ? .white : .wiseSecondaryText)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(isFormValid ? Color.wiseForestGreen : Color.wiseBorder)
+                } label: {
+                    HStack {
+                        Text(selectedPayer?.name ?? "Phone number or email")
+                            .font(.spotifyBodyMedium)
+                            .foregroundColor(selectedPayer != nil ? .wisePrimaryText : .wiseSecondaryText)
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(Color.wiseCardBackground)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.wiseBorder, lineWidth: 1)
                     )
-                    .disabled(!isFormValid)
+                }
+
+                // Add button
+                Menu {
+                    ForEach(Array(dataManager.people), id: \.id) { (person: Person) in
+                        Button(action: {
+                            HapticManager.shared.light()
+                            selectedPayer = person
+                        }) {
+                            HStack {
+                                Text(person.avatarType.displayValue)
+                                Text(person.name)
+                            }
+                        }
+                    }
+                } label: {
+                    Text("Add")
+                        .font(.spotifyBodyMedium)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                        .background(Color.wisePrimaryText)
+                        .cornerRadius(12)
+                }
+            }
+
+            Text("Leave empty if you paid")
+                .font(.spotifyCaptionMedium)
+                .foregroundColor(.wiseSecondaryText)
+
+            // Show selected payer chip if exists
+            if let payer = selectedPayer {
+                PersonSelectionChip(person: payer, showRemove: true) {
+                    selectedPayer = nil
                 }
             }
         }
-        .sheet(isPresented: $showingCategoryPicker) {
-            CategoryPickerSheet(
-                selectedCategory: $selectedCategory,
-                isPresented: $showingCategoryPicker
+    }
+
+    private var splitWithSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FormSectionHeader(title: "Split With", isRequired: false)
+
+            HStack(spacing: 12) {
+                // Input field styled button
+                Menu {
+                    ForEach(Array(dataManager.people), id: \.id) { (person: Person) in
+                        Button(action: { toggleParticipant(person.id) }) {
+                            HStack {
+                                Text(person.avatarType.displayValue)
+                                Text(person.name)
+                                if selectedParticipants.contains(person.id) {
+                                    Spacer()
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Text("Phone number or email")
+                            .font(.spotifyBodyMedium)
+                            .foregroundColor(.wiseSecondaryText)
+                        Spacer()
+                    }
+                    .padding(16)
+                    .background(Color.wiseCardBackground)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.wiseBorder, lineWidth: 1)
+                    )
+                }
+
+                // Add button
+                Menu {
+                    ForEach(Array(dataManager.people), id: \.id) { (person: Person) in
+                        Button(action: { toggleParticipant(person.id) }) {
+                            HStack {
+                                Text(person.avatarType.displayValue)
+                                Text(person.name)
+                                if selectedParticipants.contains(person.id) {
+                                    Spacer()
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    Text("Add")
+                        .font(.spotifyBodyMedium)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                        .background(Color.wisePrimaryText)
+                        .cornerRadius(12)
+                }
+            }
+
+            Text("Add at least one person to split with")
+                .font(.spotifyCaptionMedium)
+                .foregroundColor(.wiseSecondaryText)
+
+            // Selected participants with inline inputs
+            ForEach(Array(selectedParticipants), id: \.self) { personId in
+                if let person = dataManager.people.first(where: { $0.id == personId }) {
+                    participantChipView(person: person)
+                }
+            }
+        }
+    }
+
+    private func participantChipView(person: Person) -> some View {
+        HStack(spacing: 12) {
+            AvatarView(avatarType: person.avatarType, size: .small, style: .solid)
+                .frame(width: 32, height: 32)
+
+            Text(person.name)
+                .font(.spotifyBodyMedium)
+                .foregroundColor(.wisePrimaryText)
+
+            Spacer()
+
+            participantInputField(for: person)
+
+            Button(action: { toggleParticipant(person.id) }) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundColor(.wiseSecondaryText)
+            }
+        }
+        .padding(12)
+        .background(Color.wiseCardBackground)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.wiseBorder, lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
+    private func participantInputField(for person: Person) -> some View {
+        switch splitType {
+        case .equally:
+            let amount = calculateEqualAmount()
+            Text(String(format: "$%.2f", amount))
+                .font(.spotifyBodyMedium)
+                .foregroundColor(.wisePrimaryText)
+
+        case .percentages:
+            HStack(spacing: 4) {
+                TextField("0", value: Binding(
+                    get: { participantPercentages[person.id] ?? 0 },
+                    set: { participantPercentages[person.id] = $0 }
+                ), format: .number)
+                .keyboardType(.decimalPad)
+                .frame(width: 50)
+                .multilineTextAlignment(.trailing)
+                .font(.spotifyBodyMedium)
+
+                Text("%")
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+            }
+
+        case .shares:
+            HStack(spacing: 4) {
+                Stepper(
+                    value: Binding(
+                        get: { participantShares[person.id] ?? 1 },
+                        set: { participantShares[person.id] = max(1, $0) }
+                    ),
+                    in: 1...10
+                ) {
+                    Text("\(participantShares[person.id] ?? 1)×")
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wisePrimaryText)
+                }
+            }
+
+        case .exactAmounts, .adjustments:
+            HStack(spacing: 4) {
+                Text("$")
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+
+                TextField("0.00", value: Binding(
+                    get: { participantAmounts[person.id] ?? 0 },
+                    set: { participantAmounts[person.id] = $0 }
+                ), format: .number)
+                .keyboardType(.decimalPad)
+                .frame(width: 60)
+                .multilineTextAlignment(.trailing)
+                .font(.spotifyBodyMedium)
+            }
+        }
+    }
+
+    private var splitMethodSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FormSectionHeader(title: "Split Method", isRequired: false)
+
+            SplitMethodSelector(selectedType: $splitType)
+        }
+    }
+
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            FormSectionHeader(title: "Notes (Optional)", isRequired: false)
+
+            ZStack(alignment: .topLeading) {
+                if notes.isEmpty {
+                    Text("Add details...")
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wiseSecondaryText)
+                        .padding(16)
+                }
+
+                TextEditor(text: $notes)
+                    .font(.spotifyBodyMedium)
+                    .frame(minHeight: 80)
+                    .scrollContentBackground(.hidden)
+                    .padding(12)
+            }
+            .background(Color.wiseCardBackground)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.wiseBorder, lineWidth: 1)
             )
         }
     }
-    
-    private func addTag() {
-        let trimmedTag = newTag.trimmingCharacters(in: .whitespaces)
-        if !trimmedTag.isEmpty && !tags.contains(trimmedTag) {
-            tags.append(trimmedTag)
-            newTag = ""
+
+    private var submitButton: some View {
+        Button(action: addTransaction) {
+            Text("Create Split")
+                .font(.spotifyBodyLarge)
+                .fontWeight(.semibold)
+                .foregroundColor(isFormValid ? .white : .wiseSecondaryText)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(isFormValid ? Color.wisePrimaryText : Color.wiseBorder.opacity(0.5))
+                .cornerRadius(12)
+        }
+        .disabled(!isFormValid)
+    }
+
+    // MARK: - Helper Methods
+
+    private func calculateEqualAmount() -> Double {
+        guard !selectedParticipants.isEmpty,
+              let amountValue = Double(amount) else { return 0 }
+        return amountValue / Double(selectedParticipants.count)
+    }
+
+    private func calculateAmount(for personId: UUID) -> Double {
+        guard let amountValue = Double(amount) else { return 0 }
+
+        switch splitType {
+        case .equally:
+            return calculateEqualAmount()
+
+        case .percentages:
+            let percentage = participantPercentages[personId] ?? 0
+            return amountValue * (percentage / 100)
+
+        case .shares:
+            let shares = participantShares[personId] ?? 1
+            let totalShares = participantShares.values.reduce(0, +)
+            return totalShares > 0 ? amountValue * Double(shares) / Double(totalShares) : 0
+
+        case .exactAmounts, .adjustments:
+            return participantAmounts[personId] ?? 0
         }
     }
-    
-    private func removeTag(_ tag: String) {
-        tags.removeAll { $0 == tag }
+
+    private func validateSplitConfiguration() -> (isValid: Bool, message: String)? {
+        guard let amountValue = Double(amount) else { return nil }
+
+        switch splitType {
+        case .equally:
+            return (true, "Split equally among \(selectedParticipants.count) people")
+
+        case .percentages:
+            let total = participantPercentages.values.reduce(0, +)
+            if abs(total - 100) < 0.1 {
+                return (true, "Percentages add up to 100%")
+            } else {
+                return (false, "Percentages must add up to 100% (currently \(String(format: "%.1f", total))%)")
+            }
+
+        case .exactAmounts, .adjustments:
+            let total = participantAmounts.values.reduce(0, +)
+            if abs(total - amountValue) < 0.01 {
+                return (true, "Amounts match total")
+            } else {
+                return (false, "Amounts must add up to $\(amount) (currently $\(String(format: "%.2f", total)))")
+            }
+
+        case .shares:
+            return (true, "Split by shares")
+        }
     }
-    
+
+    private func initializeSplitDefaults(for splitType: SplitType) {
+        let amountValue = Double(amount) ?? 0
+        let count = Double(selectedParticipants.count)
+
+        switch splitType {
+        case .equally:
+            break
+
+        case .percentages:
+            let equalPercentage = count > 0 ? 100.0 / count : 0
+            for personId in selectedParticipants {
+                participantPercentages[personId] = equalPercentage
+            }
+
+        case .shares:
+            for personId in selectedParticipants {
+                participantShares[personId] = 1
+            }
+
+        case .exactAmounts, .adjustments:
+            let equalAmount = count > 0 ? amountValue / count : 0
+            for personId in selectedParticipants {
+                participantAmounts[personId] = equalAmount
+            }
+        }
+    }
+
+    private func resetSplitInputs() {
+        participantAmounts.removeAll()
+        participantPercentages.removeAll()
+        participantShares.removeAll()
+    }
+
+    private func toggleParticipant(_ personId: UUID) {
+        HapticManager.shared.light()
+        if selectedParticipants.contains(personId) {
+            selectedParticipants.remove(personId)
+            participantAmounts.removeValue(forKey: personId)
+            participantPercentages.removeValue(forKey: personId)
+            participantShares.removeValue(forKey: personId)
+        } else {
+            selectedParticipants.insert(personId)
+            initializeSplitDefaults(for: splitType)
+        }
+    }
+
+    private func updateValidationMessage() {
+        if let validation = validateSplitConfiguration() {
+            validationMessage = validation.message
+            validationType = validation.isValid ? .success : .warning
+        } else {
+            validationMessage = nil
+        }
+    }
+
     private func addTransaction() {
         guard let amountValue = Double(amount) else { return }
-        
+        guard let payer = selectedPayer else { return }
         let finalAmount = transactionType == .expense ? -abs(amountValue) : abs(amountValue)
-        
+
+        var splitBillId: UUID? = nil
+
+        // Create split bill - this is always a split transaction now
+        let payerId = payer.id
+        let participants = selectedParticipants.map { personId -> SplitParticipant in
+            let amount = calculateAmount(for: personId)
+            return SplitParticipant(
+                personId: personId,
+                amount: amount,
+                hasPaid: personId == payerId,
+                percentage: participantPercentages[personId],
+                shares: participantShares[personId]
+            )
+        }
+
+        let splitBill = SplitBill(
+            title: title.trimmingCharacters(in: .whitespaces),
+            totalAmount: abs(amountValue),
+            paidById: payerId,
+            splitType: splitType,
+            participants: participants,
+            notes: notes,
+            category: selectedCategory,
+            date: Date()
+        )
+
+        do {
+            try dataManager.addSplitBill(splitBill)
+            splitBillId = splitBill.id
+
+            // Update balances for payer
+            for participant in participants where participant.personId != payer.id {
+                if var person = dataManager.people.first(where: { $0.id == participant.personId }) {
+                    person.balance -= participant.amount
+                    try dataManager.updatePerson(person)
+                }
+            }
+
+            if var payerPerson = dataManager.people.first(where: { $0.id == payer.id }) {
+                let totalOwed = participants
+                    .filter { $0.personId != payer.id }
+                    .reduce(0) { $0 + $1.amount }
+                payerPerson.balance += totalOwed
+                try dataManager.updatePerson(payerPerson)
+            }
+        } catch {
+            print("Error creating split bill: \(error)")
+            return
+        }
+
         let newTransaction = Transaction(
             title: title.trimmingCharacters(in: .whitespaces),
-            subtitle: subtitle.trimmingCharacters(in: .whitespaces),
+            subtitle: "Split Transaction",
             amount: finalAmount,
             category: selectedCategory,
-            date: selectedDate,
-            isRecurring: isRecurring,
-            tags: tags
+            date: Date(),
+            isRecurring: false,
+            tags: [],
+            notes: notes,
+            splitBillId: splitBillId
         )
-        
+
         onTransactionAdded(newTransaction)
+        HapticManager.shared.success()
         showingAddTransactionSheet = false
     }
 }
@@ -2828,7 +3073,7 @@ struct CategoryPickerSheet: View {
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
                 .padding(.top, 20)
             }
             .navigationTitle("Select Category")
@@ -2852,7 +3097,9 @@ struct PeopleView: View {
     @State private var selectedTab: PeopleTab = .people
     @State private var showingAddPersonSheet = false
     @State private var showingAddGroupSheet = false
-    
+    @State private var showSearchBar = false
+    @State private var searchText = ""
+
     enum PeopleTab: String, CaseIterable {
         case people = "People"
         case groups = "Groups"
@@ -2867,47 +3114,55 @@ struct PeopleView: View {
     
     var body: some View {
         NavigationView {
-            ZStack {
-                // Background that extends to all edges
+            ZStack(alignment: .top) {
+                // Background
                 Color.wiseBackground
                     .ignoresSafeArea()
-                
+
                 VStack(spacing: 0) {
                     // Fixed Header Section
-                    PeopleHeaderSection(
-                        selectedTab: $selectedTab,
-                        showingAddPersonSheet: $showingAddPersonSheet,
-                        showingAddGroupSheet: $showingAddGroupSheet
-                    )
-                    .zIndex(1) // Keep header on top
-                    
-                    // Content
-                    TabView(selection: $selectedTab) {
-                        // People Tab
-                        PeopleListView(people: dataManager.people)
-                            .tag(PeopleTab.people)
+                    VStack(spacing: 0) {
+                        // Header
+                        PeopleHeaderSection(
+                            selectedTab: $selectedTab,
+                            showingAddPersonSheet: $showingAddPersonSheet,
+                            showingAddGroupSheet: $showingAddGroupSheet,
+                            showSearchBar: $showSearchBar,
+                            searchText: $searchText
+                        )
+                        .padding(.top, 10) // Standard top padding after safe area
 
-                        // Groups Tab
-                        GroupsListView(groups: dataManager.groups, people: dataManager.people)
-                            .tag(PeopleTab.groups)
+                        // Quick Stats Cards
+                        PeopleQuickStatsView(people: dataManager.people)
+
+                        // No category filter section for People (Groups don't need filters like subscription categories)
                     }
-                    .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+                    .background(Color.wiseBackground)
+                    .zIndex(1) // Keep header on top
+
+                    // Content based on selected tab
+                    if selectedTab == .people {
+                        PeopleListView(people: dataManager.people, searchText: $searchText)
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .move(edge: .leading).combined(with: .opacity)
+                            ))
+                    } else {
+                        GroupsListView(groups: dataManager.groups, people: dataManager.people, searchText: $searchText)
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .move(edge: .leading).combined(with: .opacity)
+                            ))
+                    }
                 }
-                .navigationBarHidden(true)
             }
+            .navigationBarHidden(true)
         }
         .sheet(isPresented: $showingAddPersonSheet) {
-            AddPersonSheet(
-                showingAddPersonSheet: $showingAddPersonSheet,
-                editingPerson: nil as Person?,
-                onPersonAdded: { person in
-                    do {
-                        try dataManager.addPerson(person)
-                    } catch {
-                        dataManager.error = error
-                    }
-                }
-            )
+            AddPersonSheet(isPresented: $showingAddPersonSheet)
+                .environmentObject(dataManager)
+                .presentationDetents([.height(220)])
+                .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingAddGroupSheet) {
             AddGroupSheet(
@@ -2922,6 +3177,9 @@ struct PeopleView: View {
                     }
                 }
             )
+            .environmentObject(dataManager)
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
     }
 }
@@ -2931,7 +3189,9 @@ struct PeopleHeaderSection: View {
     @Binding var selectedTab: PeopleView.PeopleTab
     @Binding var showingAddPersonSheet: Bool
     @Binding var showingAddGroupSheet: Bool
-    
+    @Binding var showSearchBar: Bool
+    @Binding var searchText: String
+
     var body: some View {
         VStack(spacing: 16) {
             // Top Header (matching design system)
@@ -2946,11 +3206,16 @@ struct PeopleHeaderSection: View {
                 HStack(spacing: 16) {
                     Button(action: {
                         HapticManager.shared.light()
-                        // Search action placeholder
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showSearchBar.toggle()
+                            if !showSearchBar {
+                                searchText = ""
+                            }
+                        }
                     }) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 20))
-                            .foregroundColor(.wisePrimaryText)
+                            .foregroundColor(showSearchBar ? .wiseBrightGreen : .wisePrimaryText)
                     }
 
                     HeaderActionButton(icon: "plus.circle.fill", color: .wiseForestGreen) {
@@ -2964,7 +3229,7 @@ struct PeopleHeaderSection: View {
                 }
             }
             .padding(.horizontal, 16)
-            
+
             // Segmented Control
             HStack(spacing: 0) {
                 ForEach(PeopleView.PeopleTab.allCases, id: \.self) { tab in
@@ -2972,6 +3237,7 @@ struct PeopleHeaderSection: View {
                         HapticManager.shared.selection()
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedTab = tab
+                            searchText = "" // Clear search when switching tabs
                         }
                     }) {
                         HStack(spacing: 8) {
@@ -2996,9 +3262,40 @@ struct PeopleHeaderSection: View {
                     .fill(Color.wiseBorder.opacity(0.5))
             )
             .padding(.horizontal, 16)
+
+            // Search Bar (matching Feed design)
+            if showSearchBar {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.wiseSecondaryText)
+                        .font(.system(size: 16))
+
+                    TextField(selectedTab == .people ? "Search people..." : "Search groups...",
+                              text: $searchText)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wisePrimaryText)
+
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.wiseSecondaryText)
+                                .font(.system(size: 16))
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.wiseBorder.opacity(0.3))
+                )
+                .padding(.horizontal, 16)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
-        .padding(.top, 8)
-        .padding(.bottom, 6)
+        .padding(.bottom, 8) // Match Subscriptions header bottom padding
     }
 }
 
@@ -3014,47 +3311,27 @@ struct GroupsView: View {
 // MARK: - People Quick Stats View
 struct PeopleQuickStatsView: View {
     let people: [Person]
-    
+
     var totalOwedToYou: Double {
         people.filter { $0.balance > 0 }.reduce(0) { $0 + $1.balance }
     }
-    
+
     var totalYouOwe: Double {
         let negativeBalances = people.filter { $0.balance < 0 }
         return abs(negativeBalances.reduce(0) { $0 + $1.balance })
     }
-    
-    var netBalance: Double {
-        totalOwedToYou - totalYouOwe
+
+    var owesYouCount: Int {
+        people.filter { $0.balance > 0 }.count
     }
-    
-    var numberOfPeople: Int {
-        people.count
+
+    var youOweCount: Int {
+        people.filter { $0.balance < 0 }.count
     }
-    
-    var activePeopleCount: Int {
-        people.filter { $0.balance != 0 }.count
-    }
-    
-    // Calculate trends (placeholder - in production, compare with previous period)
-    private func calculateTrend(for type: String) -> (percentage: Double, isPositive: Bool) {
-        switch type {
-        case "balance":
-            return netBalance >= 0 ? (5.2, true) : (2.1, false)
-        case "people":
-            return (0.0, true) // Neutral for count
-        case "owed":
-            return (3.5, true)
-        case "owing":
-            return (1.8, false)
-        default:
-            return (0, true)
-        }
-    }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // 1x2 Grid with only owed amounts
+            // 1x2 Grid with owed amounts
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 12),
                 GridItem(.flexible(), spacing: 12)
@@ -3066,9 +3343,9 @@ struct PeopleQuickStatsView: View {
                     icon: "arrow.down.circle.fill",
                     color: .wiseBrightGreen,
                     isAmount: true,
-                    trend: calculateTrend(for: "owed")
+                    peopleCount: owesYouCount
                 )
-                
+
                 // You Owe Card
                 PeopleStatCard(
                     title: "You Owe",
@@ -3076,7 +3353,7 @@ struct PeopleQuickStatsView: View {
                     icon: "arrow.up.circle.fill",
                     color: .wiseError,
                     isAmount: true,
-                    trend: calculateTrend(for: "owing")
+                    peopleCount: youOweCount
                 )
             }
         }
@@ -3093,18 +3370,18 @@ struct PeopleStatCard: View {
     let color: Color
     let isAmount: Bool
     let isCount: Bool
-    let trend: (percentage: Double, isPositive: Bool)
-    
-    init(title: String, amount: Double, icon: String, color: Color, isAmount: Bool = false, isCount: Bool = false, trend: (percentage: Double, isPositive: Bool) = (0.0, true)) {
+    let peopleCount: Int
+
+    init(title: String, amount: Double, icon: String, color: Color, isAmount: Bool = false, isCount: Bool = false, peopleCount: Int = 0) {
         self.title = title
         self.amount = amount
         self.icon = icon
         self.color = color
         self.isAmount = isAmount
         self.isCount = isCount
-        self.trend = trend
+        self.peopleCount = peopleCount
     }
-    
+
     var formattedAmount: String {
         if isCount {
             return String(Int(amount))
@@ -3117,41 +3394,39 @@ struct PeopleStatCard: View {
         }
         return String(format: "%.2f", amount)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: icon)
                     .font(.system(size: 16))
                     .foregroundColor(color)
-                
+
                 Spacer()
-                
-                // Trend indicator (only show if non-zero)
-                if trend.percentage != 0.0 {
-                    HStack(spacing: 2) {
-                        Image(systemName: trend.isPositive ? "arrow.up.right" : "arrow.down.right")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(trend.isPositive ? .wiseBrightGreen : .wiseError)
-                        
-                        Text(String(format: "%.1f%%", abs(trend.percentage)))
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(trend.isPositive ? .wiseBrightGreen : .wiseError)
+
+                // People count indicator
+                if peopleCount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 10))
+                        Text("\(peopleCount)")
+                            .font(.spotifyLabelSmall)
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
+                    .foregroundColor(.wiseSecondaryText)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
                     .background(
                         Capsule()
-                            .fill((trend.isPositive ? Color.wiseBrightGreen : Color.wiseError).opacity(0.1))
+                            .fill(Color.wiseBorder.opacity(0.3))
                     )
                 }
             }
-            
+
             Text(title.uppercased())
                 .font(.spotifyLabelSmall)
                 .foregroundColor(.wiseSecondaryText)
                 .textCase(.uppercase)
-            
+
             Text(formattedAmount)
                 .font(.spotifyNumberLarge)
                 .foregroundColor(.wisePrimaryText)
@@ -3174,6 +3449,7 @@ struct SubscriptionsView: View {
     @State private var selectedFilter: SubscriptionFilter = .all
     @State private var selectedCategory: SubscriptionCategory? = nil
     @State private var searchText = ""
+    @State private var showSearchBar = false
     @State private var showingFilterSheet = false
     @State private var showingInsightsSheet = false
     @State private var showingRenewalCalendarSheet = false
@@ -3305,13 +3581,15 @@ struct SubscriptionsView: View {
                             showingAddSubscriptionSheet: $showingAddSubscriptionSheet,
                             showingInsightsSheet: $showingInsightsSheet,
                             showingRenewalCalendarSheet: $showingRenewalCalendarSheet,
+                            showSearchBar: $showSearchBar,
+                            searchText: $searchText,
                             totalMonthlySpend: totalMonthlySpend,
                             totalAnnualSpend: totalAnnualSpend,
                             nextBillingDate: nextBillingDate,
                             upcomingBillsCount: upcomingBills.count
                         )
                         .padding(.top, 10) // Standard top padding after safe area
-                        
+
                         // Quick Stats Cards
                         SubscriptionQuickStatsView(
                             subscriptions: dataManager.subscriptions,
@@ -3359,7 +3637,7 @@ struct SubscriptionsView: View {
             .navigationTitle("")
         }
         .sheet(isPresented: $showingAddSubscriptionSheet) {
-            EnhancedAddSubscriptionSheet(
+            AddSubscriptionSheet(
                 showingAddSubscriptionSheet: $showingAddSubscriptionSheet,
                 onSubscriptionAdded: { newSubscription in
                     do {
@@ -3476,11 +3754,67 @@ enum PeopleSort: String, CaseIterable {
     case dateAddedOldest = "Date Added (Oldest)"
 }
 
+// MARK: - People Filter Pill
+struct PeopleFilterPill: View {
+    let filter: PeopleFilter
+    let isSelected: Bool
+    let count: Int
+    let action: () -> Void
+
+    private var displayText: String {
+        switch filter {
+        case .all: return "All"
+        case .owesYou: return "Owes You"
+        case .youOwe: return "You Owe"
+        case .settled: return "Settled"
+        case .active: return "Active"
+        }
+    }
+
+    private var pillColor: Color {
+        switch filter {
+        case .all: return .wisePrimaryText
+        case .owesYou: return .wiseBrightGreen
+        case .youOwe: return .wiseError
+        case .settled: return .wiseSecondaryText
+        case .active: return .wiseBlue
+        }
+    }
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Text(displayText)
+                    .font(.spotifyLabelMedium)
+
+                if count > 0 && filter != .all {
+                    Text("\(count)")
+                        .font(.spotifyLabelSmall)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(isSelected ? Color.white.opacity(0.2) : Color.wiseBorder.opacity(0.5))
+                        )
+                }
+            }
+            .foregroundColor(isSelected ? .white : .wisePrimaryText)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(isSelected ? pillColor : Color.wiseBorder.opacity(0.3))
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
 // MARK: - People List View
 struct PeopleListView: View {
     @EnvironmentObject var dataManager: DataManager
     let people: [Person]
-    @State private var searchText = ""
+    @Binding var searchText: String
     @State private var editingPerson: Person?
     @State private var showingEditSheet = false
     @State private var personToDelete: Person?
@@ -3576,20 +3910,84 @@ struct PeopleListView: View {
         people.count
     }
 
+    // Filter count helper
+    func filterCount(for filter: PeopleFilter) -> Int {
+        switch filter {
+        case .all:
+            return people.count
+        case .owesYou:
+            return people.filter { $0.balance > 0 }.count
+        case .youOwe:
+            return people.filter { $0.balance < 0 }.count
+        case .settled:
+            return people.filter { $0.balance == 0 }.count
+        case .active:
+            return people.filter { $0.balance != 0 }.count
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            // Balance Summary Header Card
-            if !people.isEmpty {
-                BalanceSummaryCard(
-                    totalOwedToYou: totalOwedToYou,
-                    totalYouOwe: totalYouOwe,
-                    netBalance: netBalance,
-                    numberOfPeople: numberOfPeople
-                )
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
-            }
+            // Filter Pills and Sort Controls
+            VStack(spacing: 12) {
+                // Filter Pills - Horizontal scroll
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(PeopleFilter.allCases, id: \.self) { filter in
+                            PeopleFilterPill(
+                                filter: filter,
+                                isSelected: selectedFilter == filter,
+                                count: filterCount(for: filter)
+                            ) {
+                                HapticManager.shared.selection()
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    selectedFilter = filter
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
 
+                // Sort Button Row
+                HStack(spacing: 12) {
+                    // Sort Menu Button
+                    Button(action: { showingSortMenu = true }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.up.arrow.down")
+                                .font(.system(size: 14))
+                            Text("Sort")
+                                .font(.spotifyLabelSmall)
+                        }
+                        .foregroundColor(.wisePrimaryText)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.wiseBorder.opacity(0.5))
+                        )
+                    }
+                    .confirmationDialog("Sort By", isPresented: $showingSortMenu, titleVisibility: .visible) {
+                        ForEach(PeopleSort.allCases, id: \.self) { option in
+                            Button(option.rawValue) {
+                                selectedSort = option
+                                HapticManager.shared.lightImpact()
+                            }
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    }
+
+                    Spacer()
+
+                    // People count indicator
+                    Text("\(filteredPeople.count) \(filteredPeople.count == 1 ? "person" : "people")")
+                        .font(.spotifyLabelSmall)
+                        .foregroundColor(.wiseSecondaryText)
+                }
+                .padding(.horizontal, 16)
+            }
+            .padding(.bottom, 12)
+            
             // People List
             if dataManager.isLoading && people.isEmpty {
                 // Loading State
@@ -3636,7 +4034,7 @@ struct PeopleListView: View {
                 }
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 8) {
+                    LazyVStack(spacing: 12) {
                         ForEach(filteredPeople) { person in
                             if isSelectionMode {
                                 // Selection mode: Tap to select/deselect
@@ -3698,6 +4096,7 @@ struct PeopleListView: View {
                     }
                     .padding(.horizontal, 16)
                 }
+                .scrollDismissesKeyboard(.interactively)
                 .background(Color.wiseBackground)
                 .refreshable {
                     HapticManager.shared.pullToRefresh()
@@ -3708,10 +4107,10 @@ struct PeopleListView: View {
         }
         .sheet(isPresented: $showingEditSheet) {
             if let person = editingPerson {
-                AddPersonSheet(
-                    showingAddPersonSheet: $showingEditSheet,
+                EditPersonSheet(
+                    showingEditPersonSheet: $showingEditSheet,
                     editingPerson: person,
-                    onPersonAdded: { updatedPerson in
+                    onPersonUpdated: { updatedPerson in
                         do {
                             try dataManager.updatePerson(updatedPerson)
                         } catch {
@@ -4099,7 +4498,7 @@ struct SettleAllBalancesSheet: View {
 
                     Spacer(minLength: 40)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
             }
             .background(Color.wiseBackground)
             .navigationTitle("Settle All")
@@ -4291,7 +4690,7 @@ struct BulkReminderSheet: View {
 
                     Spacer(minLength: 40)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
             }
             .background(Color.wiseBackground)
             .navigationTitle("Send Reminders")
@@ -4332,24 +4731,90 @@ struct GroupsListView: View {
     @EnvironmentObject var dataManager: DataManager
     let groups: [Group]
     let people: [Person]
-    @State private var searchText = ""
+    @Binding var searchText: String
     @State private var editingGroup: Group?
     @State private var showingEditSheet = false
     @State private var groupToDelete: Group?
     @State private var showingDeleteAlert = false
+    @State private var selectedSort: GroupSort = .nameAscending
+    @State private var showingSortMenu = false
+
+    enum GroupSort: String, CaseIterable {
+        case nameAscending = "Name (A-Z)"
+        case nameDescending = "Name (Z-A)"
+        case memberCount = "Members"
+        case expenseCount = "Expenses"
+        case totalAmount = "Total Amount"
+    }
 
     var filteredGroups: [Group] {
-        if searchText.isEmpty {
-            return groups
+        var result = groups
+
+        // Apply search filter
+        if !searchText.isEmpty {
+            result = result.filter { group in
+                group.name.localizedCaseInsensitiveContains(searchText) ||
+                group.description.localizedCaseInsensitiveContains(searchText)
+            }
         }
-        return groups.filter { group in
-            group.name.localizedCaseInsensitiveContains(searchText) ||
-            group.description.localizedCaseInsensitiveContains(searchText)
+
+        // Apply sorting
+        switch selectedSort {
+        case .nameAscending:
+            result.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        case .nameDescending:
+            result.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedDescending }
+        case .memberCount:
+            result.sort { $0.members.count > $1.members.count }
+        case .expenseCount:
+            result.sort { $0.expenses.count > $1.expenses.count }
+        case .totalAmount:
+            result.sort { $0.totalAmount > $1.totalAmount }
         }
+
+        return result
     }
 
     var body: some View {
         VStack(spacing: 0) {
+            // Sort Controls Row
+            HStack(spacing: 12) {
+                // Sort Menu Button
+                Button(action: { showingSortMenu = true }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.up.arrow.down")
+                            .font(.system(size: 14))
+                        Text("Sort")
+                            .font(.spotifyLabelSmall)
+                    }
+                    .foregroundColor(.wisePrimaryText)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.wiseBorder.opacity(0.5))
+                    )
+                }
+                .confirmationDialog("Sort By", isPresented: $showingSortMenu, titleVisibility: .visible) {
+                    ForEach(GroupSort.allCases, id: \.self) { option in
+                        Button(option.rawValue) {
+                            selectedSort = option
+                            HapticManager.shared.lightImpact()
+                        }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                }
+
+                Spacer()
+
+                // Groups count indicator
+                Text("\(filteredGroups.count) \(filteredGroups.count == 1 ? "group" : "groups")")
+                    .font(.spotifyLabelSmall)
+                    .foregroundColor(.wiseSecondaryText)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+
             // Groups List
             if dataManager.isLoading && groups.isEmpty {
                 // Loading State
@@ -4396,7 +4861,7 @@ struct GroupsListView: View {
                 }
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 8) {
+                    LazyVStack(spacing: 12) {
                         ForEach(filteredGroups) { group in
                             NavigationLink(destination: GroupDetailView(groupId: group.id)) {
                                 ListRowFactory.card(for: group)
@@ -4404,6 +4869,7 @@ struct GroupsListView: View {
                             .buttonStyle(PlainButtonStyle())
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
+                                    HapticManager.shared.heavy()
                                     groupToDelete = group
                                     showingDeleteAlert = true
                                 } label: {
@@ -4411,6 +4877,7 @@ struct GroupsListView: View {
                                 }
 
                                 Button {
+                                    HapticManager.shared.light()
                                     editingGroup = group
                                     showingEditSheet = true
                                 } label: {
@@ -4422,6 +4889,7 @@ struct GroupsListView: View {
                     }
                     .padding(.horizontal, 16)
                 }
+                .scrollDismissesKeyboard(.interactively)
                 .background(Color.wiseBackground)
                 .refreshable {
                     HapticManager.shared.pullToRefresh()
@@ -4444,6 +4912,9 @@ struct GroupsListView: View {
                         }
                     }
                 )
+                .environmentObject(dataManager)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
             }
         }
         .alert("Delete \(groupToDelete?.name ?? "Group")?", isPresented: $showingDeleteAlert, presenting: groupToDelete) { group in
@@ -4665,7 +5136,7 @@ struct AvatarPickerSheet: View {
                         .shadow(color: .wiseBrightGreen.opacity(0.1), radius: 8, x: 0, y: 4)
                 )
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
             .onChange(of: selectedPhotoItem) { oldValue, newValue in
                 Task {
                     await loadPhoto(from: newValue)
@@ -4750,7 +5221,7 @@ struct AvatarPickerSheet: View {
 
             Spacer()
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Helper Methods
@@ -4790,11 +5261,146 @@ struct AvatarPickerSheet: View {
     }
 }
 
-// MARK: - Add Person Sheet
+// MARK: - Smart Input Type Detection
+enum PersonInputType {
+    case email
+    case phone
+    case name
+
+    static func detect(_ input: String) -> PersonInputType {
+        let trimmed = input.trimmingCharacters(in: .whitespaces)
+
+        // Email detection: contains @
+        if trimmed.contains("@") {
+            return .email
+        }
+
+        // Phone detection: starts with + or is mostly digits
+        let digitsOnly = trimmed.filter { $0.isNumber }
+        let formattingChars = trimmed.filter { $0.isNumber || $0 == " " || $0 == "-" || $0 == "(" || $0 == ")" || $0 == "+" }
+        if trimmed.hasPrefix("+") || (digitsOnly.count >= 7 && formattingChars.count == trimmed.count) {
+            return .phone
+        }
+
+        // Default to name
+        return .name
+    }
+}
+
+// MARK: - Add Person Sheet (Simplified Smart Input)
 struct AddPersonSheet: View {
-    @Binding var showingAddPersonSheet: Bool
-    let editingPerson: Person? // nil = add mode, Person = edit mode
-    let onPersonAdded: (Person) -> Void
+    @Binding var isPresented: Bool
+    @EnvironmentObject var dataManager: DataManager
+
+    @State private var inputValue = ""
+    @FocusState private var isFocused: Bool
+
+    private var detectedType: PersonInputType {
+        PersonInputType.detect(inputValue)
+    }
+
+    private var isFormValid: Bool {
+        !inputValue.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Add Person")
+                .font(.spotifyHeadingMedium)
+                .foregroundColor(.wisePrimaryText)
+
+            TextField("Name, Phone, or Email", text: $inputValue)
+                .font(.spotifyBodyMedium)
+                .foregroundColor(.wisePrimaryText)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.wiseCardBackground)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.wiseBorder, lineWidth: 1)
+                )
+                .focused($isFocused)
+
+            Button(action: handleAdd) {
+                Text("Add")
+                    .font(.spotifyBodyMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(isFormValid ? .white : .wiseSecondaryText)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(isFormValid ? Color.wiseForestGreen : Color.wiseSecondaryText.opacity(0.2))
+                    .cornerRadius(12)
+            }
+            .disabled(!isFormValid)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.wiseGroupedBackground)
+        .onAppear { isFocused = true }
+    }
+
+    private func handleAdd() {
+        let trimmedInput = inputValue.trimmingCharacters(in: .whitespaces)
+        guard !trimmedInput.isEmpty else { return }
+
+        var name = ""
+        var email = ""
+        var phone = ""
+
+        switch detectedType {
+        case .email:
+            email = trimmedInput
+            // Extract name from email prefix
+            name = trimmedInput.components(separatedBy: "@").first?.replacingOccurrences(of: ".", with: " ").capitalized ?? trimmedInput
+        case .phone:
+            phone = trimmedInput
+            name = trimmedInput
+        case .name:
+            name = trimmedInput
+        }
+
+        // Check for existing person by email or phone
+        let existingPerson = dataManager.people.first { person in
+            (!email.isEmpty && person.email.lowercased() == email.lowercased()) ||
+            (!phone.isEmpty && person.phone.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "-", with: "") == phone.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "-", with: ""))
+        }
+
+        if existingPerson != nil {
+            // Person already exists
+            ToastManager.shared.showInfo("Person already exists")
+        } else {
+            // Create new person with auto-generated avatar
+            let newPerson = Person(
+                name: name,
+                email: email,
+                phone: phone,
+                avatarType: .initials(
+                    AvatarGenerator.generateInitials(from: name),
+                    colorIndex: AvatarColorPalette.colorIndex(for: name)
+                )
+            )
+
+            do {
+                try dataManager.addPerson(newPerson)
+                ToastManager.shared.showSuccess("Person added!")
+            } catch {
+                dataManager.error = error
+            }
+        }
+
+        inputValue = ""
+        isPresented = false
+    }
+}
+
+// MARK: - Edit Person Sheet (Full Featured)
+struct EditPersonSheet: View {
+    @Binding var showingEditPersonSheet: Bool
+    let editingPerson: Person
+    let onPersonUpdated: (Person) -> Void
 
     @State private var name = ""
     @State private var email = ""
@@ -4803,37 +5409,25 @@ struct AddPersonSheet: View {
     @State private var showingAvatarPicker = false
     @State private var showingContactPicker = false
 
-    // Initialize with default values or existing person data
-    init(showingAddPersonSheet: Binding<Bool>, editingPerson: Person? = nil, onPersonAdded: @escaping (Person) -> Void) {
-        self._showingAddPersonSheet = showingAddPersonSheet
+    // Initialize with existing person data
+    init(showingEditPersonSheet: Binding<Bool>, editingPerson: Person, onPersonUpdated: @escaping (Person) -> Void) {
+        self._showingEditPersonSheet = showingEditPersonSheet
         self.editingPerson = editingPerson
-        self.onPersonAdded = onPersonAdded
+        self.onPersonUpdated = onPersonUpdated
 
-        // Pre-populate fields if editing
-        if let person = editingPerson {
-            _name = State(initialValue: person.name)
-            _email = State(initialValue: person.email)
-            _phone = State(initialValue: person.phone)
-            _selectedAvatarType = State(initialValue: person.avatarType)
-        }
+        _name = State(initialValue: editingPerson.name)
+        _email = State(initialValue: editingPerson.email)
+        _phone = State(initialValue: editingPerson.phone)
+        _selectedAvatarType = State(initialValue: editingPerson.avatarType)
     }
 
     private var isFormValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !email.trimmingCharacters(in: .whitespaces).isEmpty
+        !name.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
     // Auto-update initials when name changes
     private var currentInitials: String {
         AvatarGenerator.generateInitials(from: name)
-    }
-
-    private var navigationTitle: String {
-        editingPerson == nil ? "Add Person" : "Edit Person"
-    }
-
-    private var saveButtonText: String {
-        editingPerson == nil ? "Add" : "Save"
     }
 
     var body: some View {
@@ -4883,27 +5477,6 @@ struct AddPersonSheet: View {
                         }
                     }
 
-                    // Import from Contacts button (only in add mode)
-                    if editingPerson == nil {
-                        Button(action: { showingContactPicker = true }) {
-                            HStack {
-                                Image(systemName: "person.crop.circle.badge.plus")
-                                    .font(.system(size: 18))
-                                Text("Import from Contacts")
-                                    .font(.spotifyBodyMedium)
-                                    .fontWeight(.medium)
-                            }
-                            .foregroundColor(.wiseBlue)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.wiseBlue.opacity(0.1))
-                                    .stroke(Color.wiseBlue, lineWidth: 1.5)
-                            )
-                        }
-                    }
-
                     // Basic Information
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Basic Information")
@@ -4941,7 +5514,7 @@ struct AddPersonSheet: View {
 
                         // Email
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Email *")
+                            Text("Email")
                                 .font(.spotifyLabelMedium)
                                 .foregroundColor(.wiseSecondaryText)
 
@@ -4981,22 +5554,22 @@ struct AddPersonSheet: View {
 
                     Spacer(minLength: 50)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
                 .padding(.top, 20)
             }
-            .navigationTitle(navigationTitle)
+            .navigationTitle("Edit Person")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
-                        showingAddPersonSheet = false
+                        showingEditPersonSheet = false
                     }
                     .font(.spotifyLabelLarge)
                     .foregroundColor(.wiseSecondaryText)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(saveButtonText) {
+                    Button("Save") {
                         savePerson()
                     }
                     .font(.spotifyLabelLarge)
@@ -5027,8 +5600,8 @@ struct AddPersonSheet: View {
             }
         }
         .onAppear {
-            // Initialize with initials avatar
-            if !name.isEmpty {
+            // Initialize with initials avatar if needed
+            if case .initials = selectedAvatarType, !name.isEmpty {
                 selectedAvatarType = .initials(
                     AvatarGenerator.generateInitials(from: name),
                     colorIndex: AvatarColorPalette.colorIndex(for: name)
@@ -5047,34 +5620,21 @@ struct AddPersonSheet: View {
             )
         }
 
-        if let existing = editingPerson {
-            // Edit mode - update existing person
-            var updatedPerson = existing
-            updatedPerson.name = name.trimmingCharacters(in: .whitespaces)
-            updatedPerson.email = email.trimmingCharacters(in: .whitespaces)
-            updatedPerson.phone = phone.trimmingCharacters(in: .whitespaces)
-            updatedPerson.avatarType = finalAvatarType
+        var updatedPerson = editingPerson
+        updatedPerson.name = name.trimmingCharacters(in: .whitespaces)
+        updatedPerson.email = email.trimmingCharacters(in: .whitespaces)
+        updatedPerson.phone = phone.trimmingCharacters(in: .whitespaces)
+        updatedPerson.avatarType = finalAvatarType
 
-            onPersonAdded(updatedPerson)
-        } else {
-            // Add mode - create new person
-            let newPerson = Person(
-                name: name.trimmingCharacters(in: .whitespaces),
-                email: email.trimmingCharacters(in: .whitespaces),
-                phone: phone.trimmingCharacters(in: .whitespaces),
-                avatarType: finalAvatarType
-            )
-
-            onPersonAdded(newPerson)
-        }
-
-        showingAddPersonSheet = false
+        onPersonUpdated(updatedPerson)
+        showingEditPersonSheet = false
     }
 }
 
 // MARK: - Add Group Sheet
 struct AddGroupSheet: View {
     @Binding var showingAddGroupSheet: Bool
+    @EnvironmentObject var dataManager: DataManager
     let editingGroup: Group? // nil = add mode, Group = edit mode
     let people: [Person]
     let onGroupAdded: (Group) -> Void
@@ -5083,6 +5643,10 @@ struct AddGroupSheet: View {
     @State private var description = ""
     @State private var selectedEmoji = "👥"
     @State private var selectedMembers: Set<UUID> = []
+    @State private var showingAddPersonSheet = false
+    @State private var showingEmojiPicker = false
+    @State private var personCountBeforeAdd = 0
+    @FocusState private var isNameFocused: Bool
 
     // Initialize with default values or existing group data
     init(showingAddGroupSheet: Binding<Bool>, editingGroup: Group? = nil, people: [Person], onGroupAdded: @escaping (Group) -> Void) {
@@ -5100,7 +5664,7 @@ struct AddGroupSheet: View {
         }
     }
 
-    // Group emoji options that work well with Memoji people
+    // Group emoji options
     let availableEmojis = ["👥", "🏖️", "🏠", "💼", "🎉", "🍕", "✈️", "🏃‍♂️", "📚", "🎵", "🎮", "⚽", "🍽️", "🏛️", "🎭", "🎪", "🎨", "📱"]
 
     private var isFormValid: Bool {
@@ -5108,161 +5672,188 @@ struct AddGroupSheet: View {
         !selectedMembers.isEmpty
     }
 
-    private var navigationTitle: String {
-        editingGroup == nil ? "Create Group" : "Edit Group"
-    }
-
     private var saveButtonText: String {
-        editingGroup == nil ? "Create" : "Save"
+        editingGroup == nil ? "Create Group" : "Save Changes"
     }
-    
+
+    // Selected members as Person objects (use dataManager for live updates)
+    private var selectedPeople: [Person] {
+        dataManager.people.filter { selectedMembers.contains($0.id) }
+    }
+
+    // Available members (not yet selected) - use dataManager for live updates
+    private var availablePeople: [Person] {
+        dataManager.people.filter { !selectedMembers.contains($0.id) }
+    }
+
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Emoji Selection
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Choose Emoji")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 12) {
-                            ForEach(availableEmojis, id: \.self) { emoji in
-                                Button(action: { selectedEmoji = emoji }) {
-                                    Text(emoji)
-                                        .font(.system(size: 24))
-                                        .frame(width: 44, height: 44)
-                                        .background(
-                                            Circle()
-                                                .fill(selectedEmoji == emoji ? Color.wiseBlue.opacity(0.2) : Color.wiseBorder.opacity(0.5))
-                                                .stroke(selectedEmoji == emoji ? Color.wiseBlue : Color.clear, lineWidth: 2)
-                                        )
-                                }
-                            }
-                        }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Title
+                Text(editingGroup == nil ? "Add Group" : "Edit Group")
+                    .font(.spotifyHeadingMedium)
+                    .foregroundColor(.wisePrimaryText)
+
+                // Group Name Row (Emoji + TextField)
+                HStack(spacing: 12) {
+                    // Emoji Button
+                    Button(action: { showingEmojiPicker.toggle() }) {
+                        Text(selectedEmoji)
+                            .font(.system(size: 24))
+                            .frame(width: 48, height: 48)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.wiseCardBackground)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.wiseSeparator, lineWidth: 1)
+                            )
                     }
-                    
-                    // Basic Information
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Basic Information")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        // Name
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Group Name *")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            TextField("e.g., Weekend Trip", text: $name)
-                                .font(.spotifyBodyMedium)
-                                .foregroundColor(.wisePrimaryText)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                        }
-                        
-                        // Description
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Description")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            TextField("e.g., Beach vacation with friends", text: $description)
-                                .font(.spotifyBodyMedium)
-                                .foregroundColor(.wisePrimaryText)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                        }
-                    }
-                    
-                    // Members Selection
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Select Members *")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        VStack(spacing: 8) {
-                            ForEach(people) { person in
-                                Button(action: {
-                                    if selectedMembers.contains(person.id) {
-                                        selectedMembers.remove(person.id)
-                                    } else {
-                                        selectedMembers.insert(person.id)
-                                    }
-                                }) {
-                                    HStack(spacing: 12) {
-                                        // Avatar - Using new AvatarView component
-                                        AvatarView(person: person, size: .medium, style: .solid)
-                                        
-                                        // Person Details
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(person.name)
-                                                .font(.spotifyBodyMedium)
-                                                .foregroundColor(.wisePrimaryText)
-                                            
-                                            Text(person.email)
-                                                .font(.spotifyBodySmall)
-                                                .foregroundColor(.wiseSecondaryText)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        // Selection Indicator
-                                        Image(systemName: selectedMembers.contains(person.id) ? "checkmark.circle.fill" : "circle")
-                                            .font(.system(size: 18))
-                                            .foregroundColor(selectedMembers.contains(person.id) ? .wiseBrightGreen : .wiseSecondaryText)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(selectedMembers.contains(person.id) ? Color.wiseBrightGreen.opacity(0.1) : Color.wiseBorder.opacity(0.5))
-                                            .stroke(selectedMembers.contains(person.id) ? Color.wiseBrightGreen : Color.wiseBorder, lineWidth: 1)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    
-                    Spacer(minLength: 50)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-            }
-            .navigationTitle(navigationTitle)
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        showingAddGroupSheet = false
-                    }
-                    .font(.spotifyLabelLarge)
-                    .foregroundColor(.wiseSecondaryText)
+
+                    // Name TextField
+                    TextField("Group name", text: $name)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wisePrimaryText)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.wiseCardBackground)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.wiseSeparator, lineWidth: 1)
+                        )
+                        .focused($isNameFocused)
                 }
 
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(saveButtonText) {
-                        saveGroup()
+                // Emoji Picker (collapsible)
+                if showingEmojiPicker {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 8) {
+                        ForEach(availableEmojis, id: \.self) { emoji in
+                            Button(action: {
+                                selectedEmoji = emoji
+                                showingEmojiPicker = false
+                            }) {
+                                Text(emoji)
+                                    .font(.system(size: 24))
+                                    .frame(width: 44, height: 44)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(selectedEmoji == emoji ? Color.wisePrimaryButton.opacity(0.2) : Color.wiseCardBackground)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(selectedEmoji == emoji ? Color.wisePrimaryButton : Color.wiseSeparator, lineWidth: 1)
+                                    )
+                            }
+                        }
                     }
-                    .font(.spotifyLabelLarge)
-                    .foregroundColor(isFormValid ? .white : .wiseSecondaryText)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
+                    .padding(12)
                     .background(
-                        Capsule()
-                            .fill(isFormValid ? Color.wiseForestGreen : Color.wiseBorder)
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.wiseCardBackground)
                     )
-                    .disabled(!isFormValid)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.wiseSeparator, lineWidth: 1)
+                    )
+                }
+
+                // Members Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Members")
+                        .font(.spotifyLabelMedium)
+                        .foregroundColor(.wiseSecondaryText)
+
+                    // Horizontal scrolling member avatars
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            // Selected members first
+                            ForEach(selectedPeople) { person in
+                                MemberAvatarButton(
+                                    person: person,
+                                    isSelected: true,
+                                    action: { selectedMembers.remove(person.id) }
+                                )
+                            }
+
+                            // Available members
+                            ForEach(availablePeople) { person in
+                                MemberAvatarButton(
+                                    person: person,
+                                    isSelected: false,
+                                    action: { selectedMembers.insert(person.id) }
+                                )
+                            }
+
+                            // Add new person button
+                            Button(action: { showingAddPersonSheet = true }) {
+                                VStack(spacing: 4) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.wiseCardBackground)
+                                            .frame(width: 48, height: 48)
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
+                                                    .foregroundColor(.wiseSeparator)
+                                            )
+
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.wiseSecondaryText)
+                                    }
+
+                                    Text("Add")
+                                        .font(.spotifyCaptionSmall)
+                                        .foregroundColor(.wiseSecondaryText)
+                                }
+                            }
+                        }
+                    }
+
+                    // Selected count indicator
+                    if !selectedMembers.isEmpty {
+                        Text("\(selectedMembers.count) member\(selectedMembers.count == 1 ? "" : "s") selected")
+                            .font(.spotifyCaptionMedium)
+                            .foregroundColor(.wiseSecondaryText)
+                    }
+                }
+
+                // Create/Save Button
+                Button(action: saveGroup) {
+                    Text(saveButtonText)
+                        .font(.spotifyBodyMedium)
+                        .fontWeight(.semibold)
+                        .foregroundColor(isFormValid ? .wisePrimaryButtonText : .wiseSecondaryText)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(isFormValid ? Color.wisePrimaryButton : Color.wiseSecondaryButton)
+                        .cornerRadius(12)
+                }
+                .disabled(!isFormValid)
+            }
+            .padding(24)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.wiseBackground)
+        .onAppear { isNameFocused = true }
+        .sheet(isPresented: $showingAddPersonSheet) {
+            AddPersonSheet(isPresented: $showingAddPersonSheet)
+                .environmentObject(dataManager)
+                .presentationDetents([.height(220)])
+                .presentationDragIndicator(.visible)
+        }
+        .onChange(of: showingAddPersonSheet) { oldValue, newValue in
+            if newValue {
+                // Store person count before showing add sheet
+                personCountBeforeAdd = dataManager.people.count
+            } else if !newValue && dataManager.people.count > personCountBeforeAdd {
+                // Sheet closed and a new person was added - auto-select the newest person
+                if let newestPerson = dataManager.people.last {
+                    selectedMembers.insert(newestPerson.id)
                 }
             }
         }
@@ -5291,6 +5882,42 @@ struct AddGroupSheet: View {
         }
 
         showingAddGroupSheet = false
+    }
+}
+
+// MARK: - Member Avatar Button (Compact selection)
+struct MemberAvatarButton: View {
+    let person: Person
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                ZStack(alignment: .bottomTrailing) {
+                    AvatarView(person: person, size: .large, style: .solid)
+                        .overlay(
+                            Circle()
+                                .stroke(isSelected ? Color.wiseForestGreen : Color.clear, lineWidth: 2)
+                        )
+
+                    // Selection indicator
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.wiseForestGreen)
+                            .background(Circle().fill(Color.white).frame(width: 14, height: 14))
+                            .offset(x: 2, y: 2)
+                    }
+                }
+
+                Text(person.name.components(separatedBy: " ").first ?? person.name)
+                    .font(.spotifyCaptionSmall)
+                    .foregroundColor(isSelected ? .wisePrimaryText : .wiseSecondaryText)
+                    .lineLimit(1)
+            }
+            .frame(width: 60)
+        }
     }
 }
 
@@ -5414,13 +6041,15 @@ struct SubscriptionsHeaderSectionEnhanced: View {
     @Binding var showingAddSubscriptionSheet: Bool
     @Binding var showingInsightsSheet: Bool
     @Binding var showingRenewalCalendarSheet: Bool
+    @Binding var showSearchBar: Bool
+    @Binding var searchText: String
     let totalMonthlySpend: Double
     let totalAnnualSpend: Double
     let nextBillingDate: Date?
     let upcomingBillsCount: Int
-    
+
     @State private var isAddButtonPressed = false
-    
+
     var body: some View {
         VStack(spacing: 16) {
             // Top Header (matching design system)
@@ -5434,12 +6063,17 @@ struct SubscriptionsHeaderSectionEnhanced: View {
                 // Search and Add Buttons (matching Home/Feed/People design)
                 HStack(spacing: 16) {
                     Button(action: {
-                        // Search action (can be implemented later)
                         HapticManager.shared.light()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showSearchBar.toggle()
+                            if !showSearchBar {
+                                searchText = ""
+                            }
+                        }
                     }) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 20))
-                            .foregroundColor(.wisePrimaryText)
+                            .foregroundColor(showSearchBar ? .wiseBrightGreen : .wisePrimaryText)
                     }
 
                     HeaderActionButton(icon: "plus.circle.fill", color: .wiseForestGreen) {
@@ -5450,7 +6084,7 @@ struct SubscriptionsHeaderSectionEnhanced: View {
                 }
             }
             .padding(.horizontal, 16)
-            
+
             // Segmented Control
             HStack(spacing: 0) {
                 ForEach(SubscriptionsView.SubscriptionsTab.allCases, id: \.self) { tab in
@@ -5458,6 +6092,7 @@ struct SubscriptionsHeaderSectionEnhanced: View {
                         HapticManager.shared.selection()
                         withAnimation(.easeInOut(duration: 0.2)) {
                             selectedTab = tab
+                            searchText = "" // Clear search when switching tabs
                         }
                     }) {
                         HStack(spacing: 8) {
@@ -5482,6 +6117,37 @@ struct SubscriptionsHeaderSectionEnhanced: View {
                     .fill(Color.wiseBorder.opacity(0.5))
             )
             .padding(.horizontal, 16)
+
+            // Search Bar (matching Feed design)
+            if showSearchBar {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.wiseSecondaryText)
+                        .font(.system(size: 16))
+
+                    TextField("Search subscriptions...", text: $searchText)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wisePrimaryText)
+
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.wiseSecondaryText)
+                                .font(.system(size: 16))
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.wiseBorder.opacity(0.3))
+                )
+                .padding(.horizontal, 16)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
         .padding(.bottom, 8)
     }
@@ -5826,24 +6492,23 @@ struct EnhancedPersonalSubscriptionsView: View {
             } else {
                 ScrollView {
                     if viewMode == .list {
-                        // List View
-                        LazyVStack(spacing: 12) {
-                            ForEach(subscriptions) { subscription in
+                        // List View - Flat design with card container
+                        VStack(spacing: 0) {
+                            ForEach(Array(subscriptions.enumerated()), id: \.element.id) { index, subscription in
                                 NavigationLink(destination: SubscriptionDetailView(subscriptionId: subscription.id)) {
                                     ListRowFactory.card(for: subscription)
                                 }
                                 .buttonStyle(PlainButtonStyle())
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        HapticManager.shared.heavy()
-                                        subscriptionToDelete = subscription
-                                        showingDeleteAlert = true
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
+
+                                // Add divider between items (not after the last one)
+                                if index < subscriptions.count - 1 {
+                                    Divider()
+                                        .padding(.leading, 76)
                                 }
                             }
                         }
+                        .background(Color.wiseCardBackground)
+                        .cornerRadius(16)
                         .padding(.horizontal, 16)
                     } else {
                         // Grid View
@@ -5870,7 +6535,8 @@ struct EnhancedPersonalSubscriptionsView: View {
                         .padding(.horizontal, 16)
                     }
                 }
-                .background(Color.wiseBackground)
+                .scrollDismissesKeyboard(.interactively)
+                .background(Color.wiseGroupedBackground)
                 .refreshable {
                     HapticManager.shared.pullToRefresh()
                     dataManager.loadAllData()
@@ -6359,433 +7025,6 @@ struct SharedSubscriptionRowView: View {
     }
 }
 
-// MARK: - Enhanced Add Subscription Sheet
-struct EnhancedAddSubscriptionSheet: View {
-    @Binding var showingAddSubscriptionSheet: Bool
-    let onSubscriptionAdded: (Subscription) -> Void
-    
-    @State private var name = ""
-    @State private var description = ""
-    @State private var price = ""
-    @State private var selectedBillingCycle: BillingCycle = .monthly
-    @State private var selectedCategory: SubscriptionCategory = .other
-    @State private var selectedIcon = "app.fill"
-    @State private var selectedColor = "#007AFF"
-    @State private var isShared = false
-    @State private var selectedPaymentMethod: PaymentMethod = .creditCard
-    @State private var website = ""
-    @State private var notes = ""
-    @State private var showingIconPicker = false
-    @State private var showingColorPicker = false
-    
-    let availableIcons = [
-        "app.fill", "tv.fill", "music.note", "camera.fill", "icloud.fill",
-        "paintbrush.fill", "doc.text.fill", "brain.head.profile", "gamecontroller.fill",
-        "newspaper.fill", "creditcard.fill", "car.fill", "house.fill",
-        "heart.fill", "graduationcap.fill", "wrench.and.screwdriver.fill"
-    ]
-    
-    let availableColors = [
-        "#007AFF", "#FF3B30", "#FF9500", "#FFCC00", "#34C759",
-        "#5AC8FA", "#AF52DE", "#FF2D92", "#A2845E", "#8E8E93",
-        "#E50914", "#1DB954", "#FF0000", "#181717", "#FF7262",
-        "#113CCF", "#000000", "#FF6B35"
-    ]
-    
-    private var isFormValid: Bool {
-        guard !name.trimmingCharacters(in: .whitespaces).isEmpty,
-              !description.trimmingCharacters(in: .whitespaces).isEmpty,
-              !price.trimmingCharacters(in: .whitespaces).isEmpty,
-              let priceValue = Double(price) else {
-            return false
-        }
-        return priceValue > 0
-    }
-    
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Visual Preview
-                    VStack(spacing: 16) {
-                        Text("Preview")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        // Subscription Preview Card
-                        HStack(spacing: 16) {
-                            Circle()
-                                .fill(Color(hexString: selectedColor).opacity(0.1))
-                                .frame(width: 48, height: 48)
-                                .overlay(
-                                    Image(systemName: selectedIcon)
-                                        .font(.system(size: 20, weight: .medium))
-                                        .foregroundColor(Color(hexString: selectedColor))
-                                )
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(name.isEmpty ? "Subscription Name" : name)
-                                    .font(.spotifyBodyLarge)
-                                    .foregroundColor(.wisePrimaryText)
-                                
-                                Text(description.isEmpty ? "Description" : description)
-                                    .font(.spotifyBodySmall)
-                                    .foregroundColor(.wiseSecondaryText)
-                                    .lineLimit(1)
-                                
-                                HStack(spacing: 4) {
-                                    Image(systemName: selectedCategory.icon)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(selectedCategory.color)
-                                    
-                                    Text(selectedCategory.rawValue)
-                                        .font(.spotifyCaptionSmall)
-                                        .foregroundColor(.wiseSecondaryText)
-                                }
-                            }
-                            
-                            Spacer()
-                            
-                            VStack(alignment: .trailing, spacing: 2) {
-                                Text(price.isEmpty ? "$0.00" : "$\(price)")
-                                    .font(.spotifyNumberMedium)
-                                    .foregroundColor(.wisePrimaryText)
-                                
-                                Text("/\(selectedBillingCycle.shortName)")
-                                    .font(.spotifyCaptionSmall)
-                                    .foregroundColor(.wiseSecondaryText)
-                            }
-                        }
-                        .padding(16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.wiseCardBackground)
-                                .shadow(color: Color.wiseShadowColor, radius: 4, x: 0, y: 2)
-                        )
-                    }
-                    
-                    // Basic Information
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Basic Information")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        // Name
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Service Name *")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            TextField("e.g., Netflix", text: $name)
-                                .font(.spotifyBodyMedium)
-                                .foregroundColor(.wisePrimaryText)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                        }
-                        
-                        // Description
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Description *")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            TextField("e.g., Premium streaming plan", text: $description)
-                                .font(.spotifyBodyMedium)
-                                .foregroundColor(.wisePrimaryText)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                        }
-                        
-                        // Price and Billing Cycle Row
-                        HStack(spacing: 12) {
-                            // Price
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Price *")
-                                    .font(.spotifyLabelMedium)
-                                    .foregroundColor(.wiseSecondaryText)
-                                
-                                TextField("0.00", text: $price)
-                                    .font(.spotifyBodyMedium)
-                                    .foregroundColor(.wisePrimaryText)
-                                    .keyboardType(.decimalPad)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.wiseBorder.opacity(0.5))
-                                            .stroke(Color.wiseBorder, lineWidth: 1)
-                                    )
-                            }
-                            
-                            // Billing Cycle
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Billing")
-                                    .font(.spotifyLabelMedium)
-                                    .foregroundColor(.wiseSecondaryText)
-                                
-                                Picker("Billing Cycle", selection: $selectedBillingCycle) {
-                                    ForEach(BillingCycle.allCases, id: \.self) { cycle in
-                                        Text(cycle.rawValue).tag(cycle)
-                                    }
-                                }
-                                .pickerStyle(MenuPickerStyle())
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                            }
-                        }
-                    }
-                    
-                    // Appearance
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Appearance")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        // Icon Selection
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Icon")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: 8) {
-                                ForEach(availableIcons, id: \.self) { icon in
-                                    Button(action: { selectedIcon = icon }) {
-                                        Image(systemName: icon)
-                                            .font(.system(size: 16))
-                                            .foregroundColor(selectedIcon == icon ? Color(hexString: selectedColor) : .wiseSecondaryText)
-                                            .frame(width: 32, height: 32)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .fill(selectedIcon == icon ? Color(hexString: selectedColor).opacity(0.1) : Color.wiseBorder.opacity(0.5))
-                                                    .stroke(selectedIcon == icon ? Color(hexString: selectedColor) : Color.clear, lineWidth: 1)
-                                            )
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Color Selection
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Color")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 9), spacing: 8) {
-                                ForEach(availableColors, id: \.self) { color in
-                                    Button(action: { selectedColor = color }) {
-                                        Circle()
-                                            .fill(Color(hexString: color))
-                                            .frame(width: 28, height: 28)
-                                            .overlay(
-                                                Circle()
-                                                    .stroke(selectedColor == color ? Color.wisePrimaryText : Color.clear, lineWidth: 2)
-                                                    .frame(width: 32, height: 32)
-                                            )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Category Selection
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Category")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 8) {
-                            ForEach(SubscriptionCategory.allCases, id: \.self) { category in
-                                Button(action: { selectedCategory = category }) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: category.icon)
-                                            .font(.system(size: 16))
-                                            .foregroundColor(category.color)
-                                        
-                                        Text(category.rawValue)
-                                            .font(.spotifyBodySmall)
-                                            .foregroundColor(.wisePrimaryText)
-                                        
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(selectedCategory == category ? category.color.opacity(0.1) : Color.wiseBorder.opacity(0.5))
-                                            .stroke(selectedCategory == category ? category.color : Color.clear, lineWidth: 1)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Additional Options
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Additional Options")
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
-                        
-                        // Payment Method
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Payment Method")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            Picker("Payment Method", selection: $selectedPaymentMethod) {
-                                ForEach(PaymentMethod.allCases, id: \.self) { method in
-                                    HStack {
-                                        Image(systemName: method.icon)
-                                        Text(method.rawValue)
-                                    }.tag(method)
-                                }
-                            }
-                            .pickerStyle(MenuPickerStyle())
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.wiseBorder.opacity(0.5))
-                                    .stroke(Color.wiseBorder, lineWidth: 1)
-                            )
-                        }
-                        
-                        // Website
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Website")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            TextField("e.g., netflix.com", text: $website)
-                                .font(.spotifyBodyMedium)
-                                .foregroundColor(.wisePrimaryText)
-                                .keyboardType(.URL)
-                                .autocapitalization(.none)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                        }
-                        
-                        // Shared Toggle
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Shared Subscription")
-                                    .font(.spotifyBodyMedium)
-                                    .foregroundColor(.wisePrimaryText)
-                                
-                                Text("Share with friends and family")
-                                    .font(.spotifyCaptionMedium)
-                                    .foregroundColor(.wiseSecondaryText)
-                            }
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: $isShared)
-                                .tint(.wiseBrightGreen)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.wiseBorder.opacity(0.5))
-                                .stroke(Color.wiseBorder, lineWidth: 1)
-                        )
-                        
-                        // Notes
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Notes")
-                                .font(.spotifyLabelMedium)
-                                .foregroundColor(.wiseSecondaryText)
-                            
-                            TextField("Additional notes...", text: $notes, axis: .vertical)
-                                .lineLimit(3...6)
-                                .font(.spotifyBodyMedium)
-                                .foregroundColor(.wisePrimaryText)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.wiseBorder.opacity(0.5))
-                                        .stroke(Color.wiseBorder, lineWidth: 1)
-                                )
-                        }
-                    }
-                    
-                    Spacer(minLength: 50)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-            }
-            .navigationTitle("Add Subscription")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        showingAddSubscriptionSheet = false
-                    }
-                    .font(.spotifyLabelLarge)
-                    .foregroundColor(.wiseSecondaryText)
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Add") {
-                        addSubscription()
-                    }
-                    .font(.spotifyLabelLarge)
-                    .foregroundColor(isFormValid ? .white : .wiseSecondaryText)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(isFormValid ? Color.wiseForestGreen : Color.wiseBorder)
-                    )
-                    .disabled(!isFormValid)
-                }
-            }
-        }
-    }
-    
-    private func addSubscription() {
-        guard let priceValue = Double(price) else { return }
-        
-        var newSubscription = Subscription(
-            name: name.trimmingCharacters(in: .whitespaces),
-            description: description.trimmingCharacters(in: .whitespaces),
-            price: priceValue,
-            billingCycle: selectedBillingCycle,
-            category: selectedCategory,
-            icon: selectedIcon,
-            color: selectedColor
-        )
-        
-        newSubscription.isShared = isShared
-        newSubscription.paymentMethod = selectedPaymentMethod
-        newSubscription.website = website.isEmpty ? nil : website.trimmingCharacters(in: .whitespaces)
-        newSubscription.notes = notes.trimmingCharacters(in: .whitespaces)
-        
-        onSubscriptionAdded(newSubscription)
-        showingAddSubscriptionSheet = false
-    }
-}
-
 // MARK: - Subscription Insights Sheet
 struct SubscriptionInsightsSheet: View {
     let subscriptions: [Subscription]
@@ -6930,7 +7169,7 @@ struct SubscriptionInsightsSheet: View {
                     
                     Spacer(minLength: 50)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
                 .padding(.top, 20)
             }
             .navigationTitle("Subscription Insights")
@@ -7075,7 +7314,7 @@ struct RenewalCalendarSheet: View {
                         Spacer(minLength: 50)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
                 .padding(.top, 20)
             }
             .navigationTitle("Renewal Calendar")

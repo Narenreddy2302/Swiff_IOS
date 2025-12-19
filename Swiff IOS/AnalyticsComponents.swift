@@ -9,6 +9,206 @@
 import SwiftUI
 import Charts
 
+// MARK: - Animated Counter Text Component
+
+/// A view that animates number counting with an ease-out-quart curve for premium feel
+struct AnimatedCounterText: View {
+    let targetValue: Double
+    let duration: Double
+    let prefix: String
+    let suffix: String
+    let showDecimals: Bool
+
+    @State private var displayValue: Double = 0
+    @State private var hasAnimated = false
+    @State private var scaleEffect: CGFloat = 1.0
+
+    init(
+        targetValue: Double,
+        duration: Double = 1.2,
+        prefix: String = "$",
+        suffix: String = "",
+        showDecimals: Bool = true
+    ) {
+        self.targetValue = targetValue
+        self.duration = duration
+        self.prefix = prefix
+        self.suffix = suffix
+        self.showDecimals = showDecimals
+    }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 2) {
+            Text(prefix)
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.wisePrimaryText)
+
+            let integerPart = Int(displayValue)
+            let decimalPart = Int((displayValue - Double(integerPart)) * 100)
+
+            Text("\(integerPart)")
+                .font(.system(size: 52, weight: .bold))
+                .foregroundColor(.wisePrimaryText)
+                .contentTransition(.numericText(value: displayValue))
+
+            if showDecimals {
+                Text(".\(String(format: "%02d", decimalPart))")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.wiseSecondaryText)
+            }
+
+            if !suffix.isEmpty {
+                Text(suffix)
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.wiseSecondaryText)
+            }
+        }
+        .scaleEffect(scaleEffect)
+        .onAppear {
+            startAnimation()
+        }
+    }
+
+    private func startAnimation() {
+        guard !hasAnimated else { return }
+        hasAnimated = true
+
+        let startTime = Date()
+        let timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { timer in
+            let elapsed = Date().timeIntervalSince(startTime)
+            let progress = min(elapsed / duration, 1.0)
+
+            // Ease-out-quart: 1 - (1 - t)^4
+            let easedProgress = 1 - pow(1 - progress, 4)
+
+            withAnimation(.linear(duration: 0.016)) {
+                displayValue = targetValue * easedProgress
+            }
+
+            if progress >= 1.0 {
+                timer.invalidate()
+                displayValue = targetValue
+
+                // Subtle scale pop on completion
+                withAnimation(.counterSettle) {
+                    scaleEffect = 1.03
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    withAnimation(.counterSettle) {
+                        scaleEffect = 1.0
+                    }
+                }
+            }
+        }
+        RunLoop.current.add(timer, forMode: .common)
+    }
+}
+
+// MARK: - Premium Card Entrance Modifier
+
+/// ViewModifier for premium card entrance animation with scale, opacity, offset, and blur
+struct PremiumCardEntrance: ViewModifier {
+    let isVisible: Bool
+    let delay: Double
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isVisible ? 1.0 : 0.92)
+            .opacity(isVisible ? 1.0 : 0)
+            .offset(y: isVisible ? 0 : 25)
+            .blur(radius: isVisible ? 0 : 2)
+            .animation(
+                .premiumCardAppear.delay(delay),
+                value: isVisible
+            )
+    }
+}
+
+extension View {
+    /// Applies premium card entrance animation
+    func premiumCardEntrance(isVisible: Bool, delay: Double = 0) -> some View {
+        self.modifier(PremiumCardEntrance(isVisible: isVisible, delay: delay))
+    }
+}
+
+// MARK: - Shimmer Progress Bar
+
+/// A progress bar with shimmer sweep effect after fill completion
+struct ShimmerProgressBar: View {
+    let progress: Double
+    let color: Color
+    let animate: Bool
+
+    @State private var fillProgress: CGFloat = 0
+    @State private var shimmerOffset: CGFloat = -100
+    @State private var showShimmer = false
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                // Background track
+                Capsule()
+                    .fill(Color.wiseSeparator.opacity(0.3))
+                    .frame(height: 4)
+
+                // Progress fill with shimmer overlay
+                Capsule()
+                    .fill(color)
+                    .frame(width: geometry.size.width * fillProgress, height: 4)
+                    .overlay(alignment: .leading) {
+                        if showShimmer {
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    .clear,
+                                    .white.opacity(0.5),
+                                    .clear
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                            .frame(width: 50, height: 4)
+                            .offset(x: shimmerOffset)
+                        }
+                    }
+                    .clipShape(Capsule())
+            }
+        }
+        .frame(height: 4)
+        .onChange(of: animate) { _, newValue in
+            if newValue {
+                // Reset
+                fillProgress = 0
+                shimmerOffset = -100
+                showShimmer = false
+
+                // Fill animation
+                withAnimation(.progressFill.delay(0.3)) {
+                    fillProgress = CGFloat(min(max(progress, 0), 1))
+                }
+
+                // Shimmer sweep after fill completes
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    showShimmer = true
+                    withAnimation(.linear(duration: 0.6)) {
+                        shimmerOffset = 300
+                    }
+                    // Hide shimmer after animation
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                        showShimmer = false
+                    }
+                }
+            }
+        }
+        .onAppear {
+            if animate {
+                withAnimation(.progressFill.delay(0.3)) {
+                    fillProgress = CGFloat(min(max(progress, 0), 1))
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Analytics Data Types
 
 struct AnalyticsCategoryData: Identifiable {
@@ -94,8 +294,8 @@ struct SpendingTrendChart: View {
         .cardShadow()
         .onAppear {
             if animate {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    withAnimation(.spring(response: 1.0, dampingFraction: 0.8)) {
                         animateChart = true
                     }
                 }
@@ -104,8 +304,8 @@ struct SpendingTrendChart: View {
         .onChange(of: animate) { oldValue, newValue in
             if newValue {
                 animateChart = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    withAnimation(.spring(response: 1.0, dampingFraction: 0.8)) {
                         animateChart = true
                     }
                 }
@@ -332,7 +532,7 @@ struct FinancialMetricCard: View {
         .cardShadow()
         .onAppear {
             if animate {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
+                withAnimation(.gentle.delay(0.2)) {
                     animateValue = true
                 }
             }
@@ -340,13 +540,13 @@ struct FinancialMetricCard: View {
         .onChange(of: animate) { oldValue, newValue in
             if newValue {
                 animateValue = false
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
+                withAnimation(.gentle.delay(0.2)) {
                     animateValue = true
                 }
             }
         }
     }
-    
+
     private func formatCurrency(_ amount: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
@@ -364,9 +564,9 @@ struct TeamMetricCard: View {
     let icon: String
     let color: Color
     let animate: Bool
-    
+
     @State private var animateValue = false
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Icon
@@ -374,24 +574,24 @@ struct TeamMetricCard: View {
                 Circle()
                     .fill(color.opacity(0.15))
                     .frame(width: 48, height: 48)
-                
+
                 Image(systemName: icon)
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundColor(color)
             }
-            
+
             // Title
             Text(title)
                 .font(.spotifyLabelSmall)
                 .textCase(.uppercase)
                 .foregroundColor(.wiseSecondaryText)
-            
+
             // Value
             Text(value)
                 .font(.spotifyNumberLarge)
                 .foregroundColor(.wisePrimaryText)
                 .opacity(animateValue ? 1 : 0)
-                .scaleEffect(animateValue ? 1 : 0.8)
+                .scaleEffect(animateValue ? 1 : 0.9)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
@@ -400,7 +600,7 @@ struct TeamMetricCard: View {
         .cardShadow()
         .onAppear {
             if animate {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
+                withAnimation(.gentle.delay(0.2)) {
                     animateValue = true
                 }
             }
@@ -408,7 +608,7 @@ struct TeamMetricCard: View {
         .onChange(of: animate) { oldValue, newValue in
             if newValue {
                 animateValue = false
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
+                withAnimation(.gentle.delay(0.2)) {
                     animateValue = true
                 }
             }
@@ -482,15 +682,14 @@ struct ImprovedCategoryRow: View {
         .cornerRadius(16)
         .cardShadow()
         .opacity(animate ? 1 : 0)
-        .offset(y: animate ? 0 : 20)
+        .offset(y: animate ? 0 : 15)
         .animation(
-            .spring(response: 0.6, dampingFraction: 0.75)
-                .delay(Double(index) * 0.08),
+            .cardAppear.delay(Double(index) * 0.12),
             value: animate
         )
         .onAppear {
             if animate {
-                withAnimation(.spring(response: 1.0, dampingFraction: 0.7).delay(Double(index) * 0.08 + 0.1)) {
+                withAnimation(.gentle.delay(Double(index) * 0.12 + 0.15)) {
                     animatedWidth = CGFloat(category.percentage / 100.0)
                 }
             }
@@ -498,7 +697,7 @@ struct ImprovedCategoryRow: View {
         .onChange(of: animate) { oldValue, newValue in
             if newValue {
                 animatedWidth = 0
-                withAnimation(.spring(response: 1.0, dampingFraction: 0.7).delay(Double(index) * 0.08 + 0.1)) {
+                withAnimation(.gentle.delay(Double(index) * 0.12 + 0.15)) {
                     animatedWidth = CGFloat(category.percentage / 100.0)
                 }
             }

@@ -22,6 +22,8 @@ class DataManager: ObservableObject {
     @Published var groups: [Group] = []
     @Published var subscriptions: [Subscription] = []
     @Published var transactions: [Transaction] = []
+    @Published var splitBills: [SplitBill] = []
+    @Published var accounts: [Account] = []
 
     @Published var isLoading = false
     @Published var error: Error?
@@ -41,13 +43,16 @@ class DataManager: ObservableObject {
     // MARK: - Computed Properties
 
     var hasData: Bool {
-        !people.isEmpty || !groups.isEmpty || !subscriptions.isEmpty || !transactions.isEmpty
+        !people.isEmpty || !groups.isEmpty || !subscriptions.isEmpty || !transactions.isEmpty || !splitBills.isEmpty || !accounts.isEmpty
     }
+
+    var accountsCount: Int { accounts.count }
 
     var peopleCount: Int { people.count }
     var groupsCount: Int { groups.count }
     var subscriptionsCount: Int { subscriptions.count }
     var transactionsCount: Int { transactions.count }
+    var splitBillsCount: Int { splitBills.count }
 
     // MARK: - Initialization
 
@@ -67,6 +72,8 @@ class DataManager: ObservableObject {
             groups = try persistenceService.fetchAllGroups()
             subscriptions = try persistenceService.fetchAllSubscriptions()
             transactions = try persistenceService.fetchAllTransactions()
+            splitBills = try persistenceService.fetchAllSplitBills()
+            accounts = try persistenceService.fetchAllAccounts()
 
             // If database is empty, populate sample data for easy visualization
             if !hasData {
@@ -77,6 +84,8 @@ class DataManager: ObservableObject {
                 groups = try persistenceService.fetchAllGroups()
                 subscriptions = try persistenceService.fetchAllSubscriptions()
                 transactions = try persistenceService.fetchAllTransactions()
+                splitBills = try persistenceService.fetchAllSplitBills()
+                accounts = try persistenceService.fetchAllAccounts()
             }
 
             isLoading = false
@@ -85,6 +94,8 @@ class DataManager: ObservableObject {
             print("   - Groups: \(groups.count)")
             print("   - Subscriptions: \(subscriptions.count)")
             print("   - Transactions: \(transactions.count)")
+            print("   - Split Bills: \(splitBills.count)")
+            print("   - Accounts: \(accounts.count)")
 
             // Process overdue subscription renewals
             Task {
@@ -250,6 +261,48 @@ class DataManager: ObservableObject {
 
     func getInactiveSubscriptions() -> [Subscription] {
         subscriptions.filter { !$0.isActive }
+    }
+
+    // MARK: - Account Operations
+
+    /// Add a new account
+    func addAccount(_ account: Account) throws {
+        try persistenceService.saveAccount(account)
+        accounts.append(account)
+        print("✅ Account added: \(account.name)")
+    }
+
+    /// Update an existing account
+    func updateAccount(_ account: Account) throws {
+        try persistenceService.updateAccount(account)
+        if let index = accounts.firstIndex(where: { $0.id == account.id }) {
+            accounts[index] = account
+        }
+        print("✅ Account updated: \(account.name)")
+    }
+
+    /// Delete an account
+    func deleteAccount(id: UUID) throws {
+        try persistenceService.deleteAccount(id: id)
+        accounts.removeAll { $0.id == id }
+        print("✅ Account deleted")
+    }
+
+    /// Get the default account
+    func getDefaultAccount() -> Account? {
+        accounts.first { $0.isDefault } ?? accounts.first
+    }
+
+    /// Set an account as default
+    func setDefaultAccount(_ account: Account) throws {
+        var updatedAccount = account
+        updatedAccount.isDefault = true
+        try updateAccount(updatedAccount)
+
+        // Update local state to reflect the change
+        for i in accounts.indices {
+            accounts[i].isDefault = (accounts[i].id == account.id)
+        }
     }
 
     // MARK: - Price Change Operations (AGENT 9)
@@ -483,6 +536,92 @@ class DataManager: ObservableObject {
                 print("✅ Expense settled")
             }
         }
+    }
+
+    // MARK: - Split Bill CRUD Operations
+
+    func addSplitBill(_ splitBill: SplitBill) throws {
+        try persistenceService.saveSplitBill(splitBill)
+        splitBills.append(splitBill)
+
+        // Update Person balances
+        try updateBalancesForSplitBill(splitBill)
+
+        print("✅ Split bill added: \(splitBill.title)")
+    }
+
+    func updateSplitBill(_ splitBill: SplitBill) throws {
+        try persistenceService.updateSplitBill(splitBill)
+        if let index = splitBills.firstIndex(where: { $0.id == splitBill.id }) {
+            splitBills[index] = splitBill
+            print("✅ Split bill updated: \(splitBill.title)")
+        }
+    }
+
+    func deleteSplitBill(id: UUID) throws {
+        try persistenceService.deleteSplitBill(id: id)
+        splitBills.removeAll { $0.id == id }
+        print("✅ Split bill deleted")
+    }
+
+    func markParticipantAsPaid(splitBillId: UUID, participantId: UUID) throws {
+        guard let index = splitBills.firstIndex(where: { $0.id == splitBillId }) else { return }
+
+        var updatedSplitBill = splitBills[index]
+        if let participantIndex = updatedSplitBill.participants.firstIndex(where: { $0.id == participantId }) {
+            updatedSplitBill.participants[participantIndex].hasPaid = true
+            updatedSplitBill.participants[participantIndex].paymentDate = Date()
+
+            try updateSplitBill(updatedSplitBill)
+            print("✅ Participant marked as paid")
+        }
+    }
+
+    /// Update balances for all people involved in a split bill
+    private func updateBalancesForSplitBill(_ splitBill: SplitBill) throws {
+        // Find the person who paid
+        guard let payerIndex = people.firstIndex(where: { $0.id == splitBill.paidById }) else {
+            print("⚠️ Payer not found for split bill")
+            return
+        }
+
+        // For each participant (except payer), update balances
+        for participant in splitBill.participants {
+            // Skip if participant is the payer
+            guard participant.personId != splitBill.paidById else { continue }
+
+            guard let personIndex = people.firstIndex(where: { $0.id == participant.personId }) else {
+                print("⚠️ Participant not found: \(participant.personId)")
+                continue
+            }
+
+            // Participant owes the payer their portion
+            // Payer's balance increases (positive = they owe you)
+            people[payerIndex].balance += participant.amount
+
+            // Update both people in persistence
+            try persistenceService.updatePerson(people[payerIndex])
+            try persistenceService.updatePerson(people[personIndex])
+
+            print("📊 Balance updated: Payer balance +$\(participant.amount)")
+        }
+    }
+
+    /// Get all split bills involving a specific person (as payer or participant)
+    func getSplitBillsForPerson(personId: UUID) -> [SplitBill] {
+        return splitBills.filter { splitBill in
+            splitBill.paidById == personId || splitBill.participants.contains { $0.personId == personId }
+        }
+    }
+
+    /// Get all split bills for a specific group
+    func getSplitBillsForGroup(groupId: UUID) -> [SplitBill] {
+        return splitBills.filter { $0.groupId == groupId }
+    }
+
+    /// Get unsettled split bills (where not all participants have paid)
+    func getUnsettledSplitBills() -> [SplitBill] {
+        return splitBills.filter { !$0.isFullySettled }
     }
 
     // MARK: - Statistics & Analytics
@@ -1375,8 +1514,8 @@ class DataManager: ObservableObject {
     // MARK: - Formatting Utilities
 
     func formatCurrency(_ amount: Double) -> String {
-        let currency = Currency(double: amount)
-        return currency.formatted(
+        let money = MoneyAmount(double: amount)
+        return money.formatted(
             currencyCode: UserSettings.shared.selectedCurrency,
             showSymbol: true,
             minimumFractionDigits: 2,

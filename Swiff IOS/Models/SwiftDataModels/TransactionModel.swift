@@ -35,6 +35,9 @@ final class TransactionModel {
     var location: String?
     var notes: String
 
+    // Split Transaction Support
+    var splitBillId: UUID?
+
     // Relationships
     @Relationship(deleteRule: .nullify)
     var relatedPerson: PersonModel?
@@ -56,7 +59,8 @@ final class TransactionModel {
         isRecurringCharge: Bool = false,
         paymentMethod: PaymentMethod? = nil,
         location: String? = nil,
-        notes: String = ""
+        notes: String = "",
+        splitBillId: UUID? = nil
     ) {
         self.id = id
         self.title = title
@@ -75,6 +79,7 @@ final class TransactionModel {
         self.paymentMethodRaw = paymentMethod?.rawValue
         self.location = location
         self.notes = notes
+        self.splitBillId = splitBillId
         self.relatedPerson = nil
     }
 
@@ -101,7 +106,8 @@ final class TransactionModel {
             isRecurringCharge: isRecurringCharge,
             paymentMethod: paymentMethod,
             location: location,
-            notes: notes
+            notes: notes,
+            splitBillId: splitBillId
         )
     }
 
@@ -124,7 +130,8 @@ final class TransactionModel {
             isRecurringCharge: transaction.isRecurringCharge,
             paymentMethod: transaction.paymentMethod,
             location: transaction.location,
-            notes: transaction.notes
+            notes: transaction.notes,
+            splitBillId: transaction.splitBillId
         )
     }
 }

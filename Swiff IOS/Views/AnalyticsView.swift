@@ -28,6 +28,9 @@ struct AnalyticsView: View {
     @State private var animateAmount = false
     @State private var animateCards = false
     @State private var selectedCategory: AnalyticsCategoryData?
+    @State private var ringGlow: CGFloat = 0
+    @State private var emptyStateAnimating = false
+    @State private var amountKey = UUID()
     @Namespace private var animation
 
     enum ViewType: String, CaseIterable {
@@ -51,39 +54,39 @@ struct AnalyticsView: View {
                     headerSection
                         .padding(.horizontal, 20)
                         .padding(.top, 20)
-                        .padding(.bottom, 16)
+                        .padding(.bottom, 20)
 
                     // Task 6.2 & 6.3: Circular progress ring with animated category segments and center display
                     circularProgressSection
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 24)
+                        .padding(.bottom, 28)
 
                     // Task 6.4: Incomes/Expenses tab selector with icons
                     categoryTabsSection
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 24)
 
                     // Task 6.5 & 6.6: Animated category list rows with percentage badges and empty state
                     categoryListSection
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 28)
 
                     // Show additional sections only for expenses
                     if selectedViewType == .expenses {
                         // Task 6.7: Spending forecast section with trend prediction
                         spendingForecastSection
                             .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
+                            .padding(.bottom, 28)
 
                         // Task 6.8: Subscription summary cards (active count, monthly cost)
                         subscriptionOverviewSection
                             .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
+                            .padding(.bottom, 28)
 
                         // Task 6.9, 6.10, 6.11: Savings opportunities, unused subscriptions, annual conversion suggestions
                         savingsOpportunitiesSection
                             .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
+                            .padding(.bottom, 32)
                     }
                 }
             }
@@ -120,7 +123,7 @@ struct AnalyticsView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.wiseSecondaryText)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 20)
                 .padding(.vertical, 10)
                 .background(Color.wiseCardBackground)
                 .cornerRadius(12)
@@ -157,18 +160,22 @@ struct AnalyticsView: View {
     private var circularProgressSection: some View {
         VStack(spacing: 20) {
             ZStack {
-                // Background circle with subtle pulse
+                // Background circle with subtle breathing pulse when complete
                 Circle()
                     .stroke(
                         Color.wiseSeparator.opacity(0.3),
-                        lineWidth: 16
+                        lineWidth: 14
                     )
-                    .frame(width: 280, height: 280)
-                    .scaleEffect(animateProgress ? 1.0 : 0.95)
-                    .opacity(animateProgress ? 1.0 : 0.5)
+                    .frame(width: 240, height: 240)
+                    .scaleEffect(animateProgress ? (1.0 + ringGlow * 0.01) : 0.95)
+                    .opacity(animateProgress ? 1.0 : 0.4)
                     .animation(.easeOut(duration: 0.6), value: animateProgress)
+                    .animation(
+                        .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
+                        value: ringGlow
+                    )
 
-                // Task 6.2: Animated category segments with premium smooth animation
+                // Task 6.2: Animated category segments with premium ring animation
                 let categories = getCurrentCategories()
                 ForEach(Array(categories.enumerated()), id: \.offset) { index, category in
                     Circle()
@@ -179,16 +186,21 @@ struct AnalyticsView: View {
                         .stroke(
                             category.color,
                             style: StrokeStyle(
-                                lineWidth: 16,
+                                lineWidth: 14,
                                 lineCap: .round
                             )
                         )
-                        .frame(width: 280, height: 280)
+                        .frame(width: 240, height: 240)
                         .rotationEffect(.degrees(-90))
-                        .shadow(color: category.color.opacity(0.3), radius: 4, x: 0, y: 2)
+                        .shadow(
+                            color: category.color.opacity(animateProgress ? 0.4 : 0),
+                            radius: animateProgress ? 6 : 0,
+                            x: 0,
+                            y: animateProgress ? 3 : 0
+                        )
+                        .scaleEffect(animateProgress ? 1.0 : 0.96)
                         .animation(
-                            .interpolatingSpring(stiffness: 100, damping: 15)
-                                .delay(Double(index) * 0.08),
+                            .ringSegment.delay(Double(index) * 0.08),
                             value: animateProgress
                         )
                 }
@@ -202,39 +214,38 @@ struct AnalyticsView: View {
                         .offset(y: animateAmount ? 0 : -10)
                         .animation(.easeOut(duration: 0.5).delay(0.2), value: animateAmount)
 
-                    // Large amount display with smooth counter animation
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text("$")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(.wisePrimaryText)
-
-                        let totalAmount = calculateTotalAmount()
-                        let integerPart = Int(totalAmount)
-                        let decimalPart = Int((totalAmount - Double(integerPart)) * 100)
-
-                        Text("\(integerPart)")
-                            .font(.system(size: 64, weight: .bold))
-                            .foregroundColor(.wisePrimaryText)
-
-                        Text(".\(String(format: "%02d", decimalPart))")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(.wiseSecondaryText)
+                    // Animated counter text component
+                    if animateAmount {
+                        AnimatedCounterText(
+                            targetValue: calculateTotalAmount(),
+                            duration: 1.2,
+                            prefix: "$",
+                            suffix: "",
+                            showDecimals: true
+                        )
+                        .id(amountKey)
+                    } else {
+                        // Placeholder to maintain layout
+                        HStack(alignment: .firstTextBaseline, spacing: 2) {
+                            Text("$")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.wisePrimaryText)
+                            Text("0")
+                                .font(.system(size: 52, weight: .bold))
+                                .foregroundColor(.wisePrimaryText)
+                            Text(".00")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.wiseSecondaryText)
+                        }
+                        .opacity(0)
                     }
-                    .opacity(animateAmount ? 1 : 0)
-                    .scaleEffect(animateAmount ? 1 : 0.5)
-                    .blur(radius: animateAmount ? 0 : 10)
-                    .animation(
-                        .interpolatingSpring(stiffness: 120, damping: 18)
-                            .delay(0.4),
-                        value: animateAmount
-                    )
 
                     Text("total this period")
                         .font(.spotifyBodyMedium)
                         .foregroundColor(.wiseSecondaryText)
                         .opacity(animateAmount ? 1 : 0)
                         .offset(y: animateAmount ? 0 : 10)
-                        .animation(.easeOut(duration: 0.5).delay(0.6), value: animateAmount)
+                        .animation(.easeOut(duration: 0.5).delay(0.4), value: animateAmount)
                 }
             }
             .padding(.vertical, 20)
@@ -248,14 +259,16 @@ struct AnalyticsView: View {
             ForEach(ViewType.allCases, id: \.self) { viewType in
                 Button(action: {
                     HapticManager.shared.selection()
-                    withAnimation(.interpolatingSpring(stiffness: 200, damping: 20)) {
+                    withAnimation(.tabIndicator) {
                         selectedViewType = viewType
-                        resetAnimations()
                     }
+                    resetAnimations()
                 }) {
                     HStack(spacing: 8) {
                         Image(systemName: viewType.icon)
                             .font(.system(size: 14, weight: .semibold))
+                            .rotationEffect(.degrees(selectedViewType == viewType ? 0 : -10))
+                            .scaleEffect(selectedViewType == viewType ? 1.0 : 0.9)
                         Text(viewType.rawValue)
                             .font(.spotifyLabelLarge)
                             .fontWeight(.semibold)
@@ -263,18 +276,21 @@ struct AnalyticsView: View {
                     .foregroundColor(selectedViewType == viewType ? .white : .wiseBodyText)
                     .padding(.vertical, 12)
                     .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 25)
-                            .fill(selectedViewType == viewType ? Color.wiseForestGreen : Color.clear)
-                            .shadow(
-                                color: selectedViewType == viewType ? Color.wiseForestGreen.opacity(0.3) : .clear,
-                                radius: 8,
-                                x: 0,
-                                y: 4
-                            )
-                    )
-                    .scaleEffect(selectedViewType == viewType ? 1.0 : 0.98)
+                    .background {
+                        if selectedViewType == viewType {
+                            RoundedRectangle(cornerRadius: 25)
+                                .fill(Color.wiseForestGreen)
+                                .matchedGeometryEffect(id: "tab_indicator", in: animation)
+                                .shadow(
+                                    color: Color.wiseForestGreen.opacity(0.3),
+                                    radius: 8,
+                                    x: 0,
+                                    y: 4
+                                )
+                        }
+                    }
                 }
+                .animation(.tabIndicator, value: selectedViewType)
             }
         }
         .background(
@@ -293,7 +309,7 @@ struct AnalyticsView: View {
                 // Task 6.6: Empty state for no data scenarios
                 emptyCategoryState
             } else {
-                // Task 6.5: Animated category list rows with percentage badges
+                // Task 6.5: Animated category list rows with premium entrance
                 ForEach(Array(categories.enumerated()), id: \.element.id) { index, category in
                     // Task 6.12: Category drill-down navigation to filtered transaction list
                     Button(action: {
@@ -306,22 +322,21 @@ struct AnalyticsView: View {
                             index: index
                         )
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(CategoryRowButtonStyle(categoryColor: category.color))
                     .opacity(animateCategories ? 1 : 0)
-                    .offset(y: animateCategories ? 0 : 30)
-                    .blur(radius: animateCategories ? 0 : 5)
+                    .offset(x: animateCategories ? 0 : -30, y: animateCategories ? 0 : 15)
                     .animation(
-                        .interpolatingSpring(stiffness: 150, damping: 20)
-                            .delay(Double(index) * 0.06),
+                        .categoryEntrance.delay(0.1 * pow(0.85, Double(index))),
                         value: animateCategories
                     )
                     .transition(.asymmetric(
-                        insertion: .scale(scale: 0.9).combined(with: .opacity),
-                        removal: .opacity
+                        insertion: .scale(scale: 0.95).combined(with: .opacity),
+                        removal: .opacity.combined(with: .offset(x: -20))
                     ))
                 }
             }
         }
+        .animation(.categoryEntrance, value: selectedViewType)
         .sheet(item: $selectedCategory) { category in
             NavigationView {
                 FilteredTransactionListView(
@@ -342,6 +357,9 @@ struct AnalyticsView: View {
                 .font(.spotifyLabelSmall)
                 .textCase(.uppercase)
                 .foregroundColor(.wiseSecondaryText)
+                .opacity(animateCards ? 1 : 0)
+                .offset(y: animateCards ? 0 : 10)
+                .animation(.categoryEntrance.delay(0.1), value: animateCards)
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 16) {
@@ -353,6 +371,8 @@ struct AnalyticsView: View {
                                 .foregroundColor(.wiseBlue)
                                 .font(.system(size: 20))
                         )
+                        .scaleEffect(animateCards ? 1.0 : 0.8)
+                        .animation(.premiumCardAppear.delay(0.2), value: animateCards)
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Next Month Prediction")
@@ -373,6 +393,9 @@ struct AnalyticsView: View {
                         Text(formatCurrency(nextMonth.predictedAmount))
                             .font(.spotifyNumberLarge)
                             .foregroundColor(.wiseBlue)
+                            .opacity(animateCards ? 1 : 0)
+                            .scaleEffect(animateCards ? 1.0 : 0.9)
+                            .animation(.premiumCardAppear.delay(0.3), value: animateCards)
 
                         Spacer()
 
@@ -384,9 +407,11 @@ struct AnalyticsView: View {
                                 .fontWeight(.semibold)
                         }
                         .foregroundColor(getTrendColor())
+                        .opacity(animateCards ? 1 : 0)
+                        .animation(.categoryEntrance.delay(0.35), value: animateCards)
                     }
 
-                    // Confidence indicator with smooth fill animation
+                    // Confidence indicator with shimmer effect
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text("Confidence")
@@ -401,19 +426,11 @@ struct AnalyticsView: View {
                                 .foregroundColor(.wisePrimaryText)
                         }
 
-                        GeometryReader { geometry in
-                            ZStack(alignment: .leading) {
-                                Capsule()
-                                    .fill(Color.wiseSeparator.opacity(0.3))
-                                    .frame(height: 4)
-
-                                Capsule()
-                                    .fill(Color.wiseBlue)
-                                    .frame(width: animateCards ? geometry.size.width * nextMonth.confidence : 0, height: 4)
-                                    .animation(.interpolatingSpring(stiffness: 100, damping: 18).delay(0.3), value: animateCards)
-                            }
-                        }
-                        .frame(height: 4)
+                        ShimmerProgressBar(
+                            progress: nextMonth.confidence,
+                            color: .wiseBlue,
+                            animate: animateCards
+                        )
                     }
                 }
             }
@@ -421,9 +438,7 @@ struct AnalyticsView: View {
             .background(Color.wiseCardBackground)
             .cornerRadius(12)
             .cardShadow()
-            .scaleEffect(animateCards ? 1.0 : 0.95)
-            .opacity(animateCards ? 1.0 : 0)
-            .animation(.interpolatingSpring(stiffness: 120, damping: 18).delay(0.8), value: animateCards)
+            .premiumCardEntrance(isVisible: animateCards, delay: 0.0)
         }
     }
 
@@ -435,6 +450,9 @@ struct AnalyticsView: View {
                 .font(.spotifyLabelSmall)
                 .textCase(.uppercase)
                 .foregroundColor(.wiseSecondaryText)
+                .opacity(animateCards ? 1 : 0)
+                .offset(y: animateCards ? 0 : 10)
+                .animation(.categoryEntrance.delay(0.15), value: animateCards)
 
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 12),
@@ -446,6 +464,7 @@ struct AnalyticsView: View {
                     value: "\(activeSubscriptionsCount)",
                     iconColor: .wiseBrightGreen
                 )
+                .premiumCardEntrance(isVisible: animateCards, delay: 0.1)
 
                 StatisticsCardComponent(
                     icon: "dollarsign.circle.fill",
@@ -453,6 +472,7 @@ struct AnalyticsView: View {
                     value: formatCurrency(totalSubscriptionCost),
                     iconColor: .wiseBlue
                 )
+                .premiumCardEntrance(isVisible: animateCards, delay: 0.15)
             }
         }
     }
@@ -465,6 +485,9 @@ struct AnalyticsView: View {
                 .font(.spotifyLabelSmall)
                 .textCase(.uppercase)
                 .foregroundColor(.wiseSecondaryText)
+                .opacity(animateCards ? 1 : 0)
+                .offset(y: animateCards ? 0 : 10)
+                .animation(.categoryEntrance.delay(0.2), value: animateCards)
 
             let suggestions = AnalyticsService.shared.generateSavingsOpportunities()
             let unusedSubs = AnalyticsService.shared.detectUnusedSubscriptions(threshold: 60)
@@ -473,19 +496,22 @@ struct AnalyticsView: View {
             if suggestions.isEmpty && unusedSubs.isEmpty && annualSuggestions.isEmpty {
                 emptyInsightsView
             } else {
-                // Task 6.9: Display savings opportunities
-                ForEach(suggestions.prefix(3)) { suggestion in
+                // Task 6.9: Display savings opportunities with staggered entrance
+                ForEach(Array(suggestions.prefix(3).enumerated()), id: \.element.id) { index, suggestion in
                     SavingsSuggestionCard(suggestion: suggestion)
+                        .premiumCardEntrance(isVisible: animateCards, delay: 0.2 + Double(index) * 0.08)
                 }
 
                 // Task 6.10: Unused subscriptions alert card
                 if !unusedSubs.isEmpty {
                     unusedSubscriptionsCard(subscriptions: unusedSubs)
+                        .premiumCardEntrance(isVisible: animateCards, delay: 0.35)
                 }
 
                 // Task 6.11: Annual conversion suggestions with potential savings
                 if !annualSuggestions.isEmpty {
                     annualConversionCard(suggestions: annualSuggestions)
+                        .premiumCardEntrance(isVisible: animateCards, delay: 0.4)
                 }
             }
         }
@@ -498,40 +524,79 @@ struct AnalyticsView: View {
             Image(systemName: "chart.pie")
                 .font(.system(size: 48))
                 .foregroundColor(.wiseSecondaryText.opacity(0.5))
+                .scaleEffect(emptyStateAnimating ? 1.05 : 0.95)
+                .rotationEffect(.degrees(emptyStateAnimating ? 3 : -3))
+                .animation(
+                    .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
+                    value: emptyStateAnimating
+                )
 
             Text("No transactions yet")
                 .font(.spotifyHeadingMedium)
                 .foregroundColor(.wisePrimaryText)
+                .opacity(emptyStateAnimating ? 1 : 0)
+                .offset(y: emptyStateAnimating ? 0 : 10)
+                .animation(.gentle.delay(0.2), value: emptyStateAnimating)
 
             Text("Add your first transaction to see \(selectedViewType == .incomes ? "income" : "expense") analytics")
                 .font(.spotifyBodyMedium)
                 .foregroundColor(.wiseSecondaryText)
                 .multilineTextAlignment(.center)
+                .opacity(emptyStateAnimating ? 1 : 0)
+                .offset(y: emptyStateAnimating ? 0 : 10)
+                .animation(.gentle.delay(0.3), value: emptyStateAnimating)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 60)
+        .onAppear {
+            withAnimation(.gentle.delay(0.5)) {
+                emptyStateAnimating = true
+            }
+        }
     }
 
     private var emptyInsightsView: some View {
         VStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 48))
-                .foregroundColor(.wiseBrightGreen)
+            // Animated checkmark with draw effect
+            ZStack {
+                Circle()
+                    .stroke(Color.wiseBrightGreen.opacity(0.3), lineWidth: 3)
+                    .frame(width: 52, height: 52)
+
+                Circle()
+                    .trim(from: 0, to: animateCards ? 1 : 0)
+                    .stroke(Color.wiseBrightGreen, lineWidth: 3)
+                    .frame(width: 52, height: 52)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeOut(duration: 0.6).delay(0.2), value: animateCards)
+
+                Image(systemName: "checkmark")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.wiseBrightGreen)
+                    .scaleEffect(animateCards ? 1.0 : 0.5)
+                    .opacity(animateCards ? 1 : 0)
+                    .animation(.bouncy.delay(0.6), value: animateCards)
+            }
 
             Text("You're doing great!")
                 .font(.spotifyHeadingMedium)
                 .foregroundColor(.wisePrimaryText)
+                .opacity(animateCards ? 1 : 0)
+                .animation(.gentle.delay(0.7), value: animateCards)
 
             Text("No savings opportunities detected at this time.")
                 .font(.spotifyBodyMedium)
                 .foregroundColor(.wiseSecondaryText)
                 .multilineTextAlignment(.center)
+                .opacity(animateCards ? 1 : 0)
+                .animation(.gentle.delay(0.8), value: animateCards)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)
         .background(Color.wiseCardBackground)
         .cornerRadius(16)
         .cardShadow()
+        .premiumCardEntrance(isVisible: animateCards, delay: 0.2)
     }
 
     // MARK: - Task 6.10: Unused Subscriptions Card
@@ -644,46 +709,70 @@ struct AnalyticsView: View {
         animateAmount = false
         animateCategories = false
         animateCards = false
+        ringGlow = 0
+        emptyStateAnimating = false
+        amountKey = UUID() // Reset counter animation
 
-        // Choreographed animation sequence for premium feel
-        // 1. Start with background circle (immediate)
+        // Premium orchestrated animation sequence
+        // Phase 1: Ring background and segments (immediate)
         withAnimation(.easeOut(duration: 0.6)) {
             animateProgress = true
         }
-        
-        // 2. Amount display fades in as progress animates
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation {
+
+        // Phase 2: Start ring breathing pulse after ring draws
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            ringGlow = 1
+        }
+
+        // Phase 3: Amount counter starts after ring animation settles
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            withAnimation(.gentle) {
                 animateAmount = true
             }
         }
 
-        // 3. Category list items appear after circular animation completes
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-            withAnimation {
+        // Phase 4: Category list items with staggered entrance
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            withAnimation(.categoryEntrance) {
                 animateCategories = true
             }
         }
-        
-        // 4. Cards and additional content animate last
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            withAnimation {
+
+        // Phase 5: Cards and additional content appear last
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+            withAnimation(.premiumCardAppear) {
                 animateCards = true
             }
         }
     }
 
     private func resetAnimations() {
-        // Smooth reset with quick fade out
-        withAnimation(.easeOut(duration: 0.2)) {
+        // Coordinated fade-out sequence for smooth transition
+
+        // Phase 1: Ring and amount fade first (0.2s)
+        withAnimation(.easeIn(duration: 0.2)) {
             animateProgress = false
             animateAmount = false
-            animateCategories = false
-            animateCards = false
+            ringGlow = 0
         }
 
-        // Trigger new animations after brief delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        // Phase 2: Category rows slide out (0.15s, slight delay)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            withAnimation(.easeIn(duration: 0.15)) {
+                animateCategories = false
+            }
+        }
+
+        // Phase 3: Cards fade (0.15s)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.easeIn(duration: 0.15)) {
+                animateCards = false
+                emptyStateAnimating = false
+            }
+        }
+
+        // Phase 4: Re-trigger animations after brief pause
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             triggerAnimations()
         }
     }
@@ -947,7 +1036,7 @@ struct WalletCategoryRow: View {
     let index: Int
 
     @EnvironmentObject var dataManager: DataManager
-    @State private var hovered = false
+    @State private var iconAnimated = false
 
     private var transactionCount: Int {
         // Count transactions in this category
@@ -959,19 +1048,19 @@ struct WalletCategoryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Icon - UnifiedIconCircle style (48x48) with pulse effect
+            // Icon with three-stage entrance animation
             ZStack {
                 Circle()
                     .fill(category.color.opacity(0.2))
                     .frame(width: 48, height: 48)
-                    .scaleEffect(hovered ? 1.05 : 1.0)
+                    .scaleEffect(iconAnimated ? 1.0 : 0.8)
 
                 Image(systemName: category.icon)
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(category.color)
-                    .scaleEffect(hovered ? 1.1 : 1.0)
+                    .scaleEffect(iconAnimated ? 1.0 : 0.7)
             }
-            .animation(.interpolatingSpring(stiffness: 300, damping: 20), value: hovered)
+            .animation(.categoryEntrance.delay(Double(index) * 0.05 + 0.1), value: iconAnimated)
 
             // Category name and subtitle
             VStack(alignment: .leading, spacing: 4) {
@@ -987,39 +1076,35 @@ struct WalletCategoryRow: View {
 
             Spacer()
 
-            // Amount with subtle scale on hover
+            // Amount
             Text(formatCurrency(category.amount))
                 .font(.spotifyNumberMedium)
                 .foregroundColor(.wisePrimaryText)
-                .scaleEffect(hovered ? 1.05 : 1.0)
-                .animation(.interpolatingSpring(stiffness: 300, damping: 20), value: hovered)
         }
         .padding(.vertical, 12)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color.wiseCardBackground)
-                .shadow(
-                    color: hovered ? category.color.opacity(0.15) : .clear,
-                    radius: hovered ? 12 : 0,
-                    x: 0,
-                    y: hovered ? 6 : 0
-                )
         )
-        .scaleEffect(hovered ? 1.02 : 1.0)
-        .animation(.interpolatingSpring(stiffness: 300, damping: 20), value: hovered)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    if !hovered {
-                        HapticManager.shared.light()
-                        hovered = true
-                    }
+        .cardShadow()
+        .onChange(of: animate) { _, newValue in
+            if newValue {
+                iconAnimated = false
+                withAnimation(.categoryEntrance.delay(Double(index) * 0.05)) {
+                    iconAnimated = true
                 }
-                .onEnded { _ in
-                    hovered = false
+            } else {
+                iconAnimated = false
+            }
+        }
+        .onAppear {
+            if animate {
+                withAnimation(.categoryEntrance.delay(Double(index) * 0.05 + 0.15)) {
+                    iconAnimated = true
                 }
-        )
+            }
+        }
     }
 
     private func formatCurrency(_ amount: Double) -> String {
@@ -1051,19 +1136,19 @@ struct CategoryProgressRow: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            // Icon with background and subtle pulse
+            // Icon with background and subtle entrance
             ZStack {
                 Circle()
                     .fill(category.color.opacity(0.15))
                     .frame(width: 52, height: 52)
-                    .scaleEffect(animate ? 1.0 : 0.8)
+                    .scaleEffect(animate ? 1.0 : 0.9)
 
                 Image(systemName: category.icon)
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundColor(category.color)
-                    .scaleEffect(animate ? 1.0 : 0.5)
+                    .scaleEffect(animate ? 1.0 : 0.8)
             }
-            .animation(.interpolatingSpring(stiffness: 150, damping: 18).delay(0.1), value: animate)
+            .animation(.gentle.delay(0.1), value: animate)
 
             // Content
             VStack(alignment: .leading, spacing: 8) {
@@ -1084,7 +1169,7 @@ struct CategoryProgressRow: View {
                         .background(
                             Capsule()
                                 .fill(category.color)
-                                .scaleEffect(animate ? 1.0 : 0.8)
+                                .scaleEffect(animate ? 1.0 : 0.9)
                         )
                 }
 
@@ -1119,7 +1204,7 @@ struct CategoryProgressRow: View {
         .background(Color.wiseCardBackground)
         .cornerRadius(16)
         .cardShadow()
-        .scaleEffect(animate ? 1.0 : 0.95)
+        .scaleEffect(animate ? 1.0 : 0.97)
         .opacity(animate ? 1.0 : 0)
         .onAppear {
             if animate {
@@ -1134,19 +1219,19 @@ struct CategoryProgressRow: View {
             }
         }
     }
-    
+
     private func animateProgressBar() {
-        // Smooth progress bar fill
-        withAnimation(.interpolatingSpring(stiffness: 100, damping: 18).delay(0.2)) {
+        // Smooth progress bar fill with gentle animation
+        withAnimation(.gentle.delay(0.2)) {
             animatedWidth = CGFloat(category.percentage / 100.0)
         }
-        
-        // Animated percentage counter
+
+        // Animated percentage counter - slower and smoother
         let targetPercentage = Int(category.percentage)
-        let duration: Double = 0.8
-        let steps = 30
-        let increment = targetPercentage / steps
-        
+        let duration: Double = 1.2
+        let steps = 20
+        let increment = targetPercentage / max(steps, 1)
+
         for i in 0...steps {
             DispatchQueue.main.asyncAfter(deadline: .now() + (duration / Double(steps)) * Double(i)) {
                 animatedPercentage = min(increment * i, targetPercentage)
@@ -1194,7 +1279,7 @@ struct TransactionHistoryRow: View {
                 .font(.spotifyNumberMedium)
                 .foregroundColor(transaction.isExpense ? .wiseError : .wiseBrightGreen)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
@@ -1223,6 +1308,26 @@ struct TransactionHistoryRow: View {
 }
 
 // Note: StatisticsCardComponent is defined in Components/StatisticsCardComponent.swift
+
+// MARK: - Category Row Button Style
+
+/// Custom button style for category rows with enhanced press state
+struct CategoryRowButtonStyle: ButtonStyle {
+    let categoryColor: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .brightness(configuration.isPressed ? -0.03 : 0)
+            .shadow(
+                color: configuration.isPressed ? categoryColor.opacity(0.15) : .clear,
+                radius: configuration.isPressed ? 8 : 0,
+                x: 0,
+                y: configuration.isPressed ? 4 : 0
+            )
+            .animation(.snappy, value: configuration.isPressed)
+    }
+}
 
 // MARK: - Savings Suggestion Card
 

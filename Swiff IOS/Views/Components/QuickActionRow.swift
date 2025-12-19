@@ -87,6 +87,74 @@ struct QuickActionRow: View {
     }
 }
 
+// MARK: - QuickActionRowV2 Component (Unified Bottom Sheet Design)
+
+struct QuickActionRowV2: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let iconColor: Color
+    let showDivider: Bool
+    let action: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button(action: {
+                HapticManager.shared.light()
+                action()
+            }) {
+                HStack(spacing: 16) {
+                    // Large icon circle - 60x60pt
+                    ZStack {
+                        Circle()
+                            .fill(iconColor.opacity(0.12))
+                            .frame(width: 60, height: 60)
+
+                        Image(systemName: icon)
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(iconColor)
+                    }
+
+                    // Title and Subtitle
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(title)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.wisePrimaryText)
+
+                        Text(subtitle)
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundColor(.wiseSecondaryText)
+                    }
+
+                    Spacer()
+
+                    // Chevron
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.wiseSecondaryText.opacity(0.5))
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 18)
+                .frame(height: 80)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(ScaleButtonStyle(scaleAmount: 0.98))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(title), \(subtitle)")
+            .accessibilityHint("Double tap to \(title.lowercased())")
+            .accessibilityAddTraits(.isButton)
+
+            // Divider
+            if showDivider {
+                Divider()
+                    .background(Color.wiseSecondaryText.opacity(0.15))
+                    .padding(.leading, 100)
+            }
+        }
+        .background(Color.wiseCardBackground)
+    }
+}
+
 // MARK: - Previews
 
 #Preview("Quick Action Rows") {
@@ -192,5 +260,53 @@ struct QuickActionRow: View {
         }
         .padding()
     }
+    .background(Color.wiseBackground)
+}
+
+#Preview("QuickActionRowV2 - Unified Container") {
+    VStack(spacing: 0) {
+        QuickActionRowV2(
+            icon: "plus.circle.fill",
+            title: "Add Transaction",
+            subtitle: "Record a new expense or income",
+            iconColor: .wiseBrightGreen,
+            showDivider: true
+        ) {
+            print("Add Transaction tapped")
+        }
+
+        QuickActionRowV2(
+            icon: "creditcard.fill",
+            title: "Add Subscription",
+            subtitle: "Track a new subscription service",
+            iconColor: .wiseBlue,
+            showDivider: true
+        ) {
+            print("Add Subscription tapped")
+        }
+
+        QuickActionRowV2(
+            icon: "person.fill",
+            title: "Add Person",
+            subtitle: "Add a friend to track balances",
+            iconColor: Color(red: 1.0, green: 0.592, blue: 0.0),
+            showDivider: true
+        ) {
+            print("Add Person tapped")
+        }
+
+        QuickActionRowV2(
+            icon: "person.2.fill",
+            title: "Add Group",
+            subtitle: "Create a new group for shared expenses",
+            iconColor: .wiseForestGreen,
+            showDivider: false
+        ) {
+            print("Add Group tapped")
+        }
+    }
+    .background(Color.wiseCardBackground)
+    .cornerRadius(12)
+    .padding(20)
     .background(Color.wiseBackground)
 }

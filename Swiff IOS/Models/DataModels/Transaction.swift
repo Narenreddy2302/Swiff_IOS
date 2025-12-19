@@ -34,6 +34,9 @@ struct Transaction: Identifiable, Codable {
     var location: String?                    // Where transaction occurred (city, store, etc.)
     var notes: String                        // User notes about the transaction
 
+    // Split Transaction Support
+    var splitBillId: UUID?                   // Reference to SplitBill if this is a split transaction
+
     // Initialize with default values for backward compatibility
     init(
         id: UUID = UUID(),
@@ -52,7 +55,8 @@ struct Transaction: Identifiable, Codable {
         isRecurringCharge: Bool = false,
         paymentMethod: PaymentMethod? = nil,
         location: String? = nil,
-        notes: String = ""
+        notes: String = "",
+        splitBillId: UUID? = nil
     ) {
         self.id = id
         self.title = title
@@ -71,6 +75,7 @@ struct Transaction: Identifiable, Codable {
         self.paymentMethod = paymentMethod
         self.location = location
         self.notes = notes
+        self.splitBillId = splitBillId
     }
 
     var isExpense: Bool {
@@ -100,5 +105,10 @@ struct Transaction: Identifiable, Codable {
 
     var displayMerchant: String {
         return merchant ?? category.rawValue
+    }
+
+    // Split transaction computed properties
+    var isSplitTransaction: Bool {
+        return splitBillId != nil
     }
 }

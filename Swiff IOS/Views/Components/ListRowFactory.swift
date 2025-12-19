@@ -42,13 +42,22 @@ struct ListRowFactory {
         )
     }
 
-    /// Creates a card view for a Transaction (new card-based design)
+    /// Creates a card view for a Transaction (card-based design with status indicator)
     @ViewBuilder
     static func card(for transaction: Transaction, context: CardContext = .feed, subscription: Subscription? = nil, onTap: (() -> Void)? = nil) -> some View {
         TransactionCard(
             transaction: transaction,
             context: context,
             subscription: subscription,
+            onTap: onTap
+        )
+    }
+
+    /// Creates a simple row view for a Transaction (without card background)
+    @ViewBuilder
+    static func simpleRow(for transaction: Transaction, onTap: (() -> Void)? = nil) -> some View {
+        TransactionRowView(
+            transaction: transaction,
             onTap: onTap
         )
     }
@@ -123,12 +132,14 @@ struct ListRowFactory {
 
         // Use UnifiedListRowV2 with emoji circle
         HStack(spacing: 12) {
-            // Emoji circle
-            UnifiedEmojiCircle(
-                emoji: group.emoji,
-                backgroundColor: .wisePurple,
-                size: 48
-            )
+            // Filled Emoji Circle
+            Circle()
+                .fill(Color.wiseBlue)
+                .frame(width: 48, height: 48)
+                .overlay(
+                    Text(group.emoji)
+                        .font(.system(size: 24))
+                )
 
             // Text Content
             VStack(alignment: .leading, spacing: 4) {

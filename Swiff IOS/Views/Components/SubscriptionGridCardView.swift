@@ -2,221 +2,225 @@
 //  SubscriptionGridCardView.swift
 //  Swiff IOS
 //
-//  Created for Page 4 Task Implementation
+//  Modern grid card for subscription display
 //
 
 import SwiftUI
 
 // MARK: - Subscription Grid Card View
+
+/// Modern grid card view for displaying subscriptions in a 2-column grid layout.
+/// Features rounded rectangle icon, service name, price, and status badge.
 struct SubscriptionGridCardView: View {
     let subscription: Subscription
 
-    var statusColor: Color {
+    // MARK: - Computed Properties
+
+    private var statusColor: Color {
         if !subscription.isActive {
-            if subscription.cancellationDate != nil {
-                return .wiseError
-            } else {
-                return .wiseWarning
-            }
+            return subscription.cancellationDate != nil ? .wiseError : .wiseWarning
         }
-        return .wiseBrightGreen
+        return .wiseSuccess
     }
 
-    var statusText: String {
+    private var statusText: String {
         if !subscription.isActive {
-            if subscription.cancellationDate != nil {
-                return "Cancelled"
-            } else {
-                return "Paused"
-            }
+            return subscription.cancellationDate != nil ? "Cancelled" : "Paused"
         }
         return "Active"
     }
 
-    var daysUntilBilling: Int {
-        let calendar = Calendar.current
-        let now = Date()
-        let components = calendar.dateComponents([.day], from: now, to: subscription.nextBillingDate)
-        return max(components.day ?? 0, 0)
+    private var iconBackgroundColor: Color {
+        Color(hexString: subscription.color)
     }
 
-    var countdownText: String {
-        if subscription.billingCycle == .lifetime {
-            return "Lifetime"
-        }
-
-        let days = daysUntilBilling
-        if days == 0 {
-            return "Today"
-        } else if days == 1 {
-            return "Tomorrow"
-        } else if days < 7 {
-            return "in \(days) days"
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMM d"
-            return formatter.string(from: subscription.nextBillingDate)
-        }
-    }
-
-    var isExpiringSoon: Bool {
-        return subscription.isActive && daysUntilBilling <= 7
-    }
+    // MARK: - Body
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Card Content
-            VStack(spacing: 12) {
-                // Icon and Status Badge
-                ZStack(alignment: .topLeading) {
-                    // Large Icon with Gradient Background
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(hexString: subscription.color).opacity(0.3),
-                                    Color(hexString: subscription.color).opacity(0.1)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 64, height: 64)
-                        .overlay(
-                            Image(systemName: subscription.icon)
-                                .font(.system(size: 28, weight: .medium))
-                                .foregroundColor(Color(hexString: subscription.color))
-                        )
+        VStack(alignment: .leading, spacing: 12) {
+            // App Icon - Rounded Rectangle
+            RoundedRectangle(cornerRadius: 12)
+                .fill(iconBackgroundColor)
+                .frame(width: 48, height: 48)
+                .overlay(
+                    Image(systemName: subscription.icon)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(.white)
+                )
 
-                    // AGENT 8: Trial Badge in top-left corner
-                    if subscription.isFreeTrial {
-                        TrialBadge(
-                            daysRemaining: subscription.daysUntilTrialEnd,
-                            isExpired: subscription.isTrialExpired
-                        )
-                        .offset(x: -8, y: -4)
-                    } else {
-                        // Status Badge (for non-trial)
-                        HStack(spacing: 3) {
-                            Circle()
-                                .fill(statusColor)
-                                .frame(width: 6, height: 6)
-                            Text(statusText)
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundColor(statusColor)
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(
-                            Capsule()
-                                .fill(statusColor.opacity(0.15))
-                        )
-                        .offset(x: -8, y: -4)
-                    }
-                }
-                .padding(.top, 12)
+            Spacer()
 
-                // Subscription Name
-                Text(subscription.name)
-                    .font(.spotifyLabelLarge)
+            // Service Name
+            Text(subscription.name)
+                .font(.spotifyBodyLarge)
+                .foregroundColor(.wisePrimaryText)
+                .lineLimit(1)
+
+            // Price with billing cycle
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(format: "$%.2f", subscription.price))
+                    .font(.spotifyNumberLarge)
+                    .fontWeight(.bold)
                     .foregroundColor(.wisePrimaryText)
-                    .fontWeight(.semibold)
-                    .lineLimit(1)
-                    .multilineTextAlignment(.center)
 
-                // Price and Billing Cycle
-                VStack(spacing: 2) {
-                    Text(String(format: "$%.2f", subscription.price))
-                        .font(.spotifyNumberLarge)
-                        .fontWeight(.bold)
-                        .foregroundColor(.wisePrimaryText)
-
-                    Text("per \(subscription.billingCycle.shortName)")
-                        .font(.spotifyCaptionSmall)
-                        .foregroundColor(.wiseSecondaryText)
-                }
-
-                // AGENT 8: Trial Countdown (show instead of next billing for trials)
-                if subscription.isFreeTrial {
-                    TrialCountdown(
-                        daysRemaining: subscription.daysUntilTrialEnd,
-                        isExpired: subscription.isTrialExpired
-                    )
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(Color.wiseWarning.opacity(0.15))
-                    )
-                } else if subscription.isActive {
-                    // Countdown Badge for regular subscriptions
-                    HStack(spacing: 4) {
-                        Image(systemName: isExpiringSoon ? "exclamationmark.circle.fill" : "calendar")
-                            .font(.system(size: 10))
-                            .foregroundColor(isExpiringSoon ? .wiseError : .wiseSecondaryText)
-
-                        Text(countdownText)
-                            .font(.spotifyCaptionSmall)
-                            .fontWeight(.medium)
-                            .foregroundColor(isExpiringSoon ? .wiseError : .wiseSecondaryText)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(isExpiringSoon ? Color.wiseError.opacity(0.1) : Color.wiseBorder.opacity(0.5))
-                    )
-                }
-
-                // Shared Indicator
-                if subscription.isShared {
-                    HStack(spacing: 4) {
-                        Image(systemName: "person.2.fill")
-                            .font(.system(size: 10))
-                        Text("Shared")
-                            .font(.system(size: 10, weight: .medium))
-                    }
-                    .foregroundColor(.wiseBlue)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(Color.wiseBlue.opacity(0.1))
-                    )
-                }
+                Text("per \(subscription.billingCycle.shortName)")
+                    .font(.spotifyCaptionSmall)
+                    .foregroundColor(.wiseSecondaryText)
             }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 16)
+
+            // Status/Trial Badge (compact)
+            if subscription.isFreeTrial {
+                trialBadge
+            } else {
+                statusBadge
+            }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.wiseCardBackground)
-        )
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .aspectRatio(1, contentMode: .fit)
+        .background(Color.wiseCardBackground)
+        .cornerRadius(20)
         .cardShadow()
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.wiseBorder.opacity(0.3), lineWidth: 1)
-        )
+    }
+
+    // MARK: - Badges
+
+    private var statusBadge: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(statusColor)
+                .frame(width: 6, height: 6)
+            Text(statusText)
+                .font(.spotifyCaptionSmall)
+                .foregroundColor(statusColor)
+        }
+    }
+
+    private var trialBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "clock.fill")
+                .font(.system(size: 10))
+            Text(subscription.trialStatus)
+                .font(.spotifyCaptionSmall)
+        }
+        .foregroundColor(.wiseWarning)
     }
 }
 
 // MARK: - Preview
-#Preview {
-    var subscription = Subscription(
-        name: "Netflix",
-        description: "Streaming Service",
-        price: 15.99,
-        billingCycle: .monthly,
-        category: .entertainment,
-        icon: "play.tv.fill",
-        color: "#E50914"
-    )
-    subscription.nextBillingDate = Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
-    subscription.isActive = true
-    subscription.isShared = true
-    subscription.totalSpent = 159.90
 
-    return SubscriptionGridCardView(subscription: subscription)
-        .frame(width: 180)
-        .padding()
+#Preview("Subscription Grid Cards") {
+    let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+
+    ScrollView {
+        LazyVGrid(columns: columns, spacing: 16) {
+            // Active subscription - Spotify
+            SubscriptionGridCardView(
+                subscription: {
+                    var sub = Subscription(
+                        name: "Spotify",
+                        description: "Music Streaming",
+                        price: 5.99,
+                        billingCycle: .monthly,
+                        category: .music,
+                        icon: "waveform",
+                        color: "#1DB954"
+                    )
+                    sub.isActive = true
+                    return sub
+                }()
+            )
+
+            // Active subscription - YouTube
+            SubscriptionGridCardView(
+                subscription: {
+                    var sub = Subscription(
+                        name: "YouTube Premium",
+                        description: "Video Streaming",
+                        price: 18.99,
+                        billingCycle: .monthly,
+                        category: .entertainment,
+                        icon: "play.fill",
+                        color: "#FF0000"
+                    )
+                    sub.isActive = true
+                    return sub
+                }()
+            )
+
+            // Active subscription - Netflix
+            SubscriptionGridCardView(
+                subscription: {
+                    var sub = Subscription(
+                        name: "Netflix",
+                        description: "Streaming Service",
+                        price: 15.99,
+                        billingCycle: .monthly,
+                        category: .entertainment,
+                        icon: "play.rectangle.fill",
+                        color: "#E50914"
+                    )
+                    sub.isActive = true
+                    return sub
+                }()
+            )
+
+            // Active subscription - iCloud
+            SubscriptionGridCardView(
+                subscription: {
+                    var sub = Subscription(
+                        name: "iCloud",
+                        description: "Cloud Storage",
+                        price: 2.99,
+                        billingCycle: .monthly,
+                        category: .cloud,
+                        icon: "icloud.fill",
+                        color: "#3395FF"
+                    )
+                    sub.isActive = true
+                    return sub
+                }()
+            )
+
+            // Paused subscription
+            SubscriptionGridCardView(
+                subscription: {
+                    var sub = Subscription(
+                        name: "Apple Music",
+                        description: "Music Streaming",
+                        price: 10.99,
+                        billingCycle: .monthly,
+                        category: .music,
+                        icon: "music.note",
+                        color: "#FC3C44"
+                    )
+                    sub.isActive = false
+                    return sub
+                }()
+            )
+
+            // Cancelled subscription
+            SubscriptionGridCardView(
+                subscription: {
+                    var sub = Subscription(
+                        name: "Disney+",
+                        description: "Streaming Service",
+                        price: 7.99,
+                        billingCycle: .monthly,
+                        category: .entertainment,
+                        icon: "sparkles.tv",
+                        color: "#113CCF"
+                    )
+                    sub.isActive = false
+                    sub.cancellationDate = Date()
+                    return sub
+                }()
+            )
+        }
+        .padding(20)
+    }
+    .background(Color.wiseGroupedBackground)
 }

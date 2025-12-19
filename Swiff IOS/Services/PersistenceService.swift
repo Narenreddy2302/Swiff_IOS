@@ -79,7 +79,9 @@ class PersistenceService {
         SubscriptionModel.self,
         SharedSubscriptionModel.self,
         TransactionModel.self,
-        PriceChangeModel.self
+        PriceChangeModel.self,
+        SplitBillModel.self,
+        AccountModel.self
     ])
 
     // MARK: - Initialization
@@ -840,6 +842,157 @@ class PersistenceService {
         }
     }
 
+    // MARK: - Split Bill Operations
+
+    func saveSplitBill(_ splitBill: SplitBill) throws {
+        let descriptor = FetchDescriptor<SplitBillModel>(
+            predicate: #Predicate { $0.id == splitBill.id }
+        )
+
+        do {
+            let existing = try modelContext.fetch(descriptor).first
+
+            if let existingSplitBill = existing {
+                // Update existing split bill
+                existingSplitBill.title = splitBill.title
+                existingSplitBill.totalAmount = splitBill.totalAmount
+                existingSplitBill.paidById = splitBill.paidById
+                existingSplitBill.splitTypeRaw = splitBill.splitType.rawValue
+                existingSplitBill.participantsData = (try? JSONEncoder().encode(splitBill.participants)) ?? Data()
+                existingSplitBill.notes = splitBill.notes
+                existingSplitBill.categoryRaw = splitBill.category.rawValue
+                existingSplitBill.date = splitBill.date
+                existingSplitBill.groupId = splitBill.groupId
+            } else {
+                // Create new split bill
+                let splitBillModel = SplitBillModel(from: splitBill)
+                modelContext.insert(splitBillModel)
+
+                // Set up relationships if applicable
+                let payerDescriptor = FetchDescriptor<PersonModel>(
+                    predicate: #Predicate { $0.id == splitBill.paidById }
+                )
+                if let payer = try? modelContext.fetch(payerDescriptor).first {
+                    splitBillModel.paidBy = payer
+                }
+
+                if let groupId = splitBill.groupId {
+                    let groupDescriptor = FetchDescriptor<GroupModel>(
+                        predicate: #Predicate { $0.id == groupId }
+                    )
+                    if let group = try? modelContext.fetch(groupDescriptor).first {
+                        splitBillModel.group = group
+                    }
+                }
+            }
+
+            try saveContext()
+        } catch {
+            throw PersistenceError.saveFailed(underlying: error)
+        }
+    }
+
+    func updateSplitBill(_ splitBill: SplitBill) throws {
+        let descriptor = FetchDescriptor<SplitBillModel>(
+            predicate: #Predicate { $0.id == splitBill.id }
+        )
+
+        do {
+            guard let existingSplitBill = try modelContext.fetch(descriptor).first else {
+                throw PersistenceError.entityNotFound(id: splitBill.id)
+            }
+
+            // Update all fields
+            existingSplitBill.title = splitBill.title
+            existingSplitBill.totalAmount = splitBill.totalAmount
+            existingSplitBill.paidById = splitBill.paidById
+            existingSplitBill.splitTypeRaw = splitBill.splitType.rawValue
+            existingSplitBill.participantsData = (try? JSONEncoder().encode(splitBill.participants)) ?? Data()
+            existingSplitBill.notes = splitBill.notes
+            existingSplitBill.categoryRaw = splitBill.category.rawValue
+            existingSplitBill.date = splitBill.date
+            existingSplitBill.groupId = splitBill.groupId
+
+            try saveContext()
+        } catch let error as PersistenceError {
+            throw error
+        } catch {
+            throw PersistenceError.updateFailed(underlying: error)
+        }
+    }
+
+    func deleteSplitBill(id: UUID) throws {
+        let descriptor = FetchDescriptor<SplitBillModel>(
+            predicate: #Predicate { $0.id == id }
+        )
+
+        do {
+            guard let splitBill = try modelContext.fetch(descriptor).first else {
+                throw PersistenceError.entityNotFound(id: id)
+            }
+
+            modelContext.delete(splitBill)
+            try saveContext()
+        } catch let error as PersistenceError {
+            throw error
+        } catch {
+            throw PersistenceError.deleteFailed(underlying: error)
+        }
+    }
+
+    func fetchAllSplitBills() throws -> [SplitBill] {
+        let descriptor = FetchDescriptor<SplitBillModel>(
+            sortBy: [SortDescriptor(\SplitBillModel.date, order: .reverse)]
+        )
+
+        do {
+            let splitBills = try modelContext.fetch(descriptor)
+            return splitBills.map { $0.toDomain() }
+        } catch {
+            throw PersistenceError.fetchFailed(underlying: error)
+        }
+    }
+
+    func fetchSplitBill(byID id: UUID) throws -> SplitBill? {
+        let descriptor = FetchDescriptor<SplitBillModel>(
+            predicate: #Predicate { $0.id == id }
+        )
+
+        do {
+            return try modelContext.fetch(descriptor).first?.toDomain()
+        } catch {
+            throw PersistenceError.fetchFailed(underlying: error)
+        }
+    }
+
+    func fetchSplitBillsForPerson(personId: UUID) throws -> [SplitBill] {
+        let descriptor = FetchDescriptor<SplitBillModel>(
+            predicate: #Predicate { $0.paidById == personId },
+            sortBy: [SortDescriptor(\SplitBillModel.date, order: .reverse)]
+        )
+
+        do {
+            let splitBills = try modelContext.fetch(descriptor)
+            return splitBills.map { $0.toDomain() }
+        } catch {
+            throw PersistenceError.fetchFailed(underlying: error)
+        }
+    }
+
+    func fetchSplitBillsForGroup(groupId: UUID) throws -> [SplitBill] {
+        let descriptor = FetchDescriptor<SplitBillModel>(
+            predicate: #Predicate { $0.groupId == groupId },
+            sortBy: [SortDescriptor(\SplitBillModel.date, order: .reverse)]
+        )
+
+        do {
+            let splitBills = try modelContext.fetch(descriptor)
+            return splitBills.map { $0.toDomain() }
+        } catch {
+            throw PersistenceError.fetchFailed(underlying: error)
+        }
+    }
+
     // MARK: - Price Change Operations (AGENT 9)
 
     func savePriceChange(_ priceChange: PriceChange) throws {
@@ -1074,5 +1227,147 @@ class PersistenceService {
         let currentMonthTransactions = try fetchCurrentMonthTransactions()
         let expenses = currentMonthTransactions.filter { $0.amount < 0 }
         return abs(expenses.reduce(0.0) { $0 + $1.amount })
+    }
+
+    // MARK: - Account Operations
+
+    /// Save a new account or update existing
+    func saveAccount(_ account: Account) throws {
+        try validateAccount(account)
+
+        let descriptor = FetchDescriptor<AccountModel>(
+            predicate: #Predicate { $0.id == account.id }
+        )
+
+        do {
+            let existing = try modelContext.fetch(descriptor).first
+
+            if let existingAccount = existing {
+                // Update existing account
+                existingAccount.update(from: account)
+            } else {
+                // Create new account
+                let accountModel = AccountModel(from: account)
+                modelContext.insert(accountModel)
+            }
+
+            // If this account is set as default, unset other defaults
+            if account.isDefault {
+                try setDefaultAccount(id: account.id)
+            }
+
+            try saveContext()
+        } catch {
+            throw PersistenceError.saveFailed(underlying: error)
+        }
+    }
+
+    /// Fetch all accounts
+    func fetchAllAccounts() throws -> [Account] {
+        let descriptor = FetchDescriptor<AccountModel>(
+            sortBy: [SortDescriptor(\AccountModel.name, order: .forward)]
+        )
+
+        do {
+            let accounts = try modelContext.fetch(descriptor)
+            return accounts.map { $0.toDomain() }
+        } catch {
+            throw PersistenceError.fetchFailed(underlying: error)
+        }
+    }
+
+    /// Fetch account by ID
+    func fetchAccount(byID id: UUID) throws -> Account? {
+        let descriptor = FetchDescriptor<AccountModel>(
+            predicate: #Predicate { $0.id == id }
+        )
+
+        do {
+            return try modelContext.fetch(descriptor).first?.toDomain()
+        } catch {
+            throw PersistenceError.fetchFailed(underlying: error)
+        }
+    }
+
+    /// Update an existing account
+    func updateAccount(_ account: Account) throws {
+        try validateAccount(account)
+
+        let descriptor = FetchDescriptor<AccountModel>(
+            predicate: #Predicate { $0.id == account.id }
+        )
+
+        do {
+            guard let existing = try modelContext.fetch(descriptor).first else {
+                throw PersistenceError.entityNotFound(id: account.id)
+            }
+
+            existing.update(from: account)
+
+            // If this account is set as default, unset other defaults
+            if account.isDefault {
+                try setDefaultAccount(id: account.id)
+            }
+
+            try saveContext()
+        } catch let error as PersistenceError {
+            throw error
+        } catch {
+            throw PersistenceError.updateFailed(underlying: error)
+        }
+    }
+
+    /// Delete an account
+    func deleteAccount(id: UUID) throws {
+        let descriptor = FetchDescriptor<AccountModel>(
+            predicate: #Predicate { $0.id == id }
+        )
+
+        do {
+            guard let account = try modelContext.fetch(descriptor).first else {
+                throw PersistenceError.entityNotFound(id: id)
+            }
+
+            modelContext.delete(account)
+            try saveContext()
+        } catch let error as PersistenceError {
+            throw error
+        } catch {
+            throw PersistenceError.deleteFailed(underlying: error)
+        }
+    }
+
+    /// Get the default account
+    func fetchDefaultAccount() throws -> Account? {
+        let descriptor = FetchDescriptor<AccountModel>(
+            predicate: #Predicate { $0.isDefault == true }
+        )
+
+        do {
+            return try modelContext.fetch(descriptor).first?.toDomain()
+        } catch {
+            throw PersistenceError.fetchFailed(underlying: error)
+        }
+    }
+
+    /// Set an account as the default (unsets all others)
+    private func setDefaultAccount(id: UUID) throws {
+        let allAccountsDescriptor = FetchDescriptor<AccountModel>()
+
+        do {
+            let allAccounts = try modelContext.fetch(allAccountsDescriptor)
+            for account in allAccounts {
+                account.isDefault = (account.id == id)
+            }
+        } catch {
+            throw PersistenceError.updateFailed(underlying: error)
+        }
+    }
+
+    /// Validate account data
+    private func validateAccount(_ account: Account) throws {
+        guard !account.name.trimmingCharacters(in: .whitespaces).isEmpty else {
+            throw PersistenceError.validationFailed(reason: "Account name cannot be empty")
+        }
     }
 }

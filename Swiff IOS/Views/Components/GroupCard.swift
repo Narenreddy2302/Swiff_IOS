@@ -38,9 +38,9 @@ struct GroupCard: View {
     var body: some View {
         Button(action: { onTap?() }) {
             HStack(spacing: 12) {
-                // Outlined Emoji Circle
+                // Filled Emoji Circle
                 Circle()
-                    .stroke(Color.wiseBlue, lineWidth: 2)
+                    .fill(Color.wiseBlue)
                     .frame(width: 48, height: 48)
                     .overlay(
                         Text(group.emoji)
@@ -81,12 +81,11 @@ struct GroupCard: View {
                     .lineLimit(1)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
             .background(Color.wiseCardBackground)
-            .cornerRadius(16)
-            .cardShadow()
+            .cornerRadius(12)
         }
-        .buttonStyle(CardButtonStyle())
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

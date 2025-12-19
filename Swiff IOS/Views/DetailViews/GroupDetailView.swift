@@ -60,6 +60,23 @@ struct GroupDetailView: View {
         return totalSettledAmount / totalGroupExpenses
     }
 
+    var groupSplitBills: [SplitBill] {
+        guard let group = group else { return [] }
+        return dataManager.getSplitBillsForGroup(groupId: group.id)
+    }
+
+    var totalSplitBillAmount: Double {
+        groupSplitBills.reduce(0) { $0 + $1.totalAmount }
+    }
+
+    var settledSplitBillAmount: Double {
+        groupSplitBills.reduce(0) { $0 + $1.totalSettled }
+    }
+
+    var pendingSplitBillAmount: Double {
+        groupSplitBills.reduce(0) { $0 + $1.totalPending }
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -94,6 +111,11 @@ struct GroupDetailView: View {
 
                     // TASK 2.8: Expense Timeline (grouped by date)
                     expenseTimelineSection(group: group)
+
+                    // Split Bills Section
+                    if !groupSplitBills.isEmpty {
+                        splitBillsSection
+                    }
 
                     // TASK 2.12: Group Activity Summary
                     if !group.expenses.isEmpty {
@@ -157,6 +179,8 @@ struct GroupDetailView: View {
                         }
                     }
                 )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
             }
         }
         .sheet(isPresented: $showingMemberManagement) {
@@ -197,7 +221,7 @@ struct GroupDetailView: View {
             // Large Emoji (80pt)
             UnifiedEmojiCircle(
                 emoji: group.emoji,
-                backgroundColor: .wiseForestGreen,
+                backgroundColor: .wiseBlue,
                 size: 80
             )
 
@@ -578,6 +602,51 @@ struct GroupDetailView: View {
         }
     }
 
+    // MARK: - Split Bills Section
+
+    @ViewBuilder
+    private var splitBillsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "rectangle.3.group.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(Color(red: 0.891, green: 0.118, blue: 0.459))
+
+                Text("Split Bills")
+                    .font(.spotifyHeadingMedium)
+                    .foregroundColor(.wisePrimaryText)
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(groupSplitBills.count)")
+                        .font(.spotifyLabelMedium)
+                        .foregroundColor(.wisePrimaryText)
+
+                    if pendingSplitBillAmount > 0 {
+                        Text(String(format: "$%.2f pending", pendingSplitBillAmount))
+                            .font(.spotifyCaptionSmall)
+                            .foregroundColor(.wiseSecondaryText)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(groupSplitBills) { splitBill in
+                        NavigationLink(destination: SplitBillDetailView(splitBill: splitBill)) {
+                            SplitBillCard(splitBill: splitBill)
+                                .frame(width: 320)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+
     // MARK: - TASK 2.12: Activity Summary
 
     @ViewBuilder
@@ -855,7 +924,7 @@ struct ExpenseRowView: View {
                                 .font(.spotifyCaptionSmall)
                         }
                         .foregroundColor(.wiseBrightGreen)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, 16)
                         .padding(.vertical, 4)
                         .background(Color.wiseBrightGreen.opacity(0.1))
                         .cornerRadius(12)
@@ -867,7 +936,7 @@ struct ExpenseRowView: View {
                                 .font(.spotifyCaptionSmall)
                         }
                         .foregroundColor(.wiseError)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, 16)
                         .padding(.vertical, 4)
                         .background(Color.wiseError.opacity(0.1))
                         .cornerRadius(12)

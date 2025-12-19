@@ -46,6 +46,10 @@ class UserSettings: ObservableObject {
         static let appIcon = "appIcon"
         static let tabBarStyle = "tabBarStyle"
 
+        // Privacy settings keys
+        static let hideBalances = "hideBalances"
+        static let analyticsEnabled = "analyticsEnabled"
+
         // AGENT 5: Data management settings keys
         static let autoBackupEnabled = "autoBackupEnabled"
         static let backupFrequency = "backupFrequency"
@@ -238,6 +242,19 @@ class UserSettings: ObservableObject {
         }
     }
 
+    // Privacy settings properties
+    @Published var hideBalances: Bool {
+        didSet {
+            defaults.set(hideBalances, forKey: Keys.hideBalances)
+        }
+    }
+
+    @Published var analyticsEnabled: Bool {
+        didSet {
+            defaults.set(analyticsEnabled, forKey: Keys.analyticsEnabled)
+        }
+    }
+
     // AGENT 5: Advanced settings properties
     @Published var defaultBillingCycle: String {
         didSet {
@@ -320,6 +337,10 @@ class UserSettings: ObservableObject {
         self.backupPassword = defaults.string(forKey: Keys.backupPassword)
         self.iCloudSyncEnabled = defaults.object(forKey: Keys.iCloudSyncEnabled) as? Bool ?? false
 
+        // Load privacy settings
+        self.hideBalances = defaults.object(forKey: Keys.hideBalances) as? Bool ?? false
+        self.analyticsEnabled = defaults.object(forKey: Keys.analyticsEnabled) as? Bool ?? true
+
         // AGENT 5: Load advanced settings
         self.defaultBillingCycle = defaults.string(forKey: Keys.defaultBillingCycle) ?? "Monthly"
         self.defaultCurrency = defaults.string(forKey: Keys.defaultCurrency) ?? "USD"
@@ -365,6 +386,10 @@ class UserSettings: ObservableObject {
         backupEncryptionEnabled = false
         backupPassword = nil
         iCloudSyncEnabled = false
+
+        // Reset privacy settings
+        hideBalances = false
+        analyticsEnabled = true
 
         // AGENT 5: Reset advanced settings
         defaultBillingCycle = "Monthly"

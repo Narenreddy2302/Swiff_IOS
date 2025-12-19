@@ -23,6 +23,18 @@ enum AvatarType: Codable, Equatable {
     init(legacyEmoji: String) {
         self = .emoji(legacyEmoji)
     }
+
+    /// Returns a display-friendly value for use in menus and lists
+    var displayValue: String {
+        switch self {
+        case .emoji(let emoji):
+            return emoji
+        case .initials(let initials, _):
+            return initials
+        case .photo:
+            return "📷"
+        }
+    }
 }
 
 /// Avatar Sizes

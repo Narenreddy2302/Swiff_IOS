@@ -59,14 +59,14 @@ enum BillingCycleCalculator {
     ///   - cycleAmount: Amount per billing cycle
     ///   - cycle: The billing cycle
     /// - Returns: Annualized amount
-    static func annualCost(cycleAmount: Currency, cycle: CalculatorBillingCycle) -> Currency {
+    static func annualCost(cycleAmount: MoneyAmount, cycle: CalculatorBillingCycle) -> MoneyAmount {
         return cycleAmount * cycle.occurrencesPerYear
     }
 
     /// Calculate precise annual cost from Double (backward compatible)
     static func annualCost(cycleAmount: Double, cycle: CalculatorBillingCycle) -> Double {
-        let currency = Currency(double: cycleAmount)
-        let annual = annualCost(cycleAmount: currency, cycle: cycle)
+        let amount = MoneyAmount(double: cycleAmount)
+        let annual = annualCost(cycleAmount: amount, cycle: cycle)
         return annual.doubleValue
     }
 
@@ -77,15 +77,15 @@ enum BillingCycleCalculator {
     ///   - cycleAmount: Amount per billing cycle
     ///   - cycle: The billing cycle
     /// - Returns: Monthly amount
-    static func monthlyCost(cycleAmount: Currency, cycle: CalculatorBillingCycle) -> Currency {
+    static func monthlyCost(cycleAmount: MoneyAmount, cycle: CalculatorBillingCycle) -> MoneyAmount {
         let annual = annualCost(cycleAmount: cycleAmount, cycle: cycle)
         return try! annual / 12 // Safe: dividing by non-zero constant
     }
 
     /// Calculate precise monthly cost from Double (backward compatible)
     static func monthlyCost(cycleAmount: Double, cycle: CalculatorBillingCycle) -> Double {
-        let currency = Currency(double: cycleAmount)
-        let monthly = monthlyCost(cycleAmount: currency, cycle: cycle)
+        let amount = MoneyAmount(double: cycleAmount)
+        let monthly = monthlyCost(cycleAmount: amount, cycle: cycle)
         return monthly.doubleValue
     }
 
@@ -96,7 +96,7 @@ enum BillingCycleCalculator {
     ///   - annualAmount: Annual amount
     ///   - cycle: Target billing cycle
     /// - Returns: Amount per cycle
-    static func cycleCost(annualAmount: Currency, cycle: CalculatorBillingCycle) -> Currency {
+    static func cycleCost(annualAmount: MoneyAmount, cycle: CalculatorBillingCycle) -> MoneyAmount {
         return try! annualAmount / cycle.occurrencesPerYear
     }
 
@@ -196,11 +196,11 @@ enum BillingCycleCalculator {
     ///   - endDate: End date
     /// - Returns: Total cost for the period
     static func totalCost(
-        cycleAmount: Currency,
+        cycleAmount: MoneyAmount,
         cycle: CalculatorBillingCycle,
         from startDate: Date,
         to endDate: Date
-    ) -> Currency {
+    ) -> MoneyAmount {
         let periods = billingPeriods(from: startDate, to: endDate, cycle: cycle)
         return cycleAmount * periods
     }
@@ -214,10 +214,10 @@ enum BillingCycleCalculator {
     ///   - daysUsed: Number of days in the partial period
     /// - Returns: Prorated amount
     static func prorated(
-        cycleAmount: Currency,
+        cycleAmount: MoneyAmount,
         cycle: CalculatorBillingCycle,
         daysUsed: Int
-    ) -> Currency {
+    ) -> MoneyAmount {
         let daysInCycle = cycle.averageDaysPerCycle
         let ratio = Decimal(daysUsed) / daysInCycle
         return cycleAmount * ratio
@@ -227,12 +227,12 @@ enum BillingCycleCalculator {
 // MARK: - Billing Summary
 
 struct BillingSummary: CustomStringConvertible {
-    let cycleAmount: Currency
+    let cycleAmount: MoneyAmount
     let cycle: CalculatorBillingCycle
-    let monthlyEquivalent: Currency
-    let annualTotal: Currency
+    let monthlyEquivalent: MoneyAmount
+    let annualTotal: MoneyAmount
 
-    init(cycleAmount: Currency, cycle: CalculatorBillingCycle) {
+    init(cycleAmount: MoneyAmount, cycle: CalculatorBillingCycle) {
         self.cycleAmount = cycleAmount
         self.cycle = cycle
         self.monthlyEquivalent = BillingCycleCalculator.monthlyCost(
@@ -285,7 +285,7 @@ extension CalculatorBillingCycle {
 
  1. Calculate annual cost from weekly subscription:
  ```swift
- let weeklyPrice = Currency(double: 9.99)
+ let weeklyPrice = MoneyAmount(double: 9.99)
  let annual = BillingCycleCalculator.annualCost(
      cycleAmount: weeklyPrice,
      cycle: .weekly
@@ -295,7 +295,7 @@ extension CalculatorBillingCycle {
 
  2. Calculate monthly equivalent:
  ```swift
- let weeklyPrice = Currency(double: 10.00)
+ let weeklyPrice = MoneyAmount(double: 10.00)
  let monthly = BillingCycleCalculator.monthlyCost(
      cycleAmount: weeklyPrice,
      cycle: .weekly
@@ -316,7 +316,7 @@ extension CalculatorBillingCycle {
  4. Create billing summary:
  ```swift
  let summary = BillingSummary(
-     cycleAmount: Currency(double: 15.00),
+     cycleAmount: MoneyAmount(double: 15.00),
      cycle: .monthly
  )
  print(summary.description)

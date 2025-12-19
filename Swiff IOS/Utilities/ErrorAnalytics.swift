@@ -252,7 +252,7 @@ struct AnalyticsConfiguration: Sendable {
     let trackUserIDs: Bool
     let trackSessionIDs: Bool
 
-    static let `default` = AnalyticsConfiguration(
+    nonisolated(unsafe) static let `default` = AnalyticsConfiguration(
         maxEventsStored: 10000,
         retentionDays: 30,
         patternDetectionThreshold: 5,
@@ -261,7 +261,7 @@ struct AnalyticsConfiguration: Sendable {
         trackSessionIDs: true
     )
 
-    static let debug = AnalyticsConfiguration(
+    nonisolated(unsafe) static let debug = AnalyticsConfiguration(
         maxEventsStored: 1000,
         retentionDays: 7,
         patternDetectionThreshold: 3,
@@ -270,7 +270,7 @@ struct AnalyticsConfiguration: Sendable {
         trackSessionIDs: true
     )
 
-    static let production = AnalyticsConfiguration(
+    nonisolated(unsafe) static let production = AnalyticsConfiguration(
         maxEventsStored: 50000,
         retentionDays: 90,
         patternDetectionThreshold: 10,
