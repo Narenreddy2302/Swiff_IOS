@@ -151,6 +151,7 @@ struct GroupDetailView: View {
         .background(Color.wiseBackground)
         .navigationTitle(group?.name ?? "Group")
         .navigationBarTitleDisplayMode(.inline)
+        .observeEntityWithRelated(groupId, type: .group, relatedTypes: [.splitBill, .person], dataManager: dataManager)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingEditGroup = true }) {
@@ -574,15 +575,22 @@ struct GroupDetailView: View {
                         .padding(.horizontal, 16)
 
                     // Expenses for this date
-                    VStack(spacing: 12) {
-                        ForEach(groupedExpenses[date] ?? []) { expense in
+                    VStack(spacing: 0) {
+                        ForEach(Array(groupedExpenses[date]?.enumerated() ?? [].enumerated()), id: \.element.id) { index, expense in
                             ExpenseRowView(
                                 expense: expense,
                                 members: members,
                                 onSettle: { settleExpense(expense) }
                             )
+
+                            if index < (groupedExpenses[date]?.count ?? 0) - 1 {
+                                AlignedDivider()
+                            }
                         }
                     }
+                    .background(Color.wiseCardBackground)
+                    .cornerRadius(12)
+                    .cardShadow()
                     .padding(.horizontal, 16)
                 }
             }
@@ -635,7 +643,7 @@ struct GroupDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(groupSplitBills) { splitBill in
-                        NavigationLink(destination: SplitBillDetailView(splitBill: splitBill)) {
+                        NavigationLink(destination: SplitBillDetailView(splitBillId: splitBill.id)) {
                             SplitBillCard(splitBill: splitBill)
                                 .frame(width: 320)
                         }
@@ -873,103 +881,56 @@ struct ExpenseRowView: View {
         members.first { $0.id == expense.paidBy }
     }
 
-    private var splitMembers: [Person] {
-        expense.splitBetween.compactMap { memberId in
-            members.first { $0.id == memberId }
-        }
+    private var relativeTime: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: expense.date, relativeTo: Date())
+    }
+
+    private var initials: String {
+        InitialsGenerator.generate(from: expense.title)
+    }
+
+    private var avatarColor: Color {
+        expense.category.pastelAvatarColor
+    }
+
+    private var statusText: String {
+        expense.isSettled ? "Settled" : "Pending"
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                // Category icon
-                Circle()
-                    .fill(expense.category.color.opacity(0.2))
-                    .frame(width: 44, height: 44)
-                    .overlay(
-                        Image(systemName: expense.category.icon)
-                            .font(.system(size: 20))
-                            .foregroundColor(expense.category.color)
-                    )
+        HStack(spacing: 14) {
+            // Initials avatar (44x44, no status badge)
+            initialsAvatar
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(expense.title)
-                        .font(.spotifyBodyMedium)
-                        .foregroundColor(.wisePrimaryText)
+            // Title and Status
+            VStack(alignment: .leading, spacing: 3) {
+                Text(expense.title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
 
-                    if let payer = paidByPerson {
-                        Text("Paid by \(payer.name)")
-                            .font(.spotifyCaptionMedium)
-                            .foregroundColor(.wiseSecondaryText)
-                    }
-
-                    Text("Split between \(expense.splitBetween.count) people")
-                        .font(.spotifyCaptionSmall)
-                        .foregroundColor(.wiseSecondaryText)
-                }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(String(format: "$%.2f", expense.amount))
-                        .font(.spotifyNumberMedium)
-                        .foregroundColor(.wisePrimaryText)
-
-                    // Settlement status badge
-                    if expense.isSettled {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 10))
-                            Text("Settled")
-                                .font(.spotifyCaptionSmall)
-                        }
-                        .foregroundColor(.wiseBrightGreen)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 4)
-                        .background(Color.wiseBrightGreen.opacity(0.1))
-                        .cornerRadius(12)
-                    } else {
-                        HStack(spacing: 4) {
-                            Image(systemName: "clock.fill")
-                                .font(.system(size: 10))
-                            Text("Pending")
-                                .font(.spotifyCaptionSmall)
-                        }
-                        .foregroundColor(.wiseError)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 4)
-                        .background(Color.wiseError.opacity(0.1))
-                        .cornerRadius(12)
-                    }
-                }
+                Text(statusText)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .lineLimit(1)
             }
 
-            // Amount per person
-            if !expense.splitBetween.isEmpty {
-                Text(String(format: "$%.2f per person", expense.amountPerPerson))
-                    .font(.spotifyCaptionMedium)
-                    .foregroundColor(.wiseForestGreen)
-                    .padding(.leading, 56)
-            }
+            Spacer()
 
-            // Notes if present
-            if !expense.notes.isEmpty {
-                Text(expense.notes)
-                    .font(.spotifyCaptionMedium)
-                    .foregroundColor(.wiseSecondaryText)
-                    .padding(.leading, 56)
-            }
+            // Amount and Time
+            VStack(alignment: .trailing, spacing: 3) {
+                Text("-\(String(format: "$%.2f", expense.amount))")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(AmountColors.negative)
 
-            // Date
-            Text(expense.date, style: .date)
-                .font(.spotifyCaptionSmall)
-                .foregroundColor(.wiseSecondaryText)
-                .padding(.leading, 56)
+                Text(relativeTime)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+            }
         }
-        .padding(16)
-        .background(Color.wiseCardBackground)
-        .cornerRadius(12)
-        .subtleShadow()
+        .padding(.vertical, 14)
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             if !expense.isSettled {
                 Button {
@@ -979,6 +940,18 @@ struct ExpenseRowView: View {
                 }
                 .tint(.green)
             }
+        }
+    }
+
+    private var initialsAvatar: some View {
+        ZStack {
+            Circle()
+                .fill(avatarColor)
+                .frame(width: 44, height: 44)
+
+            Text(initials)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
         }
     }
 }
@@ -1368,6 +1341,7 @@ struct ExportGroupSheet: View {
 }
 
 // Note: ShareSheet is defined in SettingsView.swift
+// Note: TransactionCategory.pastelAvatarColor is defined in TransactionCard.swift
 
 // MARK: - Preview
 

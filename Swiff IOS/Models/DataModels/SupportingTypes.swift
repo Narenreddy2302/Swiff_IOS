@@ -671,6 +671,42 @@ extension Color {
     // wisePurple is defined below with adaptive dark mode support
     static let wiseMidGray = Color(red: 0.600, green: 0.600, blue: 0.600) // #999999
 
+    // MARK: - Pastel Avatar Colors (New Unified Design)
+
+    /// Pastel green for avatars - used for income, positive
+    static let pastelAvatarGreen = Color(red: 159/255, green: 232/255, blue: 112/255) // #9FE870
+
+    /// Pastel gray for avatars - used for neutral, services
+    static let pastelAvatarGray = Color(red: 212/255, green: 212/255, blue: 212/255) // #D4D4D4
+
+    /// Pastel pink for avatars - used for personal
+    static let pastelAvatarPink = Color(red: 255/255, green: 177/255, blue: 200/255) // #FFB1C8
+
+    /// Pastel yellow for avatars - used for shopping, retail
+    static let pastelAvatarYellow = Color(red: 255/255, green: 229/255, blue: 102/255) // #FFE566
+
+    /// Pastel purple for avatars - used for entertainment
+    static let pastelAvatarPurple = Color(red: 196/255, green: 177/255, blue: 255/255) // #C4B1FF
+
+    // MARK: - Amount Display Colors (New Unified Design)
+
+    /// Positive amount color - green for income/owes you
+    static let amountPositive = Color(red: 0/255, green: 135/255, blue: 90/255) // #00875A
+
+    /// Negative amount color - red for expense/you owe
+    static let amountNegative = Color(red: 217/255, green: 45/255, blue: 32/255) // #D92D20
+
+    // MARK: - List Design Colors (New Unified Design)
+
+    /// Description text gray
+    static let listDescriptionGray = Color(red: 102/255, green: 102/255, blue: 102/255) // #666666
+
+    /// Secondary/time text gray
+    static let listSecondaryGray = Color(red: 153/255, green: 153/255, blue: 153/255) // #999999
+
+    /// Divider color
+    static let listDivider = Color(red: 238/255, green: 238/255, blue: 238/255) // #EEEEEE
+
     // MARK: - Status Colors (Adaptive)
 
     // Success - green

@@ -5,6 +5,18 @@
 //  Created for Unified List View Design System - Phase 5-7
 //  Factory for creating appropriate list row views based on data type
 //
+//  Updated to work with new unified list design components:
+//  - TransactionCard: Initials-based avatars with pastel colors
+//  - PersonCard: Initials-based avatars with hash-based colors
+//  - GroupCard: Emoji avatars in blue circles
+//  - SubscriptionCard: Initials-based avatars with category colors
+//
+//  All card components use:
+//  - InitialsGenerator.generate(from:) for generating initials
+//  - InitialsAvatarColors.color(for:) for avatar colors
+//  - AmountColors.positive and AmountColors.negative for amount colors
+//  - AlignedDivider() for dividers (76pt left padding)
+//
 
 import SwiftUI
 
@@ -42,7 +54,11 @@ struct ListRowFactory {
         )
     }
 
-    /// Creates a card view for a Transaction (card-based design with status indicator)
+    /// Creates a card view for a Transaction (unified list design with initials avatar)
+    /// Uses TransactionCard component with:
+    /// - Initials-based colored avatar (category-based pastel colors)
+    /// - Clean row layout without status badges
+    /// - AmountColors for positive/negative amounts
     @ViewBuilder
     static func card(for transaction: Transaction, context: CardContext = .feed, subscription: Subscription? = nil, onTap: (() -> Void)? = nil) -> some View {
         TransactionCard(
@@ -81,7 +97,11 @@ struct ListRowFactory {
         )
     }
 
-    /// Creates a card view for a Person (new card-based design)
+    /// Creates a card view for a Person (unified list design with initials avatar)
+    /// Uses PersonCard component with:
+    /// - Initials-based colored avatar (hash-based pastel colors from InitialsAvatarColors)
+    /// - Balance status indicator (Owes you / You owe / Settled)
+    /// - AmountColors for positive/negative balances
     static func card(for person: Person, transactions: [Transaction] = [], onTap: (() -> Void)? = nil) -> some View {
         return PersonCard(person: person, transactions: transactions, onTap: onTap)
     }
@@ -175,7 +195,11 @@ struct ListRowFactory {
         }
     }
 
-    /// Creates a card view for a Group (new card-based design)
+    /// Creates a card view for a Group (unified list design with emoji avatar)
+    /// Uses GroupCard component with:
+    /// - Emoji in blue circle (44x44)
+    /// - Member and expense count summary
+    /// - Total amount display
     static func card(for group: Group, onTap: (() -> Void)? = nil) -> some View {
         return GroupCard(group: group, onTap: onTap)
     }
@@ -199,7 +223,11 @@ struct ListRowFactory {
         )
     }
 
-    /// Creates a card view for a Subscription (new card-based design)
+    /// Creates a card view for a Subscription (unified list design with initials avatar)
+    /// Uses SubscriptionCard component with:
+    /// - Initials-based colored avatar (category-based pastel colors)
+    /// - Billing cycle and next billing date
+    /// - Price display (neutral color)
     static func card(for subscription: Subscription, onTap: (() -> Void)? = nil) -> some View {
         return SubscriptionCard(subscription: subscription, onTap: onTap)
     }

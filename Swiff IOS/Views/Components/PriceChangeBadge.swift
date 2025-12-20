@@ -106,77 +106,76 @@ struct PriceChangeRow: View {
         priceChange.isIncrease ? Color.wiseError : Color.wiseBrightGreen
     }
 
+    private var avatarColor: Color {
+        priceChange.isIncrease ? InitialsAvatarColors.pink : InitialsAvatarColors.green
+    }
+
+    private var initials: String {
+        priceChange.isIncrease ? "↑" : "↓"
+    }
+
+    private var titleText: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        return formatter.string(from: priceChange.changeDate)
+    }
+
+    private var descriptionText: String {
+        let oldPriceStr = String(format: "$%.2f", priceChange.oldPrice)
+        let newPriceStr = String(format: "$%.2f", priceChange.newPrice)
+        return "\(oldPriceStr) → \(newPriceStr)"
+    }
+
+    private var relativeTime: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: priceChange.changeDate, relativeTo: Date())
+    }
+
     var body: some View {
-        HStack(spacing: 12) {
-            // Icon
-            Circle()
-                .fill(arrowColor.opacity(0.15))
-                .frame(width: 44, height: 44)
-                .overlay(
-                    Image(systemName: priceChange.isIncrease ? "arrow.up" : "arrow.down")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(arrowColor)
-                )
+        HStack(spacing: 14) {
+            // Initials avatar (44x44)
+            initialsAvatar
 
-            // Price change details
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(String(format: "$%.2f", priceChange.oldPrice))
-                        .font(.spotifyBodyMedium)
-                        .foregroundColor(.wiseSecondaryText)
-                        .strikethrough()
+            // Title and description
+            VStack(alignment: .leading, spacing: 3) {
+                Text(titleText)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
 
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 12))
-                        .foregroundColor(.wiseSecondaryText)
-
-                    Text(String(format: "$%.2f", priceChange.newPrice))
-                        .font(.spotifyBodyLarge)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.wisePrimaryText)
-
-                    CompactPriceChangeBadge(priceChange: priceChange)
-                }
-
-                HStack(spacing: 4) {
-                    Text(priceChange.changeDate, style: .date)
-                        .font(.spotifyCaptionMedium)
-                        .foregroundColor(.wiseSecondaryText)
-
-                    if let reason = priceChange.reason, !reason.isEmpty {
-                        Text("•")
-                            .font(.spotifyCaptionMedium)
-                            .foregroundColor(.wiseSecondaryText)
-
-                        Text(reason)
-                            .font(.spotifyCaptionMedium)
-                            .foregroundColor(.wiseSecondaryText)
-                            .lineLimit(1)
-                    }
-
-                    if priceChange.detectedAutomatically {
-                        Text("•")
-                            .font(.spotifyCaptionMedium)
-                            .foregroundColor(.wiseSecondaryText)
-
-                        Text("Auto-detected")
-                            .font(.spotifyCaptionMedium)
-                            .foregroundColor(.wiseBlue)
-                    }
-                }
+                Text(descriptionText)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .lineLimit(1)
             }
 
             Spacer()
 
-            // Change amount
-            VStack(alignment: .trailing, spacing: 2) {
+            // Amount and time
+            VStack(alignment: .trailing, spacing: 3) {
                 Text(priceChange.formattedChangeAmount)
-                    .font(.spotifyBodyMedium)
-                    .fontWeight(.semibold)
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(arrowColor)
+
+                Text(relativeTime)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 14)
+    }
+
+    private var initialsAvatar: some View {
+        ZStack {
+            Circle()
+                .fill(avatarColor)
+                .frame(width: 44, height: 44)
+
+            Text(initials)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+        }
     }
 }
 

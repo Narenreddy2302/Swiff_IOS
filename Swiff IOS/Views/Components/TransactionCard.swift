@@ -2,15 +2,17 @@
 //  TransactionCard.swift
 //  Swiff IOS
 //
-//  Row-based transaction display with icon status indicator
+//  Row-based transaction display with initials avatar
+//  Updated to match new unified list design
 //
 
 import SwiftUI
 
 // MARK: - Transaction Card
 
-/// Row-based transaction display with icon status indicator.
-/// Shows category icon with plus/minus badge, title, status, amount, and relative time.
+/// Row-based transaction display with initials-based avatar.
+/// Shows colored circle with initials, title, status, amount, and relative time.
+/// Design: 44x44 avatar, 14pt gap, clean row without status badges.
 struct TransactionCard: View {
     let transaction: Transaction
     let context: CardContext
@@ -27,16 +29,21 @@ struct TransactionCard: View {
         transaction.paymentStatus.displayText
     }
 
-    private var iconName: String {
-        context.icon(for: transaction, subscription: subscription)
+    private var initials: String {
+        InitialsGenerator.generate(from: transaction.title)
+    }
+
+    private var avatarColor: Color {
+        // Map category to pastel avatar colors
+        transaction.category.pastelAvatarColor
     }
 
     private var amountColor: Color {
-        isIncoming ? .wiseSuccess : .wiseError
+        isIncoming ? AmountColors.positive : AmountColors.negative
     }
 
     private var formattedAmountWithSign: String {
-        let sign = isIncoming ? "+" : "-"
+        let sign = isIncoming ? "+ " : "- "
         return "\(sign)\(transaction.formattedAmount)"
     }
 
@@ -50,125 +57,190 @@ struct TransactionCard: View {
 
     var body: some View {
         Button(action: { onTap?() }) {
-            HStack(spacing: 12) {
-                // Icon with status indicator
-                iconWithStatusIndicator
+            HStack(spacing: 14) {
+                // Initials avatar (no status badge)
+                initialsAvatar
 
                 // Title and status
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(transaction.title)
-                        .font(.spotifyBodyLarge)
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.wisePrimaryText)
                         .lineLimit(1)
 
                     Text(statusText)
-                        .font(.spotifyBodySmall)
-                        .foregroundColor(.wiseSecondaryText)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                        .lineLimit(1)
                 }
 
                 Spacer()
 
                 // Amount and time
-                VStack(alignment: .trailing, spacing: 4) {
+                VStack(alignment: .trailing, spacing: 3) {
                     Text(formattedAmountWithSign)
-                        .font(.spotifyNumberMedium)
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(amountColor)
 
                     Text(relativeTime)
-                        .font(.spotifyBodySmall)
-                        .foregroundColor(.wiseSecondaryText)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
                 }
             }
-            .padding(.vertical, 8)
-            .background(Color.wiseCardBackground)
-            .cornerRadius(12)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 12)
+            .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
     }
 
-    // MARK: - Icon with Status Indicator
+    // MARK: - Initials Avatar
 
-    private var iconWithStatusIndicator: some View {
-        ZStack(alignment: .bottomTrailing) {
-            // Main icon circle
+    private var initialsAvatar: some View {
+        ZStack {
             Circle()
-                .fill(Color(.systemGray6))
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Image(systemName: iconName)
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.wisePrimaryText)
-                )
+                .fill(avatarColor)
+                .frame(width: 44, height: 44)
 
-            // Status indicator (plus/minus badge)
-            Circle()
-                .fill(Color.wiseCardBackground)
-                .frame(width: 18, height: 18)
-                .overlay(
-                    Circle()
-                        .fill(isIncoming ? Color.wiseSuccess : Color.wiseError)
-                        .frame(width: 14, height: 14)
-                        .overlay(
-                            Image(systemName: isIncoming ? "plus" : "minus")
-                                .font(.system(size: 8, weight: .bold))
-                                .foregroundColor(.white)
-                        )
-                )
-                .offset(x: 2, y: 2)
+            Text(initials)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+        }
+    }
+}
+
+// MARK: - TransactionCategory Pastel Color Extension
+
+extension TransactionCategory {
+    /// Pastel avatar color for the new unified list design
+    var pastelAvatarColor: Color {
+        switch self {
+        case .food, .dining:
+            return InitialsAvatarColors.yellow
+        case .groceries:
+            return InitialsAvatarColors.green
+        case .transportation, .travel:
+            return InitialsAvatarColors.gray
+        case .shopping:
+            return InitialsAvatarColors.pink
+        case .entertainment:
+            return InitialsAvatarColors.purple
+        case .bills, .utilities:
+            return InitialsAvatarColors.yellow
+        case .healthcare:
+            return InitialsAvatarColors.pink
+        case .income:
+            return InitialsAvatarColors.green
+        case .transfer:
+            return InitialsAvatarColors.gray
+        case .investment:
+            return InitialsAvatarColors.green
+        case .other:
+            return InitialsAvatarColors.gray
         }
     }
 }
 
 // MARK: - Preview
 
-#Preview("TransactionCard") {
-    VStack(spacing: 12) {
-        // Expense transaction
-        TransactionCard(
-            transaction: Transaction(
-                id: UUID(),
-                title: "Transfer to Access Bank",
-                subtitle: "Bank transfer",
-                amount: -1000.00,
-                category: .transfer,
-                date: Date(),
-                isRecurring: false,
-                tags: []
-            ),
-            context: .feed
-        )
+#Preview("TransactionCard - New Design") {
+    ScrollView {
+        VStack(spacing: 0) {
+            Text("Recent Activity")
+                .font(.system(size: 22, weight: .bold))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
 
-        // Income transaction
-        TransactionCard(
-            transaction: Transaction(
-                id: UUID(),
-                title: "Salary Deposit",
-                subtitle: "Monthly income",
-                amount: 5000.00,
-                category: .income,
-                date: Date().addingTimeInterval(-3600),
-                isRecurring: false,
-                tags: []
-            ),
-            context: .feed
-        )
+            VStack(spacing: 0) {
+                // Coffee expense
+                TransactionCard(
+                    transaction: Transaction(
+                        id: UUID(),
+                        title: "Coffee Shop",
+                        subtitle: "Food & Dining",
+                        amount: -5.75,
+                        category: .food,
+                        date: Date().addingTimeInterval(-86400 * 6),
+                        isRecurring: false,
+                        tags: []
+                    ),
+                    context: .feed
+                )
 
-        // Pending transaction
-        TransactionCard(
-            transaction: Transaction(
-                id: UUID(),
-                title: "Online Purchase",
-                subtitle: "Shopping",
-                amount: -150.00,
-                category: .shopping,
-                date: Date().addingTimeInterval(-86400),
-                isRecurring: false,
-                tags: [],
-                paymentStatus: .pending
-            ),
-            context: .feed
-        )
+                AlignedDivider()
+
+                // Dinner expense
+                TransactionCard(
+                    transaction: Transaction(
+                        id: UUID(),
+                        title: "Dinner",
+                        subtitle: "Dining",
+                        amount: -92.50,
+                        category: .dining,
+                        date: Date().addingTimeInterval(-86400 * 7),
+                        isRecurring: false,
+                        tags: []
+                    ),
+                    context: .feed
+                )
+
+                AlignedDivider()
+
+                // Groceries
+                TransactionCard(
+                    transaction: Transaction(
+                        id: UUID(),
+                        title: "Weekly Groceries",
+                        subtitle: "Groceries",
+                        amount: -156.32,
+                        category: .groceries,
+                        date: Date().addingTimeInterval(-86400 * 7),
+                        isRecurring: false,
+                        tags: []
+                    ),
+                    context: .feed
+                )
+
+                AlignedDivider()
+
+                // Gas
+                TransactionCard(
+                    transaction: Transaction(
+                        id: UUID(),
+                        title: "Gas Station",
+                        subtitle: "Transportation",
+                        amount: -58.20,
+                        category: .transportation,
+                        date: Date().addingTimeInterval(-86400 * 7),
+                        isRecurring: false,
+                        tags: []
+                    ),
+                    context: .feed
+                )
+
+                AlignedDivider()
+
+                // Lunch
+                TransactionCard(
+                    transaction: Transaction(
+                        id: UUID(),
+                        title: "Lunch",
+                        subtitle: "Dining",
+                        amount: -32.00,
+                        category: .dining,
+                        date: Date().addingTimeInterval(-86400 * 7),
+                        isRecurring: false,
+                        tags: []
+                    ),
+                    context: .feed
+                )
+            }
+            .background(Color.wiseCardBackground)
+            .cornerRadius(12)
+            .padding(.horizontal, 16)
+        }
     }
-    .padding()
     .background(Color.wiseGroupedBackground)
 }

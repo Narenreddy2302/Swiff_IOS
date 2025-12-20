@@ -34,6 +34,31 @@ class DataManager: ObservableObject {
     @Published var operationMessage: String? = nil
     @Published var isPerformingOperation = false
 
+    // MARK: - Real-Time Change Notifications
+
+    /// Revision counter - increment to force view updates across the app
+    @Published var dataRevision: Int = 0
+
+    /// Subject for granular change notifications
+    let dataChangeSubject = PassthroughSubject<DataChange, Never>()
+
+    /// Enum describing what type of data change occurred
+    enum DataChange: Equatable {
+        case personUpdated(UUID), personAdded(UUID), personDeleted(UUID)
+        case groupUpdated(UUID), groupAdded(UUID), groupDeleted(UUID)
+        case subscriptionUpdated(UUID), subscriptionAdded(UUID), subscriptionDeleted(UUID)
+        case transactionUpdated(UUID), transactionAdded(UUID), transactionDeleted(UUID)
+        case splitBillUpdated(UUID), splitBillAdded(UUID), splitBillDeleted(UUID)
+        case accountUpdated(UUID), accountAdded(UUID), accountDeleted(UUID)
+        case allDataReloaded
+    }
+
+    /// Emit a change notification and increment revision counter
+    private func notifyChange(_ change: DataChange) {
+        dataChangeSubject.send(change)
+        dataRevision += 1
+    }
+
     // MARK: - Private Properties
 
     private let persistenceService = PersistenceService.shared
@@ -102,6 +127,9 @@ class DataManager: ObservableObject {
                 await renewalService.processOverdueRenewals()
             }
 
+            // Notify all views that data has been reloaded
+            notifyChange(.allDataReloaded)
+
         } catch {
             self.error = error
             isLoading = false
@@ -122,6 +150,9 @@ class DataManager: ObservableObject {
 
         // Index in Spotlight
         indexPersonInSpotlight(person)
+
+        // Notify views of the change
+        notifyChange(.personAdded(person.id))
     }
 
     func updatePerson(_ person: Person) throws {
@@ -132,6 +163,9 @@ class DataManager: ObservableObject {
 
             // Update in Spotlight
             indexPersonInSpotlight(person)
+
+            // Notify views of the change
+            notifyChange(.personUpdated(person.id))
         }
     }
 
@@ -142,6 +176,9 @@ class DataManager: ObservableObject {
 
         // Remove from Spotlight
         removePersonFromSpotlight(id)
+
+        // Notify views of the change
+        notifyChange(.personDeleted(id))
     }
 
     func searchPeople(byName searchTerm: String) -> [Person] {
@@ -157,6 +194,9 @@ class DataManager: ObservableObject {
         try persistenceService.saveGroup(group)
         groups.append(group)
         print("✅ Group added: \(group.name)")
+
+        // Notify views of the change
+        notifyChange(.groupAdded(group.id))
     }
 
     func updateGroup(_ group: Group) throws {
@@ -164,6 +204,9 @@ class DataManager: ObservableObject {
         if let index = groups.firstIndex(where: { $0.id == group.id }) {
             groups[index] = group
             print("✅ Group updated: \(group.name)")
+
+            // Notify views of the change
+            notifyChange(.groupUpdated(group.id))
         }
     }
 
@@ -171,6 +214,9 @@ class DataManager: ObservableObject {
         try persistenceService.deleteGroup(id: id)
         groups.removeAll { $0.id == id }
         print("✅ Group deleted")
+
+        // Notify views of the change
+        notifyChange(.groupDeleted(id))
     }
 
     func fetchGroupsWithUnsettledExpenses() -> [Group] {
@@ -193,6 +239,9 @@ class DataManager: ObservableObject {
 
         // Index in Spotlight
         indexSubscriptionInSpotlight(subscription)
+
+        // Notify views of the change
+        notifyChange(.subscriptionAdded(subscription.id))
     }
 
     func updateSubscription(_ subscription: Subscription) throws {
@@ -238,6 +287,9 @@ class DataManager: ObservableObject {
 
             // Update in Spotlight
             indexSubscriptionInSpotlight(subscription)
+
+            // Notify views of the change
+            notifyChange(.subscriptionUpdated(subscription.id))
         }
     }
 
@@ -253,6 +305,9 @@ class DataManager: ObservableObject {
 
         // Remove from Spotlight
         removeSubscriptionFromSpotlight(id)
+
+        // Notify views of the change
+        notifyChange(.subscriptionDeleted(id))
     }
 
     func getActiveSubscriptions() -> [Subscription] {
@@ -270,6 +325,9 @@ class DataManager: ObservableObject {
         try persistenceService.saveAccount(account)
         accounts.append(account)
         print("✅ Account added: \(account.name)")
+
+        // Notify views of the change
+        notifyChange(.accountAdded(account.id))
     }
 
     /// Update an existing account
@@ -277,8 +335,11 @@ class DataManager: ObservableObject {
         try persistenceService.updateAccount(account)
         if let index = accounts.firstIndex(where: { $0.id == account.id }) {
             accounts[index] = account
+            print("✅ Account updated: \(account.name)")
+
+            // Notify views of the change
+            notifyChange(.accountUpdated(account.id))
         }
-        print("✅ Account updated: \(account.name)")
     }
 
     /// Delete an account
@@ -286,6 +347,9 @@ class DataManager: ObservableObject {
         try persistenceService.deleteAccount(id: id)
         accounts.removeAll { $0.id == id }
         print("✅ Account deleted")
+
+        // Notify views of the change
+        notifyChange(.accountDeleted(id))
     }
 
     /// Get the default account
@@ -402,6 +466,9 @@ class DataManager: ObservableObject {
 
         // Index in Spotlight
         indexTransactionInSpotlight(transaction)
+
+        // Notify views of the change
+        notifyChange(.transactionAdded(transaction.id))
     }
 
     func updateTransaction(_ transaction: Transaction) throws {
@@ -413,6 +480,9 @@ class DataManager: ObservableObject {
 
             // Update in Spotlight
             indexTransactionInSpotlight(transaction)
+
+            // Notify views of the change
+            notifyChange(.transactionUpdated(transaction.id))
         }
     }
 
@@ -423,6 +493,9 @@ class DataManager: ObservableObject {
 
         // Remove from Spotlight
         removeTransactionFromSpotlight(id)
+
+        // Notify views of the change
+        notifyChange(.transactionDeleted(id))
     }
 
     func getCurrentMonthTransactions() -> [Transaction] {
@@ -548,6 +621,9 @@ class DataManager: ObservableObject {
         try updateBalancesForSplitBill(splitBill)
 
         print("✅ Split bill added: \(splitBill.title)")
+
+        // Notify views of the change
+        notifyChange(.splitBillAdded(splitBill.id))
     }
 
     func updateSplitBill(_ splitBill: SplitBill) throws {
@@ -555,6 +631,9 @@ class DataManager: ObservableObject {
         if let index = splitBills.firstIndex(where: { $0.id == splitBill.id }) {
             splitBills[index] = splitBill
             print("✅ Split bill updated: \(splitBill.title)")
+
+            // Notify views of the change
+            notifyChange(.splitBillUpdated(splitBill.id))
         }
     }
 
@@ -562,6 +641,9 @@ class DataManager: ObservableObject {
         try persistenceService.deleteSplitBill(id: id)
         splitBills.removeAll { $0.id == id }
         print("✅ Split bill deleted")
+
+        // Notify views of the change
+        notifyChange(.splitBillDeleted(id))
     }
 
     func markParticipantAsPaid(splitBillId: UUID, participantId: UUID) throws {

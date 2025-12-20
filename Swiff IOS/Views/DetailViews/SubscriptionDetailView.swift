@@ -129,6 +129,7 @@ struct SubscriptionDetailView: View {
         .background(Color.wiseBackground)
         .navigationTitle(subscription?.name ?? "Subscription")
         .navigationBarTitleDisplayMode(.inline)
+        .observeEntity(subscriptionId, type: .subscription, dataManager: dataManager)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingEditSheet = true }) {
@@ -231,12 +232,11 @@ struct SubscriptionDetailView: View {
 
             // Recent price changes (max 3)
             VStack(spacing: 0) {
-                ForEach(Array(priceHistory.prefix(3))) { change in
+                ForEach(Array(priceHistory.prefix(3).enumerated()), id: \.element.id) { index, change in
                     PriceChangeRow(priceChange: change)
 
-                    if change.id != priceHistory.prefix(3).last?.id {
-                        Divider()
-                            .padding(.leading, 56)
+                    if index < priceHistory.prefix(3).count - 1 {
+                        AlignedDivider()
                     }
                 }
             }
@@ -742,27 +742,21 @@ struct SubscriptionDetailView: View {
                     .font(.spotifyHeadingMedium)
                     .foregroundColor(.wisePrimaryText)
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(spacing: 0) {
                     Text("Split between \(sharedPeople.count + 1) people")
                         .font(.spotifyBodyMedium)
                         .foregroundColor(.wiseSecondaryText)
+                        .padding(.bottom, 12)
 
                     if sharedPeople.count > 0 {
-                        ForEach(sharedPeople) { person in
-                            HStack(spacing: 12) {
-                                AvatarView(person: person, size: .medium, style: .solid)
+                        VStack(spacing: 0) {
+                            ForEach(Array(sharedPeople.enumerated()), id: \.element.id) { index, person in
+                                sharedPersonRow(person: person, subscription: subscription)
 
-                                Text(person.name)
-                                    .font(.spotifyBodyMedium)
-                                    .foregroundColor(.wisePrimaryText)
-
-                                Spacer()
-
-                                Text(String(format: "$%.2f", subscription.monthlyEquivalent / Double(sharedPeople.count + 1)))
-                                    .font(.spotifyNumberSmall)
-                                    .foregroundColor(.wiseForestGreen)
+                                if index < sharedPeople.count - 1 {
+                                    AlignedDivider()
+                                }
                             }
-                            .padding(.vertical, 8)
                         }
                     }
                 }
@@ -951,6 +945,50 @@ struct SubscriptionDetailView: View {
                 .foregroundColor(.wisePrimaryText)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private func sharedPersonRow(person: Person, subscription: Subscription) -> some View {
+        HStack(spacing: 14) {
+            // Initials avatar (44x44)
+            initialsAvatarForPerson(person: person)
+
+            // Name and email
+            VStack(alignment: .leading, spacing: 3) {
+                Text(person.name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
+
+                Text(person.email)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            // Amount
+            Text(String(format: "$%.2f", subscription.monthlyEquivalent / Double(sharedPeople.count + 1)))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(AmountColors.positive)
+        }
+        .padding(.vertical, 14)
+    }
+
+    private func initialsAvatarForPerson(person: Person) -> some View {
+        let initials = InitialsGenerator.generate(from: person.name)
+        let avatarColor = InitialsAvatarColors.color(for: person.name)
+
+        return ZStack {
+            Circle()
+                .fill(avatarColor)
+                .frame(width: 44, height: 44)
+
+            Text(initials)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+        }
     }
 
     // MARK: - Helper Functions

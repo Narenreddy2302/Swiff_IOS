@@ -40,6 +40,15 @@ struct PersonDetailView: View {
         return dataManager.getSplitBillsForPerson(personId: person.id)
     }
 
+    var personTransactions: [Transaction] {
+        guard let person = person else { return [] }
+        return dataManager.transactions
+            .filter { transaction in
+                transaction.title.contains(person.name) || transaction.subtitle.contains(person.name)
+            }
+            .sorted { $0.date > $1.date }
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -65,7 +74,12 @@ struct PersonDetailView: View {
                         splitBillsSection
                     }
 
-                    // 6. Delete Person Button
+                    // 6. Recent Activity Section
+                    if !personTransactions.isEmpty {
+                        recentActivitySection
+                    }
+
+                    // 7. Delete Person Button
                     deletePersonButton
                 }
                 .padding(.bottom, 40)
@@ -76,6 +90,7 @@ struct PersonDetailView: View {
         .background(Color.wiseBackground)
         .navigationTitle(person?.name ?? "Person")
         .navigationBarTitleDisplayMode(.inline)
+        .observeEntityWithRelated(personId, type: .person, relatedTypes: [.splitBill, .transaction], dataManager: dataManager)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Edit") {
@@ -374,7 +389,7 @@ struct PersonDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(personSplitBills) { splitBill in
-                        NavigationLink(destination: SplitBillDetailView(splitBill: splitBill)) {
+                        NavigationLink(destination: SplitBillDetailView(splitBillId: splitBill.id)) {
                             SplitBillCard(splitBill: splitBill)
                                 .frame(width: 320)
                         }
@@ -384,6 +399,125 @@ struct PersonDetailView: View {
                 .padding(.horizontal, 16)
             }
         }
+    }
+
+    // MARK: - Recent Activity Section
+
+    @ViewBuilder
+    private var recentActivitySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Section Header
+            HStack {
+                Image(systemName: "clock.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.wiseBlue)
+
+                Text("Recent Activity")
+                    .font(.spotifyHeadingMedium)
+                    .foregroundColor(.wisePrimaryText)
+
+                Spacer()
+
+                Text("\(personTransactions.count)")
+                    .font(.spotifyLabelMedium)
+                    .foregroundColor(.wiseSecondaryText)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(Color.wiseBorder.opacity(0.3))
+                    )
+            }
+            .padding(.horizontal, 16)
+
+            // Transaction List
+            VStack(spacing: 0) {
+                ForEach(Array(personTransactions.prefix(5).enumerated()), id: \.element.id) { index, transaction in
+                    NavigationLink(destination: TransactionDetailView(transactionId: transaction.id)) {
+                        transactionRow(transaction)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    if index < min(4, personTransactions.count - 1) {
+                        AlignedDivider()
+                    }
+                }
+            }
+            .background(Color.wiseCardBackground)
+            .cornerRadius(12)
+            .cardShadow()
+            .padding(.horizontal, 16)
+        }
+    }
+
+    // MARK: - Transaction Row
+
+    @ViewBuilder
+    private func transactionRow(_ transaction: Transaction) -> some View {
+        HStack(spacing: 14) {
+            // Initials avatar
+            initialsAvatar(for: transaction)
+
+            // Title and description
+            VStack(alignment: .leading, spacing: 3) {
+                Text(transaction.title)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
+
+                Text(transaction.subtitle)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            // Amount and time
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(formattedAmount(for: transaction))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(amountColor(for: transaction))
+
+                Text(relativeTime(for: transaction))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+            }
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 20)
+    }
+
+    @ViewBuilder
+    private func initialsAvatar(for transaction: Transaction) -> some View {
+        ZStack {
+            Circle()
+                .fill(avatarColor(for: transaction))
+                .frame(width: 44, height: 44)
+
+            Text(InitialsGenerator.generate(from: transaction.title))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+        }
+    }
+
+    private func avatarColor(for transaction: Transaction) -> Color {
+        transaction.category.pastelAvatarColor
+    }
+
+    private func amountColor(for transaction: Transaction) -> Color {
+        transaction.isExpense ? AmountColors.negative : AmountColors.positive
+    }
+
+    private func formattedAmount(for transaction: Transaction) -> String {
+        let sign = transaction.isExpense ? "- " : "+ "
+        return "\(sign)\(transaction.formattedAmount)"
+    }
+
+    private func relativeTime(for transaction: Transaction) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: transaction.date, relativeTo: Date())
     }
 
     // MARK: - Delete Button

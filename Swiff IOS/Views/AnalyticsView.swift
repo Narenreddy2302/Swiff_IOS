@@ -68,7 +68,7 @@ struct AnalyticsView: View {
 
                     // Task 6.5 & 6.6: Animated category list rows with percentage badges and empty state
                     categoryListSection
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 16)
                         .padding(.bottom, 28)
 
                     // Show additional sections only for expenses
@@ -309,31 +309,37 @@ struct AnalyticsView: View {
                 // Task 6.6: Empty state for no data scenarios
                 emptyCategoryState
             } else {
-                // Task 6.5: Animated category list rows with premium entrance
-                ForEach(Array(categories.enumerated()), id: \.element.id) { index, category in
-                    // Task 6.12: Category drill-down navigation to filtered transaction list
-                    Button(action: {
-                        HapticManager.shared.light()
-                        selectedCategory = category
-                    }) {
-                        WalletCategoryRow(
-                            category: category,
-                            animate: animateCategories,
-                            index: index
+                // Task 6.5: Animated category list rows with feed page style (grouped container)
+                VStack(spacing: 0) {
+                    ForEach(Array(categories.enumerated()), id: \.element.id) { index, category in
+                        // Task 6.12: Category drill-down navigation to filtered transaction list
+                        Button(action: {
+                            HapticManager.shared.light()
+                            selectedCategory = category
+                        }) {
+                            WalletCategoryRow(
+                                category: category,
+                                animate: animateCategories,
+                                index: index,
+                                isExpense: selectedViewType == .expenses
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .opacity(animateCategories ? 1 : 0)
+                        .offset(y: animateCategories ? 0 : 10)
+                        .animation(
+                            .categoryEntrance.delay(0.05 * Double(index)),
+                            value: animateCategories
                         )
+
+                        // Divider between rows (aligned with text, like feed page)
+                        if index < categories.count - 1 {
+                            AlignedDivider()
+                        }
                     }
-                    .buttonStyle(CategoryRowButtonStyle(categoryColor: category.color))
-                    .opacity(animateCategories ? 1 : 0)
-                    .offset(x: animateCategories ? 0 : -30, y: animateCategories ? 0 : 15)
-                    .animation(
-                        .categoryEntrance.delay(0.1 * pow(0.85, Double(index))),
-                        value: animateCategories
-                    )
-                    .transition(.asymmetric(
-                        insertion: .scale(scale: 0.95).combined(with: .opacity),
-                        removal: .opacity.combined(with: .offset(x: -20))
-                    ))
                 }
+                .opacity(animateCategories ? 1 : 0)
+                .animation(.categoryEntrance, value: animateCategories)
             }
         }
         .animation(.categoryEntrance, value: selectedViewType)
@@ -1014,7 +1020,7 @@ struct FilteredTransactionListView: View {
 
                             if transaction.id != filteredTransactions.last?.id {
                                 Divider()
-                                    .padding(.leading, 76)
+                                    .padding(.leading, 80)
                                     .background(Color.wiseSeparator)
                             }
                         }
@@ -1034,9 +1040,12 @@ struct WalletCategoryRow: View {
     let category: AnalyticsCategoryData
     let animate: Bool
     let index: Int
+    let isExpense: Bool
 
     @EnvironmentObject var dataManager: DataManager
     @State private var iconAnimated = false
+
+    // MARK: - Computed Properties
 
     private var transactionCount: Int {
         // Count transactions in this category
@@ -1046,48 +1055,46 @@ struct WalletCategoryRow: View {
         return filtered.count
     }
 
+    /// Generate initials from category name (1-2 characters)
+    private var categoryInitials: String {
+        InitialsGenerator.generate(from: category.name)
+    }
+
+    /// Get avatar color based on category name
+    private var avatarColor: Color {
+        InitialsAvatarColors.color(for: category.name)
+    }
+
+    // MARK: - Body
+
     var body: some View {
-        HStack(spacing: 12) {
-            // Icon with three-stage entrance animation
-            ZStack {
-                Circle()
-                    .fill(category.color.opacity(0.2))
-                    .frame(width: 48, height: 48)
-                    .scaleEffect(iconAnimated ? 1.0 : 0.8)
+        HStack(spacing: 14) {
+            // Initials-based avatar (44x44 circle)
+            initialsAvatar
 
-                Image(systemName: category.icon)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(category.color)
-                    .scaleEffect(iconAnimated ? 1.0 : 0.7)
-            }
-            .animation(.categoryEntrance.delay(Double(index) * 0.05 + 0.1), value: iconAnimated)
-
-            // Category name and subtitle
-            VStack(alignment: .leading, spacing: 4) {
+            // Left column: Title + Description
+            VStack(alignment: .leading, spacing: 3) {
                 Text(category.name)
-                    .font(.spotifyBodyLarge)
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
 
-                // Subtitle: "23 transactions • 34.5%"
+                // Description: "X transactions • Y%"
                 Text("\(transactionCount) transaction\(transactionCount == 1 ? "" : "s") • \(String(format: "%.1f", category.percentage))%")
-                    .font(.spotifyBodySmall)
-                    .foregroundColor(.wiseSecondaryText)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .lineLimit(1)
             }
 
             Spacer()
 
             // Amount
             Text(formatCurrency(category.amount))
-                .font(.spotifyNumberMedium)
-                .foregroundColor(.wisePrimaryText)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(isExpense ? AmountColors.negative : AmountColors.positive)
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 20)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.wiseCardBackground)
-        )
-        .cardShadow()
+        .padding(.vertical, 14)
+        .padding(.horizontal, 4)
         .onChange(of: animate) { _, newValue in
             if newValue {
                 iconAnimated = false
@@ -1106,6 +1113,24 @@ struct WalletCategoryRow: View {
             }
         }
     }
+
+    // MARK: - Initials Avatar
+
+    private var initialsAvatar: some View {
+        ZStack {
+            Circle()
+                .fill(avatarColor)
+                .frame(width: 44, height: 44)
+
+            Text(categoryInitials)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+        }
+        .scaleEffect(iconAnimated ? 1.0 : 0.8)
+        .animation(.categoryEntrance.delay(Double(index) * 0.05 + 0.1), value: iconAnimated)
+    }
+
+    // MARK: - Helper Methods
 
     private func formatCurrency(_ amount: Double) -> String {
         let formatter = NumberFormatter()
@@ -1248,62 +1273,95 @@ struct CategoryProgressRow: View {
 struct TransactionHistoryRow: View {
     let transaction: Transaction
 
+    // MARK: - Computed Properties
+
+    private var isIncoming: Bool {
+        !transaction.isExpense
+    }
+
+    private var statusText: String {
+        transaction.paymentStatus.displayText
+    }
+
+    private var amountColor: Color {
+        isIncoming ? .wiseSuccess : .wiseError
+    }
+
+    private var formattedAmountWithSign: String {
+        let sign = isIncoming ? "+" : "-"
+        return "\(sign)\(transaction.formattedAmount)"
+    }
+
+    private var relativeTime: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: transaction.date, relativeTo: Date())
+    }
+
     var body: some View {
-        HStack(spacing: 16) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(iconBackgroundColor)
-                    .frame(width: 44, height: 44)
+        HStack(spacing: 12) {
+            // Icon with status indicator
+            iconWithStatusIndicator
 
-                Image(systemName: transaction.category.icon)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(iconColor)
-            }
-
-            // Details
+            // Title and status
             VStack(alignment: .leading, spacing: 4) {
                 Text(transaction.title)
-                    .font(.spotifyHeadingSmall)
+                    .font(.spotifyBodyLarge)
                     .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
 
-                Text(formatDate(transaction.date))
-                    .font(.spotifyBodyMedium)
+                Text(statusText)
+                    .font(.spotifyBodySmall)
                     .foregroundColor(.wiseSecondaryText)
             }
 
             Spacer()
 
-            // Amount
-            Text(transaction.isExpense ? "-\(formatCurrency(abs(transaction.amount)))" : "+\(formatCurrency(transaction.amount))")
-                .font(.spotifyNumberMedium)
-                .foregroundColor(transaction.isExpense ? .wiseError : .wiseBrightGreen)
+            // Amount and time
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(formattedAmountWithSign)
+                    .font(.spotifyNumberMedium)
+                    .foregroundColor(amountColor)
+
+                Text(relativeTime)
+                    .font(.spotifyBodySmall)
+                    .foregroundColor(.wiseSecondaryText)
+            }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
         .contentShape(Rectangle())
     }
 
-    private var iconColor: Color {
-        return transaction.category.color
-    }
+    // MARK: - Icon with Status Indicator
 
-    private var iconBackgroundColor: Color {
-        iconColor.opacity(0.15)
-    }
+    private var iconWithStatusIndicator: some View {
+        ZStack(alignment: .bottomTrailing) {
+            // Main icon circle
+            Circle()
+                .fill(Color(.systemGray6))
+                .frame(width: 48, height: 48)
+                .overlay(
+                    Image(systemName: transaction.category.icon)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.wisePrimaryText)
+                )
 
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd MMMM yyyy"
-        return formatter.string(from: date)
-    }
-
-    private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+            // Status indicator (plus/minus badge)
+            Circle()
+                .fill(Color.wiseCardBackground)
+                .frame(width: 18, height: 18)
+                .overlay(
+                    Circle()
+                        .fill(isIncoming ? Color.wiseSuccess : Color.wiseError)
+                        .frame(width: 14, height: 14)
+                        .overlay(
+                            Image(systemName: isIncoming ? "plus" : "minus")
+                                .font(.system(size: 8, weight: .bold))
+                                .foregroundColor(.white)
+                        )
+                )
+                .offset(x: 2, y: 2)
+        }
     }
 }
 

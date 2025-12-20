@@ -22,7 +22,7 @@ struct TransactionListView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Section header
             Text(sectionTitle)
-                .font(.spotifyHeadingMedium)
+                .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.wisePrimaryText)
                 .padding(.bottom, 12)
 
@@ -35,8 +35,7 @@ struct TransactionListView: View {
 
                     // Divider between items (not after last item)
                     if transaction.id != transactions.last?.id {
-                        Divider()
-                            .padding(.leading, 76)
+                        AlignedDivider()
                     }
                 }
             }

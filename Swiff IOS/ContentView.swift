@@ -309,7 +309,7 @@ struct TopHeaderSection: View {
 
             // Logo in center
             Text("Swiff.")
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(.spotifyDisplayMedium)
                 .foregroundColor(.wiseForestGreen)
 
             Spacer()
@@ -451,18 +451,11 @@ struct FinancialOverviewGrid: View {
                 animatedExpenses = dataManager.calculateMonthlyExpenses()
             }
         }
-        .onChange(of: dataManager.people.count) { oldValue, newValue in
+        .onChange(of: dataManager.dataRevision) { oldValue, newValue in
+            // Real-time update: Animate financial values when any data changes
             withAnimation(.easeOut(duration: 0.5)) {
                 animatedBalance = totalBalance
-            }
-        }
-        .onChange(of: dataManager.subscriptions.count) { oldValue, newValue in
-            withAnimation(.easeOut(duration: 0.5)) {
                 animatedSubscriptions = dataManager.calculateTotalMonthlyCost()
-            }
-        }
-        .onChange(of: dataManager.transactions.count) { oldValue, newValue in
-            withAnimation(.easeOut(duration: 0.5)) {
                 animatedIncome = dataManager.calculateMonthlyIncome()
                 animatedExpenses = dataManager.calculateMonthlyExpenses()
             }
@@ -1870,6 +1863,7 @@ struct RecentActivityView: View {
     @State private var searchText = ""
     @State private var showingFilterSheet = false
     @State private var showingAddTransactionSheet = false
+    @State private var showingSearchBar = false
     @State private var transactionToDelete: Transaction?
     @State private var showingDeleteAlert = false
 
@@ -1941,6 +1935,7 @@ struct RecentActivityView: View {
                         showingFilterSheet: $showingFilterSheet,
                         showingAddTransactionSheet: $showingAddTransactionSheet,
                         showingAdvancedFilterSheet: $showingAdvancedFilterSheet,
+                        showingSearchBar: $showingSearchBar,
                         activeFilterCount: advancedFilter.activeFilterCount
                     )
 
@@ -1960,38 +1955,46 @@ struct RecentActivityView: View {
                         )
                     } else {
                         ScrollView {
-                            LazyVStack(spacing: 12) {
-                                // Page 2: Group transactions by date
+                            VStack(spacing: 0) {
+                                // Group transactions by date
                                 let groupedTransactions = filteredTransactions.groupedByDateSections()
-                                ForEach(groupedTransactions, id: \.sectionDate) { section in
-                                    VStack(spacing: 12) {
-                                        // Page 2: Date Group Header
-                                        TransactionGroupHeader(
-                                            date: section.sectionDate,
-                                            transactionCount: section.transactions.count
-                                        )
+                                ForEach(Array(groupedTransactions.enumerated()), id: \.element.sectionDate) { sectionIndex, section in
+                                    // Date Group Header
+                                    TransactionGroupHeader(
+                                        date: section.sectionDate,
+                                        transactionCount: section.transactions.count
+                                    )
+                                    .padding(.top, sectionIndex == 0 ? 0 : 16)
+                                    .padding(.bottom, 8)
 
-                                        ForEach(section.transactions) { transaction in
-                                            NavigationLink(destination: TransactionDetailView(transactionId: transaction.id)) {
-                                                ListRowFactory.card(for: transaction, context: .feed)
+                                    // Transactions for this date
+                                    ForEach(Array(section.transactions.enumerated()), id: \.element.id) { index, transaction in
+                                        NavigationLink(destination: TransactionDetailView(transactionId: transaction.id)) {
+                                            ListRowFactory.card(for: transaction, context: .feed)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                            Button(role: .destructive) {
+                                                HapticManager.shared.heavy()
+                                                transactionToDelete = transaction
+                                                showingDeleteAlert = true
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
                                             }
-                                            .buttonStyle(PlainButtonStyle())
-                                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                                Button(role: .destructive) {
-                                                    HapticManager.shared.heavy()
-                                                    transactionToDelete = transaction
-                                                    showingDeleteAlert = true
-                                                } label: {
-                                                    Label("Delete", systemImage: "trash")
-                                                }
-                                            }
+                                        }
+
+                                        // Divider after each transaction (except last in last section)
+                                        let isLastSection = sectionIndex == groupedTransactions.count - 1
+                                        let isLastTransaction = index == section.transactions.count - 1
+                                        if !(isLastSection && isLastTransaction) {
+                                            AlignedDivider()
                                         }
                                     }
                                 }
                             }
                             .padding(.horizontal, 16)
-                            .padding(.top, 8)
                         }
+                        .background(Color.wiseBackground)
                         .refreshable {
                             HapticManager.shared.pullToRefresh()
                             dataManager.loadAllData()
@@ -2043,6 +2046,7 @@ struct FeedHeaderSection: View {
     @Binding var showingFilterSheet: Bool
     @Binding var showingAddTransactionSheet: Bool
     @Binding var showingAdvancedFilterSheet: Bool
+    @Binding var showingSearchBar: Bool
     let activeFilterCount: Int
 
     @State private var isAddButtonPressed = false
@@ -2061,10 +2065,8 @@ struct FeedHeaderSection: View {
                 HStack(spacing: 16) {
                     Button(action: {
                         HapticManager.shared.light()
-                        // Focus on search bar or toggle search visibility
-                        withAnimation {
-                            // The search bar is already visible in the UI, so this button could scroll to it
-                            // or we could add a showingSearch state if needed
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingSearchBar.toggle()
                         }
                     }) {
                         Image(systemName: "magnifyingglass")
@@ -2081,29 +2083,32 @@ struct FeedHeaderSection: View {
             }
             
             // Search Bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.wiseSecondaryText)
-                    .font(.system(size: 16))
-                
-                TextField("Search transactions...", text: $searchText)
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wisePrimaryText)
-                
-                if !searchText.isEmpty {
-                    Button(action: { searchText = "" }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.wiseSecondaryText)
-                            .font(.system(size: 16))
+            if showingSearchBar {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.wiseSecondaryText)
+                        .font(.system(size: 16))
+
+                    TextField("Search transactions...", text: $searchText)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wisePrimaryText)
+
+                    if !searchText.isEmpty {
+                        Button(action: { searchText = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.wiseSecondaryText)
+                                .font(.system(size: 16))
+                        }
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.wiseBorder.opacity(0.3))
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.wiseBorder.opacity(0.3))
-            )
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
@@ -3397,30 +3402,9 @@ struct PeopleStatCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(color)
-
-                Spacer()
-
-                // People count indicator
-                if peopleCount > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 10))
-                        Text("\(peopleCount)")
-                            .font(.spotifyLabelSmall)
-                    }
-                    .foregroundColor(.wiseSecondaryText)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(Color.wiseBorder.opacity(0.3))
-                    )
-                }
-            }
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(color)
 
             Text(title.uppercased())
                 .font(.spotifyLabelSmall)
@@ -3783,22 +3767,9 @@ struct PeopleFilterPill: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
-                Text(displayText)
-                    .font(.spotifyLabelMedium)
-
-                if count > 0 && filter != .all {
-                    Text("\(count)")
-                        .font(.spotifyLabelSmall)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(isSelected ? Color.white.opacity(0.2) : Color.wiseBorder.opacity(0.5))
-                        )
-                }
-            }
-            .foregroundColor(isSelected ? .white : .wisePrimaryText)
+            Text(displayText)
+                .font(.spotifyLabelMedium)
+                .foregroundColor(isSelected ? .white : .wisePrimaryText)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .background(
@@ -4034,8 +4005,8 @@ struct PeopleListView: View {
                 }
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(filteredPeople) { person in
+                    VStack(spacing: 0) {
+                        ForEach(Array(filteredPeople.enumerated()), id: \.element.id) { index, person in
                             if isSelectionMode {
                                 // Selection mode: Tap to select/deselect
                                 Button(action: {
@@ -4091,6 +4062,11 @@ struct PeopleListView: View {
                                         .tint(.green)
                                     }
                                 }
+                            }
+
+                            // Add divider between rows (not after last)
+                            if index < filteredPeople.count - 1 {
+                                AlignedDivider()
                             }
                         }
                     }
@@ -4861,8 +4837,8 @@ struct GroupsListView: View {
                 }
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(filteredGroups) { group in
+                    VStack(spacing: 0) {
+                        ForEach(Array(filteredGroups.enumerated()), id: \.element.id) { index, group in
                             NavigationLink(destination: GroupDetailView(groupId: group.id)) {
                                 ListRowFactory.card(for: group)
                             }
@@ -4884,6 +4860,11 @@ struct GroupsListView: View {
                                     Label("Edit", systemImage: "pencil")
                                 }
                                 .tint(.blue)
+                            }
+
+                            // Add divider between rows (not after last)
+                            if index < filteredGroups.count - 1 {
+                                AlignedDivider()
                             }
                         }
                     }
@@ -4996,6 +4977,20 @@ struct AvatarPickerSheet: View {
     @State private var selectedEmoji = "👨🏻‍💼"
     @State private var selectedColorIndex = 0
     @State private var isProcessingImage = false
+    @State private var selectedMemojiImage: UIImage?
+
+    // Check if Memoji picker is available (iOS 18+)
+    private var isMemojiAvailable: Bool {
+        if #available(iOS 18.0, *) {
+            return true
+        }
+        return false
+    }
+
+    // Tab indices - adjusted based on iOS version
+    private var memojiTabIndex: Int { 1 }
+    private var emojiTabIndex: Int { isMemojiAvailable ? 2 : 1 }
+    private var initialsTabIndex: Int { isMemojiAvailable ? 3 : 2 }
 
     // Expanded emoji list with diverse options
     private let availableEmojis = [
@@ -5010,17 +5005,22 @@ struct AvatarPickerSheet: View {
     ]
 
     private var previewAvatarType: AvatarType {
-        switch selectedTab {
-        case 0: // Photo
+        if selectedTab == 0 { // Photo
             if case .photo(let data) = selectedAvatarType, selectedPhotoItem == nil {
                 return .photo(data)
             }
             return .initials(AvatarGenerator.generateInitials(from: personName), colorIndex: 0)
-        case 1: // Emoji
+        } else if isMemojiAvailable && selectedTab == memojiTabIndex { // Memoji (iOS 18+)
+            if let memojiImage = selectedMemojiImage,
+               let processedData = AvatarGenerator.processImage(memojiImage) {
+                return .photo(processedData)
+            }
+            return .initials(AvatarGenerator.generateInitials(from: personName), colorIndex: 0)
+        } else if selectedTab == emojiTabIndex { // Emoji
             return .emoji(selectedEmoji)
-        case 2: // Initials
+        } else if selectedTab == initialsTabIndex { // Initials
             return .initials(AvatarGenerator.generateInitials(from: personName), colorIndex: selectedColorIndex)
-        default:
+        } else {
             return .emoji("👤")
         }
     }
@@ -5057,8 +5057,11 @@ struct AvatarPickerSheet: View {
                 // Tab Selector
                 Picker("Avatar Source", selection: $selectedTab) {
                     Label("Photo", systemImage: "photo").tag(0)
-                    Label("Emoji", systemImage: "face.smiling").tag(1)
-                    Label("Initials", systemImage: "textformat").tag(2)
+                    if isMemojiAvailable {
+                        Label("Memoji", systemImage: "face.smiling.inverse").tag(memojiTabIndex)
+                    }
+                    Label("Emoji", systemImage: "face.smiling").tag(emojiTabIndex)
+                    Label("Initials", systemImage: "textformat").tag(initialsTabIndex)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 16)
@@ -5069,11 +5072,16 @@ struct AvatarPickerSheet: View {
                     // Photo Tab
                     photoPickerView.tag(0)
 
+                    // Memoji Tab (iOS 18+ only)
+                    if isMemojiAvailable {
+                        memojiPickerView.tag(memojiTabIndex)
+                    }
+
                     // Emoji Tab
-                    emojiGridView.tag(1)
+                    emojiGridView.tag(emojiTabIndex)
 
                     // Initials Tab
-                    initialsBuilderView.tag(2)
+                    initialsBuilderView.tag(initialsTabIndex)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
             }
@@ -5144,6 +5152,18 @@ struct AvatarPickerSheet: View {
             }
 
             Spacer()
+        }
+    }
+
+    // MARK: - Memoji Picker View (iOS 18+)
+    @ViewBuilder
+    private var memojiPickerView: some View {
+        if #available(iOS 18.0, *) {
+            MemojiPickerView(selectedImage: $selectedMemojiImage)
+        } else {
+            // Fallback for older iOS versions (should not be reached due to isMemojiAvailable check)
+            Text("Memoji picker requires iOS 18 or later")
+                .foregroundColor(.wiseSecondaryText)
         }
     }
 
@@ -5243,18 +5263,20 @@ struct AvatarPickerSheet: View {
     }
 
     private func saveAvatar() {
-        switch selectedTab {
-        case 0: // Photo - already set in loadPhoto
-            break
-        case 1: // Emoji
+        if selectedTab == 0 { // Photo - already set in loadPhoto
+            // Photo is already set via loadPhoto()
+        } else if isMemojiAvailable && selectedTab == memojiTabIndex { // Memoji
+            if let memojiImage = selectedMemojiImage,
+               let processedData = AvatarGenerator.processImage(memojiImage) {
+                selectedAvatarType = .photo(processedData)
+            }
+        } else if selectedTab == emojiTabIndex { // Emoji
             selectedAvatarType = .emoji(selectedEmoji)
-        case 2: // Initials
+        } else if selectedTab == initialsTabIndex { // Initials
             selectedAvatarType = .initials(
                 AvatarGenerator.generateInitials(from: personName),
                 colorIndex: selectedColorIndex
             )
-        default:
-            break
         }
 
         isPresented = false
@@ -6502,13 +6524,10 @@ struct EnhancedPersonalSubscriptionsView: View {
 
                                 // Add divider between items (not after the last one)
                                 if index < subscriptions.count - 1 {
-                                    Divider()
-                                        .padding(.leading, 76)
+                                    AlignedDivider()
                                 }
                             }
                         }
-                        .background(Color.wiseCardBackground)
-                        .cornerRadius(16)
                         .padding(.horizontal, 16)
                     } else {
                         // Grid View
@@ -6536,7 +6555,7 @@ struct EnhancedPersonalSubscriptionsView: View {
                     }
                 }
                 .scrollDismissesKeyboard(.interactively)
-                .background(Color.wiseGroupedBackground)
+                .background(Color.wiseBackground)
                 .refreshable {
                     HapticManager.shared.pullToRefresh()
                     dataManager.loadAllData()
@@ -6782,23 +6801,27 @@ struct EnhancedSharedSubscriptionsView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(sharedSubscriptions) { sharedSub in
+                        ForEach(Array(sharedSubscriptions.enumerated()), id: \.element.id) { index, sharedSub in
                             SharedSubscriptionRow(
                                 sharedSubscription: sharedSub,
                                 people: people
                             )
 
-                            Divider()
-                                .padding(.leading, 76)
+                            // Add divider between items (not after the last one)
+                            if index < sharedSubscriptions.count - 1 {
+                                AlignedDivider()
+                            }
                         }
                     }
+                    .padding(.horizontal, 16)
                 }
+                .background(Color.wiseBackground)
             }
         }
     }
 }
 
-// MARK: - Shared Subscription Row (Using UnifiedListRowV2)
+// MARK: - Shared Subscription Row (Initials-based design matching SubscriptionCard)
 private struct SharedSubscriptionRow: View {
     let sharedSubscription: SharedSubscription
     let people: [Person]
@@ -6813,29 +6836,27 @@ private struct SharedSubscriptionRow: View {
         }
     }
 
-    private var statusIcon: String {
-        sharedSubscription.isAccepted ? "✓" : "⚠"
+    private var displayName: String {
+        sharedSubscription.notes.isEmpty ? "Shared Subscription" : sharedSubscription.notes
     }
 
-    private var statusText: String {
-        sharedSubscription.isAccepted ? "Active" : "Pending"
+    private var initials: String {
+        InitialsGenerator.generate(from: displayName)
     }
 
-    private var subtitle: String {
-        var components: [String] = []
-        components.append("\(statusIcon) \(statusText)")
+    private var avatarColor: Color {
+        InitialsAvatarColors.purple  // Purple for shared subscriptions
+    }
 
+    private var billingCycleText: String {
         let totalPeople = sharedWithPeople.count + 1
         if totalPeople > 2 {
-            components.append("Shared with \(totalPeople)")
+            return "Shared with \(totalPeople) people"
         } else if let sharedBy = sharedByPerson {
-            components.append("Shared with \(sharedBy.name)")
+            return "Shared with \(sharedBy.name)"
         } else {
-            components.append("Shared")
+            return "Shared"
         }
-
-        components.append(String(format: "$%.2f/person", sharedSubscription.individualCost))
-        return components.joined(separator: " • ")
     }
 
     private var totalPrice: Double {
@@ -6843,16 +6864,60 @@ private struct SharedSubscriptionRow: View {
         return sharedSubscription.individualCost * Double(totalPeople)
     }
 
+    private var formattedPriceWithSign: String {
+        String(format: "- $%.2f", totalPrice)
+    }
+
+    private var costPerPersonText: String {
+        String(format: "$%.2f/person", sharedSubscription.individualCost)
+    }
+
+    private var amountColor: Color {
+        AmountColors.negative
+    }
+
     var body: some View {
-        UnifiedListRowV2(
-            iconName: "person.2.fill",
-            iconColor: .wiseBlue,
-            title: sharedSubscription.notes.isEmpty ? "Shared Subscription" : sharedSubscription.notes,
-            subtitle: subtitle,
-            value: String(format: "$%.2f", totalPrice),
-            valueColor: .wisePrimaryText,
-            showChevron: false
-        )
+        HStack(spacing: 14) {
+            // Initials avatar
+            ZStack {
+                Circle()
+                    .fill(avatarColor)
+                    .frame(width: 44, height: 44)
+
+                Text(initials)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+            }
+
+            // Name and billing info
+            VStack(alignment: .leading, spacing: 3) {
+                Text(displayName)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
+
+                Text(billingCycleText)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            // Price and cost per person
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(formattedPriceWithSign)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(amountColor)
+
+                Text(costPerPersonText)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+            }
+        }
+        .padding(.vertical, 14)
+        .padding(.horizontal, 12)
+        .contentShape(Rectangle())
     }
 }
 

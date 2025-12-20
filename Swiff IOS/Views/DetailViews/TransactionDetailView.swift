@@ -433,43 +433,58 @@ struct TransactionDetailView: View {
                                 .foregroundColor(.wisePrimaryText)
                                 .padding(.horizontal, 16)
 
-                            VStack(spacing: 8) {
-                                ForEach(relatedTransactions) { relatedTx in
+                            VStack(spacing: 0) {
+                                ForEach(Array(relatedTransactions.enumerated()), id: \.element.id) { index, relatedTx in
                                     NavigationLink(destination: TransactionDetailView(transactionId: relatedTx.id)) {
-                                        HStack(spacing: 12) {
-                                            UnifiedIconCircle(
-                                                icon: relatedTx.category.icon,
-                                                color: relatedTx.category.color,
-                                                size: 40,
-                                                iconSize: 18
-                                            )
+                                        HStack(spacing: 14) {
+                                            // Initials-based avatar
+                                            ZStack {
+                                                Circle()
+                                                    .fill(relatedTx.category.pastelAvatarColor)
+                                                    .frame(width: 44, height: 44)
 
-                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(InitialsGenerator.generate(from: relatedTx.title))
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                    .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                                            }
+
+                                            // Title and status
+                                            VStack(alignment: .leading, spacing: 3) {
                                                 Text(relatedTx.title)
-                                                    .font(.spotifyBodyMedium)
+                                                    .font(.system(size: 15, weight: .semibold))
                                                     .foregroundColor(.wisePrimaryText)
                                                     .lineLimit(1)
 
-                                                Text(relatedTx.date, style: .date)
-                                                    .font(.spotifyLabelSmall)
-                                                    .foregroundColor(.wiseSecondaryText)
+                                                Text(relatedTx.paymentStatus.displayText)
+                                                    .font(.system(size: 13, weight: .medium))
+                                                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                                                    .lineLimit(1)
                                             }
 
                                             Spacer()
 
-                                            Text(relatedTx.amountWithSign)
-                                                .font(.spotifyBodyMedium)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(relatedTx.isExpense ? .wiseError : .wiseBrightGreen)
+                                            // Amount and relative time
+                                            VStack(alignment: .trailing, spacing: 3) {
+                                                Text(relatedTx.amountWithSign)
+                                                    .font(.system(size: 15, weight: .semibold))
+                                                    .foregroundColor(relatedTx.isExpense ? AmountColors.negative : AmountColors.positive)
+
+                                                Text(relatedTx.date, style: .relative)
+                                                    .font(.system(size: 12, weight: .medium))
+                                                    .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+                                            }
                                         }
-                                        .padding(12)
-                                        .background(Color.wiseBackground)
-                                        .cornerRadius(12)
+                                        .padding(.vertical, 14)
+                                        .padding(.horizontal, 20)
+                                        .contentShape(Rectangle())
                                     }
                                     .buttonStyle(PlainButtonStyle())
+
+                                    if index < relatedTransactions.count - 1 {
+                                        AlignedDivider()
+                                    }
                                 }
                             }
-                            .padding(.horizontal, 16)
                         }
                         .padding(.vertical, 16)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -526,6 +541,7 @@ struct TransactionDetailView: View {
         .background(Color.wiseBackground)
         .navigationTitle(transaction?.title ?? "Transaction")
         .navigationBarTitleDisplayMode(.inline)
+        .observeEntityWithRelated(transactionId, type: .transaction, relatedTypes: [.subscription, .splitBill], dataManager: dataManager)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 // TASK 3.11: Edit button
