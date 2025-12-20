@@ -9,11 +9,21 @@
 
 import SwiftUI
 
+// MARK: - Person Conversation Tab
+
+enum PersonConversationTab: String, ConversationTabProtocol, CaseIterable {
+    case transactions = "Transactions"
+    case summary = "Summary"
+}
+
 struct PersonDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataManager: DataManager
 
     let personId: UUID
+
+    // Conversation tab state
+    @State private var selectedTab: PersonConversationTab = .transactions
 
     // Sheet presentation states
     @State private var showingEditPerson = false
@@ -52,37 +62,34 @@ struct PersonDetailView: View {
     // MARK: - Body
 
     var body: some View {
-        ScrollView {
+        VStack(spacing: 0) {
             if let person = person {
-                VStack(spacing: 24) {
-                    // 1. Header Section
-                    headerSection(for: person)
+                // Compact header
+                PersonConversationHeader(
+                    person: person,
+                    onPhoneTap: { callPerson(person) },
+                    onMessageTap: { messagePerson(person) }
+                )
 
-                    // 2. Balance Card
-                    balanceCard(for: person)
+                Divider()
 
-                    // 3. Quick Actions (Two Rows)
-                    quickActionsSection(for: person)
+                // Tab control
+                PillSegmentedControl(selectedTab: $selectedTab)
+                    .padding(.vertical, 12)
 
-                    // 4. Shared Groups Section
-                    if !personGroups.isEmpty {
-                        sharedGroupsSection
-                    }
+                Divider()
 
-                    // 5. Split Bills Section
-                    if !personSplitBills.isEmpty {
-                        splitBillsSection
-                    }
+                // Tab content
+                TabView(selection: $selectedTab) {
+                    // Transactions tab
+                    transactionsTabContent(for: person)
+                        .tag(PersonConversationTab.transactions)
 
-                    // 6. Recent Activity Section
-                    if !personTransactions.isEmpty {
-                        recentActivitySection
-                    }
-
-                    // 7. Delete Person Button
-                    deletePersonButton
+                    // Summary tab
+                    summaryTabContent(for: person)
+                        .tag(PersonConversationTab.summary)
                 }
-                .padding(.bottom, 40)
+                .tabViewStyle(.page(indexDisplayMode: .never))
             } else {
                 personNotFoundView
             }
@@ -146,6 +153,91 @@ struct PersonDetailView: View {
             if let person = person {
                 Text("This will permanently delete '\(person.name)'. They will be removed from all groups.")
             }
+        }
+    }
+
+    // MARK: - Tab Content
+
+    @ViewBuilder
+    private func transactionsTabContent(for person: Person) -> some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                if personTransactions.isEmpty {
+                    // Empty state
+                    VStack(spacing: 16) {
+                        Image(systemName: "tray.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(.wiseSecondaryText)
+                        Text("No transactions yet")
+                            .font(.spotifyBodyMedium)
+                            .foregroundColor(.wiseSecondaryText)
+                        Text("Record a payment to get started")
+                            .font(.spotifyCaptionMedium)
+                            .foregroundColor(.wiseTertiaryText)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
+                } else {
+                    // Group transactions by date and insert system events
+                    ForEach(Array(personTransactions.enumerated()), id: \.element.id) { index, transaction in
+                        // Transaction bubble
+                        TransactionBubble(
+                            transaction: transaction,
+                            person: person,
+                            onSettleTap: {
+                                // If the transaction is incoming (person owes you), settle it
+                                if !transaction.isExpense {
+                                    showingSettleUpSheet = true
+                                }
+                            },
+                            onRemindTap: {
+                                showingSendReminderSheet = true
+                            }
+                        )
+
+                        // Add system event for settled transactions
+                        if transaction.paymentStatus == .completed &&
+                           transaction.category == .transfer &&
+                           transaction.title.lowercased().contains("settlement") {
+                            SystemEventRow(
+                                eventType: .balanceSettled,
+                                timestamp: transaction.date
+                            )
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+            }
+            .padding(.top, 16)
+            .padding(.bottom, 40)
+        }
+    }
+
+    @ViewBuilder
+    private func summaryTabContent(for person: Person) -> some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                // Balance Card
+                balanceCard(for: person)
+
+                // Quick Actions
+                quickActionsSection(for: person)
+
+                // Shared Groups Section
+                if !personGroups.isEmpty {
+                    sharedGroupsSection
+                }
+
+                // Split Bills Section
+                if !personSplitBills.isEmpty {
+                    splitBillsSection
+                }
+
+                // Delete Person Button
+                deletePersonButton
+            }
+            .padding(.top, 16)
+            .padding(.bottom, 40)
         }
     }
 

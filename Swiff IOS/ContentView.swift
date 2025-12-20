@@ -1006,8 +1006,8 @@ struct FriendActivityCard: View {
     }
 }
 
-// MARK: - Quick Action Button
-struct QuickActionButton: View {
+// MARK: - Quick Action FAB (Floating Action Button)
+struct QuickActionFAB: View {
     @Binding var showingQuickActions: Bool
     @State private var isPressed = false
 

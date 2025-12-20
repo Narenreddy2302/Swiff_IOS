@@ -16,7 +16,6 @@ import SwiftUI
 struct PersonCard: View {
     let person: Person
     var transactions: [Transaction] = []
-    var onTap: (() -> Void)? = nil
 
     // MARK: - Computed Properties
 
@@ -60,44 +59,41 @@ struct PersonCard: View {
     // MARK: - Body
 
     var body: some View {
-        Button(action: { onTap?() }) {
-            HStack(spacing: 14) {
-                // Initials avatar (no status badge)
-                initialsAvatar
+        HStack(spacing: 14) {
+            // Initials avatar (no status badge)
+            initialsAvatar
 
-                // Name and status
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(person.name)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.wisePrimaryText)
-                        .lineLimit(1)
+            // Name and status
+            VStack(alignment: .leading, spacing: 3) {
+                Text(person.name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
 
-                    Text(balanceStatus)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
-                        .lineLimit(1)
-                }
+                Text(balanceStatus)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .lineLimit(1)
+            }
 
-                Spacer()
+            Spacer()
 
-                // Balance and last activity
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text(balanceText)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(balanceColor)
+            // Balance and last activity
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(balanceText)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(balanceColor)
 
-                    if !lastActivityText.isEmpty {
-                        Text(lastActivityText)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
-                    }
+                if !lastActivityText.isEmpty {
+                    Text(lastActivityText)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
                 }
             }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 12)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 14)
+        .padding(.horizontal, 12)
+        .contentShape(Rectangle())
     }
 
     // MARK: - Initials Avatar

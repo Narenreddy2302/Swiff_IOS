@@ -102,8 +102,8 @@ struct ListRowFactory {
     /// - Initials-based colored avatar (hash-based pastel colors from InitialsAvatarColors)
     /// - Balance status indicator (Owes you / You owe / Settled)
     /// - AmountColors for positive/negative balances
-    static func card(for person: Person, transactions: [Transaction] = [], onTap: (() -> Void)? = nil) -> some View {
-        return PersonCard(person: person, transactions: transactions, onTap: onTap)
+    static func card(for person: Person, transactions: [Transaction] = []) -> some View {
+        return PersonCard(person: person, transactions: transactions)
     }
 
     /// Helper to compute person subtitle
@@ -200,8 +200,8 @@ struct ListRowFactory {
     /// - Emoji in blue circle (44x44)
     /// - Member and expense count summary
     /// - Total amount display
-    static func card(for group: Group, onTap: (() -> Void)? = nil) -> some View {
-        return GroupCard(group: group, onTap: onTap)
+    static func card(for group: Group) -> some View {
+        return GroupCard(group: group)
     }
 
     // MARK: - Subscription Row
@@ -228,8 +228,8 @@ struct ListRowFactory {
     /// - Initials-based colored avatar (category-based pastel colors)
     /// - Billing cycle and next billing date
     /// - Price display (neutral color)
-    static func card(for subscription: Subscription, onTap: (() -> Void)? = nil) -> some View {
-        return SubscriptionCard(subscription: subscription, onTap: onTap)
+    static func card(for subscription: Subscription) -> some View {
+        return SubscriptionCard(subscription: subscription)
     }
 
     /// Helper to compute subscription subtitle

@@ -15,7 +15,6 @@ import SwiftUI
 /// Design: 44x44 avatar, 14pt gap, clean row without status badges.
 struct SubscriptionCard: View {
     let subscription: Subscription
-    var onTap: (() -> Void)? = nil
 
     // MARK: - Computed Properties
 
@@ -50,42 +49,39 @@ struct SubscriptionCard: View {
     // MARK: - Body
 
     var body: some View {
-        Button(action: { onTap?() }) {
-            HStack(spacing: 14) {
-                // Initials avatar (no status badge)
-                initialsAvatar
+        HStack(spacing: 14) {
+            // Initials avatar (no status badge)
+            initialsAvatar
 
-                // Name and billing cycle
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(subscription.name)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.wisePrimaryText)
-                        .lineLimit(1)
+            // Name and billing cycle
+            VStack(alignment: .leading, spacing: 3) {
+                Text(subscription.name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
 
-                    Text(subscription.billingCycle.displayName)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                // Price and next billing
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text(formattedPriceWithSign)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(amountColor)
-
-                    Text(nextBillingText)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
-                }
+                Text(subscription.billingCycle.displayName)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .lineLimit(1)
             }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 12)
-            .contentShape(Rectangle())
+
+            Spacer()
+
+            // Price and next billing
+            VStack(alignment: .trailing, spacing: 3) {
+                Text(formattedPriceWithSign)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(amountColor)
+
+                Text(nextBillingText)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 14)
+        .padding(.horizontal, 12)
+        .contentShape(Rectangle())
     }
 
     // MARK: - Initials Avatar

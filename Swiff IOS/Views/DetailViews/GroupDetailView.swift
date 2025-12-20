@@ -22,7 +22,7 @@ struct GroupDetailView: View {
     @State private var showingSettleAllAlert = false
     @State private var showingMemberManagement = false
     @State private var showingExportSheet = false
-    @State private var selectedTab: DetailTab = .overview
+    @State private var selectedTab: GroupConversationTab = .activity
 
     var group: Group? {
         dataManager.groups.first { $0.id == groupId }
@@ -80,60 +80,37 @@ struct GroupDetailView: View {
     // MARK: - Body
 
     var body: some View {
-        ScrollView {
+        VStack(spacing: 0) {
             if let group = group {
-                VStack(spacing: 24) {
-                    // TASK 2.1: Enhanced Header
-                    headerSection(group: group)
-
-                    // TASK 2.2: Horizontal Scrolling Member Avatars
-                    membersScrollSection
-
-                    // TASK 2.3: Settle All Button
-                    if !unsettledExpenses.isEmpty {
-                        settleAllButton
+                // Conversation header
+                ScrollView {
+                    VStack(spacing: 0) {
+                        GroupConversationHeader(
+                            group: group,
+                            members: members,
+                            backgroundColor: .wiseBlue
+                        )
+                        .padding(.bottom, 8)
                     }
-
-                    // TASK 2.4: Balance Summary Card
-                    if totalGroupExpenses > 0 {
-                        balanceSummaryCard(group: group)
-                    }
-
-                    // TASK 2.5: Per-Member Balance Breakdown
-                    if !members.isEmpty && totalGroupExpenses > 0 {
-                        memberBalanceSection(group: group)
-                    }
-
-                    // TASK 2.7: Category Distribution Pie Chart
-                    if !group.expenses.isEmpty {
-                        categoryDistributionSection(group: group)
-                    }
-
-                    // TASK 2.8: Expense Timeline (grouped by date)
-                    expenseTimelineSection(group: group)
-
-                    // Split Bills Section
-                    if !groupSplitBills.isEmpty {
-                        splitBillsSection
-                    }
-
-                    // TASK 2.12: Group Activity Summary
-                    if !group.expenses.isEmpty {
-                        activitySummarySection(group: group)
-                    }
-
-                    // Quick Actions
-                    quickActionsSection
-
-                    // TASK 2.11: Member Management Button
-                    memberManagementButton
-
-                    // TASK 2.10: Export Button
-                    exportButton
-
-                    // Delete Group Button
-                    deleteGroupButton
                 }
+                .frame(maxHeight: 250)
+
+                // Segmented control for tabs
+                PillSegmentedControl(selectedTab: $selectedTab)
+                    .padding(.vertical, 12)
+
+                // Tab content
+                TabView(selection: $selectedTab) {
+                    activityTabContent(group: group)
+                        .tag(GroupConversationTab.activity)
+
+                    balancesTabContent(group: group)
+                        .tag(GroupConversationTab.balances)
+
+                    membersTabContent(group: group)
+                        .tag(GroupConversationTab.members)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
             } else {
                 // Group not found
                 VStack(spacing: 16) {
@@ -212,6 +189,173 @@ struct GroupDetailView: View {
         } message: {
             Text("This will mark all \(unsettledExpenses.count) unsettled expenses as paid.")
         }
+    }
+
+    // MARK: - Tab Content Views
+
+    @ViewBuilder
+    private func activityTabContent(group: Group) -> some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                // Settle all button at top if there are unsettled expenses
+                if !unsettledExpenses.isEmpty {
+                    settleAllButton
+                        .padding(.top, 8)
+                }
+
+                // Expense bubbles grouped by date
+                let groupedExpenses = Dictionary(grouping: group.expenses.sorted(by: { $0.date > $1.date })) { expense in
+                    Calendar.current.startOfDay(for: expense.date)
+                }
+                let sortedDates = groupedExpenses.keys.sorted(by: >)
+
+                ForEach(sortedDates, id: \.self) { date in
+                    // Date header
+                    Text(formatDateHeader(date))
+                        .font(.spotifyLabelMedium)
+                        .foregroundColor(.wiseSecondaryText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.top, date == sortedDates.first ? 8 : 16)
+
+                    // Expenses for this date
+                    ForEach(groupedExpenses[date] ?? []) { expense in
+                        GroupActivityBubble(
+                            expense: expense,
+                            payer: members.first { $0.id == expense.paidBy },
+                            splitMembers: expense.splitBetween.compactMap { memberId in
+                                members.first { $0.id == memberId }
+                            },
+                            currentUserId: nil, // TODO: Get from user session
+                            onSettle: {
+                                settleExpense(expense)
+                            }
+                        )
+                        .padding(.horizontal, 16)
+                    }
+
+                    // System events (member joined/left) - could be added here
+                }
+
+                // Empty state
+                if group.expenses.isEmpty {
+                    emptyStateView
+                        .padding(.top, 40)
+                }
+
+                // Add expense button
+                quickActionsSection
+                    .padding(.top, 16)
+                    .padding(.bottom, 40)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func balancesTabContent(group: Group) -> some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                // Balance summary card
+                if totalGroupExpenses > 0 {
+                    balanceSummaryCard(group: group)
+                        .padding(.top, 16)
+                }
+
+                // Per-member balance breakdown
+                if !members.isEmpty && totalGroupExpenses > 0 {
+                    memberBalanceSection(group: group)
+                }
+
+                // Category distribution
+                if !group.expenses.isEmpty {
+                    categoryDistributionSection(group: group)
+                }
+
+                // Split bills section
+                if !groupSplitBills.isEmpty {
+                    splitBillsSection
+                }
+
+                Spacer(minLength: 40)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func membersTabContent(group: Group) -> some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                // Activity summary
+                if !group.expenses.isEmpty {
+                    activitySummarySection(group: group)
+                        .padding(.top, 16)
+                }
+
+                // Member list with individual stats
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("All Members")
+                        .font(.spotifyHeadingMedium)
+                        .foregroundColor(.wisePrimaryText)
+                        .padding(.horizontal, 16)
+
+                    VStack(spacing: 8) {
+                        ForEach(members) { member in
+                            NavigationLink(destination: PersonDetailView(personId: member.id)) {
+                                memberStatsRow(member: member, in: group)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+
+                // Member management button
+                memberManagementButton
+
+                // Export and delete buttons
+                exportButton
+                deleteGroupButton
+                    .padding(.bottom, 40)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func memberStatsRow(member: Person, in group: Group) -> some View {
+        let memberStats = calculateMemberStats(member: member, in: group)
+        let paidExpensesCount = group.expenses.filter { $0.paidBy == member.id }.count
+        let involvedExpensesCount = group.expenses.filter { $0.splitBetween.contains(member.id) }.count
+
+        HStack(spacing: 12) {
+            AvatarView(person: member, size: .medium, style: .solid)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(member.name)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+
+                Text("\(paidExpensesCount) paid • \(involvedExpensesCount) involved")
+                    .font(.spotifyCaptionMedium)
+                    .foregroundColor(.wiseSecondaryText)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(String(format: "$%.2f", memberStats.amount))
+                    .font(.spotifyBodyMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(memberStats.color)
+
+                Text(memberStats.label)
+                    .font(.spotifyCaptionSmall)
+                    .foregroundColor(.wiseSecondaryText)
+            }
+        }
+        .padding(12)
+        .background(Color.wiseCardBackground)
+        .cornerRadius(12)
+        .subtleShadow()
     }
 
     // MARK: - TASK 2.1: Enhanced Header Section
@@ -864,6 +1008,13 @@ struct GroupDetailView: View {
 
 // MARK: - Supporting Types
 
+enum GroupConversationTab: String, ConversationTabProtocol, CaseIterable {
+    case activity = "Activity"
+    case balances = "Balances"
+    case members = "Members"
+}
+
+// DEPRECATED: Old tab enum - kept for reference
 enum DetailTab: String, CaseIterable {
     case overview = "Overview"
     case expenses = "Expenses"

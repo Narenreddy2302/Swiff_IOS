@@ -9,6 +9,13 @@
 import SwiftUI
 import Combine
 
+// MARK: - Subscription Conversation Tab
+
+enum SubscriptionConversationTab: String, ConversationTabProtocol, CaseIterable {
+    case timeline = "Timeline"
+    case details = "Details"
+}
+
 struct SubscriptionDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataManager: DataManager
@@ -19,6 +26,12 @@ struct SubscriptionDetailView: View {
     @State private var showingCancelAlert = false
     @State private var showingPauseAlert = false
     @State private var showingPriceHistoryChart = false
+
+    // Tab selection
+    @State private var selectedTab: SubscriptionConversationTab = .timeline
+
+    // Timeline events
+    @State private var events: [SubscriptionEvent] = []
 
     // Reminder settings
     @State private var enableRenewalReminder = false
@@ -86,42 +99,28 @@ struct SubscriptionDetailView: View {
     }
 
     var body: some View {
-        ScrollView {
+        VStack(spacing: 0) {
             if let subscription = subscription {
-                let subscriptionColor = Color(hexString: subscription.color)
-                
-                VStack(spacing: 24) {
-                    headerSection(subscription: subscription, subscriptionColor: subscriptionColor)
+                // Header
+                SubscriptionTimelineHeader(
+                    subscription: subscription,
+                    sharedPeople: sharedPeople
+                )
+                .background(Color.wiseBackground)
 
-                    // AGENT 8: Trial Status Section (if trial)
-                    if subscription.isFreeTrial {
-                        trialStatusSection(subscription: subscription)
-                    }
+                // Tab selector
+                PillSegmentedControl(selectedTab: $selectedTab)
+                    .padding(.bottom, 16)
 
-                    // AGENT 9: Price increase badge
-                    if showPriceIncreaseBadge, let latestIncrease = priceHistory.first, latestIncrease.isIncrease {
-                        priceIncreaseBadgeSection(priceChange: latestIncrease)
-                    }
+                // Tab content
+                TabView(selection: $selectedTab) {
+                    timelineTab(subscription: subscription)
+                        .tag(SubscriptionConversationTab.timeline)
 
-                    overviewCard(subscription: subscription)
-
-                    // AGENT 9: Price history section
-                    if !priceHistory.isEmpty {
-                        priceHistorySection(subscription: subscription)
-                    }
-
-                    reminderSettingsCard(subscription: subscription)
-                    usageTrackingCard(subscription: subscription)
-                    spendingStatsCard(subscription: subscription)
-                    detailsSection(subscription: subscription)
-                    sharedInfoSection(subscription: subscription)
-                    cancellationInstructionsSection(subscription: subscription)
-                    actionsSection(subscription: subscription)
+                    detailsTab(subscription: subscription)
+                        .tag(SubscriptionConversationTab.details)
                 }
-                .onAppear {
-                    loadSubscriptionData(subscription: subscription)
-                    loadPriceHistory()
-                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
             } else {
                 subscriptionNotFoundView
             }
@@ -181,6 +180,106 @@ struct SubscriptionDetailView: View {
                         .environmentObject(dataManager)
                 }
             }
+        }
+    }
+
+    // MARK: - Tab Views
+
+    @ViewBuilder
+    private func timelineTab(subscription: Subscription) -> some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                if events.isEmpty {
+                    emptyTimelineView
+                        .padding(.top, 60)
+                } else {
+                    timelineEventsList
+                        .padding(.top, 16)
+                }
+            }
+        }
+        .background(Color.wiseBackground)
+        .onAppear {
+            loadPriceHistory()
+            loadTimelineEvents(subscription: subscription)
+        }
+    }
+
+    private var timelineEventsList: some View {
+        LazyVStack(spacing: 0) {
+            let groupedEvents = SubscriptionEvent.groupByDate(events)
+
+            ForEach(Array(groupedEvents.enumerated()), id: \.offset) { index, group in
+                VStack(spacing: 14) {
+                    // Date section header
+                    TimelineDateSectionHeader(date: group.date)
+
+                    // Events for this date
+                    ForEach(group.events) { event in
+                        TimelineEventBubble(
+                            event: event,
+                            personName: getPersonName(for: event.relatedPersonId)
+                        )
+                    }
+                }
+                .padding(.bottom, index < groupedEvents.count - 1 ? 24 : 16)
+            }
+        }
+    }
+
+    private var emptyTimelineView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "clock.badge.questionmark")
+                .font(.system(size: 48))
+                .foregroundColor(.wiseSecondaryText)
+
+            Text("No timeline events yet")
+                .font(.spotifyHeadingMedium)
+                .foregroundColor(.wisePrimaryText)
+
+            Text("Events will appear as you use this subscription")
+                .font(.spotifyBodyMedium)
+                .foregroundColor(.wiseSecondaryText)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 40)
+    }
+
+    @ViewBuilder
+    private func detailsTab(subscription: Subscription) -> some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                // AGENT 8: Trial Status Section (if trial)
+                if subscription.isFreeTrial {
+                    trialStatusSection(subscription: subscription)
+                }
+
+                // AGENT 9: Price increase badge
+                if showPriceIncreaseBadge, let latestIncrease = priceHistory.first, latestIncrease.isIncrease {
+                    priceIncreaseBadgeSection(priceChange: latestIncrease)
+                }
+
+                overviewCard(subscription: subscription)
+
+                // AGENT 9: Price history section
+                if !priceHistory.isEmpty {
+                    priceHistorySection(subscription: subscription)
+                }
+
+                reminderSettingsCard(subscription: subscription)
+                usageTrackingCard(subscription: subscription)
+                spendingStatsCard(subscription: subscription)
+                detailsSection(subscription: subscription)
+                sharedInfoSection(subscription: subscription)
+                cancellationInstructionsSection(subscription: subscription)
+                actionsSection(subscription: subscription)
+            }
+            .padding(.top, 16)
+        }
+        .background(Color.wiseBackground)
+        .onAppear {
+            loadSubscriptionData(subscription: subscription)
+            loadPriceHistory()
         }
     }
 
@@ -273,46 +372,6 @@ struct SubscriptionDetailView: View {
         .padding(.horizontal, 16)
     }
 
-    @ViewBuilder
-    private func headerSection(subscription: Subscription, subscriptionColor: Color) -> some View {
-        VStack(spacing: 16) {
-            // Large Icon
-            iconView(
-                subscription: subscription,
-                subscriptionColor: subscriptionColor,
-                gradientColors: [
-                    subscriptionColor.opacity(0.3),
-                    subscriptionColor.opacity(0.1)
-                ]
-            )
-
-            Text(subscription.name)
-                .font(.spotifyDisplayMedium)
-                .foregroundColor(.wisePrimaryText)
-
-            if !subscription.description.isEmpty {
-                Text(subscription.description)
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wiseSecondaryText)
-                    .multilineTextAlignment(.center)
-            }
-
-            // Status Badge
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(statusColor)
-                    .frame(width: 8, height: 8)
-                Text(statusText)
-                    .font(.spotifyLabelMedium)
-                    .foregroundColor(statusColor)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
-            .background(statusColor.opacity(0.1))
-            .cornerRadius(20)
-        }
-        .padding(.top, 20)
-    }
     
     @ViewBuilder
     private func overviewCard(subscription: Subscription) -> some View {
@@ -992,6 +1051,19 @@ struct SubscriptionDetailView: View {
     }
 
     // MARK: - Helper Functions
+
+    private func loadTimelineEvents(subscription: Subscription) {
+        events = SubscriptionEventService.shared.generateEvents(
+            for: subscription,
+            priceHistory: priceHistory,
+            people: dataManager.people
+        )
+    }
+
+    private func getPersonName(for personId: UUID?) -> String? {
+        guard let personId = personId else { return nil }
+        return dataManager.people.first { $0.id == personId }?.name
+    }
 
     private func pauseSubscription() {
         guard var subscription = subscription else { return }

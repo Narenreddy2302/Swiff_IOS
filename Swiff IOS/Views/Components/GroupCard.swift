@@ -15,7 +15,6 @@ import SwiftUI
 /// Design: 44x44 avatar with emoji, 14pt gap, clean row layout.
 struct GroupCard: View {
     let group: Group
-    var onTap: (() -> Void)? = nil
 
     // MARK: - Computed Properties
 
@@ -42,39 +41,36 @@ struct GroupCard: View {
     // MARK: - Body
 
     var body: some View {
-        Button(action: { onTap?() }) {
-            HStack(spacing: 14) {
-                // Emoji avatar in blue circle
-                emojiAvatar
+        HStack(spacing: 14) {
+            // Emoji avatar in blue circle
+            emojiAvatar
 
-                // Text Content
-                VStack(alignment: .leading, spacing: 3) {
-                    // Group Name
-                    Text(group.name)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.wisePrimaryText)
-                        .lineLimit(1)
-
-                    // Summary Line
-                    Text(summaryText)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 8)
-
-                // Total Amount
-                Text(amountText)
+            // Text Content
+            VStack(alignment: .leading, spacing: 3) {
+                // Group Name
+                Text(group.name)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.wisePrimaryText)
                     .lineLimit(1)
+
+                // Summary Line
+                Text(summaryText)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .lineLimit(1)
             }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 12)
-            .contentShape(Rectangle())
+
+            Spacer(minLength: 8)
+
+            // Total Amount
+            Text(amountText)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(.wisePrimaryText)
+                .lineLimit(1)
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 14)
+        .padding(.horizontal, 12)
+        .contentShape(Rectangle())
     }
 
     // MARK: - Emoji Avatar
