@@ -375,11 +375,6 @@ struct AddSplitBillSheet: View {
 // MARK: - Preview
 
 #Preview("Add Split Bill Sheet") {
-    let dataManager = DataManager.shared
-    let person1 = Person(name: "Alice", email: "alice@example.com", phone: "+1234567890", avatar: "👩‍💼")
-    let person2 = Person(name: "Bob", email: "bob@example.com", phone: "+1234567891", avatar: "👨‍💻")
-    dataManager.people = [person1, person2]
-
-    return AddSplitBillSheet()
-        .environmentObject(dataManager)
+    AddSplitBillSheet()
+        .environmentObject(DataManager.shared)
 }

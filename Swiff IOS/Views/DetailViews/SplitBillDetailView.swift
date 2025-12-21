@@ -363,32 +363,23 @@ struct SplitBillDetailView: View {
 
 // MARK: - Preview
 
-#Preview("Split Bill Detail") {
-    let dataManager = DataManager.shared
-    let person1 = Person(name: "Alice", email: "alice@example.com", phone: "+1234567890", avatar: "👩‍💼")
-    let person2 = Person(name: "Bob", email: "bob@example.com", phone: "+1234567891", avatar: "👨‍💻")
-    let person3 = Person(name: "Charlie", email: "charlie@example.com", phone: "+1234567892", avatar: "🧑‍🔧")
-    dataManager.people = [person1, person2, person3]
+#Preview("Split Bill Detail - Settled") {
+    NavigationView {
+        SplitBillDetailView(splitBillId: MockData.settledSplitBill.id)
+            .environmentObject(DataManager.shared)
+    }
+}
 
-    let participant1 = SplitParticipant(personId: person1.id, amount: 30.0, hasPaid: true)
-    let participant2 = SplitParticipant(personId: person2.id, amount: 30.0, hasPaid: false)
-    let participant3 = SplitParticipant(personId: person3.id, amount: 30.0, hasPaid: true)
+#Preview("Split Bill Detail - Pending") {
+    NavigationView {
+        SplitBillDetailView(splitBillId: MockData.pendingSplitBill.id)
+            .environmentObject(DataManager.shared)
+    }
+}
 
-    let splitBill = SplitBill(
-        title: "Dinner at Italian Restaurant",
-        totalAmount: 90.0,
-        paidById: person1.id,
-        splitType: .equally,
-        participants: [participant1, participant2, participant3],
-        notes: "Great meal with friends!",
-        category: .dining,
-        date: Date()
-    )
-
-    dataManager.splitBills = [splitBill]
-
-    return NavigationView {
-        SplitBillDetailView(splitBillId: splitBill.id)
-            .environmentObject(dataManager)
+#Preview("Split Bill Detail - Partially Paid") {
+    NavigationView {
+        SplitBillDetailView(splitBillId: MockData.partiallySplitBill.id)
+            .environmentObject(DataManager.shared)
     }
 }

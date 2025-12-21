@@ -305,14 +305,9 @@ struct SendReminderSheet: View {
     }
 }
 
-#Preview {
+#Preview("Send Reminder Sheet") {
     SendReminderSheet(
-        person: Person(
-            name: "John Doe",
-            email: "john@example.com",
-            phone: "+1 234 567 8900",
-            avatarType: .emoji("👨🏼‍💼")
-        ),
+        person: MockData.personOwedMoney,
         onReminderSent: {}
     )
 }

@@ -161,91 +161,57 @@ struct TransactionBubble: View {
 
 // MARK: - Preview
 
-#Preview("Transaction Bubbles") {
+#Preview("TransactionBubble - Incoming Pending") {
     ScrollView {
         VStack(spacing: 16) {
-            // Incoming (person owes you) - unsettled
             TransactionBubble(
-                transaction: Transaction(
-                    title: "Dinner at La Piazza",
-                    subtitle: "Split bill payment",
-                    amount: 45.50,
-                    category: .food,
-                    date: Date().addingTimeInterval(-3600),
-                    isRecurring: false,
-                    tags: [],
-                    paymentStatus: .pending
-                ),
-                person: Person(
-                    name: "Alex Thompson",
-                    email: "alex@example.com",
-                    phone: "+1234567890",
-                    avatarType: .initials("AT", colorIndex: 0)
-                ),
+                transaction: MockData.incomeTransaction,
+                person: MockData.personOwedMoney,
+                onSettleTap: {},
+                onRemindTap: {}
+            )
+        }
+        .padding(16)
+    }
+    .background(Color.wiseBackground)
+}
+
+#Preview("TransactionBubble - Outgoing") {
+    ScrollView {
+        VStack(spacing: 16) {
+            TransactionBubble(
+                transaction: MockData.expenseTransaction,
+                person: MockData.personOwingMoney,
                 onSettleTap: {},
                 onRemindTap: {}
             )
 
-            // Outgoing (you owe person) - unsettled
             TransactionBubble(
-                transaction: Transaction(
-                    title: "Concert tickets",
-                    subtitle: "Ticket reimbursement",
-                    amount: -125.00,
-                    category: .entertainment,
-                    date: Date().addingTimeInterval(-7200),
-                    isRecurring: false,
-                    tags: [],
-                    paymentStatus: .pending
-                ),
-                person: Person(
-                    name: "Maria Santos",
-                    email: "maria@example.com",
-                    phone: "+1234567890",
-                    avatarType: .initials("MS", colorIndex: 2)
-                ),
-                onSettleTap: {},
-                onRemindTap: {}
+                transaction: MockData.diningTransaction,
+                person: MockData.personFriend
+            )
+        }
+        .padding(16)
+    }
+    .background(Color.wiseBackground)
+}
+
+#Preview("TransactionBubble - Various Categories") {
+    ScrollView {
+        VStack(spacing: 16) {
+            TransactionBubble(
+                transaction: MockData.groceryTransaction,
+                person: MockData.personSettled
             )
 
-            // Incoming - settled
             TransactionBubble(
-                transaction: Transaction(
-                    title: "Grocery split",
-                    subtitle: "Whole Foods payment",
-                    amount: 38.75,
-                    category: .groceries,
-                    date: Date().addingTimeInterval(-86400),
-                    isRecurring: false,
-                    tags: [],
-                    paymentStatus: .completed
-                ),
-                person: Person(
-                    name: "Jordan Lee",
-                    email: "jordan@example.com",
-                    phone: "+1234567890",
-                    avatarType: .initials("JL", colorIndex: 4)
-                )
+                transaction: MockData.transportTransaction,
+                person: MockData.personFamily
             )
 
-            // Outgoing - settled
             TransactionBubble(
-                transaction: Transaction(
-                    title: "Uber ride",
-                    subtitle: "Trip reimbursement",
-                    amount: -22.50,
-                    category: .transportation,
-                    date: Date().addingTimeInterval(-172800),
-                    isRecurring: false,
-                    tags: [],
-                    paymentStatus: .completed
-                ),
-                person: Person(
-                    name: "David Kim",
-                    email: "david@example.com",
-                    phone: "+1234567890",
-                    avatarType: .initials("DK", colorIndex: 1)
-                )
+                transaction: MockData.entertainmentTransaction,
+                person: MockData.personCoworker
             )
         }
         .padding(16)

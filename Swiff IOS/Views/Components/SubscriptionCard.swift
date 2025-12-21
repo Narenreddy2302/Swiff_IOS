@@ -127,97 +127,48 @@ extension SubscriptionCategory {
 
 // MARK: - Preview
 
-#Preview("SubscriptionCard - New Design") {
+#Preview("SubscriptionCard - Active") {
     VStack(spacing: 0) {
-        // Adobe Creative Cloud
-        SubscriptionCard(
-            subscription: Subscription(
-                name: "Adobe Creative Cloud",
-                description: "Design software",
-                price: 54.99,
-                billingCycle: .monthly,
-                category: .productivity,
-                icon: "paintbrush.fill",
-                color: "#FF6B6B"
-            )
-        )
-
+        SubscriptionCard(subscription: MockData.activeSubscription)
         AlignedDivider()
-
-        // Duolingo Plus
-        SubscriptionCard(
-            subscription: Subscription(
-                name: "Duolingo Plus",
-                description: "Language learning",
-                price: 6.99,
-                billingCycle: .monthly,
-                category: .education,
-                icon: "book.fill",
-                color: "#58CC02"
-            )
-        )
-
+        SubscriptionCard(subscription: MockData.yearlySubscription)
         AlignedDivider()
-
-        // Gym Membership
-        SubscriptionCard(
-            subscription: Subscription(
-                name: "Gym Membership",
-                description: "Fitness center",
-                price: 49.99,
-                billingCycle: .monthly,
-                category: .fitness,
-                icon: "figure.run",
-                color: "#FF7F50"
-            )
-        )
-
-        AlignedDivider()
-
-        // HBO Max
-        SubscriptionCard(
-            subscription: Subscription(
-                name: "HBO Max",
-                description: "Streaming service",
-                price: 15.99,
-                billingCycle: .monthly,
-                category: .entertainment,
-                icon: "play.rectangle.fill",
-                color: "#9B59B6"
-            )
-        )
-
-        AlignedDivider()
-
-        // LinkedIn Premium
-        SubscriptionCard(
-            subscription: Subscription(
-                name: "LinkedIn Premium",
-                description: "Professional network",
-                price: 29.99,
-                billingCycle: .monthly,
-                category: .productivity,
-                icon: "briefcase.fill",
-                color: "#0077B5"
-            )
-        )
-
-        AlignedDivider()
-
-        // Netflix
-        SubscriptionCard(
-            subscription: Subscription(
-                name: "Netflix",
-                description: "Streaming service",
-                price: 19.99,
-                billingCycle: .monthly,
-                category: .entertainment,
-                icon: "tv.fill",
-                color: "#E50914"
-            )
-        )
+        SubscriptionCard(subscription: MockData.cheapSubscription)
     }
-    .padding(.horizontal, 16)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(Color.wiseCardBackground)
+    .cornerRadius(12)
+    .padding()
+    .background(Color.wiseBackground)
+}
+
+#Preview("SubscriptionCard - Trial") {
+    VStack(spacing: 0) {
+        SubscriptionCard(subscription: MockData.trialSubscription)
+        AlignedDivider()
+        SubscriptionCard(subscription: MockData.expiredTrialSubscription)
+    }
+    .background(Color.wiseCardBackground)
+    .cornerRadius(12)
+    .padding()
+    .background(Color.wiseBackground)
+}
+
+#Preview("SubscriptionCard - Shared") {
+    SubscriptionCard(subscription: MockData.sharedSubscription)
+        .padding()
+        .background(Color.wiseCardBackground)
+}
+
+#Preview("SubscriptionCard - Edge Cases") {
+    VStack(spacing: 0) {
+        SubscriptionCard(subscription: MockData.expensiveSubscription)
+        AlignedDivider()
+        SubscriptionCard(subscription: MockData.longNameSubscription)
+        AlignedDivider()
+        SubscriptionCard(subscription: MockData.inactiveSubscription)
+    }
+    .background(Color.wiseCardBackground)
+    .cornerRadius(12)
+    .padding()
     .background(Color.wiseBackground)
 }

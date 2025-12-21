@@ -56,78 +56,78 @@ struct TimelineEventBubble: View {
     // MARK: - Outgoing Bubble (Billing Charges)
 
     private var outgoingBubbleContent: some View {
-        VStack(alignment: .trailing, spacing: 4) {
+        VStack(alignment: .trailing, spacing: 6) {
             Text(event.title)
-                .font(.spotifyBodyMedium)
+                .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.wisePrimaryText)
 
             if let subtitle = event.subtitle {
                 Text(subtitle)
-                    .font(.spotifyCaptionMedium)
+                    .font(.system(size: 13))
                     .foregroundColor(.wiseSecondaryText)
             }
 
             if let formattedAmount = event.formattedAmount {
                 Text(formattedAmount)
-                    .font(.spotifyNumberMedium)
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(event.amountColor)
             }
 
             Text(event.formattedTime)
-                .font(.spotifyCaptionSmall)
-                .foregroundColor(.wiseSecondaryText)
+                .font(.system(size: 12))
+                .foregroundColor(.wiseTertiaryText)
         }
     }
 
     // MARK: - Incoming Bubble (Price Changes, Member Events)
 
     private var incomingBubbleContent: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             // For member events, show person name
             if let name = personName, event.eventType == .memberAdded || event.eventType == .memberRemoved || event.eventType == .memberPaid {
                 Text(name)
-                    .font(.spotifyLabelSmall)
-                    .foregroundColor(.wiseSecondaryText)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.wisePrimaryText)
             }
 
             Text(event.title)
-                .font(.spotifyBodyMedium)
+                .font(.system(size: 13, weight: .bold))
                 .foregroundColor(.wisePrimaryText)
 
             if let subtitle = event.subtitle {
                 Text(subtitle)
-                    .font(.spotifyCaptionMedium)
+                    .font(.system(size: 13))
                     .foregroundColor(.wiseSecondaryText)
             }
 
             if let formattedAmount = event.formattedAmount {
                 Text(formattedAmount)
-                    .font(.spotifyNumberMedium)
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(event.amountColor)
             }
 
             Text(event.formattedTime)
-                .font(.spotifyCaptionSmall)
-                .foregroundColor(.wiseSecondaryText)
+                .font(.system(size: 12))
+                .foregroundColor(.wiseTertiaryText)
         }
     }
 
     // MARK: - System Event Content
 
     private var systemEventContent: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Image(systemName: event.eventType.icon)
-                .font(.system(size: 14))
+                .font(.system(size: 9, weight: .bold))
                 .foregroundColor(event.eventType.color)
 
             VStack(spacing: 2) {
                 Text(event.title)
-                    .font(.spotifyCaptionMedium)
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundColor(.wisePrimaryText)
 
                 if let subtitle = event.subtitle {
                     Text(subtitle)
-                        .font(.spotifyCaptionSmall)
+                        .font(.system(size: 13))
                         .foregroundColor(.wiseSecondaryText)
                 }
             }
@@ -139,10 +139,10 @@ struct TimelineEventBubble: View {
     private var eventIcon: some View {
         Circle()
             .fill(event.eventType.color.opacity(0.15))
-            .frame(width: 32, height: 32)
+            .frame(width: 20, height: 20)
             .overlay(
                 Image(systemName: event.eventType.icon)
-                    .font(.system(size: 14))
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundColor(event.eventType.color)
             )
     }
@@ -174,135 +174,40 @@ struct TimelineDateSectionHeader: View {
 
 // MARK: - Preview
 
-#Preview("Timeline Event Bubbles") {
+#Preview("TimelineEventBubble - Billing Events") {
     ScrollView {
         VStack(spacing: 14) {
             TimelineDateSectionHeader(date: Date())
 
-            // Billing event (outgoing)
-            TimelineEventBubble(
-                event: SubscriptionEvent(
-                    subscriptionId: UUID(),
-                    eventType: .billingCharged,
-                    eventDate: Date(),
-                    title: "Payment charged",
-                    subtitle: "Monthly",
-                    amount: 10.99
-                )
-            )
+            TimelineEventBubble(event: MockData.billingEvent)
 
-            // Price increase (incoming)
-            TimelineEventBubble(
-                event: SubscriptionEvent(
-                    subscriptionId: UUID(),
-                    eventType: .priceIncrease,
-                    eventDate: Date().addingTimeInterval(-3600),
-                    title: "Price increased",
-                    subtitle: "$9.99 → $10.99 (+10.0%)",
-                    amount: 1.00
-                )
-            )
+            TimelineEventBubble(event: MockData.trialEndingEvent)
+        }
+        .padding(.vertical, 16)
+    }
+    .background(Color.wiseBackground)
+}
 
-            // System event
-            TimelineEventBubble(
-                event: SubscriptionEvent(
-                    subscriptionId: UUID(),
-                    eventType: .subscriptionCreated,
-                    eventDate: Date().addingTimeInterval(-7200),
-                    title: "Subscription started",
-                    subtitle: "Started tracking Spotify",
-                    isSystemMessage: true
-                )
-            )
+#Preview("TimelineEventBubble - Price Changes") {
+    ScrollView {
+        VStack(spacing: 14) {
+            TimelineDateSectionHeader(date: Date())
 
-            TimelineDateSectionHeader(date: Date().addingTimeInterval(-86400))
+            TimelineEventBubble(event: MockData.priceChangeEvent)
+        }
+        .padding(.vertical, 16)
+    }
+    .background(Color.wiseBackground)
+}
 
-            // Trial event
-            TimelineEventBubble(
-                event: SubscriptionEvent(
-                    subscriptionId: UUID(),
-                    eventType: .trialStarted,
-                    eventDate: Date().addingTimeInterval(-86400),
-                    title: "Free trial started",
-                    subtitle: "30-day trial",
-                    isSystemMessage: true
-                )
-            )
+#Preview("TimelineEventBubble - Member Events") {
+    ScrollView {
+        VStack(spacing: 14) {
+            TimelineDateSectionHeader(date: Date())
 
-            // Member added (incoming)
             TimelineEventBubble(
-                event: SubscriptionEvent(
-                    subscriptionId: UUID(),
-                    eventType: .memberAdded,
-                    eventDate: Date().addingTimeInterval(-172800),
-                    title: "Alex Thompson joined",
-                    subtitle: "Split with 3 people",
-                    amount: 5.00,
-                    relatedPersonId: UUID()
-                ),
-                personName: "Alex Thompson"
-            )
-
-            // Usage event (system)
-            TimelineEventBubble(
-                event: SubscriptionEvent(
-                    subscriptionId: UUID(),
-                    eventType: .usageRecorded,
-                    eventDate: Date().addingTimeInterval(-259200),
-                    title: "Marked as used",
-                    subtitle: "Total uses: 15",
-                    isSystemMessage: false
-                )
-            )
-
-            // Price decrease (incoming)
-            TimelineEventBubble(
-                event: SubscriptionEvent(
-                    subscriptionId: UUID(),
-                    eventType: .priceDecrease,
-                    eventDate: Date().addingTimeInterval(-345600),
-                    title: "Price decreased",
-                    subtitle: "$12.99 → $9.99 (-23.1%)",
-                    amount: -3.00
-                )
-            )
-
-            // Paused event
-            TimelineEventBubble(
-                event: SubscriptionEvent(
-                    subscriptionId: UUID(),
-                    eventType: .subscriptionPaused,
-                    eventDate: Date().addingTimeInterval(-432000),
-                    title: "Subscription paused",
-                    subtitle: "Not included in monthly costs",
-                    isSystemMessage: true
-                )
-            )
-
-            // Upcoming billing
-            TimelineEventBubble(
-                event: SubscriptionEvent(
-                    subscriptionId: UUID(),
-                    eventType: .billingUpcoming,
-                    eventDate: Date(),
-                    title: "Upcoming payment",
-                    subtitle: "Due in 3 days",
-                    amount: 10.99,
-                    isSystemMessage: true
-                )
-            )
-
-            // Trial ending
-            TimelineEventBubble(
-                event: SubscriptionEvent(
-                    subscriptionId: UUID(),
-                    eventType: .trialEnding,
-                    eventDate: Date(),
-                    title: "Trial ending soon",
-                    subtitle: "Expires in 5 days",
-                    amount: 9.99,
-                    isSystemMessage: true
-                )
+                event: MockData.memberAddedEvent,
+                personName: MockData.personOwedMoney.name
             )
         }
         .padding(.vertical, 16)

@@ -257,7 +257,7 @@ struct DeveloperOptionsView: View {
     }
 }
 
-#Preview {
+#Preview("Advanced Settings Section") {
     NavigationView {
         List {
             AdvancedSettingsSection()

@@ -1460,9 +1460,13 @@ struct SavingsSuggestionCard: View {
 
 // MARK: - Preview
 
-struct AnalyticsView_Previews: PreviewProvider {
-    static var previews: some View {
-        AnalyticsView()
-            .environmentObject(DataManager.shared)
-    }
+#Preview("Analytics - Default") {
+    AnalyticsView()
+        .environmentObject(DataManager.shared)
+}
+
+#Preview("Analytics - Dark Mode") {
+    AnalyticsView()
+        .environmentObject(DataManager.shared)
+        .preferredColorScheme(.dark)
 }

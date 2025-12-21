@@ -190,94 +190,47 @@ struct GroupActivityBubble: View {
 
 // MARK: - Preview
 
-#Preview("Group Activity Bubbles") {
+#Preview("GroupActivityBubble - Pending") {
     ScrollView {
         VStack(spacing: 14) {
-            // Pending expense with settle button
             GroupActivityBubble(
-                expense: GroupExpense(
-                    title: "Dinner at Italian Place",
-                    amount: 120.00,
-                    paidBy: UUID(),
-                    splitBetween: [UUID(), UUID(), UUID(), UUID()],
-                    category: .dining,
-                    notes: "Amazing pasta and wine!",
-                    isSettled: false
-                ),
-                payer: Person(name: "Alex Thompson", email: "alex@example.com", phone: "", avatarType: .initials("AT", colorIndex: 0)),
-                splitMembers: [
-                    Person(name: "Alex Thompson", email: "alex@example.com", phone: "", avatarType: .initials("AT", colorIndex: 0)),
-                    Person(name: "Maria Santos", email: "maria@example.com", phone: "", avatarType: .initials("MS", colorIndex: 1)),
-                    Person(name: "John Davis", email: "john@example.com", phone: "", avatarType: .initials("JD", colorIndex: 2)),
-                    Person(name: "Sarah Wilson", email: "sarah@example.com", phone: "", avatarType: .initials("SW", colorIndex: 3))
-                ],
-                currentUserId: UUID(),
+                expense: MockData.groupWithExpenses.expenses[0],
+                payer: MockData.personOwedMoney,
+                splitMembers: [MockData.personOwedMoney, MockData.personOwingMoney, MockData.personSettled],
+                currentUserId: MockData.personOwingMoney.id,
                 onSettle: { print("Settle tapped") }
             )
+        }
+        .padding(16)
+    }
+    .background(Color.wiseBackground)
+}
 
-            // Settled expense
+#Preview("GroupActivityBubble - Settled") {
+    ScrollView {
+        VStack(spacing: 14) {
             GroupActivityBubble(
-                expense: GroupExpense(
-                    title: "Weekend Groceries",
-                    amount: 85.50,
-                    paidBy: UUID(),
-                    splitBetween: [UUID(), UUID(), UUID()],
-                    category: .groceries,
-                    notes: "",
-                    isSettled: true
-                ),
-                payer: Person(name: "Maria Santos", email: "maria@example.com", phone: "", avatarType: .initials("MS", colorIndex: 1)),
-                splitMembers: [
-                    Person(name: "Alex Thompson", email: "alex@example.com", phone: "", avatarType: .initials("AT", colorIndex: 0)),
-                    Person(name: "Maria Santos", email: "maria@example.com", phone: "", avatarType: .initials("MS", colorIndex: 1)),
-                    Person(name: "John Davis", email: "john@example.com", phone: "", avatarType: .initials("JD", colorIndex: 2))
-                ],
+                expense: MockData.settledGroup.expenses[0],
+                payer: MockData.personFriend,
+                splitMembers: [MockData.personOwedMoney, MockData.personFriend, MockData.personFamily],
                 currentUserId: nil,
                 onSettle: nil
             )
+        }
+        .padding(16)
+    }
+    .background(Color.wiseBackground)
+}
 
-            // Expense with many split members
+#Preview("GroupActivityBubble - Large Group") {
+    ScrollView {
+        VStack(spacing: 14) {
             GroupActivityBubble(
-                expense: GroupExpense(
-                    title: "Office Pizza Party",
-                    amount: 180.00,
-                    paidBy: UUID(),
-                    splitBetween: [UUID(), UUID(), UUID(), UUID(), UUID(), UUID()],
-                    category: .food,
-                    notes: "Team celebration for successful launch",
-                    isSettled: false
-                ),
-                payer: Person(name: "John Davis", email: "john@example.com", phone: "", avatarType: .initials("JD", colorIndex: 2)),
-                splitMembers: [
-                    Person(name: "Alex Thompson", email: "alex@example.com", phone: "", avatarType: .initials("AT", colorIndex: 0)),
-                    Person(name: "Maria Santos", email: "maria@example.com", phone: "", avatarType: .initials("MS", colorIndex: 1)),
-                    Person(name: "John Davis", email: "john@example.com", phone: "", avatarType: .initials("JD", colorIndex: 2)),
-                    Person(name: "Sarah Wilson", email: "sarah@example.com", phone: "", avatarType: .initials("SW", colorIndex: 3)),
-                    Person(name: "Mike Brown", email: "mike@example.com", phone: "", avatarType: .initials("MB", colorIndex: 4)),
-                    Person(name: "Chris Johnson", email: "chris@example.com", phone: "", avatarType: .initials("CJ", colorIndex: 0))
-                ],
+                expense: MockData.largeGroup.expenses[0],
+                payer: MockData.personOwedMoney,
+                splitMembers: MockData.people,
                 currentUserId: nil,
                 onSettle: nil
-            )
-
-            // Small expense
-            GroupActivityBubble(
-                expense: GroupExpense(
-                    title: "Coffee Run",
-                    amount: 18.50,
-                    paidBy: UUID(),
-                    splitBetween: [UUID(), UUID()],
-                    category: .food,
-                    notes: "",
-                    isSettled: false
-                ),
-                payer: Person(name: "Sarah Wilson", email: "sarah@example.com", phone: "", avatarType: .initials("SW", colorIndex: 3)),
-                splitMembers: [
-                    Person(name: "Sarah Wilson", email: "sarah@example.com", phone: "", avatarType: .initials("SW", colorIndex: 3)),
-                    Person(name: "Mike Brown", email: "mike@example.com", phone: "", avatarType: .initials("MB", colorIndex: 4))
-                ],
-                currentUserId: UUID(),
-                onSettle: { print("Settle coffee") }
             )
         }
         .padding(16)

@@ -357,7 +357,7 @@ struct EmptyStateView: View {
     }
 }
 
-#Preview {
+#Preview("Notification Settings Section") {
     NavigationView {
         List {
             NotificationSettingsSection()

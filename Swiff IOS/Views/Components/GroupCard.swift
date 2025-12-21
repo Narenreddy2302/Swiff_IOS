@@ -88,42 +88,26 @@ struct GroupCard: View {
 
 // MARK: - Preview
 
-#Preview("GroupCard - New Design") {
+#Preview("GroupCard - With Expenses") {
     VStack(spacing: 0) {
-        GroupCard(
-            group: Group(
-                name: "Dinner Club",
-                description: "Monthly dinner group",
-                emoji: "🍽️",
-                members: [UUID()]
-            )
-        )
-
+        GroupCard(group: MockData.groupWithExpenses)
         AlignedDivider()
-
-        GroupCard(
-            group: Group(
-                name: "Study Buddies",
-                description: "Study group expenses",
-                emoji: "📚",
-                members: [UUID(), UUID(), UUID(), UUID()]
-            )
-        )
-
-        AlignedDivider()
-
-        GroupCard(
-            group: Group(
-                name: "Weekend Getaway",
-                description: "Trip expenses",
-                emoji: "🏖️",
-                members: [UUID(), UUID()]
-            )
-        )
+        GroupCard(group: MockData.settledGroup)
     }
     .background(Color.wiseCardBackground)
     .cornerRadius(12)
-    .padding(.horizontal, 16)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Color.wiseGroupedBackground)
+    .padding()
+    .background(Color.wiseBackground)
+}
+
+#Preview("GroupCard - Empty") {
+    GroupCard(group: MockData.emptyGroup)
+        .padding()
+        .background(Color.wiseCardBackground)
+}
+
+#Preview("GroupCard - Large Group") {
+    GroupCard(group: MockData.largeGroup)
+        .padding()
+        .background(Color.wiseCardBackground)
 }

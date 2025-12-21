@@ -474,7 +474,7 @@ struct ExportAnalyticsSheet: View {
     }
 }
 
-#Preview {
+#Preview("Analytics Insights Page") {
     NavigationView {
         AnalyticsInsightsPage()
             .environmentObject(DataManager.shared)

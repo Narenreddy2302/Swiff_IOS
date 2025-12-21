@@ -351,7 +351,7 @@ struct SecurityToggleRow: View {
     }
 }
 
-#Preview {
+#Preview("Privacy Security Page") {
     NavigationView {
         PrivacySecurityPage()
     }

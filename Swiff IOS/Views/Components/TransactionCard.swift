@@ -143,104 +143,55 @@ extension TransactionCategory {
 
 // MARK: - Preview
 
-#Preview("TransactionCard - New Design") {
-    ScrollView {
-        VStack(spacing: 0) {
-            Text("Recent Activity")
-                .font(.system(size: 22, weight: .bold))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 16)
+#Preview("TransactionCard - Income") {
+    TransactionCard(
+        transaction: MockData.incomeTransaction,
+        context: .feed
+    )
+    .padding()
+    .background(Color.wiseCardBackground)
+}
 
-            VStack(spacing: 0) {
-                // Coffee expense
-                TransactionCard(
-                    transaction: Transaction(
-                        id: UUID(),
-                        title: "Coffee Shop",
-                        subtitle: "Food & Dining",
-                        amount: -5.75,
-                        category: .food,
-                        date: Date().addingTimeInterval(-86400 * 6),
-                        isRecurring: false,
-                        tags: []
-                    ),
-                    context: .feed
-                )
-
-                AlignedDivider()
-
-                // Dinner expense
-                TransactionCard(
-                    transaction: Transaction(
-                        id: UUID(),
-                        title: "Dinner",
-                        subtitle: "Dining",
-                        amount: -92.50,
-                        category: .dining,
-                        date: Date().addingTimeInterval(-86400 * 7),
-                        isRecurring: false,
-                        tags: []
-                    ),
-                    context: .feed
-                )
-
-                AlignedDivider()
-
-                // Groceries
-                TransactionCard(
-                    transaction: Transaction(
-                        id: UUID(),
-                        title: "Weekly Groceries",
-                        subtitle: "Groceries",
-                        amount: -156.32,
-                        category: .groceries,
-                        date: Date().addingTimeInterval(-86400 * 7),
-                        isRecurring: false,
-                        tags: []
-                    ),
-                    context: .feed
-                )
-
-                AlignedDivider()
-
-                // Gas
-                TransactionCard(
-                    transaction: Transaction(
-                        id: UUID(),
-                        title: "Gas Station",
-                        subtitle: "Transportation",
-                        amount: -58.20,
-                        category: .transportation,
-                        date: Date().addingTimeInterval(-86400 * 7),
-                        isRecurring: false,
-                        tags: []
-                    ),
-                    context: .feed
-                )
-
-                AlignedDivider()
-
-                // Lunch
-                TransactionCard(
-                    transaction: Transaction(
-                        id: UUID(),
-                        title: "Lunch",
-                        subtitle: "Dining",
-                        amount: -32.00,
-                        category: .dining,
-                        date: Date().addingTimeInterval(-86400 * 7),
-                        isRecurring: false,
-                        tags: []
-                    ),
-                    context: .feed
-                )
-            }
-            .background(Color.wiseCardBackground)
-            .cornerRadius(12)
-            .padding(.horizontal, 16)
-        }
+#Preview("TransactionCard - Expenses") {
+    VStack(spacing: 0) {
+        TransactionCard(transaction: MockData.expenseTransaction, context: .feed)
+        AlignedDivider()
+        TransactionCard(transaction: MockData.groceryTransaction, context: .feed)
+        AlignedDivider()
+        TransactionCard(transaction: MockData.diningTransaction, context: .feed)
+        AlignedDivider()
+        TransactionCard(transaction: MockData.transportTransaction, context: .feed)
     }
-    .background(Color.wiseGroupedBackground)
+    .background(Color.wiseCardBackground)
+    .cornerRadius(12)
+    .padding()
+    .background(Color.wiseBackground)
+}
+
+#Preview("TransactionCard - Status Variations") {
+    VStack(spacing: 0) {
+        TransactionCard(transaction: MockData.pendingTransaction, context: .feed)
+        AlignedDivider()
+        TransactionCard(transaction: MockData.recurringTransaction, context: .feed)
+        AlignedDivider()
+        TransactionCard(transaction: MockData.linkedTransaction, context: .feed)
+    }
+    .background(Color.wiseCardBackground)
+    .cornerRadius(12)
+    .padding()
+    .background(Color.wiseBackground)
+}
+
+#Preview("TransactionCard - Edge Cases") {
+    VStack(spacing: 0) {
+        TransactionCard(transaction: MockData.largeTransaction, context: .feed)
+        AlignedDivider()
+        TransactionCard(transaction: MockData.smallTransaction, context: .feed)
+        AlignedDivider()
+        TransactionCard(transaction: MockData.entertainmentTransaction, context: .feed)
+    }
+    .background(Color.wiseCardBackground)
+    .cornerRadius(12)
+    .padding()
+    .background(Color.wiseBackground)
 }

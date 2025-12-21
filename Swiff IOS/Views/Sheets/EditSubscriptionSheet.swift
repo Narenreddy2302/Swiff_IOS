@@ -962,17 +962,9 @@ struct EditSubscriptionSheet: View {
     }
 }
 
-#Preview {
+#Preview("Edit Subscription Sheet") {
     EditSubscriptionSheet(
-        subscription: Subscription(
-            name: "Netflix",
-            description: "Premium streaming",
-            price: 17.99,
-            billingCycle: .monthly,
-            category: .entertainment,
-            icon: "tv.fill",
-            color: "#E50914"
-        ),
+        subscription: MockData.activeSubscription,
         onSubscriptionUpdated: {}
     )
     .environmentObject(DataManager.shared)

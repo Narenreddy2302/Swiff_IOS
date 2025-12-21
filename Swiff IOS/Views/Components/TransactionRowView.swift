@@ -108,70 +108,46 @@ struct TransactionRowView: View {
 
 // MARK: - Preview
 
-#Preview("TransactionRowView - New Design") {
+#Preview("TransactionRowView - Income & Expense") {
     VStack(spacing: 0) {
-        TransactionRowView(
-            transaction: Transaction(
-                id: UUID(),
-                title: "Transfer to Access Bank",
-                subtitle: "Bank transfer",
-                amount: -1000.00,
-                category: .transfer,
-                date: Date(),
-                isRecurring: false,
-                tags: []
-            )
-        )
-
+        TransactionRowView(transaction: MockData.incomeTransaction)
         AlignedDivider()
-
-        TransactionRowView(
-            transaction: Transaction(
-                id: UUID(),
-                title: "Salary Deposit",
-                subtitle: "Monthly income",
-                amount: 5000.00,
-                category: .income,
-                date: Date().addingTimeInterval(-3600),
-                isRecurring: false,
-                tags: []
-            )
-        )
-
+        TransactionRowView(transaction: MockData.expenseTransaction)
         AlignedDivider()
-
-        TransactionRowView(
-            transaction: Transaction(
-                id: UUID(),
-                title: "Online Purchase",
-                subtitle: "Shopping",
-                amount: -150.00,
-                category: .shopping,
-                date: Date().addingTimeInterval(-86400),
-                isRecurring: false,
-                tags: [],
-                paymentStatus: .pending
-            )
-        )
-
-        AlignedDivider()
-
-        TransactionRowView(
-            transaction: Transaction(
-                id: UUID(),
-                title: "Coffee Shop",
-                subtitle: "Food & Dining",
-                amount: -5.75,
-                category: .food,
-                date: Date().addingTimeInterval(-86400 * 2),
-                isRecurring: false,
-                tags: []
-            )
-        )
+        TransactionRowView(transaction: MockData.groceryTransaction)
     }
     .background(Color.wiseCardBackground)
     .cornerRadius(12)
-    .padding(.horizontal, 16)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Color.wiseGroupedBackground)
+    .padding()
+    .background(Color.wiseBackground)
+}
+
+#Preview("TransactionRowView - Various Categories") {
+    VStack(spacing: 0) {
+        TransactionRowView(transaction: MockData.diningTransaction)
+        AlignedDivider()
+        TransactionRowView(transaction: MockData.transportTransaction)
+        AlignedDivider()
+        TransactionRowView(transaction: MockData.entertainmentTransaction)
+        AlignedDivider()
+        TransactionRowView(transaction: MockData.recurringTransaction)
+    }
+    .background(Color.wiseCardBackground)
+    .cornerRadius(12)
+    .padding()
+    .background(Color.wiseBackground)
+}
+
+#Preview("TransactionRowView - Edge Cases") {
+    VStack(spacing: 0) {
+        TransactionRowView(transaction: MockData.largeTransaction)
+        AlignedDivider()
+        TransactionRowView(transaction: MockData.smallTransaction)
+        AlignedDivider()
+        TransactionRowView(transaction: MockData.pendingTransaction)
+    }
+    .background(Color.wiseCardBackground)
+    .cornerRadius(12)
+    .padding()
+    .background(Color.wiseBackground)
 }

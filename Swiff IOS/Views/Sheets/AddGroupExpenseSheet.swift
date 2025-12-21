@@ -323,9 +323,9 @@ struct AddGroupExpenseSheet: View {
     }
 }
 
-#Preview {
+#Preview("Add Group Expense Sheet") {
     AddGroupExpenseSheet(
-        group: Group(name: "Weekend Trip", description: "Beach vacation", emoji: "🏖️", members: []),
+        group: MockData.groupWithExpenses,
         onExpenseAdded: {}
     )
     .environmentObject(DataManager.shared)

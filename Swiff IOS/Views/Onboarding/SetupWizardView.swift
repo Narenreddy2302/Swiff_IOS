@@ -450,7 +450,7 @@ enum CurrencyCode: String, CaseIterable {
     }
 }
 
-#Preview {
+#Preview("Setup Wizard View") {
     SetupWizardView(
         currentStep: .constant(0),
         onComplete: {},

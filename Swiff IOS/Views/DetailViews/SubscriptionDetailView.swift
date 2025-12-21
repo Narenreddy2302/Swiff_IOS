@@ -42,6 +42,11 @@ struct SubscriptionDetailView: View {
     @State private var priceHistory: [PriceChange] = []
     @State private var showPriceIncreaseBadge = false
 
+    // New sheets for Quick Actions
+    @State private var showingReminderSettingsSheet = false
+    @State private var showingUsageTrackingSheet = false
+    @State private var isCancellationExpanded = false
+
     var subscription: Subscription? {
         dataManager.subscriptions.first { $0.id == subscriptionId }
     }
@@ -51,6 +56,35 @@ struct SubscriptionDetailView: View {
         return subscription.sharedWith.compactMap { personId in
             dataManager.people.first { $0.id == personId }
         }
+    }
+
+    // MARK: - Computed Properties for Timeline
+
+    // Get subscription alert if any
+    private var subscriptionAlert: SubscriptionAlertType? {
+        guard let subscription = subscription else { return nil }
+
+        // Check trial ending
+        if subscription.isFreeTrial, let trialEnd = subscription.trialEndDate {
+            let daysLeft = Calendar.current.dateComponents([.day], from: Date(), to: trialEnd).day ?? 0
+            if daysLeft <= 7 && daysLeft >= 0 {
+                return .trialEnding(daysLeft: daysLeft, priceAfter: subscription.price)
+            }
+        }
+
+        // Check payment upcoming
+        let nextBilling = subscription.nextBillingDate
+        let daysUntil = Calendar.current.dateComponents([.day], from: Date(), to: nextBilling).day ?? 0
+        if daysUntil <= 3 && daysUntil >= 0 {
+            return .paymentUpcoming(daysUntil: daysUntil, amount: subscription.price)
+        }
+
+        // Check if paused
+        if !subscription.isActive && subscription.cancellationDate == nil {
+            return .subscriptionPaused
+        }
+
+        return nil
     }
 
     var statusColor: Color {
@@ -101,16 +135,18 @@ struct SubscriptionDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             if let subscription = subscription {
-                // Header
-                SubscriptionTimelineHeader(
+                // Conversation-style header
+                SubscriptionConversationHeader(
                     subscription: subscription,
-                    sharedPeople: sharedPeople
+                    onBack: { dismiss() },
+                    onEdit: { showingEditSheet = true }
                 )
-                .background(Color.wiseBackground)
 
-                // Tab selector
+                // Tab selector with vertical spacing
                 PillSegmentedControl(selectedTab: $selectedTab)
-                    .padding(.bottom, 16)
+                    .padding(.vertical, 12)
+
+                Divider()
 
                 // Tab content
                 TabView(selection: $selectedTab) {
@@ -126,18 +162,8 @@ struct SubscriptionDetailView: View {
             }
         }
         .background(Color.wiseBackground)
-        .navigationTitle(subscription?.name ?? "Subscription")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(true)
         .observeEntity(subscriptionId, type: .subscription, dataManager: dataManager)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: { showingEditSheet = true }) {
-                    Text("Edit")
-                        .font(.spotifyBodyMedium)
-                        .foregroundColor(.wiseForestGreen)
-                }
-            }
-        }
         .sheet(isPresented: $showingEditSheet) {
             if let subscription = subscription {
                 EditSubscriptionSheet(subscription: subscription, onSubscriptionUpdated: {
@@ -181,27 +207,71 @@ struct SubscriptionDetailView: View {
                 }
             }
         }
+        .sheet(isPresented: $showingReminderSettingsSheet) {
+            if let subscription = subscription {
+                ReminderSettingsSheet(
+                    subscription: subscription,
+                    onSettingsSaved: {
+                        showingReminderSettingsSheet = false
+                        // Reload data after settings saved
+                        loadSubscriptionData(subscription: subscription)
+                    }
+                )
+                .environmentObject(dataManager)
+            }
+        }
+        .sheet(isPresented: $showingUsageTrackingSheet) {
+            if let subscription = subscription {
+                UsageTrackingSheet(
+                    subscription: subscription,
+                    onUsageUpdated: {
+                        // Data refreshes automatically via @EnvironmentObject
+                    }
+                )
+                .environmentObject(dataManager)
+            }
+        }
     }
 
     // MARK: - Tab Views
 
     @ViewBuilder
     private func timelineTab(subscription: Subscription) -> some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                if events.isEmpty {
-                    emptyTimelineView
-                        .padding(.top, 60)
-                } else {
-                    timelineEventsList
-                        .padding(.top, 16)
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    // Status banner hidden to match conversation-style reference design
+                    // Alerts are still accessible via the Details tab
+
+                    // Timeline events
+                    if events.isEmpty {
+                        emptyTimelineView
+                            .padding(.top, 60)
+                    } else {
+                        timelineEventsList
+                            .padding(.top, 16)
+                    }
                 }
+                .padding(.bottom, 80)
             }
-        }
-        .background(Color.wiseBackground)
-        .onAppear {
-            loadPriceHistory()
-            loadTimelineEvents(subscription: subscription)
+            .background(Color.wiseBackground)
+            .onAppear {
+                loadPriceHistory()
+                loadTimelineEvents(subscription: subscription)
+            }
+
+            // Timeline input area
+            TimelineInputArea(
+                config: TimelineInputAreaConfig(
+                    quickActionTitle: "Mark Used",
+                    quickActionIcon: "checkmark.square",
+                    placeholder: "",
+                    showMessageField: false
+                ),
+                onQuickAction: {
+                    markAsUsedToday(subscription: subscription)
+                }
+            )
         }
     }
 
@@ -211,8 +281,8 @@ struct SubscriptionDetailView: View {
 
             ForEach(Array(groupedEvents.enumerated()), id: \.offset) { index, group in
                 VStack(spacing: 14) {
-                    // Date section header
-                    TimelineDateSectionHeader(date: group.date)
+                    // Date headers removed - timestamps shown inline on each event
+                    // (matches conversation-style reference design)
 
                     // Events for this date
                     ForEach(group.events) { event in
@@ -249,30 +319,72 @@ struct SubscriptionDetailView: View {
     private func detailsTab(subscription: Subscription) -> some View {
         ScrollView {
             VStack(spacing: 24) {
-                // AGENT 8: Trial Status Section (if trial)
+                // Trial Status Section (if trial)
                 if subscription.isFreeTrial {
                     trialStatusSection(subscription: subscription)
                 }
 
-                // AGENT 9: Price increase badge
+                // Price increase badge (if recent increase)
                 if showPriceIncreaseBadge, let latestIncrease = priceHistory.first, latestIncrease.isIncrease {
                     priceIncreaseBadgeSection(priceChange: latestIncrease)
                 }
 
-                overviewCard(subscription: subscription)
+                // NEW: Billing Summary Card (Hero card - replaces Overview + Spending Stats)
+                SubscriptionBillingSummaryCard(
+                    subscription: subscription,
+                    enableRenewalReminder: $enableRenewalReminder,
+                    reminderDaysBefore: $reminderDaysBefore,
+                    onReminderChanged: {
+                        saveReminderSettings(subscription: subscription)
+                    }
+                )
 
-                // AGENT 9: Price history section
+                // Shared cost card (if shared)
+                if subscription.isShared && !sharedPeople.isEmpty {
+                    SharedSubscriptionCostCard(
+                        subscription: subscription,
+                        sharedPeople: sharedPeople
+                    )
+                    .padding(.horizontal, 16)
+                }
+
+                // NEW: Quick Actions Section
+                SubscriptionQuickActionsSection(
+                    subscription: subscription,
+                    onPauseResume: {
+                        if subscription.isActive {
+                            showingPauseAlert = true
+                        } else {
+                            resumeSubscription()
+                        }
+                    },
+                    onRemind: {
+                        showingReminderSettingsSheet = true
+                    },
+                    onUsage: {
+                        showingUsageTrackingSheet = true
+                    },
+                    onWebsite: {
+                        openWebsite(subscription: subscription)
+                    }
+                )
+
+                // Price history section (kept inline)
                 if !priceHistory.isEmpty {
                     priceHistorySection(subscription: subscription)
                 }
 
-                reminderSettingsCard(subscription: subscription)
-                usageTrackingCard(subscription: subscription)
-                spendingStatsCard(subscription: subscription)
-                detailsSection(subscription: subscription)
-                sharedInfoSection(subscription: subscription)
-                cancellationInstructionsSection(subscription: subscription)
-                actionsSection(subscription: subscription)
+                // Additional Info (simplified, no card wrapper)
+                additionalInfoSection(subscription: subscription)
+
+                // Shared With Section (simplified)
+                sharedInfoSectionSimplified(subscription: subscription)
+
+                // Cancellation Instructions (collapsible)
+                cancellationInfoSection(subscription: subscription)
+
+                // Actions Section (simplified)
+                simplifiedActionsSection(subscription: subscription)
             }
             .padding(.top, 16)
         }
@@ -280,6 +392,15 @@ struct SubscriptionDetailView: View {
         .onAppear {
             loadSubscriptionData(subscription: subscription)
             loadPriceHistory()
+        }
+    }
+
+    // MARK: - Helper for opening website
+    private func openWebsite(subscription: Subscription) {
+        guard let website = subscription.website, !website.isEmpty else { return }
+        let urlString = website.hasPrefix("http") ? website : "https://\(website)"
+        if let url = URL(string: urlString) {
+            UIApplication.shared.open(url)
         }
     }
 
@@ -927,6 +1048,371 @@ struct SubscriptionDetailView: View {
         }
     }
 
+    // MARK: - Simplified Actions Section (NEW)
+    @ViewBuilder
+    private func simplifiedActionsSection(subscription: Subscription) -> some View {
+        VStack(spacing: 12) {
+            // Cancel Subscription button (outlined red) - only if active and not already cancelled
+            if subscription.isActive && subscription.cancellationDate == nil {
+                Button(action: { showingCancelAlert = true }) {
+                    Text("Cancel Subscription")
+                        .font(.spotifyBodyLarge)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.wiseError)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.wiseError, lineWidth: 1)
+                        )
+                }
+            }
+
+            // Delete Subscription button (text only) - always visible
+            Button(action: { showingDeleteAlert = true }) {
+                Text("Delete Subscription")
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wiseError)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 40)
+    }
+
+    // MARK: - Additional Info Section (NEW - simplified, no card wrapper)
+    @ViewBuilder
+    private func additionalInfoSection(subscription: Subscription) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Section header
+            Text("Additional Info")
+                .font(.spotifyHeadingMedium)
+                .foregroundColor(.wisePrimaryText)
+                .padding(.bottom, 16)
+
+            // Category row with icon
+            HStack {
+                Text("Category")
+                    .font(.spotifyLabelSmall)
+                    .foregroundColor(.wiseSecondaryText)
+                Spacer()
+                HStack(spacing: 6) {
+                    Image(systemName: subscription.category.icon)
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(hexString: subscription.color))
+                    Text(subscription.category.rawValue)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wisePrimaryText)
+                }
+            }
+            .padding(.vertical, 12)
+
+            AlignedDivider()
+
+            // Payment Method row
+            HStack {
+                Text("Payment Method")
+                    .font(.spotifyLabelSmall)
+                    .foregroundColor(.wiseSecondaryText)
+                Spacer()
+                Text(subscription.paymentMethod.rawValue)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+            }
+            .padding(.vertical, 12)
+
+            AlignedDivider()
+
+            // Created Date row
+            HStack {
+                Text("Created")
+                    .font(.spotifyLabelSmall)
+                    .foregroundColor(.wiseSecondaryText)
+                Spacer()
+                Text(subscription.createdDate, style: .date)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+            }
+            .padding(.vertical, 12)
+
+            // Website row (if available)
+            if let website = subscription.website, !website.isEmpty {
+                AlignedDivider()
+
+                Button(action: {
+                    openWebsite(subscription: subscription)
+                }) {
+                    HStack {
+                        Text("Website")
+                            .font(.spotifyLabelSmall)
+                            .foregroundColor(.wiseSecondaryText)
+                        Spacer()
+                        HStack(spacing: 4) {
+                            Text(website)
+                                .font(.spotifyBodyMedium)
+                                .foregroundColor(.wiseBlue)
+                                .lineLimit(1)
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 10))
+                                .foregroundColor(.wiseBlue)
+                        }
+                    }
+                    .padding(.vertical, 12)
+                }
+            }
+
+            // Notes row (if not empty)
+            if !subscription.notes.isEmpty {
+                AlignedDivider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Notes")
+                        .font(.spotifyLabelSmall)
+                        .foregroundColor(.wiseSecondaryText)
+                    Text(subscription.notes)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wisePrimaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 12)
+            }
+
+            // Cancelled Date row (if cancelled)
+            if let cancelDate = subscription.cancellationDate {
+                AlignedDivider()
+
+                HStack {
+                    Text("Cancelled On")
+                        .font(.spotifyLabelSmall)
+                        .foregroundColor(.wiseError)
+                    Spacer()
+                    Text(cancelDate, style: .date)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wiseError)
+                }
+                .padding(.vertical, 12)
+            }
+        }
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: - Shared Info Section Simplified (NEW)
+    @ViewBuilder
+    private func sharedInfoSectionSimplified(subscription: Subscription) -> some View {
+        if subscription.isShared && !sharedPeople.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
+                // Header with count badge
+                HStack {
+                    Text("Shared With")
+                        .font(.spotifyHeadingMedium)
+                        .foregroundColor(.wisePrimaryText)
+
+                    Spacer()
+
+                    // People count badge
+                    Text("\(sharedPeople.count + 1) people")
+                        .font(.spotifyLabelSmall)
+                        .foregroundColor(.wiseSecondaryText)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.wiseBorder.opacity(0.5))
+                        .cornerRadius(12)
+                }
+
+                // Shared people list
+                VStack(spacing: 0) {
+                    // Owner row (You)
+                    sharedPersonRowSelf(subscription: subscription)
+
+                    AlignedDivider()
+
+                    // Other shared people
+                    ForEach(Array(sharedPeople.enumerated()), id: \.element.id) { index, person in
+                        sharedPersonRow(person: person, subscription: subscription)
+
+                        if index < sharedPeople.count - 1 {
+                            AlignedDivider()
+                        }
+                    }
+                }
+            }
+            .padding(16)
+            .background(Color.wiseCardBackground)
+            .cornerRadius(16)
+            .cardShadow()
+            .padding(.horizontal, 16)
+        }
+    }
+
+    // Self row for subscription owner
+    @ViewBuilder
+    private func sharedPersonRowSelf(subscription: Subscription) -> some View {
+        HStack(spacing: 14) {
+            // "You" avatar
+            ZStack {
+                Circle()
+                    .fill(Color.wiseForestGreen.opacity(0.2))
+                    .frame(width: 44, height: 44)
+
+                Image(systemName: "person.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.wiseForestGreen)
+            }
+
+            // Name
+            VStack(alignment: .leading, spacing: 3) {
+                Text("You")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.wisePrimaryText)
+
+                Text("Owner")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+            }
+
+            Spacer()
+
+            // Share amount
+            Text(String(format: "$%.2f", subscription.monthlyEquivalent / Double(sharedPeople.count + 1)))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(AmountColors.positive)
+        }
+        .padding(.vertical, 14)
+    }
+
+    // MARK: - Cancellation Info Section (NEW - Collapsible)
+    @ViewBuilder
+    private func cancellationInfoSection(subscription: Subscription) -> some View {
+        if let instructions = subscription.cancellationInstructions, !instructions.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                DisclosureGroup(
+                    isExpanded: $isCancellationExpanded,
+                    content: {
+                        VStack(alignment: .leading, spacing: 16) {
+                            // Instructions text
+                            Text(instructions)
+                                .font(.spotifyBodyMedium)
+                                .foregroundColor(.wisePrimaryText)
+                                .lineSpacing(4)
+                                .padding(.top, 12)
+
+                            // Cancellation deadline warning (if available)
+                            if let deadline = subscription.cancellationDeadline {
+                                cancellationDeadlineWarning(deadline: deadline)
+                            }
+
+                            // Open Website button (if available)
+                            if let website = subscription.website, !website.isEmpty {
+                                Button(action: {
+                                    openWebsite(subscription: subscription)
+                                }) {
+                                    HStack {
+                                        Image(systemName: "safari.fill")
+                                            .font(.system(size: 14))
+                                        Text("Open Website to Cancel")
+                                            .font(.spotifyLabelMedium)
+                                    }
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Color.wiseBlue)
+                                    .cornerRadius(10)
+                                }
+                            }
+                        }
+                    },
+                    label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "info.circle.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(.wiseWarning)
+
+                            Text("How to Cancel")
+                                .font(.spotifyHeadingMedium)
+                                .foregroundColor(.wisePrimaryText)
+
+                            Spacer()
+
+                            // Difficulty badge
+                            if let difficulty = subscription.cancellationDifficulty {
+                                difficultyBadge(difficulty: difficulty)
+                            }
+                        }
+                    }
+                )
+                .accentColor(.wiseSecondaryText)
+            }
+            .padding(16)
+            .background(Color.wiseCardBackground)
+            .cornerRadius(16)
+            .cardShadow()
+            .padding(.horizontal, 16)
+        }
+    }
+
+    // Difficulty badge helper
+    @ViewBuilder
+    private func difficultyBadge(difficulty: CancellationDifficulty) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: difficulty.icon)
+                .font(.system(size: 12))
+            Text(difficulty.rawValue)
+                .font(.spotifyLabelSmall)
+                .fontWeight(.medium)
+        }
+        .foregroundColor(difficulty.color)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(difficulty.color.opacity(0.15))
+        .cornerRadius(12)
+    }
+
+    // Deadline warning helper
+    @ViewBuilder
+    private func cancellationDeadlineWarning(deadline: Date) -> some View {
+        let daysUntilDeadline = Calendar.current.dateComponents([.day], from: Date(), to: deadline).day ?? 0
+
+        HStack(spacing: 12) {
+            Image(systemName: "calendar.badge.exclamationmark")
+                .font(.system(size: 20))
+                .foregroundColor(.wiseError)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Cancellation Deadline")
+                    .font(.spotifyLabelSmall)
+                    .foregroundColor(.wiseSecondaryText)
+
+                Text(deadline, style: .date)
+                    .font(.spotifyBodyMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.wiseError)
+            }
+
+            Spacer()
+
+            if daysUntilDeadline >= 0 {
+                Text("\(daysUntilDeadline) days left")
+                    .font(.spotifyLabelMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.wiseError)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.wiseError.opacity(0.1))
+                    .cornerRadius(8)
+            }
+        }
+        .padding(12)
+        .background(Color.wiseError.opacity(0.05))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.wiseError.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    // MARK: - OLD Actions Section (kept for reference, replaced by simplifiedActionsSection)
     @ViewBuilder
     private func actionsSection(subscription: Subscription) -> some View {
         VStack(spacing: 12) {
@@ -1052,6 +1538,19 @@ struct SubscriptionDetailView: View {
 
     // MARK: - Helper Functions
 
+    private func handleAlertAction(alert: SubscriptionAlertType) {
+        switch alert {
+        case .trialEnding:
+            showingCancelAlert = true
+        case .priceIncreased:
+            showingPriceHistoryChart = true
+        case .paymentUpcoming:
+            break
+        case .subscriptionPaused:
+            resumeSubscription()
+        }
+    }
+
     private func loadTimelineEvents(subscription: Subscription) {
         events = SubscriptionEventService.shared.generateEvents(
             for: subscription,
@@ -1154,6 +1653,9 @@ struct SubscriptionDetailView: View {
 
         do {
             try dataManager.updateSubscription(updatedSubscription)
+            // Reload timeline events to show the new usage event
+            loadTimelineEvents(subscription: updatedSubscription)
+            // Provide haptic feedback
             HapticManager.shared.success()
         } catch {
             dataManager.error = error
@@ -1180,9 +1682,25 @@ struct SubscriptionDetailView: View {
     }
 }
 
-#Preview {
+// MARK: - Preview
+
+#Preview("Subscription Detail - Active") {
     NavigationView {
-        SubscriptionDetailView(subscriptionId: UUID())
+        SubscriptionDetailView(subscriptionId: MockData.activeSubscription.id)
+            .environmentObject(DataManager.shared)
+    }
+}
+
+#Preview("Subscription Detail - Trial") {
+    NavigationView {
+        SubscriptionDetailView(subscriptionId: MockData.trialSubscription.id)
+            .environmentObject(DataManager.shared)
+    }
+}
+
+#Preview("Subscription Detail - Shared") {
+    NavigationView {
+        SubscriptionDetailView(subscriptionId: MockData.sharedSubscription.id)
             .environmentObject(DataManager.shared)
     }
 }

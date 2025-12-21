@@ -47,72 +47,42 @@ struct TransactionListView: View {
 
 // MARK: - Preview
 
-#Preview("TransactionListView") {
+#Preview("TransactionListView - Mixed") {
     ScrollView {
         VStack(spacing: 24) {
             TransactionListView(
-                sectionTitle: "Today",
+                sectionTitle: "Recent",
                 transactions: [
-                    Transaction(
-                        id: UUID(),
-                        title: "Transfer to Access Bank",
-                        subtitle: "Bank transfer",
-                        amount: -1000.00,
-                        category: .transfer,
-                        date: Date(),
-                        isRecurring: false,
-                        tags: []
-                    ),
-                    Transaction(
-                        id: UUID(),
-                        title: "Salary Deposit",
-                        subtitle: "Monthly income",
-                        amount: 5000.00,
-                        category: .income,
-                        date: Date().addingTimeInterval(-3600),
-                        isRecurring: false,
-                        tags: []
-                    ),
-                    Transaction(
-                        id: UUID(),
-                        title: "Online Purchase",
-                        subtitle: "Shopping",
-                        amount: -150.00,
-                        category: .shopping,
-                        date: Date().addingTimeInterval(-7200),
-                        isRecurring: false,
-                        tags: [],
-                        paymentStatus: .pending
-                    )
+                    MockData.incomeTransaction,
+                    MockData.expenseTransaction,
+                    MockData.pendingTransaction
                 ]
             )
 
             TransactionListView(
-                sectionTitle: "Yesterday",
+                sectionTitle: "This Week",
                 transactions: [
-                    Transaction(
-                        id: UUID(),
-                        title: "Grocery Store",
-                        subtitle: "Groceries",
-                        amount: -75.50,
-                        category: .groceries,
-                        date: Date().addingTimeInterval(-86400),
-                        isRecurring: false,
-                        tags: []
-                    ),
-                    Transaction(
-                        id: UUID(),
-                        title: "Gas Station",
-                        subtitle: "Transportation",
-                        amount: -45.00,
-                        category: .transportation,
-                        date: Date().addingTimeInterval(-90000),
-                        isRecurring: false,
-                        tags: []
-                    )
+                    MockData.groceryTransaction,
+                    MockData.diningTransaction,
+                    MockData.transportTransaction
                 ]
             )
         }
+        .padding()
+    }
+    .background(Color.wiseGroupedBackground)
+}
+
+#Preview("TransactionListView - Edge Cases") {
+    ScrollView {
+        TransactionListView(
+            sectionTitle: "All Transactions",
+            transactions: [
+                MockData.largeTransaction,
+                MockData.smallTransaction,
+                MockData.entertainmentTransaction
+            ]
+        )
         .padding()
     }
     .background(Color.wiseGroupedBackground)

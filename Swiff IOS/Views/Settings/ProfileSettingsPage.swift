@@ -415,7 +415,7 @@ struct SettingsToggleRow: View {
     }
 }
 
-#Preview {
+#Preview("Profile Settings Page") {
     NavigationView {
         ProfileSettingsPage()
     }

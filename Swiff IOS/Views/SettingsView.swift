@@ -611,7 +611,15 @@ struct ShareSheet: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
-#Preview {
+// MARK: - Preview
+
+#Preview("Settings - Default") {
     SettingsView()
         .environmentObject(DataManager.shared)
+}
+
+#Preview("Settings - Dark Mode") {
+    SettingsView()
+        .environmentObject(DataManager.shared)
+        .preferredColorScheme(.dark)
 }

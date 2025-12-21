@@ -869,7 +869,15 @@ struct ReportInfoRow: View {
     }
 }
 
-#Preview {
+// MARK: - Preview
+
+#Preview("Balance Detail - Default") {
     BalanceDetailView()
         .environmentObject(DataManager.shared)
+}
+
+#Preview("Balance Detail - Dark Mode") {
+    BalanceDetailView()
+        .environmentObject(DataManager.shared)
+        .preferredColorScheme(.dark)
 }

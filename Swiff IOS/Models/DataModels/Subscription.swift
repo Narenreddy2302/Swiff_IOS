@@ -134,9 +134,9 @@ struct Subscription: Identifiable, Codable {
 
     var costPerPerson: Double {
         if isShared && !sharedWith.isEmpty {
-            return price / Double(sharedWith.count + 1) // +1 for the owner
+            return monthlyEquivalent / Double(sharedWith.count + 1) // +1 for the owner
         }
-        return price
+        return monthlyEquivalent
     }
 
     // Trial computed properties

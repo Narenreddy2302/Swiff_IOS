@@ -447,3 +447,8 @@ struct FilterChip: View {
 // MARK: - Flow Layout
 
 // Note: FlowLayout is defined in TransactionDetailView.swift
+
+#Preview("Advanced Search Filter Sheet") {
+    AdvancedSearchFilterSheet(filters: .constant(SearchFilters()))
+        .environmentObject(DataManager.shared)
+}

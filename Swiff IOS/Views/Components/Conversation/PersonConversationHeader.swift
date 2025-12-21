@@ -10,96 +10,90 @@ import SwiftUI
 
 struct PersonConversationHeader: View {
     let person: Person
-    var onPhoneTap: (() -> Void)?
-    var onMessageTap: (() -> Void)?
+    var onBack: (() -> Void)?
+    var onEdit: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Avatar (64pt)
-            AvatarView(person: person, size: .xlarge, style: .solid)
+        HStack(spacing: 10) {
+            // Back button (circular with gray filled background)
+            if let onBack = onBack {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.wisePrimaryText)
+                        .frame(width: 32, height: 32)
+                        .background(Color.wiseBorder.opacity(0.3))
+                        .clipShape(Circle())
+                }
+            }
 
-            // Person info
-            VStack(alignment: .leading, spacing: 4) {
+            // Person info (name + balance)
+            VStack(alignment: .leading, spacing: 1) {
                 Text(person.name)
-                    .font(.spotifyHeadingMedium)
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.wisePrimaryText)
 
-                // Balance summary
+                // Balance summary - split into two parts
                 balanceView
             }
 
             Spacer()
 
-            // Quick action icons
-            if !person.phone.isEmpty {
-                HStack(spacing: 16) {
-                    // Phone button
-                    Button(action: {
-                        HapticManager.shared.light()
-                        onPhoneTap?()
-                    }) {
-                        Image(systemName: "phone.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(.wiseBrightGreen)
-                            .frame(width: 40, height: 40)
-                            .background(
-                                Circle()
-                                    .fill(Color.wiseBrightGreen.opacity(0.15))
-                            )
-                    }
-                    .buttonStyle(.plain)
-
-                    // Message button
-                    Button(action: {
-                        HapticManager.shared.light()
-                        onMessageTap?()
-                    }) {
-                        Image(systemName: "message.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(.wiseBlue)
-                            .frame(width: 40, height: 40)
-                            .background(
-                                Circle()
-                                    .fill(Color.wiseBlue.opacity(0.15))
-                            )
-                    }
-                    .buttonStyle(.plain)
+            // Edit button (if provided)
+            if let onEdit = onEdit {
+                Button(action: onEdit) {
+                    Text("Edit")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.wiseForestGreen)
                 }
             }
+
+            // Avatar on right (matching reference design)
+            AvatarView(person: person, size: .large, style: .solid)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .frame(height: 80)
+        .frame(height: 70)
         .background(Color.wiseCardBackground)
+        .overlay(
+            Rectangle()
+                .fill(Color.wiseBorder)
+                .frame(height: 1)
+            , alignment: .bottom
+        )
     }
 
+    @ViewBuilder
     private var balanceView: some View {
-        HStack(spacing: 4) {
-            if person.balance > 0 {
-                Text("owes you")
-                    .font(.spotifyCaptionMedium)
+        if person.balance > 0 {
+            // Person owes you - split into gray + green
+            HStack(spacing: 4) {
+                Text("Owes you")
+                    .font(.system(size: 12))
                     .foregroundColor(.wiseSecondaryText)
-                Text(String(format: "$%.2f", person.balance))
-                    .font(.spotifyCaptionMedium)
-                    .fontWeight(.semibold)
+                Text("$\(String(format: "%.2f", person.balance))")
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(AmountColors.positive)
-            } else if person.balance < 0 {
-                Text("you owe")
-                    .font(.spotifyCaptionMedium)
+            }
+        } else if person.balance < 0 {
+            // You owe person - split into gray + red
+            HStack(spacing: 4) {
+                Text("You owe")
+                    .font(.system(size: 12))
                     .foregroundColor(.wiseSecondaryText)
-                Text(String(format: "$%.2f", abs(person.balance)))
-                    .font(.spotifyCaptionMedium)
-                    .fontWeight(.semibold)
-                    .foregroundColor(AmountColors.negative)
-            } else {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.wiseBrightGreen)
-                    Text("Settled up")
-                        .font(.spotifyCaptionMedium)
-                        .foregroundColor(.wiseSecondaryText)
-                }
+                Text("$\(String(format: "%.2f", abs(person.balance)))")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.wiseError)
+            }
+        } else {
+            // Settled up
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(.wiseBrightGreen)
+                Text("Settled up")
+                    .font(.system(size: 12))
+                    .foregroundColor(.wiseSecondaryText)
             }
         }
     }
@@ -107,47 +101,30 @@ struct PersonConversationHeader: View {
 
 // MARK: - Preview
 
-#Preview {
-    VStack(spacing: 0) {
-        // Person owes you
-        PersonConversationHeader(
-            person: Person(
-                name: "Alex Thompson",
-                email: "alex@example.com",
-                phone: "+1234567890",
-                avatarType: .initials("AT", colorIndex: 0)
-            ),
-            onPhoneTap: {},
-            onMessageTap: {}
-        )
+#Preview("PersonConversationHeader - Owes You") {
+    PersonConversationHeader(
+        person: MockData.personOwedMoney
+    )
+    .background(Color.wiseBackground)
+}
 
-        Divider()
+#Preview("PersonConversationHeader - You Owe") {
+    PersonConversationHeader(
+        person: MockData.personOwingMoney
+    )
+    .background(Color.wiseBackground)
+}
 
-        // You owe person
-        PersonConversationHeader(
-            person: Person(
-                name: "Maria Santos",
-                email: "maria@example.com",
-                phone: "+1234567890",
-                avatarType: .initials("MS", colorIndex: 2)
-            ),
-            onPhoneTap: {},
-            onMessageTap: {}
-        )
+#Preview("PersonConversationHeader - Settled") {
+    PersonConversationHeader(
+        person: MockData.personSettled
+    )
+    .background(Color.wiseBackground)
+}
 
-        Divider()
-
-        // Settled
-        PersonConversationHeader(
-            person: Person(
-                name: "Jordan Lee",
-                email: "jordan@example.com",
-                phone: "+1234567890",
-                avatarType: .initials("JL", colorIndex: 4)
-            ),
-            onPhoneTap: {},
-            onMessageTap: {}
-        )
-    }
+#Preview("PersonConversationHeader - Long Name") {
+    PersonConversationHeader(
+        person: MockData.longNamePerson
+    )
     .background(Color.wiseBackground)
 }

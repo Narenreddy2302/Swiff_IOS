@@ -1567,11 +1567,13 @@ struct ProfileAppSettingsSheet: View {
 
 // MARK: - Preview
 
-#Preview("Profile View") {
+#Preview("ProfileView - Default") {
     ProfileView()
+        .environmentObject(DataManager.shared)
 }
 
-#Preview("Profile View - Dark Mode") {
+#Preview("ProfileView - Dark Mode") {
     ProfileView()
+        .environmentObject(DataManager.shared)
         .preferredColorScheme(.dark)
 }

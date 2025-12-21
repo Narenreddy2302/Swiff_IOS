@@ -165,6 +165,6 @@ struct TermsOfServiceView: View {
     }
 }
 
-#Preview {
+#Preview("Terms Of Service View") {
     TermsOfServiceView()
 }

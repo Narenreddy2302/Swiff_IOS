@@ -214,7 +214,7 @@ struct SecuritySettingsSection: View {
     }
 }
 
-#Preview {
+#Preview("Security Settings Section") {
     List {
         SecuritySettingsSection(userSettings: UserSettings.shared)
     }

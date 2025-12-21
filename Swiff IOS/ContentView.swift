@@ -1176,7 +1176,7 @@ struct QuickActionSheet: View {
         .sheet(isPresented: $showingAddPerson) {
             AddPersonSheet(isPresented: $showingAddPerson)
                 .environmentObject(dataManager)
-                .presentationDetents([.height(220)])
+                .presentationDetents([.height(320)])
                 .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingAddGroup) {
@@ -3166,7 +3166,7 @@ struct PeopleView: View {
         .sheet(isPresented: $showingAddPersonSheet) {
             AddPersonSheet(isPresented: $showingAddPersonSheet)
                 .environmentObject(dataManager)
-                .presentationDetents([.height(220)])
+                .presentationDetents([.height(320)])
                 .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingAddGroupSheet) {
@@ -5309,12 +5309,13 @@ enum PersonInputType {
     }
 }
 
-// MARK: - Add Person Sheet (Simplified Smart Input)
+// MARK: - Add Person Sheet (Redesigned with Live Preview)
 struct AddPersonSheet: View {
     @Binding var isPresented: Bool
     @EnvironmentObject var dataManager: DataManager
 
     @State private var inputValue = ""
+    @State private var avatarScale: CGFloat = 1.0
     @FocusState private var isFocused: Bool
 
     private var detectedType: PersonInputType {
@@ -5325,46 +5326,162 @@ struct AddPersonSheet: View {
         !inputValue.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
+    private var generatedName: String {
+        let trimmed = inputValue.trimmingCharacters(in: .whitespaces)
+        switch detectedType {
+        case .email:
+            return trimmed.components(separatedBy: "@").first?.replacingOccurrences(of: ".", with: " ").capitalized ?? trimmed
+        case .phone, .name:
+            return trimmed
+        }
+    }
+
+    private var generatedInitials: String {
+        AvatarGenerator.generateInitials(from: generatedName)
+    }
+
+    private var colorIndex: Int {
+        AvatarColorPalette.colorIndex(for: generatedName)
+    }
+
+    private var iconForDetectedType: String {
+        switch detectedType {
+        case .name: return "person.fill"
+        case .email: return "envelope.fill"
+        case .phone: return "phone.fill"
+        }
+    }
+
+    private var colorForDetectedType: Color {
+        switch detectedType {
+        case .name: return .wiseForestGreen
+        case .email: return .wiseBlue
+        case .phone: return .wisePurple
+        }
+    }
+
+    private var labelForDetectedType: String {
+        switch detectedType {
+        case .name: return "Name"
+        case .email: return "Email"
+        case .phone: return "Phone"
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Text("Add Person")
-                .font(.spotifyHeadingMedium)
-                .foregroundColor(.wisePrimaryText)
+        VStack(spacing: 0) {
+            // Live Avatar Preview
+            AvatarView(
+                avatarType: .initials(
+                    generatedInitials.isEmpty ? "?" : generatedInitials,
+                    colorIndex: colorIndex
+                ),
+                size: .xlarge,
+                style: .solid
+            )
+            .scaleEffect(avatarScale)
+            .padding(.top, 24)
+            .padding(.bottom, 12)
 
-            TextField("Name, Phone, or Email", text: $inputValue)
-                .font(.spotifyBodyMedium)
-                .foregroundColor(.wisePrimaryText)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.wiseCardBackground)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.wiseBorder, lineWidth: 1)
-                )
-                .focused($isFocused)
+            // Header
+            VStack(spacing: 4) {
+                Text("New Contact")
+                    .font(.spotifyHeadingMedium)
+                    .foregroundColor(.wisePrimaryText)
 
+                Text("Name, email, or phone")
+                    .font(.spotifyBodySmall)
+                    .foregroundColor(.wiseSecondaryText)
+            }
+            .padding(.bottom, 24)
+
+            // Smart Input Field with Dynamic Icon
+            HStack(spacing: 12) {
+                Image(systemName: iconForDetectedType)
+                    .font(.system(size: 18))
+                    .foregroundColor(colorForDetectedType)
+                    .frame(width: 24)
+                    .animation(.easeInOut(duration: 0.2), value: detectedType)
+
+                TextField("", text: $inputValue)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+                    .placeholder(when: inputValue.isEmpty) {
+                        Text("Enter name, email, or phone")
+                            .font(.spotifyBodyMedium)
+                            .foregroundColor(.wiseSecondaryText.opacity(0.6))
+                    }
+                    .focused($isFocused)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.wiseCardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isFocused ? colorForDetectedType : Color.wiseBorder, lineWidth: 1)
+            )
+            .padding(.horizontal, 24)
+
+            // Detection Badge
+            if !inputValue.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: iconForDetectedType)
+                        .font(.system(size: 10))
+
+                    Text("Detected: \(labelForDetectedType)")
+                        .font(.spotifyCaptionMedium)
+                }
+                .foregroundColor(colorForDetectedType)
+                .padding(.top, 12)
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+
+            Spacer().frame(height: inputValue.isEmpty ? 32 : 20)
+
+            // Add Button
             Button(action: handleAdd) {
-                Text("Add")
+                Text("Add Person")
                     .font(.spotifyBodyMedium)
                     .fontWeight(.semibold)
                     .foregroundColor(isFormValid ? .white : .wiseSecondaryText)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(isFormValid ? Color.wiseForestGreen : Color.wiseSecondaryText.opacity(0.2))
-                    .cornerRadius(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(isFormValid ? Color.wiseForestGreen : Color.wiseBorder)
+                    )
             }
             .disabled(!isFormValid)
+            .buttonStyle(ScaleButtonStyle(scaleAmount: 0.98))
+            .padding(.horizontal, 24)
+
+            Spacer(minLength: 0)
         }
-        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.wiseGroupedBackground)
         .onAppear { isFocused = true }
+        .onChange(of: inputValue) { _, _ in
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                avatarScale = 1.05
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    avatarScale = 1.0
+                }
+            }
+        }
+        .onChange(of: detectedType) { _, _ in
+            HapticManager.shared.selection()
+        }
+        .animation(.easeInOut(duration: 0.2), value: inputValue.isEmpty)
     }
 
     private func handleAdd() {
+        HapticManager.shared.impact(.medium)
+
         let trimmedInput = inputValue.trimmingCharacters(in: .whitespaces)
         guard !trimmedInput.isEmpty else { return }
 
@@ -5375,7 +5492,6 @@ struct AddPersonSheet: View {
         switch detectedType {
         case .email:
             email = trimmedInput
-            // Extract name from email prefix
             name = trimmedInput.components(separatedBy: "@").first?.replacingOccurrences(of: ".", with: " ").capitalized ?? trimmedInput
         case .phone:
             phone = trimmedInput
@@ -5391,10 +5507,9 @@ struct AddPersonSheet: View {
         }
 
         if existingPerson != nil {
-            // Person already exists
+            HapticManager.shared.warning()
             ToastManager.shared.showInfo("Person already exists")
         } else {
-            // Create new person with auto-generated avatar
             let newPerson = Person(
                 name: name,
                 email: email,
@@ -5407,6 +5522,7 @@ struct AddPersonSheet: View {
 
             do {
                 try dataManager.addPerson(newPerson)
+                HapticManager.shared.success()
                 ToastManager.shared.showSuccess("Person added!")
             } catch {
                 dataManager.error = error
@@ -5653,227 +5769,77 @@ struct EditPersonSheet: View {
     }
 }
 
-// MARK: - Add Group Sheet
+// MARK: - Add Group Sheet (Redesigned with Live Preview)
 struct AddGroupSheet: View {
     @Binding var showingAddGroupSheet: Bool
     @EnvironmentObject var dataManager: DataManager
-    let editingGroup: Group? // nil = add mode, Group = edit mode
+    let editingGroup: Group?
     let people: [Person]
     let onGroupAdded: (Group) -> Void
 
     @State private var name = ""
-    @State private var description = ""
     @State private var selectedEmoji = "👥"
     @State private var selectedMembers: Set<UUID> = []
     @State private var showingAddPersonSheet = false
-    @State private var showingEmojiPicker = false
     @State private var personCountBeforeAdd = 0
     @FocusState private var isNameFocused: Bool
 
-    // Initialize with default values or existing group data
+    // Quick emoji options (6 most common)
+    private let quickEmojis = ["👥", "🏠", "🎉", "✈️", "🍕", "💼"]
+    private let allEmojis = ["👥", "🏖️", "🏠", "💼", "🎉", "🍕", "✈️", "🏃‍♂️", "📚", "🎵", "🎮", "⚽", "🍽️", "🏛️", "🎭", "🎪", "🎨", "📱"]
+
     init(showingAddGroupSheet: Binding<Bool>, editingGroup: Group? = nil, people: [Person], onGroupAdded: @escaping (Group) -> Void) {
         self._showingAddGroupSheet = showingAddGroupSheet
         self.editingGroup = editingGroup
         self.people = people
         self.onGroupAdded = onGroupAdded
 
-        // Pre-populate fields if editing
         if let group = editingGroup {
             _name = State(initialValue: group.name)
-            _description = State(initialValue: group.description)
             _selectedEmoji = State(initialValue: group.emoji)
             _selectedMembers = State(initialValue: Set(group.members))
         }
     }
 
-    // Group emoji options
-    let availableEmojis = ["👥", "🏖️", "🏠", "💼", "🎉", "🍕", "✈️", "🏃‍♂️", "📚", "🎵", "🎮", "⚽", "🍽️", "🏛️", "🎭", "🎪", "🎨", "📱"]
-
     private var isFormValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !selectedMembers.isEmpty
+        !name.trimmingCharacters(in: .whitespaces).isEmpty && !selectedMembers.isEmpty
     }
 
     private var saveButtonText: String {
         editingGroup == nil ? "Create Group" : "Save Changes"
     }
 
-    // Selected members as Person objects (use dataManager for live updates)
-    private var selectedPeople: [Person] {
-        dataManager.people.filter { selectedMembers.contains($0.id) }
-    }
-
-    // Available members (not yet selected) - use dataManager for live updates
-    private var availablePeople: [Person] {
-        dataManager.people.filter { !selectedMembers.contains($0.id) }
-    }
-
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Title
-                Text(editingGroup == nil ? "Add Group" : "Edit Group")
-                    .font(.spotifyHeadingMedium)
-                    .foregroundColor(.wisePrimaryText)
+            VStack(spacing: 24) {
+                // Live Preview Card
+                previewCard
 
-                // Group Name Row (Emoji + TextField)
-                HStack(spacing: 12) {
-                    // Emoji Button
-                    Button(action: { showingEmojiPicker.toggle() }) {
-                        Text(selectedEmoji)
-                            .font(.system(size: 24))
-                            .frame(width: 48, height: 48)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.wiseCardBackground)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.wiseSeparator, lineWidth: 1)
-                            )
-                    }
-
-                    // Name TextField
-                    TextField("Group name", text: $name)
-                        .font(.spotifyBodyMedium)
-                        .foregroundColor(.wisePrimaryText)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.wiseCardBackground)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.wiseSeparator, lineWidth: 1)
-                        )
-                        .focused($isNameFocused)
-                }
-
-                // Emoji Picker (collapsible)
-                if showingEmojiPicker {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 8) {
-                        ForEach(availableEmojis, id: \.self) { emoji in
-                            Button(action: {
-                                selectedEmoji = emoji
-                                showingEmojiPicker = false
-                            }) {
-                                Text(emoji)
-                                    .font(.system(size: 24))
-                                    .frame(width: 44, height: 44)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(selectedEmoji == emoji ? Color.wisePrimaryButton.opacity(0.2) : Color.wiseCardBackground)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .stroke(selectedEmoji == emoji ? Color.wisePrimaryButton : Color.wiseSeparator, lineWidth: 1)
-                                    )
-                            }
-                        }
-                    }
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.wiseCardBackground)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.wiseSeparator, lineWidth: 1)
-                    )
-                }
+                // Group Details Section
+                groupDetailsSection
 
                 // Members Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Members")
-                        .font(.spotifyLabelMedium)
-                        .foregroundColor(.wiseSecondaryText)
-
-                    // Horizontal scrolling member avatars
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            // Selected members first
-                            ForEach(selectedPeople) { person in
-                                MemberAvatarButton(
-                                    person: person,
-                                    isSelected: true,
-                                    action: { selectedMembers.remove(person.id) }
-                                )
-                            }
-
-                            // Available members
-                            ForEach(availablePeople) { person in
-                                MemberAvatarButton(
-                                    person: person,
-                                    isSelected: false,
-                                    action: { selectedMembers.insert(person.id) }
-                                )
-                            }
-
-                            // Add new person button
-                            Button(action: { showingAddPersonSheet = true }) {
-                                VStack(spacing: 4) {
-                                    ZStack {
-                                        Circle()
-                                            .fill(Color.wiseCardBackground)
-                                            .frame(width: 48, height: 48)
-                                            .overlay(
-                                                Circle()
-                                                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4]))
-                                                    .foregroundColor(.wiseSeparator)
-                                            )
-
-                                        Image(systemName: "plus")
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.wiseSecondaryText)
-                                    }
-
-                                    Text("Add")
-                                        .font(.spotifyCaptionSmall)
-                                        .foregroundColor(.wiseSecondaryText)
-                                }
-                            }
-                        }
-                    }
-
-                    // Selected count indicator
-                    if !selectedMembers.isEmpty {
-                        Text("\(selectedMembers.count) member\(selectedMembers.count == 1 ? "" : "s") selected")
-                            .font(.spotifyCaptionMedium)
-                            .foregroundColor(.wiseSecondaryText)
-                    }
-                }
+                membersSection
 
                 // Create/Save Button
-                Button(action: saveGroup) {
-                    Text(saveButtonText)
-                        .font(.spotifyBodyMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(isFormValid ? .wisePrimaryButtonText : .wiseSecondaryText)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(isFormValid ? Color.wisePrimaryButton : Color.wiseSecondaryButton)
-                        .cornerRadius(12)
-                }
-                .disabled(!isFormValid)
+                createButton
             }
-            .padding(24)
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 40)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.wiseBackground)
         .onAppear { isNameFocused = true }
         .sheet(isPresented: $showingAddPersonSheet) {
             AddPersonSheet(isPresented: $showingAddPersonSheet)
                 .environmentObject(dataManager)
-                .presentationDetents([.height(220)])
+                .presentationDetents([.height(320)])
                 .presentationDragIndicator(.visible)
         }
         .onChange(of: showingAddPersonSheet) { oldValue, newValue in
             if newValue {
-                // Store person count before showing add sheet
                 personCountBeforeAdd = dataManager.people.count
             } else if !newValue && dataManager.people.count > personCountBeforeAdd {
-                // Sheet closed and a new person was added - auto-select the newest person
                 if let newestPerson = dataManager.people.last {
                     selectedMembers.insert(newestPerson.id)
                 }
@@ -5881,33 +5847,283 @@ struct AddGroupSheet: View {
         }
     }
 
+    // MARK: - Preview Card
+    private var previewCard: some View {
+        HStack(spacing: 16) {
+            // Emoji in colored circle
+            ZStack {
+                Circle()
+                    .fill(Color.wiseBlue)
+                    .frame(width: 48, height: 48)
+
+                Text(selectedEmoji)
+                    .font(.system(size: 24))
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name.isEmpty ? "Group Name" : name)
+                    .font(.spotifyBodyLarge)
+                    .foregroundColor(name.isEmpty ? .wiseSecondaryText : .wisePrimaryText)
+
+                Text("\(selectedMembers.count) member\(selectedMembers.count == 1 ? "" : "s")")
+                    .font(.spotifyBodySmall)
+                    .foregroundColor(.wiseSecondaryText)
+            }
+
+            Spacer()
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.wiseCardBackground)
+        )
+    }
+
+    // MARK: - Group Details Section
+    private var groupDetailsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Group Details")
+                .font(.spotifyHeadingMedium)
+                .foregroundColor(.wisePrimaryText)
+
+            // Emoji + Name Row
+            HStack(spacing: 12) {
+                // Emoji button with edit indicator
+                Menu {
+                    ForEach(allEmojis, id: \.self) { emoji in
+                        Button(action: {
+                            HapticManager.shared.selection()
+                            selectedEmoji = emoji
+                        }) {
+                            Text(emoji)
+                        }
+                    }
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(Color.wiseBlue)
+                            .frame(width: 52, height: 52)
+
+                        Text(selectedEmoji)
+                            .font(.system(size: 26))
+                    }
+                    .overlay(
+                        Circle()
+                            .fill(Color.wiseCardBackground)
+                            .frame(width: 20, height: 20)
+                            .overlay(
+                                Image(systemName: "pencil")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundColor(.wiseSecondaryText)
+                            )
+                            .offset(x: 18, y: 18)
+                    )
+                }
+
+                // Name TextField
+                TextField("Group name", text: $name)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.wiseCardBackground)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.wiseBorder, lineWidth: 1)
+                    )
+                    .focused($isNameFocused)
+            }
+
+            // Quick Emoji Row
+            HStack(spacing: 8) {
+                ForEach(quickEmojis, id: \.self) { emoji in
+                    Button(action: {
+                        HapticManager.shared.selection()
+                        selectedEmoji = emoji
+                    }) {
+                        Text(emoji)
+                            .font(.system(size: 20))
+                            .frame(width: 40, height: 40)
+                            .background(
+                                Circle()
+                                    .fill(selectedEmoji == emoji ? Color.wiseBlue.opacity(0.2) : Color.wiseBorder.opacity(0.3))
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(selectedEmoji == emoji ? Color.wiseBlue : Color.clear, lineWidth: 2)
+                            )
+                    }
+                    .buttonStyle(ScaleButtonStyle(scaleAmount: 0.95))
+                }
+            }
+        }
+    }
+
+    // MARK: - Members Section
+    private var membersSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Section Header with Count Badge
+            HStack {
+                Text("Members")
+                    .font(.spotifyHeadingMedium)
+                    .foregroundColor(.wisePrimaryText)
+
+                Spacer()
+
+                if !selectedMembers.isEmpty {
+                    Text("\(selectedMembers.count)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Color.wiseForestGreen))
+                }
+            }
+
+            // Vertical Member List
+            VStack(spacing: 0) {
+                ForEach(dataManager.people) { person in
+                    MemberSelectionRow(
+                        person: person,
+                        isSelected: selectedMembers.contains(person.id),
+                        onToggle: {
+                            HapticManager.shared.light()
+                            if selectedMembers.contains(person.id) {
+                                selectedMembers.remove(person.id)
+                            } else {
+                                selectedMembers.insert(person.id)
+                            }
+                        }
+                    )
+
+                    if person.id != dataManager.people.last?.id {
+                        Divider()
+                            .padding(.leading, 58)
+                    }
+                }
+
+                // Add Person Row
+                AddPersonRow(action: { showingAddPersonSheet = true })
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.wiseCardBackground)
+            )
+        }
+    }
+
+    // MARK: - Create Button
+    private var createButton: some View {
+        Button(action: saveGroup) {
+            Text(saveButtonText)
+                .font(.spotifyBodyMedium)
+                .fontWeight(.semibold)
+                .foregroundColor(isFormValid ? .white : .wiseSecondaryText)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isFormValid ? Color.wiseForestGreen : Color.wiseBorder.opacity(0.5))
+                )
+        }
+        .disabled(!isFormValid)
+        .buttonStyle(ScaleButtonStyle(scaleAmount: 0.98))
+    }
+
+    // MARK: - Save Action
     private func saveGroup() {
+        HapticManager.shared.impact(.medium)
+
         if let existing = editingGroup {
-            // Edit mode - update existing group
             var updatedGroup = existing
             updatedGroup.name = name.trimmingCharacters(in: .whitespaces)
-            updatedGroup.description = description.trimmingCharacters(in: .whitespaces)
             updatedGroup.emoji = selectedEmoji
             updatedGroup.members = Array(selectedMembers)
-
             onGroupAdded(updatedGroup)
         } else {
-            // Add mode - create new group
             let newGroup = Group(
                 name: name.trimmingCharacters(in: .whitespaces),
-                description: description.trimmingCharacters(in: .whitespaces),
+                description: "",
                 emoji: selectedEmoji,
                 members: Array(selectedMembers)
             )
-
             onGroupAdded(newGroup)
         }
 
+        HapticManager.shared.success()
         showingAddGroupSheet = false
     }
 }
 
-// MARK: - Member Avatar Button (Compact selection)
+// MARK: - Member Selection Row (Vertical list with checkmarks)
+struct MemberSelectionRow: View {
+    let person: Person
+    let isSelected: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 12) {
+                // Avatar
+                AvatarView(person: person, size: .large, style: .solid)
+                    .frame(width: 44, height: 44)
+
+                // Name
+                Text(person.name)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wisePrimaryText)
+                    .lineLimit(1)
+
+                Spacer()
+
+                // Selection indicator
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22))
+                    .foregroundColor(isSelected ? .wiseForestGreen : .wiseBorder)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Add Person Row
+struct AddPersonRow: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                // Dashed circle
+                Circle()
+                    .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [4]))
+                    .foregroundColor(.wiseBorder)
+                    .frame(width: 44, height: 44)
+                    .overlay(
+                        Image(systemName: "plus")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.wiseSecondaryText)
+                    )
+
+                Text("Add new person")
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wiseSecondaryText)
+
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Legacy Member Avatar Button (kept for backward compatibility)
 struct MemberAvatarButton: View {
     let person: Person
     let isSelected: Bool
@@ -5923,7 +6139,6 @@ struct MemberAvatarButton: View {
                                 .stroke(isSelected ? Color.wiseForestGreen : Color.clear, lineWidth: 2)
                         )
 
-                    // Selection indicator
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 16))
@@ -6052,9 +6267,17 @@ struct ContactPickerView: UIViewControllerRepresentable {
     }
 }
 
-#Preview {
+// MARK: - Preview
+
+#Preview("ContentView - Default") {
     ContentView()
         .environmentObject(DataManager.shared)
+}
+
+#Preview("ContentView - Dark Mode") {
+    ContentView()
+        .environmentObject(DataManager.shared)
+        .preferredColorScheme(.dark)
 }
 
 // MARK: - Enhanced Subscriptions Header Section

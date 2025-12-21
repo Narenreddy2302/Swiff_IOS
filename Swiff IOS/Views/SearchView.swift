@@ -692,7 +692,15 @@ struct QuickSearchButton: View {
     }
 }
 
-#Preview {
+// MARK: - Preview
+
+#Preview("Search - Default") {
     SearchView()
         .environmentObject(DataManager.shared)
+}
+
+#Preview("Search - Dark Mode") {
+    SearchView()
+        .environmentObject(DataManager.shared)
+        .preferredColorScheme(.dark)
 }

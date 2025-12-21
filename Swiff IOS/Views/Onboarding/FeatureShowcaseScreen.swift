@@ -186,7 +186,7 @@ struct FeatureData {
     let color: Color
 }
 
-#Preview {
+#Preview("Feature Showcase Screen") {
     FeatureShowcaseScreen(
         currentPage: .constant(0),
         onNext: {},

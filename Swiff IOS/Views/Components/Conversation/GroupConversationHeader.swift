@@ -82,61 +82,26 @@ struct GroupConversationHeader: View {
 
 // MARK: - Preview
 
-#Preview("Group Conversation Header") {
-    ScrollView {
-        VStack(spacing: 32) {
-            // Sample with multiple members
-            GroupConversationHeader(
-                group: Group(
-                    name: "Weekend Trip",
-                    description: "Beach house expenses",
-                    emoji: "🏖️",
-                    members: [UUID(), UUID(), UUID()]
-                ),
-                members: [
-                    Person(name: "Alex Thompson", email: "alex@example.com", phone: "", avatarType: .initials("AT", colorIndex: 0)),
-                    Person(name: "Maria Santos", email: "maria@example.com", phone: "", avatarType: .initials("MS", colorIndex: 1)),
-                    Person(name: "John Davis", email: "john@example.com", phone: "", avatarType: .initials("JD", colorIndex: 2))
-                ]
-            )
+#Preview("GroupConversationHeader - With Expenses") {
+    GroupConversationHeader(
+        group: MockData.groupWithExpenses,
+        members: [MockData.personOwedMoney, MockData.personOwingMoney, MockData.personSettled]
+    )
+    .background(Color.wiseBackground)
+}
 
-            Divider()
+#Preview("GroupConversationHeader - Large Group") {
+    GroupConversationHeader(
+        group: MockData.largeGroup,
+        members: MockData.people
+    )
+    .background(Color.wiseBackground)
+}
 
-            // Sample with many members
-            GroupConversationHeader(
-                group: Group(
-                    name: "Office Lunch Group",
-                    description: "Weekly team lunches and coffee runs",
-                    emoji: "🍕",
-                    members: [UUID(), UUID(), UUID(), UUID(), UUID(), UUID()]
-                ),
-                members: [
-                    Person(name: "Alex Thompson", email: "alex@example.com", phone: "", avatarType: .initials("AT", colorIndex: 0)),
-                    Person(name: "Maria Santos", email: "maria@example.com", phone: "", avatarType: .initials("MS", colorIndex: 1)),
-                    Person(name: "John Davis", email: "john@example.com", phone: "", avatarType: .initials("JD", colorIndex: 2)),
-                    Person(name: "Sarah Wilson", email: "sarah@example.com", phone: "", avatarType: .initials("SW", colorIndex: 3)),
-                    Person(name: "Mike Brown", email: "mike@example.com", phone: "", avatarType: .initials("MB", colorIndex: 4)),
-                    Person(name: "Chris Johnson", email: "chris@example.com", phone: "", avatarType: .initials("CJ", colorIndex: 0))
-                ]
-            )
-
-            Divider()
-
-            // Sample with no description
-            GroupConversationHeader(
-                group: Group(
-                    name: "Roommates",
-                    description: "",
-                    emoji: "🏠",
-                    members: [UUID(), UUID()]
-                ),
-                members: [
-                    Person(name: "Alex Thompson", email: "alex@example.com", phone: "", avatarType: .initials("AT", colorIndex: 0)),
-                    Person(name: "Maria Santos", email: "maria@example.com", phone: "", avatarType: .initials("MS", colorIndex: 1))
-                ]
-            )
-        }
-        .padding(.vertical, 20)
-    }
+#Preview("GroupConversationHeader - Empty Group") {
+    GroupConversationHeader(
+        group: MockData.emptyGroup,
+        members: [MockData.personOwedMoney, MockData.personOwingMoney]
+    )
     .background(Color.wiseBackground)
 }

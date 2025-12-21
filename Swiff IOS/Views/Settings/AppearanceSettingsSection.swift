@@ -370,7 +370,7 @@ struct TabBarStyleButton: View {
     }
 }
 
-#Preview {
+#Preview("Appearance Settings Section") {
     NavigationView {
         List {
             AppearanceSettingsSection()

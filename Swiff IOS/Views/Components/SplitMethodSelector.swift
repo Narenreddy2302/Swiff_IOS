@@ -10,13 +10,22 @@ import SwiftUI
 struct SplitMethodSelector: View {
     @Binding var selectedType: SplitType
 
+    private let buttonCount: CGFloat = 5
+    private let spacing: CGFloat = 8
+    private let horizontalPadding: CGFloat = 4
+
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
+        GeometryReader { geometry in
+            let totalSpacing = spacing * (buttonCount - 1)
+            let totalPadding = horizontalPadding * 2
+            let buttonWidth = (geometry.size.width - totalSpacing - totalPadding) / buttonCount
+
+            HStack(spacing: spacing) {
                 ForEach(SplitType.allCases, id: \.self) { type in
                     SplitMethodButton(
                         type: type,
                         isSelected: selectedType == type,
+                        buttonWidth: buttonWidth,
                         action: {
                             HapticManager.shared.light()
                             withAnimation(.smooth) {
@@ -26,8 +35,9 @@ struct SplitMethodSelector: View {
                     )
                 }
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, horizontalPadding)
         }
+        .frame(height: 72)
     }
 }
 
@@ -36,6 +46,7 @@ struct SplitMethodSelector: View {
 private struct SplitMethodButton: View {
     let type: SplitType
     let isSelected: Bool
+    let buttonWidth: CGFloat
     let action: () -> Void
 
     @State private var isPressed = false
@@ -58,7 +69,7 @@ private struct SplitMethodButton: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(isSelected ? .wiseForestGreen : .wisePrimaryText)
             }
-            .frame(width: 72, height: 72)
+            .frame(width: buttonWidth, height: 68)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(isSelected ? Color.wiseBrightGreen : Color.wiseCardBackground)

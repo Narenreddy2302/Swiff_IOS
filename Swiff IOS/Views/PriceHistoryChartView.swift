@@ -477,19 +477,9 @@ struct StatCard: View {
     }
 }
 
-#Preview {
+#Preview("Price History Chart View") {
     NavigationView {
-        PriceHistoryChartView(
-            subscription: Subscription(
-                name: "Netflix",
-                description: "Streaming service",
-                price: 15.99,
-                billingCycle: .monthly,
-                category: .entertainment,
-                icon: "tv.fill",
-                color: "#E50914"
-            )
-        )
-        .environmentObject(DataManager.shared)
+        PriceHistoryChartView(subscription: MockData.activeSubscription)
+            .environmentObject(DataManager.shared)
     }
 }

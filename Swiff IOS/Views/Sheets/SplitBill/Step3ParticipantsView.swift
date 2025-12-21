@@ -216,15 +216,9 @@ struct Step3ParticipantsView: View {
 // MARK: - Preview
 
 #Preview("Step 3 Participants") {
-    let dataManager = DataManager.shared
-    let person1 = Person(name: "Alice", email: "alice@example.com", phone: "+1234567890", avatar: "👩‍💼")
-    let person2 = Person(name: "Bob", email: "bob@example.com", phone: "+1234567891", avatar: "👨‍💻")
-    let person3 = Person(name: "Charlie", email: "charlie@example.com", phone: "+1234567892", avatar: "🧑‍🔧")
-    dataManager.people = [person1, person2, person3]
-
-    return Step3ParticipantsView(
-        selectedParticipants: .constant([person1.id]),
+    Step3ParticipantsView(
+        selectedParticipants: .constant([MockData.personOwedMoney.id]),
         selectedGroup: .constant(nil)
     )
-    .environmentObject(dataManager)
+    .environmentObject(DataManager.shared)
 }

@@ -380,10 +380,10 @@ struct PriceChangeConfirmationSheet: View {
 
 // MARK: - Preview
 
-#Preview {
+#Preview("Price Change Confirmation Sheet") {
     PriceChangeConfirmationSheet(
-        oldPrice: 9.99,
-        newPrice: 12.99,
+        oldPrice: MockData.priceIncrease.oldPrice,
+        newPrice: MockData.priceIncrease.newPrice,
         subscriptionName: "Netflix Premium",
         onConfirm: { isReal, reason in
             print("Real change: \(isReal), Reason: \(reason ?? "none")")

@@ -46,13 +46,31 @@ struct SubscriptionTimelineHeader: View {
             // Name and price
             VStack(spacing: 6) {
                 Text(subscription.name)
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.wisePrimaryText)
                     .multilineTextAlignment(.center)
 
                 Text(String(format: "$%.2f/%@", subscription.price, subscription.billingCycle.displayShort))
-                    .font(.spotifyBodyMedium)
+                    .font(.system(size: 12))
                     .foregroundColor(.wiseSecondaryText)
+
+                // Show shared indicator below price
+                if subscription.isShared && !sharedPeople.isEmpty {
+                    HStack(spacing: 4) {
+                        Text("Shared")
+                            .font(.spotifyLabelSmall)
+                            .foregroundColor(.wisePurple)
+
+                        Text("•")
+                            .font(.spotifyLabelSmall)
+                            .foregroundColor(.wiseSecondaryText)
+
+                        Text(String(format: "$%.2f/person", subscription.costPerPerson))
+                            .font(.spotifyLabelSmall)
+                            .foregroundColor(.wiseBrightGreen)
+                    }
+                    .padding(.top, 2)
+                }
             }
 
             // Status badge

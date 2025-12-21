@@ -428,3 +428,11 @@ struct ExportOptionsSheet: View {
         dismiss()
     }
 }
+
+#Preview("Bulk Actions Sheet") {
+    BulkActionsSheet(
+        selectedTransactions: [MockData.expenseTransaction, MockData.groceryTransaction],
+        onActionCompleted: {}
+    )
+    .environmentObject(DataManager.shared)
+}

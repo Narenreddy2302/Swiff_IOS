@@ -209,37 +209,30 @@ struct SplitTypeBadge: View {
 
 // MARK: - Preview
 
-#Preview("Split Bill Cards") {
-    let person1 = Person(name: "Alice", email: "alice@example.com", phone: "+1234567890", avatar: "👩‍💼")
-    let person2 = Person(name: "Bob", email: "bob@example.com", phone: "+1234567891", avatar: "👨‍💻")
-    let person3 = Person(name: "Charlie", email: "charlie@example.com", phone: "+1234567892", avatar: "🧑‍🔧")
-
-    let participant1 = SplitParticipant(personId: person1.id, amount: 30.0, hasPaid: true)
-    let participant2 = SplitParticipant(personId: person2.id, amount: 30.0, hasPaid: false)
-    let participant3 = SplitParticipant(personId: person3.id, amount: 30.0, hasPaid: true)
-
-    let splitBill = SplitBill(
-        title: "Dinner at Italian Restaurant",
-        totalAmount: 90.0,
-        paidById: person1.id,
-        splitType: .equally,
-        participants: [participant1, participant2, participant3],
-        notes: "Great meal!",
-        category: .dining,
-        date: Date()
-    )
-
-    let dataManager = DataManager.shared
-    dataManager.people = [person1, person2, person3]
-
-    return ScrollView {
-        VStack(spacing: 16) {
-            SplitBillCard(splitBill: splitBill) {
-                print("Card tapped")
-            }
-        }
+#Preview("SplitBillCard - Settled") {
+    SplitBillCard(splitBill: MockData.settledSplitBill)
         .padding()
         .background(Color.wiseBackground)
-    }
-    .environmentObject(dataManager)
+        .environmentObject(DataManager.shared)
+}
+
+#Preview("SplitBillCard - Pending") {
+    SplitBillCard(splitBill: MockData.pendingSplitBill)
+        .padding()
+        .background(Color.wiseBackground)
+        .environmentObject(DataManager.shared)
+}
+
+#Preview("SplitBillCard - Partially Settled") {
+    SplitBillCard(splitBill: MockData.partiallySplitBill)
+        .padding()
+        .background(Color.wiseBackground)
+        .environmentObject(DataManager.shared)
+}
+
+#Preview("SplitBillCard - Percentage Split") {
+    SplitBillCard(splitBill: MockData.percentageSplitBill)
+        .padding()
+        .background(Color.wiseBackground)
+        .environmentObject(DataManager.shared)
 }

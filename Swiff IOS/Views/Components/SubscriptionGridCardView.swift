@@ -109,7 +109,7 @@ struct SubscriptionGridCardView: View {
 
 // MARK: - Preview
 
-#Preview("Subscription Grid Cards") {
+#Preview("Subscription Grid Cards - Active") {
     let columns = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
@@ -117,108 +117,58 @@ struct SubscriptionGridCardView: View {
 
     ScrollView {
         LazyVGrid(columns: columns, spacing: 16) {
-            // Active subscription - Spotify
-            SubscriptionGridCardView(
-                subscription: {
-                    var sub = Subscription(
-                        name: "Spotify",
-                        description: "Music Streaming",
-                        price: 5.99,
-                        billingCycle: .monthly,
-                        category: .music,
-                        icon: "waveform",
-                        color: "#1DB954"
-                    )
-                    sub.isActive = true
-                    return sub
-                }()
-            )
+            SubscriptionGridCardView(subscription: MockData.activeSubscription)
+            SubscriptionGridCardView(subscription: MockData.sharedSubscription)
+            SubscriptionGridCardView(subscription: MockData.cheapSubscription)
+            SubscriptionGridCardView(subscription: MockData.yearlySubscription)
+        }
+        .padding(20)
+    }
+    .background(Color.wiseGroupedBackground)
+}
 
-            // Active subscription - YouTube
-            SubscriptionGridCardView(
-                subscription: {
-                    var sub = Subscription(
-                        name: "YouTube Premium",
-                        description: "Video Streaming",
-                        price: 18.99,
-                        billingCycle: .monthly,
-                        category: .entertainment,
-                        icon: "play.fill",
-                        color: "#FF0000"
-                    )
-                    sub.isActive = true
-                    return sub
-                }()
-            )
+#Preview("Subscription Grid Cards - Trial") {
+    let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
 
-            // Active subscription - Netflix
-            SubscriptionGridCardView(
-                subscription: {
-                    var sub = Subscription(
-                        name: "Netflix",
-                        description: "Streaming Service",
-                        price: 15.99,
-                        billingCycle: .monthly,
-                        category: .entertainment,
-                        icon: "play.rectangle.fill",
-                        color: "#E50914"
-                    )
-                    sub.isActive = true
-                    return sub
-                }()
-            )
+    ScrollView {
+        LazyVGrid(columns: columns, spacing: 16) {
+            SubscriptionGridCardView(subscription: MockData.trialSubscription)
+            SubscriptionGridCardView(subscription: MockData.expiredTrialSubscription)
+        }
+        .padding(20)
+    }
+    .background(Color.wiseGroupedBackground)
+}
 
-            // Active subscription - iCloud
-            SubscriptionGridCardView(
-                subscription: {
-                    var sub = Subscription(
-                        name: "iCloud",
-                        description: "Cloud Storage",
-                        price: 2.99,
-                        billingCycle: .monthly,
-                        category: .cloud,
-                        icon: "icloud.fill",
-                        color: "#3395FF"
-                    )
-                    sub.isActive = true
-                    return sub
-                }()
-            )
+#Preview("Subscription Grid Cards - Inactive") {
+    let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
 
-            // Paused subscription
-            SubscriptionGridCardView(
-                subscription: {
-                    var sub = Subscription(
-                        name: "Apple Music",
-                        description: "Music Streaming",
-                        price: 10.99,
-                        billingCycle: .monthly,
-                        category: .music,
-                        icon: "music.note",
-                        color: "#FC3C44"
-                    )
-                    sub.isActive = false
-                    return sub
-                }()
-            )
+    ScrollView {
+        LazyVGrid(columns: columns, spacing: 16) {
+            SubscriptionGridCardView(subscription: MockData.inactiveSubscription)
+            SubscriptionGridCardView(subscription: MockData.subscriptionDueToday)
+        }
+        .padding(20)
+    }
+    .background(Color.wiseGroupedBackground)
+}
 
-            // Cancelled subscription
-            SubscriptionGridCardView(
-                subscription: {
-                    var sub = Subscription(
-                        name: "Disney+",
-                        description: "Streaming Service",
-                        price: 7.99,
-                        billingCycle: .monthly,
-                        category: .entertainment,
-                        icon: "sparkles.tv",
-                        color: "#113CCF"
-                    )
-                    sub.isActive = false
-                    sub.cancellationDate = Date()
-                    return sub
-                }()
-            )
+#Preview("Subscription Grid Cards - Edge Cases") {
+    let columns = [
+        GridItem(.flexible(), spacing: 16),
+        GridItem(.flexible(), spacing: 16)
+    ]
+
+    ScrollView {
+        LazyVGrid(columns: columns, spacing: 16) {
+            SubscriptionGridCardView(subscription: MockData.expensiveSubscription)
+            SubscriptionGridCardView(subscription: MockData.longNameSubscription)
         }
         .padding(20)
     }

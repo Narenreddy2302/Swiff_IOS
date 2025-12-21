@@ -580,17 +580,9 @@ struct TransactionCategoryPickerSheet: View {
     }
 }
 
-#Preview {
+#Preview("Edit Transaction Sheet") {
     EditTransactionSheet(
-        transaction: Transaction(
-            title: "Coffee",
-            subtitle: "Morning coffee",
-            amount: -5.50,
-            category: .food,
-            date: Date(),
-            isRecurring: false,
-            tags: ["coffee", "breakfast"]
-        ),
+        transaction: MockData.expenseTransaction,
         onTransactionUpdated: {}
     )
     .environmentObject(DataManager.shared)

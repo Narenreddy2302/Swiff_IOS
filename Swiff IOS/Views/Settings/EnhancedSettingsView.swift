@@ -557,7 +557,7 @@ struct EnhancedSettingsView: View {
     }
 }
 
-#Preview {
+#Preview("Enhanced Settings View") {
     EnhancedSettingsView()
         .environmentObject(DataManager.shared)
 }

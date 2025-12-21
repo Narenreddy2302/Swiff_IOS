@@ -537,18 +537,13 @@ struct Step5ConfigureView: View {
 // MARK: - Preview
 
 #Preview("Step 5 Configure") {
-    let dataManager = DataManager.shared
-    let person1 = Person(name: "Alice", email: "alice@example.com", phone: "+1234567890", avatar: "👩‍💼")
-    let person2 = Person(name: "Bob", email: "bob@example.com", phone: "+1234567891", avatar: "👨‍💻")
-    dataManager.people = [person1, person2]
-
-    return Step5ConfigureView(
+    Step5ConfigureView(
         splitType: .percentages,
         totalAmount: 100.0,
-        participantIds: [person1.id, person2.id],
+        participantIds: [MockData.personOwedMoney.id, MockData.personOwingMoney.id],
         participantAmounts: .constant([:]),
         participantPercentages: .constant([:]),
         participantShares: .constant([:])
     )
-    .environmentObject(dataManager)
+    .environmentObject(DataManager.shared)
 }

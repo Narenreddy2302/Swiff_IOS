@@ -202,8 +202,14 @@ struct NumberButton: View {
     }
 }
 
-#Preview {
+#Preview("PIN Entry View - Create") {
     PINEntryView(mode: .create, existingPIN: nil) { pin in
         print("PIN created: \(pin)")
+    }
+}
+
+#Preview("PIN Entry View - Verify") {
+    PINEntryView(mode: .verify, existingPIN: "1234") { pin in
+        print("PIN verified: \(pin)")
     }
 }

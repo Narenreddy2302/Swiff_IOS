@@ -371,7 +371,7 @@ struct StorageUsageView: View {
 }
 
 
-#Preview {
+#Preview("Data Management Section") {
     NavigationView {
         List {
             DataManagementSection()

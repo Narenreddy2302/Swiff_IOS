@@ -100,6 +100,6 @@ struct WelcomeScreen: View {
     }
 }
 
-#Preview {
+#Preview("Welcome Screen") {
     WelcomeScreen(onGetStarted: {})
 }

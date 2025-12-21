@@ -279,7 +279,7 @@ struct EnhancedNotificationSection: View {
 
 // AGENT 5: Notification history view is now in NotificationHistoryView.swift
 
-#Preview {
+#Preview("Enhanced Notification Section") {
     List {
         EnhancedNotificationSection(
             userSettings: UserSettings.shared,

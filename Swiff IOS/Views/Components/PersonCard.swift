@@ -113,89 +113,40 @@ struct PersonCard: View {
 
 // MARK: - Preview
 
-#Preview("PersonCard - New Design") {
+#Preview("PersonCard - Settled") {
+    PersonCard(person: MockData.personSettled)
+        .padding()
+        .background(Color.wiseCardBackground)
+}
+
+#Preview("PersonCard - Owes You") {
     VStack(spacing: 0) {
-        // Settled
-        PersonCard(
-            person: {
-                var p = Person(
-                    name: "Aisha Patel",
-                    email: "aisha@example.com",
-                    phone: "",
-                    avatarType: .initials("AP", colorIndex: 0)
-                )
-                p.balance = 0.00
-                return p
-            }()
-        )
-
+        PersonCard(person: MockData.personOwedMoney)
         AlignedDivider()
-
-        // Person owes you money (green)
-        PersonCard(
-            person: {
-                var p = Person(
-                    name: "David Kim",
-                    email: "david@example.com",
-                    phone: "",
-                    avatarType: .initials("DK", colorIndex: 1)
-                )
-                p.balance = 78.25
-                return p
-            }()
-        )
-
+        PersonCard(person: MockData.personFriend)
         AlignedDivider()
-
-        // Person owes you money (green)
-        PersonCard(
-            person: {
-                var p = Person(
-                    name: "Emma Wilson",
-                    email: "emma@example.com",
-                    phone: "",
-                    avatarType: .initials("EW", colorIndex: 2)
-                )
-                p.balance = 45.50
-                return p
-            }()
-        )
-
-        AlignedDivider()
-
-        // You owe them money (red)
-        PersonCard(
-            person: {
-                var p = Person(
-                    name: "James Chen",
-                    email: "james@example.com",
-                    phone: "",
-                    avatarType: .initials("JC", colorIndex: 3)
-                )
-                p.balance = -32.00
-                return p
-            }()
-        )
-
-        AlignedDivider()
-
-        // You owe them money (red)
-        PersonCard(
-            person: {
-                var p = Person(
-                    name: "Michael Taylor",
-                    email: "michael@example.com",
-                    phone: "",
-                    avatarType: .initials("MT", colorIndex: 4)
-                )
-                p.balance = -25.00
-                return p
-            }()
-        )
+        PersonCard(person: MockData.personCoworker)
     }
     .background(Color.wiseCardBackground)
     .cornerRadius(12)
-    .padding(.horizontal, 16)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Color.wiseGroupedBackground)
+    .padding()
+    .background(Color.wiseBackground)
+}
+
+#Preview("PersonCard - You Owe") {
+    VStack(spacing: 0) {
+        PersonCard(person: MockData.personOwingMoney)
+        AlignedDivider()
+        PersonCard(person: MockData.personFamily)
+    }
+    .background(Color.wiseCardBackground)
+    .cornerRadius(12)
+    .padding()
+    .background(Color.wiseBackground)
+}
+
+#Preview("PersonCard - Long Name") {
+    PersonCard(person: MockData.longNamePerson)
+        .padding()
+        .background(Color.wiseCardBackground)
 }

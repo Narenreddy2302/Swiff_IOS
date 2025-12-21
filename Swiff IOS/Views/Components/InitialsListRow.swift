@@ -316,39 +316,36 @@ struct AlignedDivider: View {
 
 #Preview("InitialsListRow - People") {
     VStack(spacing: 0) {
-        // Person owes you
         InitialsListRow(
-            title: "David Kim",
+            title: MockData.personOwedMoney.name,
             description: "Owes you",
-            initials: "DK",
-            avatarColor: InitialsAvatarColors.green,
-            amount: "$78.25",
+            initials: InitialsGenerator.generate(from: MockData.personOwedMoney.name),
+            avatarColor: InitialsAvatarColors.color(for: MockData.personOwedMoney.name),
+            amount: String(format: "$%.2f", MockData.personOwedMoney.balance),
             amountColor: AmountColors.positive,
             timeText: "No activity"
         )
 
         AlignedDivider()
 
-        // You owe person
         InitialsListRow(
-            title: "James Chen",
+            title: MockData.personOwingMoney.name,
             description: "You owe",
-            initials: "JC",
-            avatarColor: InitialsAvatarColors.pink,
-            amount: "$32.00",
+            initials: InitialsGenerator.generate(from: MockData.personOwingMoney.name),
+            avatarColor: InitialsAvatarColors.color(for: MockData.personOwingMoney.name),
+            amount: String(format: "$%.2f", abs(MockData.personOwingMoney.balance)),
             amountColor: AmountColors.negative,
             timeText: "No activity"
         )
 
         AlignedDivider()
 
-        // Settled
         InitialsListRow(
-            title: "Aisha Patel",
+            title: MockData.personSettled.name,
             description: "Settled",
-            initials: "AP",
-            avatarColor: InitialsAvatarColors.purple,
-            amount: "$0.00",
+            initials: InitialsGenerator.generate(from: MockData.personSettled.name),
+            avatarColor: InitialsAvatarColors.color(for: MockData.personSettled.name),
+            amount: String(format: "$%.2f", MockData.personSettled.balance),
             amountColor: .wisePrimaryText,
             timeText: "No activity"
         )
@@ -359,37 +356,37 @@ struct AlignedDivider: View {
 #Preview("InitialsListRow - Subscriptions") {
     VStack(spacing: 0) {
         InitialsListRow(
-            title: "Adobe Creative Cloud",
-            description: "Monthly",
-            initials: "AC",
-            avatarColor: InitialsAvatarColors.pink,
-            amount: "$54.99",
+            title: MockData.activeSubscription.name,
+            description: MockData.activeSubscription.billingCycle.displayName,
+            initials: InitialsGenerator.generate(from: MockData.activeSubscription.name),
+            avatarColor: MockData.activeSubscription.category.pastelAvatarColor,
+            amount: String(format: "$%.2f", MockData.activeSubscription.price),
             amountColor: .wisePrimaryText,
-            timeText: "Dec 22"
+            timeText: MockData.activeSubscription.nextBillingDate.shortCardDate
         )
 
         AlignedDivider()
 
         InitialsListRow(
-            title: "Gym Membership",
-            description: "Monthly",
-            initials: "GM",
-            avatarColor: InitialsAvatarColors.purple,
-            amount: "$49.99",
+            title: MockData.subscriptionDueToday.name,
+            description: MockData.subscriptionDueToday.billingCycle.displayName,
+            initials: InitialsGenerator.generate(from: MockData.subscriptionDueToday.name),
+            avatarColor: MockData.subscriptionDueToday.category.pastelAvatarColor,
+            amount: String(format: "$%.2f", MockData.subscriptionDueToday.price),
             amountColor: .wisePrimaryText,
-            timeText: "Dec 17"
+            timeText: MockData.subscriptionDueToday.nextBillingDate.shortCardDate
         )
 
         AlignedDivider()
 
         InitialsListRow(
-            title: "Netflix",
-            description: "Monthly",
-            initials: "N",
-            avatarColor: InitialsAvatarColors.gray,
-            amount: "$19.99",
+            title: MockData.yearlySubscription.name,
+            description: MockData.yearlySubscription.billingCycle.displayName,
+            initials: InitialsGenerator.generate(from: MockData.yearlySubscription.name),
+            avatarColor: MockData.yearlySubscription.category.pastelAvatarColor,
+            amount: String(format: "$%.2f", MockData.yearlySubscription.price),
             amountColor: .wisePrimaryText,
-            timeText: "Dec 27"
+            timeText: MockData.yearlySubscription.nextBillingDate.shortCardDate
         )
     }
     .background(Color.white)

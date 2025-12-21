@@ -537,7 +537,7 @@ struct StorageRow: View {
     }
 }
 
-#Preview {
+#Preview("Enhanced Data Management Section") {
     List {
         EnhancedDataManagementSection(userSettings: UserSettings.shared)
     }

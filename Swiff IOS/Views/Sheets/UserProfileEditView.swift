@@ -509,6 +509,6 @@ struct EmojiPickerView: View {
     }
 }
 
-#Preview {
+#Preview("User Profile Edit View") {
     UserProfileEditView()
 }

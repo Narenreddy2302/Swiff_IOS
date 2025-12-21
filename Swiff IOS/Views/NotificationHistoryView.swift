@@ -305,6 +305,6 @@ class NotificationHistoryManager: ObservableObject {
     }
 }
 
-#Preview {
+#Preview("Notification History View") {
     NotificationHistoryView()
 }

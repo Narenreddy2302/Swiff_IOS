@@ -77,6 +77,42 @@ struct GroupDetailView: View {
         groupSplitBills.reduce(0) { $0 + $1.totalPending }
     }
 
+    // MARK: - Timeline Computed Properties
+
+    // Group expenses by date for timeline
+    private var groupedGroupTimelineItems: [(Date, [GroupTimelineItem])] {
+        guard let group = group else { return [] }
+
+        let items: [GroupTimelineItem] = group.expenses.map { expense in
+            let payer = dataManager.people.first { $0.id == expense.paidBy }
+            let splitMembers = expense.splitBetween.compactMap { id in
+                dataManager.people.first { $0.id == id }
+            }
+            return .expense(expense, payer: payer, splitMembers: splitMembers)
+        }
+
+        let grouped = Dictionary(grouping: items) { item in
+            Calendar.current.startOfDay(for: item.timestamp)
+        }
+
+        return grouped.sorted { $0.key > $1.key }.map { ($0.key, $0.value.sorted { $0.timestamp > $1.timestamp }) }
+    }
+
+    // Status banner config for group
+    private var groupStatusBanner: StatusBannerConfig? {
+        guard let group = group else { return nil }
+        let unsettledExpenses = group.expenses.filter { !$0.isSettled }
+        let pendingCount = unsettledExpenses.count
+        guard pendingCount > 0 else { return nil }
+
+        let totalOwed = unsettledExpenses.reduce(0.0) { $0 + $1.amountPerPerson }
+        return StatusBannerConfig(
+            pendingCount: pendingCount,
+            totalAmount: totalOwed,
+            isUserOwing: true  // In groups, user typically owes their share
+        )
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -195,59 +231,41 @@ struct GroupDetailView: View {
 
     @ViewBuilder
     private func activityTabContent(group: Group) -> some View {
-        ScrollView {
-            VStack(spacing: 14) {
-                // Settle all button at top if there are unsettled expenses
-                if !unsettledExpenses.isEmpty {
-                    settleAllButton
-                        .padding(.top, 8)
-                }
-
-                // Expense bubbles grouped by date
-                let groupedExpenses = Dictionary(grouping: group.expenses.sorted(by: { $0.date > $1.date })) { expense in
-                    Calendar.current.startOfDay(for: expense.date)
-                }
-                let sortedDates = groupedExpenses.keys.sorted(by: >)
-
-                ForEach(sortedDates, id: \.self) { date in
-                    // Date header
-                    Text(formatDateHeader(date))
-                        .font(.spotifyLabelMedium)
-                        .foregroundColor(.wiseSecondaryText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.top, date == sortedDates.first ? 8 : 16)
-
-                    // Expenses for this date
-                    ForEach(groupedExpenses[date] ?? []) { expense in
-                        GroupActivityBubble(
-                            expense: expense,
-                            payer: members.first { $0.id == expense.paidBy },
-                            splitMembers: expense.splitBetween.compactMap { memberId in
-                                members.first { $0.id == memberId }
-                            },
-                            currentUserId: nil, // TODO: Get from user session
-                            onSettle: {
-                                settleExpense(expense)
-                            }
-                        )
-                        .padding(.horizontal, 16)
+        ZStack(alignment: .bottom) {
+            UnifiedTimelineView(
+                groupedItems: groupedGroupTimelineItems,
+                statusBanner: groupStatusBanner,
+                emptyStateConfig: TimelineEmptyStateConfig(
+                    icon: "rectangle.3.group.bubble.left",
+                    title: "No expenses yet",
+                    subtitle: "Add an expense to start tracking"
+                )
+            ) { item, isLast in
+                GroupTimelineBubble(
+                    item: item,
+                    onSettle: {
+                        // Extract the expense from the item and settle it
+                        if case .expense(let expense, _, _) = item {
+                            settleExpense(expense)
+                        }
                     }
-
-                    // System events (member joined/left) - could be added here
-                }
-
-                // Empty state
-                if group.expenses.isEmpty {
-                    emptyStateView
-                        .padding(.top, 40)
-                }
-
-                // Add expense button
-                quickActionsSection
-                    .padding(.top, 16)
-                    .padding(.bottom, 40)
+                )
             }
+
+            TimelineInputArea(
+                config: TimelineInputAreaConfig(
+                    quickActionTitle: "New split",
+                    quickActionIcon: "plus",
+                    placeholder: "Quick expense...",
+                    showMessageField: true
+                ),
+                onQuickAction: { showingAddExpense = true },
+                onSend: { message in
+                    // Optional: Handle quick expense creation from text
+                    // For now, just open the add expense sheet
+                    showingAddExpense = true
+                }
+            )
         }
     }
 
@@ -1496,9 +1514,23 @@ struct ExportGroupSheet: View {
 
 // MARK: - Preview
 
-#Preview {
+#Preview("Group Detail - With Expenses") {
     NavigationView {
-        GroupDetailView(groupId: UUID())
+        GroupDetailView(groupId: MockData.groupWithExpenses.id)
+            .environmentObject(DataManager.shared)
+    }
+}
+
+#Preview("Group Detail - Empty") {
+    NavigationView {
+        GroupDetailView(groupId: MockData.emptyGroup.id)
+            .environmentObject(DataManager.shared)
+    }
+}
+
+#Preview("Group Detail - Settled") {
+    NavigationView {
+        GroupDetailView(groupId: MockData.settledGroup.id)
             .environmentObject(DataManager.shared)
     }
 }

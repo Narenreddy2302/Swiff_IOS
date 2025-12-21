@@ -114,11 +114,6 @@ struct Step2PayerView: View {
 // MARK: - Preview
 
 #Preview("Step 2 Payer") {
-    let dataManager = DataManager.shared
-    let person1 = Person(name: "Alice", email: "alice@example.com", phone: "+1234567890", avatar: "👩‍💼")
-    let person2 = Person(name: "Bob", email: "bob@example.com", phone: "+1234567891", avatar: "👨‍💻")
-    dataManager.people = [person1, person2]
-
-    return Step2PayerView(selectedPayer: .constant(person1))
-        .environmentObject(dataManager)
+    Step2PayerView(selectedPayer: .constant(MockData.personOwedMoney))
+        .environmentObject(DataManager.shared)
 }

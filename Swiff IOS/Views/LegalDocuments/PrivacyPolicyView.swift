@@ -161,6 +161,6 @@ struct SectionView: View {
     }
 }
 
-#Preview {
+#Preview("Privacy Policy View") {
     PrivacyPolicyView()
 }

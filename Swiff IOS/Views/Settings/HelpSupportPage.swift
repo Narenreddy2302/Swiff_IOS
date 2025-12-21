@@ -550,7 +550,7 @@ struct AcknowledgmentItem: View {
     }
 }
 
-#Preview {
+#Preview("Help Support Page") {
     NavigationView {
         HelpSupportPage()
     }

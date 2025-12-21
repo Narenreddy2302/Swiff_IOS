@@ -215,24 +215,17 @@ struct Step6ReviewView: View {
 // MARK: - Preview
 
 #Preview("Step 6 Review") {
-    let dataManager = DataManager.shared
-    let person1 = Person(name: "Dalfa", email: "dalfa@example.com", phone: "+1234567890", avatar: "👨‍💼")
-    let person2 = Person(name: "You", email: "you@example.com", phone: "+1234567891", avatar: "👤")
-    let person3 = Person(name: "Bayu Sas", email: "bayu@example.com", phone: "+1234567892", avatar: "🧑‍💻")
-    dataManager.people = [person1, person2, person3]
-
-    let participant1 = SplitParticipant(personId: person1.id, amount: 30000.0)
-    let participant2 = SplitParticipant(personId: person2.id, amount: 30000.0)
-    let participant3 = SplitParticipant(personId: person3.id, amount: 30000.0)
+    let participant1 = SplitParticipant(personId: MockData.personOwedMoney.id, amount: 30.0)
+    let participant2 = SplitParticipant(personId: MockData.personOwingMoney.id, amount: 30.0)
 
     return Step6ReviewView(
-        title: "Caraka gathering",
-        totalAmount: 90000.0,
-        payer: person1,
-        participants: [participant1, participant2, participant3],
+        title: MockData.pendingSplitBill.title,
+        totalAmount: MockData.pendingSplitBill.totalAmount,
+        payer: MockData.personOwedMoney,
+        participants: [participant1, participant2],
         category: .dining,
         date: Date(),
         notes: "Great meal with friends!"
     )
-    .environmentObject(dataManager)
+    .environmentObject(DataManager.shared)
 }
