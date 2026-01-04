@@ -12,44 +12,44 @@ extension Theme {
 
     struct Fonts {
         // MARK: - Display (Headings)
-        /// Size 32, Black Weight - For Main Titles
-        static let displayLarge = Font.custom("Helvetica Neue", size: 32).weight(.black)
+        /// Title, Black Weight - For Main Titles
+        static let displayLarge = Font.title.weight(.black)
 
-        /// Size 24, Bold Weight - For Section Headers
-        static let displayMedium = Font.custom("Helvetica Neue", size: 24).weight(.bold)
+        /// Title2, Bold Weight - For Section Headers
+        static let displayMedium = Font.title2.weight(.bold)
 
         // MARK: - Headers
-        /// Size 20, Bold
-        static let headerLarge = Font.custom("Helvetica Neue", size: 20).weight(.bold)
-        /// Size 18, Bold
-        static let headerMedium = Font.custom("Helvetica Neue", size: 18).weight(.bold)
-        /// Size 16, Bold
-        static let headerSmall = Font.custom("Helvetica Neue", size: 16).weight(.bold)
+        /// Title3, Bold
+        static let headerLarge = Font.title3.weight(.bold)
+        /// Headline
+        static let headerMedium = Font.headline
+        /// Body, Semibold
+        static let headerSmall = Font.body.weight(.semibold)
 
-        // MARK: - Body (SF Pro)
-        /// Size 16, Medium - Default readable text
-        static let bodyLarge = Font.system(size: 16, weight: .medium)
-        /// Size 14, Medium - Secondary text
-        static let bodyMedium = Font.system(size: 14, weight: .medium)
-        /// Size 13, Regular - Dense text
-        static let bodySmall = Font.system(size: 13, weight: .regular)
+        // MARK: - Body
+        /// Subheadline, Medium - Default readable text
+        static let bodyLarge = Font.subheadline.weight(.medium)
+        /// Footnote, Medium - Secondary text
+        static let bodyMedium = Font.footnote.weight(.medium)
+        /// Caption - Dense text
+        static let bodySmall = Font.caption
 
         // MARK: - Label / Utilities
-        /// Size 14, Semibold - Buttons and Labels
-        static let labelLarge = Font.system(size: 14, weight: .semibold)
-        /// Size 12, Semibold - Small pills/tags
-        static let labelMedium = Font.system(size: 12, weight: .semibold)
-        /// Size 11, Semibold - Tiny metadata
-        static let labelSmall = Font.system(size: 11, weight: .semibold)
+        /// Footnote, Semibold - Buttons and Labels
+        static let labelLarge = Font.footnote.weight(.semibold)
+        /// Caption2, Semibold - Small pills/tags
+        static let labelMedium = Font.caption2.weight(.semibold)
+        /// Caption2, Semibold - Tiny metadata
+        static let labelSmall = Font.caption2.weight(.semibold)
 
         // MARK: - Captions
-        static let captionMedium = Font.system(size: 12, weight: .regular)
-        static let captionSmall = Font.system(size: 11, weight: .regular)
+        static let captionMedium = Font.caption2
+        static let captionSmall = Font.caption2
 
-        // MARK: - Numbers (Monospaced/Impactful)
-        /// Size 24, Black - Big Balances
-        static let numberLarge = Font.custom("Helvetica Neue", size: 24).weight(.black)
-        /// Size 16, Bold - Transaction Amounts
-        static let numberMedium = Font.custom("Helvetica Neue", size: 16).weight(.bold)
+        // MARK: - Numbers (Impactful)
+        /// Title2, Black - Big Balances
+        static let numberLarge = Font.title2.weight(.black)
+        /// Body, Semibold - Transaction Amounts
+        static let numberMedium = Font.body.weight(.semibold)
     }
 }
