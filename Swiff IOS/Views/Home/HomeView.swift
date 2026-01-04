@@ -42,9 +42,6 @@ struct HomeView: View {
                             // Four Card Grid
                             FinancialOverviewGrid(selectedTab: $selectedTab)
 
-                            // Recent Group Activity Section
-                            RecentGroupActivitySection()
-
                             // Recent Transactions Section
                             RecentActivitySection()
 
