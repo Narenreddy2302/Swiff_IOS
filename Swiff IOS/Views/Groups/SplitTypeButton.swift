@@ -48,7 +48,7 @@ struct SplitTypeButton: View {
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 24))
-                        .foregroundColor(.wiseBrightGreen)
+                        .foregroundColor(.wiseForestGreen)
                 }
             }
             .padding(16)
@@ -63,19 +63,19 @@ struct SplitTypeButton: View {
     }
 
     private var backgroundColor: Color {
-        isSelected ? Color.wiseBrightGreen.opacity(0.1) : Color.wiseCardBackground
+        isSelected ? Color.wiseForestGreen.opacity(0.1) : Color.wiseCardBackground
     }
 
     private var borderColor: Color {
-        isSelected ? Color.wiseBrightGreen : Color.wiseBorder.opacity(0.3)
+        isSelected ? Color.wiseForestGreen : Color.wiseBorder.opacity(0.3)
     }
 
     private var iconBackgroundColor: Color {
-        isSelected ? Color.wiseBrightGreen.opacity(0.2) : Color.wiseBorder.opacity(0.1)
+        Color.wiseBorder.opacity(0.1)
     }
 
     private var iconColor: Color {
-        isSelected ? Color.wiseBrightGreen : Color.wiseSecondaryText
+        isSelected ? Color.wiseForestGreen : Color.wiseSecondaryText
     }
 }
 

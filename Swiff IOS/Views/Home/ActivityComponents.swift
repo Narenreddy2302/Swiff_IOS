@@ -362,6 +362,7 @@ struct RecentActivitySection: View {
     @EnvironmentObject var dataManager: DataManager
     @State private var selectedFilter: ActivityFilter = .all
     @State private var showingFilterSheet = false
+    @State private var selectedTransaction: Transaction?
 
     enum ActivityFilter: String, CaseIterable {
         case all = "All"
@@ -430,25 +431,24 @@ struct RecentActivitySection: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(recentTransactions.enumerated()), id: \.element.id) { index, transaction in
-                        VStack(spacing: 0) {
-                            NavigationLink(
-                                destination: TransactionDetailView(transactionId: transaction.id)
-                            ) {
-                                FeedTransactionRow(transaction: transaction)
+                        FeedTransactionRow(
+                            transaction: transaction,
+                            isLastInGroup: index == recentTransactions.count - 1,
+                            onTap: {
+                                selectedTransaction = transaction
+                                HapticManager.shared.light()
                             }
-                            .buttonStyle(PlainButtonStyle())
-
-                            // Divider between rows (not after last)
-                            if index < recentTransactions.count - 1 {
-                                FeedRowDivider()
-                            }
-                        }
+                        )
                     }
                 }
             }
         }
         .sheet(isPresented: $showingFilterSheet) {
             ActivityFilterSheet(selectedFilter: $selectedFilter, isPresented: $showingFilterSheet)
+        }
+        .sheet(item: $selectedTransaction) { transaction in
+            TransactionDetailSheet(transaction: transaction)
+                .environmentObject(dataManager)
         }
     }
 }

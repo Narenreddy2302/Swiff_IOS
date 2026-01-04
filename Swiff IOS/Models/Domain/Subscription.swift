@@ -9,6 +9,22 @@
 import Combine
 import Foundation
 
+// MARK: - Balance Status for Shared Subscriptions
+
+enum BalanceStatus: String, Codable {
+    case owesYou = "owes-you"
+    case youOwe = "you-owe"
+    case settled = "settled"
+
+    var displayText: String {
+        switch self {
+        case .owesYou: return "They owe you"
+        case .youOwe: return "You owe"
+        case .settled: return "Settled"
+        }
+    }
+}
+
 // MARK: - Subscription Model
 
 struct Subscription: Identifiable, Codable {
@@ -176,6 +192,22 @@ struct Subscription: Identifiable, Codable {
     }
 }
 
+// MARK: - Shared Member Model
+
+/// Represents a member in a shared subscription for display purposes
+struct SharedMember: Identifiable, Codable {
+    var id = UUID()
+    let name: String
+
+    var initials: String {
+        let words = name.split(separator: " ")
+        if words.count >= 2 {
+            return String(words[0].prefix(1) + words[1].prefix(1)).uppercased()
+        }
+        return String(name.prefix(2)).uppercased()
+    }
+}
+
 // MARK: - Shared Subscription Model
 
 struct SharedSubscription: Identifiable, Codable {
@@ -189,6 +221,15 @@ struct SharedSubscription: Identifiable, Codable {
     var createdDate: Date
     var notes: String
 
+    // Balance tracking for shared subscriptions
+    var balance: Double  // Positive = they owe you, Negative = you owe
+    var balanceStatus: BalanceStatus  // Derived from balance sign
+
+    // Display data for shared subscription row
+    var billingCycle: BillingCycle
+    var nextBillingDate: Date
+    var members: [SharedMember]
+
     init(subscriptionId: UUID, sharedBy: UUID, sharedWith: [UUID], costSplit: CostSplitType)
     {
         self.subscriptionId = subscriptionId
@@ -199,5 +240,10 @@ struct SharedSubscription: Identifiable, Codable {
         self.isAccepted = false
         self.createdDate = Date()
         self.notes = ""
+        self.balance = 0.0
+        self.balanceStatus = .settled
+        self.billingCycle = .monthly
+        self.nextBillingDate = Date()
+        self.members = []
     }
 }

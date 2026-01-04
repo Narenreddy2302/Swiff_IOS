@@ -2,60 +2,83 @@
 //  TransactionRowView.swift
 //  Swiff IOS
 //
-//  Compact transaction row for feed page
-//  Layout: Avatar | Name + Time | Amount + Type
+//  Redesigned transaction row for feed page
+//  Layout: 48x48 Avatar | Name + Time · Category | Amount + Entity Name
 //
 
 import SwiftUI
 
 // MARK: - Feed Transaction Row
 
-/// Compact transaction row for dense feed display
-/// Layout: 40x40 avatar | Name (14pt semibold) + Time (12pt) | Amount (14pt semibold) + Type (12pt)
+/// Modern transaction row for feed display
+/// Layout: 48x48 avatar | Name (15pt semibold) + Time · Category (13pt) | Amount (15pt semibold) + Entity (13pt)
 struct FeedTransactionRow: View {
+    @EnvironmentObject var dataManager: DataManager
+
     let transaction: Transaction
+    let isLastInGroup: Bool
     var onTap: (() -> Void)? = nil
 
-    private let avatarSize: CGFloat = 40
+    private let avatarSize: CGFloat = 48
+
+    // MARK: - Body
 
     var body: some View {
-        Button(action: { onTap?() }) {
-            HStack(spacing: 10) {
-                // Avatar - initials with colored background
-                initialsAvatar
+        VStack(spacing: 0) {
+            Button(action: { onTap?() }) {
+                HStack(spacing: 14) {
+                    // Avatar - initials with colored background
+                    initialsAvatar
 
-                // Left side - Name and Time
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(displayName)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
-                        .lineLimit(1)
+                    // Left side - Name and Time · Category
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(displayName)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(Theme.Colors.feedPrimaryText)
+                            .lineLimit(1)
 
-                    Text(transaction.formattedTime)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(Theme.Colors.feedSecondaryText)
+                        HStack(spacing: 6) {
+                            Text(transaction.formattedTime)
+                                .foregroundColor(Theme.Colors.feedSecondaryText)
+
+                            Text("·")
+                                .foregroundColor(Theme.Colors.feedTertiaryText)
+
+                            Text(transaction.category.rawValue)
+                                .foregroundColor(Theme.Colors.feedTertiaryText)
+                        }
+                        .font(.system(size: 13))
+                    }
+
+                    Spacer(minLength: 8)
+
+                    // Right side - Amount and Entity Name
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(formattedAmount)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(amountColor)
+
+                        Text(entityDisplayName)
+                            .font(.system(size: 13))
+                            .foregroundColor(Theme.Colors.feedSecondaryText)
+                            .lineLimit(1)
+                    }
                 }
-
-                Spacer(minLength: 8)
-
-                // Right side - Amount and Type
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(formattedAmount)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(amountColor)
-
-                    Text(transaction.derivedTransactionType.displayName)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(Theme.Colors.feedSecondaryText)
-                }
+                .padding(.vertical, 16)
+                .contentShape(Rectangle())
             }
-            .padding(.vertical, 8)
-            .contentShape(Rectangle())
+            .buttonStyle(PlainButtonStyle())
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(
+                "\(displayName), \(formattedAmount), \(entityDisplayName)")
+
+            // Divider (if not last in group)
+            if !isLastInGroup {
+                Rectangle()
+                    .fill(Theme.Colors.feedDivider)
+                    .frame(height: 1)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "\(displayName), \(formattedAmount), \(transaction.derivedTransactionType.displayName)")
     }
 
     // MARK: - Computed Properties
@@ -66,10 +89,11 @@ struct FeedTransactionRow: View {
 
     private var formattedAmount: String {
         let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        let formatted = formatter.string(from: NSNumber(value: abs(transaction.amount))) ?? "$0.00"
-        let prefix = transaction.isExpense ? "-" : "+"
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        let formatted = formatter.string(from: NSNumber(value: abs(transaction.amount))) ?? String(format: "%.2f", abs(transaction.amount))
+        let prefix = transaction.isExpense ? "-$" : "+$"
         return "\(prefix)\(formatted)"
     }
 
@@ -77,45 +101,64 @@ struct FeedTransactionRow: View {
         transaction.isExpense ? Theme.Colors.feedPrimaryText : Theme.Colors.feedPositiveAmount
     }
 
+    /// Entity display name for the right side
+    /// Priority: Subscription > Group > Person > Merchant > Title
+    private var entityDisplayName: String {
+        // 1. Check if linked to a subscription
+        if let subscriptionId = transaction.linkedSubscriptionId,
+           let subscription = dataManager.subscriptions.first(where: { $0.id == subscriptionId }) {
+            return subscription.name
+        }
+
+        // 2. Check if linked to a split bill/group
+        if let splitBillId = transaction.splitBillId,
+           let splitBill = dataManager.splitBills.first(where: { $0.id == splitBillId }) {
+            // Find the group this split bill belongs to
+            if let group = dataManager.groups.first(where: { $0.expenses.contains(where: { $0.id == splitBillId }) }) {
+                return group.name
+            }
+            return splitBill.title
+        }
+
+        // 3. Check for related person (by searching for a match in people)
+        // Try to find a person whose name matches the transaction title
+        if let person = dataManager.people.first(where: { $0.name.lowercased() == transaction.title.lowercased() }) {
+            return person.name
+        }
+
+        // 4. Fallback to merchant or title
+        return transaction.merchant ?? transaction.title
+    }
+
     // MARK: - Avatar
+
+    private var avatarColor: FeedAvatarColor {
+        FeedAvatarColor.forName(displayName)
+    }
 
     private var initialsAvatar: some View {
         Circle()
-            .fill(InitialsAvatarColors.color(for: displayName))
+            .fill(avatarColor.background)
             .frame(width: avatarSize, height: avatarSize)
             .overlay(
                 Text(InitialsGenerator.generate(from: displayName))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(avatarTextColor)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(avatarColor.foreground)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
             )
             .accessibilityHidden(true)
     }
-
-    private var avatarTextColor: Color {
-        // Use dark text on light backgrounds (green, yellow)
-        let color = InitialsAvatarColors.color(for: displayName)
-        if color == InitialsAvatarColors.green || color == InitialsAvatarColors.yellow {
-            return Theme.Colors.feedPrimaryText
-        }
-        return .white
-    }
 }
 
 // MARK: - Feed Row Divider
 
-/// Indented divider for separating transaction rows
-/// Aligned with text content (past the avatar)
+/// Full-width divider for separating transaction groups
 struct FeedRowDivider: View {
-    // Indent: 16pt (horizontal padding) + 40pt (avatar) + 10pt (spacing) = 66pt
-    private let leadingIndent: CGFloat = 66
-
     var body: some View {
         Rectangle()
             .fill(Theme.Colors.feedDivider)
             .frame(height: 1)
-            .padding(.leading, leadingIndent)
     }
 }
 
@@ -123,11 +166,19 @@ struct FeedRowDivider: View {
 
 /// Wrapper for backward compatibility with existing code
 struct TransactionRowView: View {
+    @EnvironmentObject var dataManager: DataManager
+
     let transaction: Transaction
+    var isLastInGroup: Bool = true
     var onTap: (() -> Void)? = nil
 
     var body: some View {
-        FeedTransactionRow(transaction: transaction, onTap: onTap)
+        FeedTransactionRow(
+            transaction: transaction,
+            isLastInGroup: isLastInGroup,
+            onTap: onTap
+        )
+        .environmentObject(dataManager)
     }
 }
 
@@ -146,9 +197,10 @@ struct TransactionRowView: View {
                     date: Date(),
                     isRecurring: false,
                     tags: []
-                )
+                ),
+                isLastInGroup: false
             )
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
 
             // Transfer - Uber
             FeedTransactionRow(
@@ -161,9 +213,10 @@ struct TransactionRowView: View {
                     isRecurring: false,
                     tags: [],
                     merchant: "Uber"
-                )
+                ),
+                isLastInGroup: false
             )
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
 
             // Send - Person
             FeedTransactionRow(
@@ -171,13 +224,14 @@ struct TransactionRowView: View {
                     title: "Ryan Scott",
                     subtitle: "Split dinner",
                     amount: -124.00,
-                    category: .other,
+                    category: .food,
                     date: Date(),
                     isRecurring: false,
                     tags: []
-                )
+                ),
+                isLastInGroup: false
             )
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
 
             // Payment - Food Panda
             FeedTransactionRow(
@@ -190,12 +244,14 @@ struct TransactionRowView: View {
                     isRecurring: false,
                     tags: [],
                     merchant: "Food Panda"
-                )
+                ),
+                isLastInGroup: true
             )
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
         }
     }
     .background(Color.white)
+    .environmentObject(DataManager.shared)
 }
 
 #Preview("FeedTransactionRow - Edge Cases") {
@@ -210,9 +266,10 @@ struct TransactionRowView: View {
                 date: Date(),
                 isRecurring: true,
                 tags: []
-            )
+            ),
+            isLastInGroup: false
         )
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
 
         // Small amount
         FeedTransactionRow(
@@ -225,9 +282,10 @@ struct TransactionRowView: View {
                 isRecurring: false,
                 tags: [],
                 merchant: "Starbucks"
-            )
+            ),
+            isLastInGroup: false
         )
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
 
         // Pending request
         FeedTransactionRow(
@@ -235,14 +293,16 @@ struct TransactionRowView: View {
                 title: "John Smith",
                 subtitle: "Dinner split request",
                 amount: 50.00,
-                category: .other,
+                category: .food,
                 date: Date(),
                 isRecurring: false,
                 tags: [],
                 paymentStatus: .pending
-            )
+            ),
+            isLastInGroup: true
         )
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
     }
     .background(Color.white)
+    .environmentObject(DataManager.shared)
 }

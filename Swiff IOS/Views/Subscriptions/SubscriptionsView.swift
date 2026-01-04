@@ -119,6 +119,16 @@ struct SubscriptionsView: View {
         netflix.individualCost = 5.49
         netflix.isAccepted = true
         netflix.notes = "Netflix Premium"
+        netflix.balance = 0
+        netflix.balanceStatus = .settled
+        netflix.billingCycle = .monthly
+        netflix.nextBillingDate = Calendar.current.date(byAdding: .day, value: 15, to: Date()) ?? Date()
+        netflix.members = [
+            SharedMember(name: "You"),
+            SharedMember(name: "Mom"),
+            SharedMember(name: "Dad"),
+            SharedMember(name: "Sis")
+        ]
 
         var spotify = SharedSubscription(
             subscriptionId: UUID(),
@@ -129,6 +139,17 @@ struct SubscriptionsView: View {
         spotify.individualCost = 2.99
         spotify.isAccepted = true
         spotify.notes = "Spotify Family"
+        spotify.balance = -3.40
+        spotify.balanceStatus = .youOwe
+        spotify.billingCycle = .monthly
+        spotify.nextBillingDate = Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
+        spotify.members = [
+            SharedMember(name: "Mike"),
+            SharedMember(name: "You"),
+            SharedMember(name: "Sarah"),
+            SharedMember(name: "Alex"),
+            SharedMember(name: "Tom")
+        ]
 
         var disney = SharedSubscription(
             subscriptionId: UUID(),
@@ -139,6 +160,15 @@ struct SubscriptionsView: View {
         disney.individualCost = 4.66
         disney.isAccepted = true
         disney.notes = "Disney+"
+        disney.balance = 4.66
+        disney.balanceStatus = .owesYou
+        disney.billingCycle = .monthly
+        disney.nextBillingDate = Calendar.current.date(byAdding: .day, value: 20, to: Date()) ?? Date()
+        disney.members = [
+            SharedMember(name: "You"),
+            SharedMember(name: "James"),
+            SharedMember(name: "Emma")
+        ]
 
         var youtube = SharedSubscription(
             subscriptionId: UUID(),
@@ -149,6 +179,16 @@ struct SubscriptionsView: View {
         youtube.individualCost = 4.59
         youtube.isAccepted = true
         youtube.notes = "YouTube Premium"
+        youtube.balance = 0
+        youtube.balanceStatus = .settled
+        youtube.billingCycle = .monthly
+        youtube.nextBillingDate = Calendar.current.date(byAdding: .day, value: 22, to: Date()) ?? Date()
+        youtube.members = [
+            SharedMember(name: "You"),
+            SharedMember(name: "Mom"),
+            SharedMember(name: "Dad"),
+            SharedMember(name: "Sis")
+        ]
 
         var icloud = SharedSubscription(
             subscriptionId: UUID(),
@@ -159,6 +199,15 @@ struct SubscriptionsView: View {
         icloud.individualCost = 0.99
         icloud.isAccepted = true
         icloud.notes = "iCloud 200GB"
+        icloud.balance = 0.99
+        icloud.balanceStatus = .owesYou
+        icloud.billingCycle = .monthly
+        icloud.nextBillingDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+        icloud.members = [
+            SharedMember(name: "You"),
+            SharedMember(name: "Lisa"),
+            SharedMember(name: "David")
+        ]
 
         var hbo = SharedSubscription(
             subscriptionId: UUID(),
@@ -169,6 +218,16 @@ struct SubscriptionsView: View {
         hbo.individualCost = 3.99
         hbo.isAccepted = true
         hbo.notes = "HBO Max"
+        hbo.balance = -3.99
+        hbo.balanceStatus = .youOwe
+        hbo.billingCycle = .monthly
+        hbo.nextBillingDate = Calendar.current.date(byAdding: .day, value: 12, to: Date()) ?? Date()
+        hbo.members = [
+            SharedMember(name: "You"),
+            SharedMember(name: "Lisa"),
+            SharedMember(name: "David"),
+            SharedMember(name: "Kevin")
+        ]
 
         return [netflix, spotify, disney, youtube, icloud, hbo]
     }

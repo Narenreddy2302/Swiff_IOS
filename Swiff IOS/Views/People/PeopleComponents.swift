@@ -706,29 +706,29 @@ struct GroupRowView: View {
 
 // MARK: - Feed Group Row
 
-/// Compact group row for feed-style display (matching FeedPersonRow/FeedTransactionRow)
-/// Layout: 40x40 emoji avatar | Name (14pt) + Last expense (12pt) | Amount (14pt) + Status (12pt)
+/// Group row for People list with 8-color avatar system (matching FeedPersonRow)
+/// Layout: 48x48 emoji avatar | Name (15pt) + Last expense (13pt) | Amount (15pt) + Status (13pt)
 struct FeedGroupRow: View {
     let group: Group
     var onTap: (() -> Void)? = nil
 
-    private let avatarSize: CGFloat = 40
+    private let avatarSize: CGFloat = 48
 
     var body: some View {
         Button(action: { onTap?() }) {
-            HStack(spacing: 10) {
+            HStack(spacing: 14) {
                 // Emoji avatar
                 emojiAvatar
 
                 // Left side - Name and last expense
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(group.name)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
                         .lineLimit(1)
 
                     Text(group.lastExpenseDetails())
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.system(size: 13, weight: .regular))
                         .foregroundColor(Theme.Colors.feedSecondaryText)
                         .lineLimit(1)
                 }
@@ -736,17 +736,17 @@ struct FeedGroupRow: View {
                 Spacer(minLength: 8)
 
                 // Right side - Amount and status
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: 4) {
                     Text(formattedAmount)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
 
                     Text(group.settlementStatus)
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.system(size: 13, weight: .regular))
                         .foregroundColor(statusColor)
                 }
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, 16)
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
@@ -758,9 +758,11 @@ struct FeedGroupRow: View {
 
     private var formattedAmount: String {
         let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter.string(from: NSNumber(value: group.totalAmount)) ?? "$0.00"
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        let formatted = formatter.string(from: NSNumber(value: group.totalAmount)) ?? String(format: "%.2f", group.totalAmount)
+        return "$\(formatted)"
     }
 
     private var statusColor: Color {
@@ -776,13 +778,17 @@ struct FeedGroupRow: View {
 
     // MARK: - Emoji Avatar
 
+    private var avatarColor: FeedAvatarColor {
+        FeedAvatarColor.forName(group.name)
+    }
+
     private var emojiAvatar: some View {
         Circle()
-            .fill(Color.wiseBlue.opacity(0.15))
+            .fill(avatarColor.background)
             .frame(width: avatarSize, height: avatarSize)
             .overlay(
                 Text(group.emoji)
-                    .font(.system(size: 18))
+                    .font(.system(size: 20))
             )
             .accessibilityHidden(true)
     }

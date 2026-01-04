@@ -28,6 +28,7 @@ struct RecentActivityView: View {
     @State private var transactionToDelete: Transaction?
     @State private var showingDeleteAlert = false
     @State private var isLoading = false
+    @State private var selectedTransaction: Transaction?
 
     // MARK: - Computed Properties
 
@@ -107,6 +108,10 @@ struct RecentActivityView: View {
             }
         } message: { transaction in
             Text("This will permanently delete this transaction.")
+        }
+        .sheet(item: $selectedTransaction) { transaction in
+            TransactionDetailSheet(transaction: transaction)
+                .environmentObject(dataManager)
         }
     }
 
@@ -207,26 +212,21 @@ struct RecentActivityView: View {
                 ForEach(groupedSections) { section in
                     Section {
                         ForEach(Array(section.transactions.enumerated()), id: \.element.id) { index, transaction in
-                            VStack(spacing: 0) {
-                                NavigationLink(
-                                    destination: TransactionDetailView(transactionId: transaction.id)
-                                ) {
-                                    FeedTransactionRow(transaction: transaction)
+                            FeedTransactionRow(
+                                transaction: transaction,
+                                isLastInGroup: index == section.transactions.count - 1,
+                                onTap: {
+                                    selectedTransaction = transaction
+                                    HapticManager.shared.light()
                                 }
-                                .buttonStyle(PlainButtonStyle())
-                                .padding(.horizontal, 16)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        transactionToDelete = transaction
-                                        showingDeleteAlert = true
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
-
-                                // Divider between transactions (not after last)
-                                if index < section.transactions.count - 1 {
-                                    FeedRowDivider()
+                            )
+                            .padding(.horizontal, 20)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    transactionToDelete = transaction
+                                    showingDeleteAlert = true
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
                                 }
                             }
                         }

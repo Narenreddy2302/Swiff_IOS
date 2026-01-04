@@ -9,9 +9,11 @@
 import SwiftUI
 
 struct TransactionSection: View {
+    @EnvironmentObject var dataManager: DataManager
     let date: Date
     let transactions: [Transaction]
     let onDelete: (Transaction) -> Void
+    @State private var selectedTransaction: Transaction?
 
     private var sectionTitle: String {
         let calendar = Calendar.current
@@ -33,14 +35,16 @@ struct TransactionSection: View {
             // Section header
             FeedSectionHeader(title: sectionTitle)
 
-            ForEach(transactions) { transaction in
-                NavigationLink(
-                    destination: TransactionDetailView(transactionId: transaction.id)
-                ) {
-                    FeedTransactionRow(transaction: transaction)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .padding(.horizontal, 16)
+            ForEach(Array(transactions.enumerated()), id: \.element.id) { index, transaction in
+                FeedTransactionRow(
+                    transaction: transaction,
+                    isLastInGroup: index == transactions.count - 1,
+                    onTap: {
+                        selectedTransaction = transaction
+                        HapticManager.shared.light()
+                    }
+                )
+                .padding(.horizontal, 20)
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .destructive) {
                         HapticManager.shared.heavy()
@@ -50,6 +54,10 @@ struct TransactionSection: View {
                     }
                 }
             }
+        }
+        .sheet(item: $selectedTransaction) { transaction in
+            TransactionDetailSheet(transaction: transaction)
+                .environmentObject(dataManager)
         }
     }
 }
@@ -116,4 +124,5 @@ struct TransactionSection: View {
         }
         .background(Color.white)
     }
+    .environmentObject(DataManager.shared)
 }

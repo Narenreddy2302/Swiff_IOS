@@ -121,6 +121,51 @@ struct InitialsAvatarColors {
     }
 }
 
+// MARK: - Feed Avatar Color (8-Color System)
+
+/// Modern avatar color palette for feed transactions
+/// Each color has a pastel background and contrasting foreground for text
+enum FeedAvatarColor: String, CaseIterable, Codable {
+    case gray, yellow, emerald, violet, rose, amber, sky, slate
+
+    var background: Color {
+        switch self {
+        case .gray: return Color(red: 0.886, green: 0.910, blue: 0.925)
+        case .yellow: return Color(red: 0.996, green: 0.941, blue: 0.541)
+        case .emerald: return Color(red: 0.820, green: 0.980, blue: 0.902)
+        case .violet: return Color(red: 0.929, green: 0.914, blue: 0.992)
+        case .rose: return Color(red: 1.0, green: 0.894, blue: 0.902)
+        case .amber: return Color(red: 0.996, green: 0.953, blue: 0.780)
+        case .sky: return Color(red: 0.878, green: 0.949, blue: 0.992)
+        case .slate: return Color(red: 0.945, green: 0.957, blue: 0.965)
+        }
+    }
+
+    var foreground: Color {
+        switch self {
+        case .gray: return Color(red: 0.392, green: 0.455, blue: 0.545)
+        case .yellow: return Color(red: 0.631, green: 0.384, blue: 0.027)
+        case .emerald: return Color(red: 0.016, green: 0.471, blue: 0.341)
+        case .violet: return Color(red: 0.427, green: 0.157, blue: 0.851)
+        case .rose: return Color(red: 0.882, green: 0.114, blue: 0.290)
+        case .amber: return Color(red: 0.851, green: 0.463, blue: 0.024)
+        case .sky: return Color(red: 0.008, green: 0.518, blue: 0.780)
+        case .slate: return Color(red: 0.278, green: 0.333, blue: 0.412)
+        }
+    }
+
+    /// Get a random color
+    static func random() -> FeedAvatarColor {
+        allCases.randomElement() ?? .emerald
+    }
+
+    /// Get color based on string hash (deterministic)
+    static func forName(_ name: String) -> FeedAvatarColor {
+        let index = abs(name.hashValue) % allCases.count
+        return allCases[index]
+    }
+}
+
 // MARK: - Amount Colors
 
 /// Amount display colors for positive/negative values

@@ -3,7 +3,7 @@
 //  Swiff IOS
 //
 //  Date grouping utility for feed transactions
-//  Groups transactions into: Today, Yesterday, This Week, Last Week, Older
+//  Groups transactions by actual calendar dates (e.g., "JAN 3, 2026")
 //
 
 import Foundation
@@ -95,7 +95,7 @@ enum FeedDateGroup: String, CaseIterable {
 extension Array where Element == Transaction {
 
     /// Group transactions by date sections for feed display
-    /// Returns sections in order: Today, Yesterday, This Week, Last Week, Older
+    /// Returns sections grouped by actual calendar dates (e.g., "JAN 3, 2026")
     func groupedByFeedSections(
         calendar: Calendar = .current,
         now: Date = Date()
@@ -103,23 +103,29 @@ extension Array where Element == Transaction {
         // Sort by date descending (most recent first)
         let sorted = self.sorted { $0.date > $1.date }
 
-        // Group by date category
-        var groups: [FeedDateGroup: [Transaction]] = [:]
+        // Group by calendar date (day)
+        var groups: [Date: [Transaction]] = [:]
 
         for transaction in sorted {
-            let group = FeedDateGroup.group(for: transaction.date, calendar: calendar, now: now)
-            if groups[group] == nil {
-                groups[group] = []
+            let dayStart = calendar.startOfDay(for: transaction.date)
+            if groups[dayStart] == nil {
+                groups[dayStart] = []
             }
-            groups[group]?.append(transaction)
+            groups[dayStart]?.append(transaction)
         }
 
-        // Create sections in order
-        let orderedGroups: [FeedDateGroup] = [.today, .yesterday, .thisWeek, .lastWeek, .older]
+        // Sort dates descending and create sections
+        let sortedDates = groups.keys.sorted(by: >)
 
-        return orderedGroups.compactMap { group in
-            guard let transactions = groups[group], !transactions.isEmpty else { return nil }
-            return FeedDateSection(title: group.rawValue, transactions: transactions)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+
+        return sortedDates.map { date in
+            let title = formatter.string(from: date).uppercased()
+            return FeedDateSection(
+                title: title,
+                transactions: groups[date] ?? []
+            )
         }
     }
 

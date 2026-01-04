@@ -64,7 +64,7 @@ private struct SplitMethodButton: View {
                 // Icon with background circle
                 ZStack {
                     Circle()
-                        .fill(isSelected ? Color.white.opacity(0.3) : Color.wiseBorder.opacity(0.1))
+                        .fill(Color.clear)
                         .frame(width: 36, height: 36)
 
                     Image(systemName: type.icon)

@@ -113,30 +113,30 @@ struct PersonCard: View {
 
 // MARK: - Feed Person Row
 
-/// Compact person row for feed-style display (matching FeedTransactionRow)
-/// Layout: 40x40 avatar | Name (14pt) + Last transaction (12pt) | Balance (14pt) + Status (12pt)
+/// Person row for People list with 8-color avatar system
+/// Layout: 48x48 avatar | Name (15pt) + Last transaction (13pt) | Balance (15pt) + Status (13pt)
 struct FeedPersonRow: View {
     let person: Person
     var transactions: [Transaction] = []
     var onTap: (() -> Void)? = nil
 
-    private let avatarSize: CGFloat = 40
+    private let avatarSize: CGFloat = 48
 
     var body: some View {
         Button(action: { onTap?() }) {
-            HStack(spacing: 10) {
+            HStack(spacing: 14) {
                 // Avatar - initials with colored background
                 initialsAvatar
 
                 // Left side - Name and last transaction
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(person.name)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
                         .lineLimit(1)
 
                     Text(person.lastTransactionDetails(transactions: transactions))
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.system(size: 13, weight: .regular))
                         .foregroundColor(Theme.Colors.feedSecondaryText)
                         .lineLimit(1)
                 }
@@ -144,17 +144,17 @@ struct FeedPersonRow: View {
                 Spacer(minLength: 8)
 
                 // Right side - Balance and status
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: 4) {
                     Text(formattedBalance)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(balanceColor)
 
                     Text(balanceStatus)
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.system(size: 13, weight: .regular))
                         .foregroundColor(Theme.Colors.feedSecondaryText)
                 }
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, 16)
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
@@ -165,17 +165,19 @@ struct FeedPersonRow: View {
     // MARK: - Computed Properties
 
     private var formattedBalance: String {
+        let absBalance = abs(person.balance)
         let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        let formatted = formatter.string(from: NSNumber(value: abs(person.balance))) ?? "$0.00"
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        let formatted = formatter.string(from: NSNumber(value: absBalance)) ?? String(format: "%.2f", absBalance)
 
         if person.balance > 0 {
-            return "+\(formatted)"
+            return "+$\(formatted)"
         } else if person.balance < 0 {
-            return "-\(formatted)"
+            return "-$\(formatted)"
         } else {
-            return formatted
+            return "$\(formatted)"
         }
     }
 
@@ -201,26 +203,22 @@ struct FeedPersonRow: View {
 
     // MARK: - Avatar
 
+    private var avatarColor: FeedAvatarColor {
+        FeedAvatarColor.forName(person.name)
+    }
+
     private var initialsAvatar: some View {
         Circle()
-            .fill(InitialsAvatarColors.color(for: person.name))
+            .fill(avatarColor.background)
             .frame(width: avatarSize, height: avatarSize)
             .overlay(
                 Text(InitialsGenerator.generate(from: person.name))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(avatarTextColor)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(avatarColor.foreground)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
             )
             .accessibilityHidden(true)
-    }
-
-    private var avatarTextColor: Color {
-        let color = InitialsAvatarColors.color(for: person.name)
-        if color == InitialsAvatarColors.green || color == InitialsAvatarColors.yellow {
-            return Theme.Colors.feedPrimaryText
-        }
-        return .white
     }
 }
 

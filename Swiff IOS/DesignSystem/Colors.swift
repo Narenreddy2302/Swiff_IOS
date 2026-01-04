@@ -130,6 +130,9 @@ extension Theme {
         /// Secondary text color for feed (#8E8E93)
         static let feedSecondaryText = Color(red: 142 / 255, green: 142 / 255, blue: 147 / 255)
 
+        /// Tertiary text color for feed - lighter shade for category (#94A3B8)
+        static let feedTertiaryText = Color(red: 148 / 255, green: 163 / 255, blue: 184 / 255)
+
         /// Positive amount color (#34C759)
         static let feedPositiveAmount = Color(red: 52 / 255, green: 199 / 255, blue: 89 / 255)
 
@@ -138,5 +141,36 @@ extension Theme {
 
         /// Active filter tab color - lime green (#D4E157)
         static let feedActiveTab = Color(red: 212 / 255, green: 225 / 255, blue: 87 / 255)
+
+        // MARK: - Sheet Colors
+
+        /// Card background for detail sheets (#F8F9FA)
+        static let sheetCardBackground = Color(red: 0.973, green: 0.980, blue: 0.988)
+
+        /// Border/divider color for sheets (#E2E7EC)
+        static let sheetBorder = Color(red: 0.886, green: 0.906, blue: 0.925)
+
+        /// Pill/button background (#F1F3F5)
+        static let sheetPillBackground = Color(red: 0.945, green: 0.957, blue: 0.965)
+
+        /// Primary green for buttons (#059669)
+        static let sheetGreenPrimary = Color(red: 0.020, green: 0.588, blue: 0.412)
+
+        // MARK: - Sheet Badge Colors
+
+        /// Contact badge background (blue)
+        static let sheetContactBadgeBg = Color(red: 0.859, green: 0.914, blue: 1.0)
+        /// Contact badge text (blue)
+        static let sheetContactBadgeText = Color(red: 0.114, green: 0.306, blue: 0.851)
+
+        /// Group badge background (purple)
+        static let sheetGroupBadgeBg = Color(red: 0.953, green: 0.910, blue: 1.0)
+        /// Group badge text (purple)
+        static let sheetGroupBadgeText = Color(red: 0.576, green: 0.200, blue: 0.918)
+
+        /// Subscription badge background (amber)
+        static let sheetSubscriptionBadgeBg = Color(red: 0.996, green: 0.953, blue: 0.780)
+        /// Subscription badge text (amber)
+        static let sheetSubscriptionBadgeText = Color(red: 0.702, green: 0.263, blue: 0.035)
     }
 }

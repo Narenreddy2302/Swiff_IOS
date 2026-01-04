@@ -10,47 +10,47 @@ import SwiftUI
 
 // MARK: - Feed Subscription Row
 
-/// Compact subscription row matching FeedTransactionRow style
-/// Layout: 40x40 avatar | Name (14pt semibold) + Next Billing (12pt) | Amount (14pt semibold) + Payer (12pt)
+/// Subscription row matching reference design
+/// Layout: 48x48 avatar | Name (15pt semibold) + Cycle · Next: Date (13pt) | Amount (15pt semibold) + Payer (13pt)
 struct FeedSubscriptionRow: View {
     let subscription: Subscription
     let people: [Person]
     var onTap: (() -> Void)? = nil
 
-    private let avatarSize: CGFloat = 40
+    private let avatarSize: CGFloat = 48
 
     var body: some View {
         Button(action: { onTap?() }) {
-            HStack(spacing: 10) {
+            HStack(spacing: 14) {
                 // Avatar - initials with colored background
                 initialsAvatar
 
-                // Left side - Name and Next Billing
-                VStack(alignment: .leading, spacing: 2) {
+                // Left side - Name and Cycle + Next Billing
+                VStack(alignment: .leading, spacing: 4) {
                     Text(subscription.name)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
                         .lineLimit(1)
 
-                    Text(nextBillingText)
-                        .font(.system(size: 12, weight: .regular))
+                    Text(cycleAndNextBillingText)
+                        .font(.system(size: 13))
                         .foregroundColor(Theme.Colors.feedSecondaryText)
                 }
 
                 Spacer(minLength: 8)
 
                 // Right side - Amount and Payer
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: 4) {
                     Text(displayAmount)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
 
                     Text(payerLabel)
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.system(size: 13))
                         .foregroundColor(Theme.Colors.feedSecondaryText)
                 }
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, 16)
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
@@ -61,10 +61,11 @@ struct FeedSubscriptionRow: View {
 
     // MARK: - Computed Properties
 
-    private var nextBillingText: String {
+    private var cycleAndNextBillingText: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
-        return formatter.string(from: subscription.nextBillingDate)
+        let dateStr = formatter.string(from: subscription.nextBillingDate)
+        return "\(subscription.billingCycle.displayName) · Next: \(dateStr)"
     }
 
     private var displayAmount: String {
@@ -88,79 +89,71 @@ struct FeedSubscriptionRow: View {
     // MARK: - Avatar
 
     private var initialsAvatar: some View {
-        Circle()
-            .fill(InitialsAvatarColors.color(for: subscription.name))
+        let avatarColor = FeedAvatarColor.forName(subscription.name)
+        return Circle()
+            .fill(avatarColor.background)
             .frame(width: avatarSize, height: avatarSize)
             .overlay(
                 Text(InitialsGenerator.generate(from: subscription.name))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(avatarTextColor)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(avatarColor.foreground)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
             )
             .accessibilityHidden(true)
     }
-
-    private var avatarTextColor: Color {
-        // Use dark text on light backgrounds (green, yellow)
-        let color = InitialsAvatarColors.color(for: subscription.name)
-        if color == InitialsAvatarColors.green || color == InitialsAvatarColors.yellow {
-            return Theme.Colors.feedPrimaryText
-        }
-        return .white
-    }
 }
 
 // MARK: - Feed Shared Subscription Row
 
-/// Compact shared subscription row matching FeedTransactionRow style
-/// Layout: 40x40 avatar | Name (14pt semibold) + Next Billing (12pt) | Amount (14pt semibold) + Payer (12pt)
+/// Shared subscription row matching reference design
+/// Layout: 48x48 avatar | Name (15pt) + Cycle · Next: Date (13pt) | Balance (15pt, colored) + Member Avatars
 struct FeedSharedSubscriptionRow: View {
     let sharedSubscription: SharedSubscription
     let people: [Person]
     let subscription: Subscription?  // Optional linked subscription for name/date
     var onTap: (() -> Void)? = nil
 
-    private let avatarSize: CGFloat = 40
+    private let avatarSize: CGFloat = 48
 
     var body: some View {
         Button(action: { onTap?() }) {
-            HStack(spacing: 10) {
+            HStack(spacing: 14) {
                 // Avatar - initials with colored background
                 initialsAvatar
 
-                // Left side - Name and Next Billing
-                VStack(alignment: .leading, spacing: 2) {
+                // Left side - Name and Cycle + Next Billing
+                VStack(alignment: .leading, spacing: 4) {
                     Text(displayName)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
                         .lineLimit(1)
 
-                    Text(nextBillingText)
-                        .font(.system(size: 12, weight: .regular))
+                    Text(cycleAndNextBillingText)
+                        .font(.system(size: 13))
                         .foregroundColor(Theme.Colors.feedSecondaryText)
                 }
 
                 Spacer(minLength: 8)
 
-                // Right side - Amount and Payer
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(displayAmount)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
+                // Right side - Balance and Member Avatars
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(formattedBalance)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(balanceColor)
 
-                    Text(payerLabel)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(Theme.Colors.feedSecondaryText)
+                    SharedMembersAvatarStack(
+                        members: sharedSubscription.members
+                    )
                 }
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, 16)
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "\(displayName), \(displayAmount), \(payerLabel)")
+            "\(displayName), \(formattedBalance)")
     }
 
     // MARK: - Computed Properties
@@ -173,52 +166,92 @@ struct FeedSharedSubscriptionRow: View {
         return sharedSubscription.notes.isEmpty ? "Shared Subscription" : sharedSubscription.notes
     }
 
-    private var nextBillingText: String {
-        if let subscription = subscription {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMM d"
-            return formatter.string(from: subscription.nextBillingDate)
-        }
-        return "Shared"
+    private var cycleAndNextBillingText: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        let dateStr = formatter.string(from: sharedSubscription.nextBillingDate)
+        return "\(sharedSubscription.billingCycle.displayName) · Next: \(dateStr)"
     }
 
-    private var displayAmount: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter.string(from: NSNumber(value: sharedSubscription.individualCost)) ?? "$0.00"
+    private var formattedBalance: String {
+        let balance = sharedSubscription.balance
+        if balance > 0 {
+            return String(format: "+$%.2f", balance)
+        } else if balance < 0 {
+            return String(format: "-$%.2f", abs(balance))
+        }
+        return "$0.00"
     }
 
-    private var payerLabel: String {
-        if let person = people.first(where: { $0.id == sharedSubscription.sharedBy }) {
-            return person.name
+    private var balanceColor: Color {
+        switch sharedSubscription.balanceStatus {
+        case .owesYou:
+            return Color(red: 0.020, green: 0.588, blue: 0.412)  // Green
+        case .youOwe:
+            return Theme.Colors.feedPrimaryText  // Primary text color
+        case .settled:
+            return Theme.Colors.feedSecondaryText  // Tertiary/secondary color
         }
-        return "Shared"
     }
 
     // MARK: - Avatar
 
     private var initialsAvatar: some View {
-        Circle()
-            .fill(InitialsAvatarColors.color(for: displayName))
+        let avatarColor = FeedAvatarColor.forName(displayName)
+        return Circle()
+            .fill(avatarColor.background)
             .frame(width: avatarSize, height: avatarSize)
             .overlay(
                 Text(InitialsGenerator.generate(from: displayName))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(avatarTextColor)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(avatarColor.foreground)
                     .minimumScaleFactor(0.5)
                     .lineLimit(1)
             )
             .accessibilityHidden(true)
     }
+}
 
-    private var avatarTextColor: Color {
-        // Use dark text on light backgrounds (green, yellow)
-        let color = InitialsAvatarColors.color(for: displayName)
-        if color == InitialsAvatarColors.green || color == InitialsAvatarColors.yellow {
-            return Theme.Colors.feedPrimaryText
+// MARK: - Shared Members Avatar Stack
+
+/// Stacked member avatars for shared subscription rows
+/// Shows up to 3 members with overlapping avatars, and "+N" for extras
+struct SharedMembersAvatarStack: View {
+    let members: [SharedMember]
+    let maxVisible: Int = 3
+
+    private let avatarSize: CGFloat = 20
+
+    var body: some View {
+        HStack(spacing: -6) {
+            ForEach(Array(members.prefix(maxVisible).enumerated()), id: \.offset) { index, member in
+                memberAvatar(for: member)
+                    .zIndex(Double(maxVisible - index))  // Ensure proper overlapping order
+            }
+
+            if members.count > maxVisible {
+                Text("+\(members.count - maxVisible)")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.Colors.feedSecondaryText)
+                    .padding(.leading, 8)
+            }
         }
-        return .white
+    }
+
+    private func memberAvatar(for member: SharedMember) -> some View {
+        let avatarColor = FeedAvatarColor.forName(member.name)
+        return Circle()
+            .fill(avatarColor.background)
+            .frame(width: avatarSize, height: avatarSize)
+            .overlay(
+                Text(member.initials)
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundColor(avatarColor.foreground)
+            )
+            .overlay(
+                Circle()
+                    .stroke(Color.white, lineWidth: 2)
+            )
     }
 }
 
