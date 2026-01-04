@@ -7,16 +7,15 @@
 //  This is the complete Settings Tab Enhancement implementation
 //
 
-import SwiftUI
-import PhotosUI
 import Combine
+import PhotosUI
+import SwiftUI
 
 struct EnhancedSettingsView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataManager: DataManager
     @StateObject private var userSettings = UserSettings.shared
     @StateObject private var profileManager = UserProfileManager.shared
-    @StateObject private var notificationManager = NotificationManager.shared
 
     @State private var showingProfileEdit = false
     @State private var showingPrivacyPolicy = false
@@ -48,9 +47,6 @@ struct EnhancedSettingsView: View {
 
                 // Task 8.2: Security Settings Section (PIN, biometrics, auto-lock)
                 SecuritySettingsSection(userSettings: userSettings)
-
-                // Task 8.3: Notification Settings Section (subscription reminders, trial alerts, price changes)
-                NotificationSettingsSection()
 
                 // Task 8.4: Appearance Settings Section (theme mode, app icon picker)
                 AppearanceSettingsSection()
@@ -111,7 +107,9 @@ struct EnhancedSettingsView: View {
             }
             .disabled(deleteAccountConfirmationText != "DELETE")
         } message: {
-            Text("This action is permanent and cannot be undone. All your data will be permanently deleted. Type DELETE to confirm.")
+            Text(
+                "This action is permanent and cannot be undone. All your data will be permanently deleted. Type DELETE to confirm."
+            )
         }
     }
 
@@ -134,13 +132,19 @@ struct EnhancedSettingsView: View {
                     )
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(profileManager.profile.name.isEmpty ? "Set Your Name" : profileManager.profile.name)
-                            .font(.spotifyHeadingMedium)
-                            .foregroundColor(.wisePrimaryText)
+                        Text(
+                            profileManager.profile.name.isEmpty
+                                ? "Set Your Name" : profileManager.profile.name
+                        )
+                        .font(.spotifyHeadingMedium)
+                        .foregroundColor(.wisePrimaryText)
 
-                        Text(profileManager.profile.email.isEmpty ? "Tap to edit profile" : profileManager.profile.email)
-                            .font(.spotifyBodySmall)
-                            .foregroundColor(.wiseSecondaryText)
+                        Text(
+                            profileManager.profile.email.isEmpty
+                                ? "Tap to edit profile" : profileManager.profile.email
+                        )
+                        .font(.spotifyBodySmall)
+                        .foregroundColor(.wiseSecondaryText)
                     }
 
                     Spacer()
@@ -479,9 +483,11 @@ struct EnhancedSettingsView: View {
                 Text("⚠️ Warning: This action cannot be undone")
                     .font(.spotifyCaptionMedium)
                     .foregroundColor(.wiseError)
-                Text("Deleting your account will permanently remove all your data including subscriptions, transactions, people, groups, and settings. This action is irreversible.")
-                    .font(.spotifyCaptionMedium)
-                    .foregroundColor(.wiseSecondaryText)
+                Text(
+                    "Deleting your account will permanently remove all your data including subscriptions, transactions, people, groups, and settings. This action is irreversible."
+                )
+                .font(.spotifyCaptionMedium)
+                .foregroundColor(.wiseSecondaryText)
             }
         }
     }

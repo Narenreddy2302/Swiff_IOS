@@ -26,106 +26,300 @@ struct ListRowFactory {
     // MARK: - Transaction Row
 
     /// Creates a row view for a Transaction
-    @ViewBuilder
     static func row(for transaction: Transaction, onTap: (() -> Void)? = nil) -> some View {
-        let directionIcon = transaction.isExpense ? "→" : "←"
-        let directionText = transaction.isExpense ? "Sent" : "Received"
+        let iconConfig = avatarConfig(for: transaction)
+        let timeString = transactionTime(for: transaction)
+        let statusString = transactionStatus(for: transaction)
+        // Screenshot shows all amounts in black, regardless of expense/income
+        let valueColor = Color.wisePrimaryText
+        let value = formatAmount(abs(transaction.amount), isExpense: transaction.isExpense)
 
-        // Get payment method text
-        let paymentMethodText = transaction.paymentMethod?.shortName ?? "Card"
-
-        // Format subtitle: "← Received – Visa • 3366" or "→ Sent – Visa • 3366"
-        let subtitle = "\(directionIcon) \(directionText) – \(paymentMethodText)"
-
-        // Format amount with sign
-        let isExpense = transaction.isExpense
-        let amountText = formatAmount(abs(transaction.amount), isExpense: isExpense)
-        let amountColor: Color = isExpense ? .wisePrimaryText : .wiseBrightGreen
-
-        UnifiedListRowV2(
-            iconName: transaction.category.icon,
-            iconColor: transaction.category.color,
+        return UniversalListRow(
             title: transaction.title,
-            subtitle: subtitle,
-            value: amountText,
-            valueColor: amountColor,
-            showChevron: true,
+            subtitle: timeString,
+            value: value,
+            valueColor: valueColor,
+            valueLabel: statusString,
+            icon: iconConfig,
+            showChevron: false,
             onTap: onTap
         )
     }
 
-    /// Creates a card view for a Transaction (unified list design with initials avatar)
-    /// Uses TransactionCard component with:
-    /// - Initials-based colored avatar (category-based pastel colors)
-    /// - Clean row layout without status badges
-    /// - AmountColors for positive/negative amounts
-    @ViewBuilder
-    static func card(for transaction: Transaction, context: CardContext = .feed, subscription: Subscription? = nil, onTap: (() -> Void)? = nil) -> some View {
-        TransactionCard(
-            transaction: transaction,
-            context: context,
-            subscription: subscription,
+    /// Creates a card view for a Transaction (using UniversalListRow with card styling)
+    static func card(
+        for transaction: Transaction, context: CardContext = .feed,
+        subscription: Subscription? = nil, onTap: (() -> Void)? = nil
+    ) -> some View {
+        let iconConfig = avatarConfig(for: transaction)
+        let timeString = transactionTime(for: transaction)
+        let statusString = transactionStatus(for: transaction)
+        let valueColor =
+            transaction.isExpense
+            ? Color.wisePrimaryText : Color.wiseSuccess
+        let value = formatAmount(abs(transaction.amount), isExpense: transaction.isExpense)
+
+        return UniversalListRow(
+            title: transaction.title,
+            subtitle: timeString,
+            value: value,
+            valueColor: valueColor,
+            valueLabel: statusString,
+            icon: iconConfig,
+            showChevron: false,
             onTap: onTap
         )
+        .background(Color.wiseCardBackground)
+        .cornerRadius(12)
+        .cardShadow()
     }
 
-    /// Creates a simple row view for a Transaction (without card background)
-    @ViewBuilder
+    /// Creates a simple row view for a Transaction
     static func simpleRow(for transaction: Transaction, onTap: (() -> Void)? = nil) -> some View {
-        TransactionRowView(
-            transaction: transaction,
-            onTap: onTap
-        )
+        row(for: transaction, onTap: onTap)
     }
 
     // MARK: - Person Row
 
     /// Creates a row view for a Person
-    static func row(for person: Person, transactions: [Transaction] = [], onTap: (() -> Void)? = nil) -> some View {
-        // Compute all values before returning the view
-        let subtitle = personSubtitle(for: person, transactions: transactions)
-        let (valueText, valueColor) = personBalanceFormatted(person)
 
-        return UnifiedAvatarRow(
-            avatarType: person.avatarType,
+    static func row(
+        for person: Person, transactions: [Transaction] = [], onTap: (() -> Void)? = nil
+    ) -> some View {
+        let (iconConfig, valueColor, valueText, subtitle, statusLabel) = personConfig(
+            person, transactions: transactions)
+
+        return UniversalListRow(
             title: person.name,
             subtitle: subtitle,
             value: valueText,
             valueColor: valueColor,
+            valueLabel: statusLabel,
+            icon: iconConfig,
             showChevron: true,
             onTap: onTap
         )
     }
 
-    /// Creates a card view for a Person (unified list design with initials avatar)
-    /// Uses PersonCard component with:
-    /// - Initials-based colored avatar (hash-based pastel colors from InitialsAvatarColors)
-    /// - Balance status indicator (Owes you / You owe / Settled)
-    /// - AmountColors for positive/negative balances
+    /// Creates a card view for a Person
     static func card(for person: Person, transactions: [Transaction] = []) -> some View {
-        return PersonCard(person: person, transactions: transactions)
+        let (iconConfig, valueColor, valueText, subtitle, statusLabel) = personConfig(
+            person, transactions: transactions)
+
+        return UniversalListRow(
+            title: person.name,
+            subtitle: subtitle,
+            value: valueText,
+            valueColor: valueColor,
+            valueLabel: statusLabel,
+            icon: iconConfig,
+            showChevron: false
+        )
+        .background(Color.wiseCardBackground)
+        .cornerRadius(12)
+        .cardShadow()
     }
 
-    /// Helper to compute person subtitle
-    private static func personSubtitle(for person: Person, transactions: [Transaction]) -> String {
-        let balanceIcon = person.balance > 0 ? "←" : "→"
-        let balanceText = person.balance > 0 ? "Owes you" : (person.balance < 0 ? "You owe" : "Settled")
+    // MARK: - Group Row
+
+    /// Creates a row view for a Group
+
+    static func row(for group: Group, onTap: (() -> Void)? = nil) -> some View {
+        let (iconConfig, valueText, subtitle) = groupConfig(group)
+
+        return UniversalListRow(
+            title: group.name,
+            subtitle: subtitle,
+            value: valueText,
+            valueColor: .wisePrimaryText,
+            valueLabel: nil,
+            icon: iconConfig,
+            showChevron: true,
+            onTap: onTap
+        )
+    }
+
+    /// Creates a card view for a Group
+    static func card(for group: Group) -> some View {
+        let (iconConfig, valueText, subtitle) = groupConfig(group)
+
+        return UniversalListRow(
+            title: group.name,
+            subtitle: subtitle,
+            value: valueText,
+            valueColor: .wisePrimaryText,
+            valueLabel: nil,
+            icon: iconConfig,
+            showChevron: false
+        )
+        .background(Color.wiseCardBackground)
+        .cornerRadius(12)
+        .cardShadow()
+    }
+
+    // MARK: - Subscription Row
+
+    /// Creates a row view for a Subscription
+
+    static func row(for subscription: Subscription, onTap: (() -> Void)? = nil) -> some View {
+        let (iconConfig, valueText, subtitle) = subscriptionConfig(subscription)
+
+        return UniversalListRow(
+            title: subscription.name,
+            subtitle: subtitle,
+            value: valueText,
+            valueColor: .wisePrimaryText,
+            valueLabel: subscription.billingCycle.displayName,
+            icon: iconConfig,
+            showChevron: true,
+            onTap: onTap
+        )
+    }
+
+    /// Creates a card view for a Subscription
+    static func card(for subscription: Subscription) -> some View {
+        let (iconConfig, valueText, subtitle) = subscriptionConfig(subscription)
+
+        return UniversalListRow(
+            title: subscription.name,
+            subtitle: subtitle,
+            value: valueText,
+            valueColor: .wisePrimaryText,
+            valueLabel: subscription.billingCycle.displayName,
+            icon: iconConfig,
+            showChevron: false
+        )
+        .background(Color.wiseCardBackground)
+        .cornerRadius(12)
+        .cardShadow()
+    }
+
+    // MARK: - Helpers
+
+    /// Generate avatar configuration for transaction based on title/merchant
+    private static func avatarConfig(for transaction: Transaction) -> UniversalIconConfig {
+        let displayName = transaction.merchant ?? transaction.title
+
+        // Special handling for specific merchants matching the screenshot
+        switch displayName.lowercased() {
+        case let name where name.contains("uber"):
+            // Uber uses black circle with white text logo
+            return .initials(
+                text: "Uber", backgroundColor: Color(red: 28 / 255, green: 28 / 255, blue: 30 / 255)
+            )
+
+        case let name where name.contains("food") && name.contains("panda"):
+            // Food Panda uses pink circle with emoji
+            return .emoji(
+                text: "🐼", backgroundColor: Color(red: 233 / 255, green: 30 / 255, blue: 99 / 255))
+
+        default:
+            // For other transactions, use initials with color based on name hash
+            let color = avatarColorForTransaction(displayName)
+            return .initials(text: displayName, backgroundColor: color)
+        }
+    }
+
+    /// Generate avatar color based on name hash
+    private static func avatarColorForTransaction(_ name: String) -> Color {
+        let hash = abs(name.hashValue)
+
+        // Colors matching the screenshot design
+        let colors: [Color] = [
+            Color(red: 52 / 255, green: 120 / 255, blue: 120 / 255),  // Teal (Mikel Borle)
+            Color(red: 28 / 255, green: 28 / 255, blue: 30 / 255),  // Black (Uber alternative)
+            Color(red: 233 / 255, green: 30 / 255, blue: 99 / 255),  // Pink (Food Panda alternative)
+            Color(red: 76 / 255, green: 76 / 255, blue: 76 / 255),  // Gray
+            Color(red: 88 / 255, green: 86 / 255, blue: 214 / 255),  // Purple (Ryan Scott)
+            Color(red: 255 / 255, green: 149 / 255, blue: 0 / 255),  // Orange
+            Color(red: 255 / 255, green: 59 / 255, blue: 48 / 255),  // Red
+            Color(red: 0 / 255, green: 122 / 255, blue: 255 / 255),  // Blue
+        ]
+
+        return colors[hash % colors.count]
+    }
+
+    private static func transactionTime(for transaction: Transaction) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "hh:mm a"  // Format like "10:30 AM"
+        return formatter.string(from: transaction.date)
+    }
+
+    private static func transactionStatus(for transaction: Transaction) -> String {
+        // Match screenshot labels exactly:
+        // - "Receive" for incoming money
+        // - "Send" for outgoing money to people
+        // - "Payment" for payments to merchants/services
+        // - "Transfer" for transfers
+
+        if !transaction.isExpense {
+            return "Receive"
+        }
+
+        // Check if it's a transfer based on category or title
+        if transaction.category == .transfer || transaction.title.lowercased().contains("transfer")
+        {
+            return "Transfer"
+        }
+
+        // Check if it's to a merchant/service (has merchant field or specific categories)
+        if transaction.merchant != nil
+            || [.food, .transportation, .utilities, .bills, .shopping, .entertainment].contains(
+                transaction.category)
+        {
+            return "Payment"
+        }
+
+        // Default to "Send" for person-to-person transactions
+        return "Send"
+    }
+
+    private static func personConfig(_ person: Person, transactions: [Transaction]) -> (
+        UniversalIconConfig, Color, String, String, String
+    ) {
+        let iconConfig: UniversalIconConfig
+
+        switch person.avatarType {
+        case .initials:
+            iconConfig = .initials(
+                text: person.name, backgroundColor: InitialsAvatarColors.color(for: person.name))
+        case .emoji(let emoji):
+            iconConfig = .emoji(
+                text: emoji, backgroundColor: InitialsAvatarColors.color(for: person.name))
+        // Handle image case if needed in future, adding to UniversalIconConfig
+        @unknown default:
+            iconConfig = .initials(
+                text: person.name, backgroundColor: InitialsAvatarColors.color(for: person.name))
+        }
+
+        let (valueText, valueColor) = personBalanceFormatted(person)
+        let (subtitle, statusLabel) = personSubtitleAndStatus(
+            for: person, transactions: transactions)
+
+        return (iconConfig, valueColor, valueText, subtitle, statusLabel)
+    }
+
+    private static func personSubtitleAndStatus(for person: Person, transactions: [Transaction])
+        -> (String, String)
+    {
+        let balanceText =
+            person.balance > 0 ? "Owes you" : (person.balance < 0 ? "You owe" : "Settled")
 
         // Get last transaction with this person
-        let lastActivity = transactions
+        let lastActivity =
+            transactions
             .filter { $0.title.contains(person.name) || $0.subtitle.contains(person.name) }
             .sorted { $0.date > $1.date }
             .first
 
-        var subtitle = "\(balanceIcon) \(balanceText)"
+        var subtitle = "No recent activity"
         if let lastActivity = lastActivity {
-            let timeAgo = relativeTime(from: lastActivity.date)
-            subtitle += " • Last activity \(timeAgo)"
+            subtitle = relativeTime(from: lastActivity.date)
         }
-        return subtitle
+
+        return (subtitle, balanceText)
     }
 
-    /// Helper to compute person balance text and color
     private static func personBalanceFormatted(_ person: Person) -> (String, Color) {
         if person.balance > 0 {
             return (formatAmount(person.balance, isExpense: false), .wiseBrightGreen)
@@ -136,106 +330,44 @@ struct ListRowFactory {
         }
     }
 
-    // MARK: - Group Row
+    private static func groupConfig(_ group: Group) -> (UniversalIconConfig, String, String) {
+        let iconConfig = UniversalIconConfig.emoji(
+            text: group.emoji, backgroundColor: .wiseBlue.opacity(0.12))
 
-    /// Creates a row view for a Group
-    @ViewBuilder
-    static func row(for group: Group, onTap: (() -> Void)? = nil) -> some View {
-        // Format subtitle: "4 members • 12 expenses"
-        let memberCount = group.members.count
-        let expenseCount = group.expenses.count
-        let subtitle = "\(memberCount) member\(memberCount == 1 ? "" : "s") • \(expenseCount) expense\(expenseCount == 1 ? "" : "s")"
-
-        // Format total amount
-        let totalAmount = group.totalAmount > 0 ? group.totalAmount : group.expenses.reduce(0.0) { $0 + $1.amount }
+        let totalAmount =
+            group.totalAmount > 0
+            ? group.totalAmount : group.expenses.reduce(0.0) { $0 + $1.amount }
         let valueText = formatCurrency(totalAmount)
 
-        // Use UnifiedListRowV2 with emoji circle
-        HStack(spacing: 12) {
-            // Filled Emoji Circle
-            Circle()
-                .fill(Color.wiseBlue)
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Text(group.emoji)
-                        .font(.system(size: 24))
-                )
+        let memberCount = group.members.count
+        let expenseCount = group.expenses.count
+        let subtitle =
+            "\(memberCount) member\(memberCount == 1 ? "" : "s") • \(expenseCount) expense\(expenseCount == 1 ? "" : "s")"
 
-            // Text Content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(group.name)
-                    .font(.spotifyBodyLarge)
-                    .foregroundColor(.wisePrimaryText)
-                    .lineLimit(1)
-
-                Text(subtitle)
-                    .font(.spotifyBodySmall)
-                    .foregroundColor(.wiseSecondaryText)
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 8)
-
-            // Value
-            Text(valueText)
-                .font(.spotifyNumberMedium)
-                .foregroundColor(.wisePrimaryText)
-                .lineLimit(1)
-
-            // Chevron
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.wiseSecondaryText)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onTap?()
-        }
+        return (iconConfig, valueText, subtitle)
     }
 
-    /// Creates a card view for a Group (unified list design with emoji avatar)
-    /// Uses GroupCard component with:
-    /// - Emoji in blue circle (44x44)
-    /// - Member and expense count summary
-    /// - Total amount display
-    static func card(for group: Group) -> some View {
-        return GroupCard(group: group)
-    }
-
-    // MARK: - Subscription Row
-
-    /// Creates a row view for a Subscription
-    static func row(for subscription: Subscription, onTap: (() -> Void)? = nil) -> some View {
-        let subtitle = subscriptionSubtitle(for: subscription)
-        let valueText = formatCurrency(subscription.price)
-
-        return UnifiedListRowV2(
-            iconName: subscription.icon,
-            iconColor: Color(hexString: subscription.color),
-            title: subscription.name,
-            subtitle: subtitle,
-            value: valueText,
-            valueColor: .wisePrimaryText,
-            showChevron: true,
-            onTap: onTap
+    private static func subscriptionConfig(_ subscription: Subscription) -> (
+        UniversalIconConfig, String, String
+    ) {
+        // Use system icon for subscription
+        let iconConfig = UniversalIconConfig.system(
+            name: subscription.icon,
+            color: Color(hexString: subscription.color)
         )
+
+        let valueText = formatCurrency(subscription.price)
+        let subtitle = subscriptionSubtitle(for: subscription)
+
+        return (iconConfig, valueText, subtitle)
     }
 
-    /// Creates a card view for a Subscription (unified list design with initials avatar)
-    /// Uses SubscriptionCard component with:
-    /// - Initials-based colored avatar (category-based pastel colors)
-    /// - Billing cycle and next billing date
-    /// - Price display (neutral color)
-    static func card(for subscription: Subscription) -> some View {
-        return SubscriptionCard(subscription: subscription)
-    }
-
-    /// Helper to compute subscription subtitle
     private static func subscriptionSubtitle(for subscription: Subscription) -> String {
-        let statusIcon = subscription.isActive ? "✓" : (subscription.cancellationDate != nil ? "✕" : "⏸")
-        let statusText = subscription.isActive ? "Active" : (subscription.cancellationDate != nil ? "Cancelled" : "Paused")
+        let statusIcon =
+            subscription.isActive ? "✓" : (subscription.cancellationDate != nil ? "✕" : "⏸")
+        let statusText =
+            subscription.isActive
+            ? "Active" : (subscription.cancellationDate != nil ? "Cancelled" : "Paused")
         let cycleText = subscription.billingCycle.rawValue
 
         let dateFormatter = DateFormatter()
@@ -245,29 +377,6 @@ struct ListRowFactory {
         return "\(statusIcon) \(statusText) • \(cycleText) • Next: \(nextDateText)"
     }
 
-    // MARK: - Notification Row
-
-    /// Creates a row view for a NotificationHistoryEntry
-    @ViewBuilder
-    static func row(for notification: NotificationHistoryEntry, onTap: (() -> Void)? = nil) -> some View {
-        // Format subtitle: "Renewal reminder • 2h ago"
-        let timeAgo = relativeTime(from: notification.sentDate)
-        let subtitle = "\(notification.type.rawValue) • \(timeAgo)"
-
-        // Value shows "Opened" for read notifications
-        let valueText = notification.wasOpened ? "Opened" : ""
-
-        UnifiedListRowV2(
-            iconName: notification.type.icon,
-            iconColor: Color(hexString: notification.type.color),
-            title: notification.title,
-            subtitle: subtitle,
-            value: valueText,
-            valueColor: .wiseSecondaryText,
-            showChevron: false,
-            onTap: onTap
-        )
-    }
 }
 
 // MARK: - Helper Extensions
@@ -296,7 +405,7 @@ extension ListRowFactory {
         formatter.currencyCode = "USD"
         formatter.maximumFractionDigits = 2
         let formatted = formatter.string(from: NSNumber(value: abs(amount))) ?? "$0.00"
-        return isExpense ? "– \(formatted)" : "+ \(formatted)"
+        return isExpense ? "-\(formatted)" : "+\(formatted)"
     }
 }
 

@@ -25,11 +25,12 @@ class SubscriptionEventService {
         var items: [SubscriptionTimelineItem] = []
 
         // 1. Subscription created event
-        items.append(.subscriptionCreated(
-            id: UUID(),
-            subscriptionName: subscription.name,
-            date: subscription.createdDate
-        ))
+        items.append(
+            .subscriptionCreated(
+                id: UUID(),
+                subscriptionName: subscription.name,
+                date: subscription.createdDate
+            ))
 
         // 2. Trial events
         if subscription.isFreeTrial {
@@ -40,10 +41,11 @@ class SubscriptionEventService {
         items.append(contentsOf: generateBillingTimelineItems(subscription: subscription))
 
         // 4. Price change events
-        items.append(contentsOf: generatePriceChangeTimelineItems(
-            subscription: subscription,
-            priceHistory: priceHistory
-        ))
+        items.append(
+            contentsOf: generatePriceChangeTimelineItems(
+                subscription: subscription,
+                priceHistory: priceHistory
+            ))
 
         // 5. Usage events
         items.append(contentsOf: generateUsageTimelineItems(subscription: subscription))
@@ -53,10 +55,11 @@ class SubscriptionEventService {
 
         // 7. Member events (for shared subscriptions)
         if subscription.isShared {
-            items.append(contentsOf: generateMemberTimelineItems(
-                subscription: subscription,
-                people: people
-            ))
+            items.append(
+                contentsOf: generateMemberTimelineItems(
+                    subscription: subscription,
+                    people: people
+                ))
         }
 
         // Sort by date descending (newest first)
@@ -85,10 +88,11 @@ class SubscriptionEventService {
         events.append(contentsOf: generateBillingEvents(subscription: subscription))
 
         // 4. Price change events
-        events.append(contentsOf: generatePriceChangeEvents(
-            subscription: subscription,
-            priceHistory: priceHistory
-        ))
+        events.append(
+            contentsOf: generatePriceChangeEvents(
+                subscription: subscription,
+                priceHistory: priceHistory
+            ))
 
         // 5. Usage events
         events.append(contentsOf: generateUsageEvents(subscription: subscription))
@@ -98,10 +102,11 @@ class SubscriptionEventService {
 
         // 7. Member events (for shared subscriptions)
         if subscription.isShared {
-            events.append(contentsOf: generateMemberEvents(
-                subscription: subscription,
-                people: people
-            ))
+            events.append(
+                contentsOf: generateMemberEvents(
+                    subscription: subscription,
+                    people: people
+                ))
         }
 
         // Sort by date descending (newest first)
@@ -110,67 +115,80 @@ class SubscriptionEventService {
 
     // MARK: - Timeline Item Generators
 
-    private func generateTrialTimelineItems(subscription: Subscription) -> [SubscriptionTimelineItem] {
+    private func generateTrialTimelineItems(subscription: Subscription)
+        -> [SubscriptionTimelineItem]
+    {
         var items: [SubscriptionTimelineItem] = []
 
         // Trial started
         if let trialStart = subscription.trialStartDate, let trialEnd = subscription.trialEndDate {
-            items.append(.trialStarted(
-                id: UUID(),
-                trialEndDate: trialEnd,
-                date: trialStart
-            ))
+            items.append(
+                .trialStarted(
+                    id: UUID(),
+                    trialEndDate: trialEnd,
+                    date: trialStart
+                ))
         }
 
         // Trial ending warning (7 days before)
-        if let trialEnd = subscription.trialEndDate,
-           !subscription.isTrialExpired,
-           let daysUntil = subscription.daysUntilTrialEnd,
-           daysUntil <= 7 && daysUntil > 0 {
-            items.append(.trialEnding(
-                id: UUID(),
-                daysLeft: daysUntil,
-                priceAfterTrial: subscription.priceAfterTrial ?? subscription.price,
-                date: Date()
-            ))
+        if !subscription.isTrialExpired,
+            !subscription.isTrialExpired,
+            let daysUntil = subscription.daysUntilTrialEnd,
+            daysUntil <= 7 && daysUntil > 0
+        {
+            items.append(
+                .trialEnding(
+                    id: UUID(),
+                    daysLeft: daysUntil,
+                    priceAfterTrial: subscription.priceAfterTrial ?? subscription.price,
+                    date: Date()
+                ))
         }
 
         // Trial converted (if trial has ended and still active)
         if subscription.isTrialExpired && subscription.isActive,
-           let trialEnd = subscription.trialEndDate {
-            items.append(.trialConverted(
-                id: UUID(),
-                newPrice: subscription.price,
-                date: trialEnd
-            ))
+            let trialEnd = subscription.trialEndDate
+        {
+            items.append(
+                .trialConverted(
+                    id: UUID(),
+                    newPrice: subscription.price,
+                    date: trialEnd
+                ))
         }
 
         return items
     }
 
-    private func generateBillingTimelineItems(subscription: Subscription) -> [SubscriptionTimelineItem] {
+    private func generateBillingTimelineItems(subscription: Subscription)
+        -> [SubscriptionTimelineItem]
+    {
         var items: [SubscriptionTimelineItem] = []
         let calendar = Calendar.current
 
         // Last billing
         if let lastBilling = subscription.lastBillingDate {
-            items.append(.billingCharged(
-                id: UUID(),
-                amount: subscription.price,
-                date: lastBilling
-            ))
+            items.append(
+                .billingCharged(
+                    id: UUID(),
+                    amount: subscription.price,
+                    date: lastBilling
+                ))
         }
 
         // Upcoming billing (if within 7 days and active)
         if subscription.isActive {
-            let daysUntilNext = calendar.dateComponents([.day], from: Date(), to: subscription.nextBillingDate).day ?? 0
+            let daysUntilNext =
+                calendar.dateComponents([.day], from: Date(), to: subscription.nextBillingDate).day
+                ?? 0
             if daysUntilNext <= 7 && daysUntilNext >= 0 {
-                items.append(.billingUpcoming(
-                    id: UUID(),
-                    amount: subscription.price,
-                    dueDate: subscription.nextBillingDate,
-                    date: Date()
-                ))
+                items.append(
+                    .billingUpcoming(
+                        id: UUID(),
+                        amount: subscription.price,
+                        dueDate: subscription.nextBillingDate,
+                        date: Date()
+                    ))
             }
         }
 
@@ -182,35 +200,48 @@ class SubscriptionEventService {
             let maxEvents = 10
             let sixMonthsAgo = calendar.date(byAdding: .month, value: -6, to: Date()) ?? Date()
 
-            while count < maxEvents && currentDate > sixMonthsAgo && currentDate > subscription.createdDate {
+            while count < maxEvents && currentDate > sixMonthsAgo
+                && currentDate > subscription.createdDate
+            {
                 // Calculate previous billing date
                 switch subscription.billingCycle {
                 case .monthly:
                     if let prevDate = calendar.date(byAdding: .month, value: -1, to: currentDate) {
                         currentDate = prevDate
-                    } else { break }
+                    } else {
+                        break
+                    }
                 case .quarterly:
                     if let prevDate = calendar.date(byAdding: .month, value: -3, to: currentDate) {
                         currentDate = prevDate
-                    } else { break }
+                    } else {
+                        break
+                    }
                 case .yearly, .annually:
                     if let prevDate = calendar.date(byAdding: .year, value: -1, to: currentDate) {
                         currentDate = prevDate
-                    } else { break }
+                    } else {
+                        break
+                    }
                 case .weekly:
-                    if let prevDate = calendar.date(byAdding: .weekOfYear, value: -1, to: currentDate) {
+                    if let prevDate = calendar.date(
+                        byAdding: .weekOfYear, value: -1, to: currentDate)
+                    {
                         currentDate = prevDate
-                    } else { break }
+                    } else {
+                        break
+                    }
                 default:
                     break
                 }
 
                 if currentDate > subscription.createdDate {
-                    items.append(.billingCharged(
-                        id: UUID(),
-                        amount: subscription.price,
-                        date: currentDate
-                    ))
+                    items.append(
+                        .billingCharged(
+                            id: UUID(),
+                            amount: subscription.price,
+                            date: currentDate
+                        ))
                     count += 1
                 }
             }
@@ -233,38 +264,45 @@ class SubscriptionEventService {
         }
     }
 
-    private func generateUsageTimelineItems(subscription: Subscription) -> [SubscriptionTimelineItem] {
+    private func generateUsageTimelineItems(subscription: Subscription)
+        -> [SubscriptionTimelineItem]
+    {
         var items: [SubscriptionTimelineItem] = []
 
         if let lastUsed = subscription.lastUsedDate, subscription.usageCount > 0 {
-            items.append(.usageRecorded(
-                id: UUID(),
-                date: lastUsed
-            ))
+            items.append(
+                .usageRecorded(
+                    id: UUID(),
+                    date: lastUsed
+                ))
         }
 
         return items
     }
 
-    private func generateStatusChangeTimelineItems(subscription: Subscription) -> [SubscriptionTimelineItem] {
+    private func generateStatusChangeTimelineItems(subscription: Subscription)
+        -> [SubscriptionTimelineItem]
+    {
         var items: [SubscriptionTimelineItem] = []
 
         // Paused event (estimate based on current status)
         if !subscription.isActive && subscription.cancellationDate == nil {
             // Use last billing date or created date as estimate
             let estimatedPauseDate = subscription.lastBillingDate ?? subscription.createdDate
-            items.append(.subscriptionPaused(
-                id: UUID(),
-                date: estimatedPauseDate
-            ))
+            items.append(
+                .subscriptionPaused(
+                    id: UUID(),
+                    date: estimatedPauseDate
+                ))
         }
 
         // Cancelled event
         if let cancelDate = subscription.cancellationDate {
-            items.append(.subscriptionCancelled(
-                id: UUID(),
-                date: cancelDate
-            ))
+            items.append(
+                .subscriptionCancelled(
+                    id: UUID(),
+                    date: cancelDate
+                ))
         }
 
         return items
@@ -284,11 +322,12 @@ class SubscriptionEventService {
         for person in sharedPeople {
             // Use subscription created date as estimate for when they were added
             // In a real app, you'd track this separately
-            items.append(.memberAdded(
-                id: UUID(),
-                personName: person.name,
-                date: subscription.createdDate
-            ))
+            items.append(
+                .memberAdded(
+                    id: UUID(),
+                    personName: person.name,
+                    date: subscription.createdDate
+                ))
         }
 
         return items
@@ -312,44 +351,49 @@ class SubscriptionEventService {
 
         // Trial started
         if let trialStart = subscription.trialStartDate {
-            events.append(SubscriptionEvent(
-                subscriptionId: subscription.id,
-                eventType: .trialStarted,
-                eventDate: trialStart,
-                title: "Free trial started",
-                subtitle: subscription.trialDuration.map { "\($0)-day trial" },
-                isSystemMessage: true
-            ))
+            events.append(
+                SubscriptionEvent(
+                    subscriptionId: subscription.id,
+                    eventType: .trialStarted,
+                    eventDate: trialStart,
+                    title: "Free trial started",
+                    subtitle: subscription.trialDuration.map { "\($0)-day trial" },
+                    isSystemMessage: true
+                ))
         }
 
         // Trial ending warning (7 days before)
-        if let trialEnd = subscription.trialEndDate,
-           !subscription.isTrialExpired,
-           let daysUntil = subscription.daysUntilTrialEnd,
-           daysUntil <= 7 && daysUntil > 0 {
-            events.append(SubscriptionEvent(
-                subscriptionId: subscription.id,
-                eventType: .trialEnding,
-                eventDate: Date(),
-                title: "Trial ending soon",
-                subtitle: "Expires in \(daysUntil) day\(daysUntil == 1 ? "" : "s")",
-                amount: subscription.priceAfterTrial ?? subscription.price,
-                isSystemMessage: true
-            ))
+        if !subscription.isTrialExpired,
+            !subscription.isTrialExpired,
+            let daysUntil = subscription.daysUntilTrialEnd,
+            daysUntil <= 7 && daysUntil > 0
+        {
+            events.append(
+                SubscriptionEvent(
+                    subscriptionId: subscription.id,
+                    eventType: .trialEnding,
+                    eventDate: Date(),
+                    title: "Trial ending soon",
+                    subtitle: "Expires in \(daysUntil) day\(daysUntil == 1 ? "" : "s")",
+                    amount: subscription.priceAfterTrial ?? subscription.price,
+                    isSystemMessage: true
+                ))
         }
 
         // Trial converted (if trial has ended and still active)
         if subscription.isTrialExpired && subscription.isActive,
-           let trialEnd = subscription.trialEndDate {
-            events.append(SubscriptionEvent(
-                subscriptionId: subscription.id,
-                eventType: .trialConverted,
-                eventDate: trialEnd,
-                title: "Trial converted to paid",
-                subtitle: "Now paying \(String(format: "$%.2f", subscription.price))",
-                amount: subscription.price,
-                isSystemMessage: true
-            ))
+            let trialEnd = subscription.trialEndDate
+        {
+            events.append(
+                SubscriptionEvent(
+                    subscriptionId: subscription.id,
+                    eventType: .trialConverted,
+                    eventDate: trialEnd,
+                    title: "Trial converted to paid",
+                    subtitle: "Now paying \(String(format: "$%.2f", subscription.price))",
+                    amount: subscription.price,
+                    isSystemMessage: true
+                ))
         }
 
         return events
@@ -361,30 +405,36 @@ class SubscriptionEventService {
 
         // Last billing
         if let lastBilling = subscription.lastBillingDate {
-            events.append(SubscriptionEvent(
-                subscriptionId: subscription.id,
-                eventType: .billingCharged,
-                eventDate: lastBilling,
-                title: "Payment charged",
-                subtitle: subscription.billingCycle.displayName,
-                amount: subscription.price,
-                isSystemMessage: false
-            ))
+            events.append(
+                SubscriptionEvent(
+                    subscriptionId: subscription.id,
+                    eventType: .billingCharged,
+                    eventDate: lastBilling,
+                    title: "Payment charged",
+                    subtitle: subscription.billingCycle.displayName,
+                    amount: subscription.price,
+                    isSystemMessage: false
+                ))
         }
 
         // Upcoming billing (if within 7 days and active)
         if subscription.isActive {
-            let daysUntilNext = calendar.dateComponents([.day], from: Date(), to: subscription.nextBillingDate).day ?? 0
+            let daysUntilNext =
+                calendar.dateComponents([.day], from: Date(), to: subscription.nextBillingDate).day
+                ?? 0
             if daysUntilNext <= 7 && daysUntilNext >= 0 {
-                events.append(SubscriptionEvent(
-                    subscriptionId: subscription.id,
-                    eventType: .billingUpcoming,
-                    eventDate: Date(),
-                    title: "Upcoming payment",
-                    subtitle: daysUntilNext == 0 ? "Due today" : "Due in \(daysUntilNext) day\(daysUntilNext == 1 ? "" : "s")",
-                    amount: subscription.price,
-                    isSystemMessage: true
-                ))
+                events.append(
+                    SubscriptionEvent(
+                        subscriptionId: subscription.id,
+                        eventType: .billingUpcoming,
+                        eventDate: Date(),
+                        title: "Upcoming payment",
+                        subtitle: daysUntilNext == 0
+                            ? "Due today"
+                            : "Due in \(daysUntilNext) day\(daysUntilNext == 1 ? "" : "s")",
+                        amount: subscription.price,
+                        isSystemMessage: true
+                    ))
             }
         }
 
@@ -396,39 +446,52 @@ class SubscriptionEventService {
             let maxEvents = 10
             let sixMonthsAgo = calendar.date(byAdding: .month, value: -6, to: Date()) ?? Date()
 
-            while count < maxEvents && currentDate > sixMonthsAgo && currentDate > subscription.createdDate {
+            while count < maxEvents && currentDate > sixMonthsAgo
+                && currentDate > subscription.createdDate
+            {
                 // Calculate previous billing date
                 switch subscription.billingCycle {
                 case .monthly:
                     if let prevDate = calendar.date(byAdding: .month, value: -1, to: currentDate) {
                         currentDate = prevDate
-                    } else { break }
+                    } else {
+                        break
+                    }
                 case .quarterly:
                     if let prevDate = calendar.date(byAdding: .month, value: -3, to: currentDate) {
                         currentDate = prevDate
-                    } else { break }
+                    } else {
+                        break
+                    }
                 case .yearly, .annually:
                     if let prevDate = calendar.date(byAdding: .year, value: -1, to: currentDate) {
                         currentDate = prevDate
-                    } else { break }
+                    } else {
+                        break
+                    }
                 case .weekly:
-                    if let prevDate = calendar.date(byAdding: .weekOfYear, value: -1, to: currentDate) {
+                    if let prevDate = calendar.date(
+                        byAdding: .weekOfYear, value: -1, to: currentDate)
+                    {
                         currentDate = prevDate
-                    } else { break }
+                    } else {
+                        break
+                    }
                 default:
                     break
                 }
 
                 if currentDate > subscription.createdDate {
-                    events.append(SubscriptionEvent(
-                        subscriptionId: subscription.id,
-                        eventType: .billingCharged,
-                        eventDate: currentDate,
-                        title: "Payment charged",
-                        subtitle: subscription.billingCycle.displayName,
-                        amount: subscription.price,
-                        isSystemMessage: false
-                    ))
+                    events.append(
+                        SubscriptionEvent(
+                            subscriptionId: subscription.id,
+                            eventType: .billingCharged,
+                            eventDate: currentDate,
+                            title: "Payment charged",
+                            subtitle: subscription.billingCycle.displayName,
+                            amount: subscription.price,
+                            isSystemMessage: false
+                        ))
                     count += 1
                 }
             }
@@ -442,9 +505,12 @@ class SubscriptionEventService {
         priceHistory: [PriceChange]
     ) -> [SubscriptionEvent] {
         return priceHistory.map { change in
-            let eventType: SubscriptionEventType = change.isIncrease ? .priceIncrease : .priceDecrease
+            let eventType: SubscriptionEventType =
+                change.isIncrease ? .priceIncrease : .priceDecrease
             let title = change.isIncrease ? "Price increased" : "Price decreased"
-            let subtitle = String(format: "$%.2f → $%.2f (%@)", change.oldPrice, change.newPrice, change.formattedChangePercentage)
+            let subtitle = String(
+                format: "$%.2f → $%.2f (%@)", change.oldPrice, change.newPrice,
+                change.formattedChangePercentage)
 
             return SubscriptionEvent(
                 subscriptionId: subscription.id,
@@ -463,14 +529,15 @@ class SubscriptionEventService {
         var events: [SubscriptionEvent] = []
 
         if let lastUsed = subscription.lastUsedDate, subscription.usageCount > 0 {
-            events.append(SubscriptionEvent(
-                subscriptionId: subscription.id,
-                eventType: .usageRecorded,
-                eventDate: lastUsed,
-                title: "Marked as used",
-                subtitle: "Total uses: \(subscription.usageCount)",
-                isSystemMessage: false
-            ))
+            events.append(
+                SubscriptionEvent(
+                    subscriptionId: subscription.id,
+                    eventType: .usageRecorded,
+                    eventDate: lastUsed,
+                    title: "Marked as used",
+                    subtitle: "Total uses: \(subscription.usageCount)",
+                    isSystemMessage: false
+                ))
         }
 
         return events
@@ -483,26 +550,28 @@ class SubscriptionEventService {
         if !subscription.isActive && subscription.cancellationDate == nil {
             // Use last billing date or created date as estimate
             let estimatedPauseDate = subscription.lastBillingDate ?? subscription.createdDate
-            events.append(SubscriptionEvent(
-                subscriptionId: subscription.id,
-                eventType: .subscriptionPaused,
-                eventDate: estimatedPauseDate,
-                title: "Subscription paused",
-                subtitle: "Not included in monthly costs",
-                isSystemMessage: true
-            ))
+            events.append(
+                SubscriptionEvent(
+                    subscriptionId: subscription.id,
+                    eventType: .subscriptionPaused,
+                    eventDate: estimatedPauseDate,
+                    title: "Subscription paused",
+                    subtitle: "Not included in monthly costs",
+                    isSystemMessage: true
+                ))
         }
 
         // Cancelled event
         if let cancelDate = subscription.cancellationDate {
-            events.append(SubscriptionEvent(
-                subscriptionId: subscription.id,
-                eventType: .subscriptionCancelled,
-                eventDate: cancelDate,
-                title: "Subscription cancelled",
-                subtitle: "No longer active",
-                isSystemMessage: true
-            ))
+            events.append(
+                SubscriptionEvent(
+                    subscriptionId: subscription.id,
+                    eventType: .subscriptionCancelled,
+                    eventDate: cancelDate,
+                    title: "Subscription cancelled",
+                    subtitle: "No longer active",
+                    isSystemMessage: true
+                ))
         }
 
         return events
@@ -522,16 +591,17 @@ class SubscriptionEventService {
         for person in sharedPeople {
             // Use subscription created date as estimate for when they were added
             // In a real app, you'd track this separately
-            events.append(SubscriptionEvent(
-                subscriptionId: subscription.id,
-                eventType: .memberAdded,
-                eventDate: subscription.createdDate,
-                title: "\(person.name) joined",
-                subtitle: "Split with \(subscription.sharedWith.count + 1) people",
-                amount: subscription.costPerPerson,
-                isSystemMessage: false,
-                relatedPersonId: person.id
-            ))
+            events.append(
+                SubscriptionEvent(
+                    subscriptionId: subscription.id,
+                    eventType: .memberAdded,
+                    eventDate: subscription.createdDate,
+                    title: "\(person.name) joined",
+                    subtitle: "Split with \(subscription.sharedWith.count + 1) people",
+                    amount: subscription.costPerPerson,
+                    isSystemMessage: false,
+                    relatedPersonId: person.id
+                ))
         }
 
         return events
@@ -540,7 +610,9 @@ class SubscriptionEventService {
     // MARK: - Helper Methods (Timeline Items)
 
     /// Group timeline items by date
-    func groupTimelineItemsByDate(_ items: [SubscriptionTimelineItem]) -> [(date: Date, items: [SubscriptionTimelineItem])] {
+    func groupTimelineItemsByDate(_ items: [SubscriptionTimelineItem]) -> [(
+        date: Date, items: [SubscriptionTimelineItem]
+    )] {
         let calendar = Calendar.current
 
         // Group by start of day
@@ -559,7 +631,8 @@ class SubscriptionEventService {
         priceHistory: [PriceChange],
         people: [Person]
     ) -> Int {
-        return generateTimelineItems(for: subscription, priceHistory: priceHistory, people: people).count
+        return generateTimelineItems(for: subscription, priceHistory: priceHistory, people: people)
+            .count
     }
 
     /// Get recent timeline items (last 30 days)
@@ -569,7 +642,8 @@ class SubscriptionEventService {
         people: [Person],
         days: Int = 30
     ) -> [SubscriptionTimelineItem] {
-        let allItems = generateTimelineItems(for: subscription, priceHistory: priceHistory, people: people)
+        let allItems = generateTimelineItems(
+            for: subscription, priceHistory: priceHistory, people: people)
         let calendar = Calendar.current
         let cutoffDate = calendar.date(byAdding: .day, value: -days, to: Date()) ?? Date()
 
@@ -594,7 +668,8 @@ class SubscriptionEventService {
         people: [Person],
         days: Int = 30
     ) -> [SubscriptionEvent] {
-        let allEvents = generateEvents(for: subscription, priceHistory: priceHistory, people: people)
+        let allEvents = generateEvents(
+            for: subscription, priceHistory: priceHistory, people: people)
         let calendar = Calendar.current
         let cutoffDate = calendar.date(byAdding: .day, value: -days, to: Date()) ?? Date()
 

@@ -25,7 +25,8 @@ struct ProfileHeaderView: View {
                 )
                 .elevatedShadow()
                 .transition(.opacity)
-                .animation(reduceMotion ? .none : .easeInOut(duration: 0.2), value: profile.avatarType)
+                .animation(
+                    reduceMotion ? .none : .easeInOut(duration: 0.2), value: profile.avatarType)
             }
             .accessibilityLabel("Profile picture")
             .accessibilityHint("Double tap to change your profile picture")
@@ -35,7 +36,7 @@ struct ProfileHeaderView: View {
             profileInfoSection
 
             // Edit Button
-            SpotifyButton(
+            SwiffButton(
                 "Edit Profile",
                 icon: "pencil",
                 variant: .secondary,
@@ -70,7 +71,8 @@ struct ProfileHeaderView: View {
                     .lineLimit(nil)
                     .multilineTextAlignment(.center)
                     .transition(.opacity.combined(with: .move(edge: .top)))
-                    .animation(reduceMotion ? .none : .easeInOut(duration: 0.3), value: profile.email)
+                    .animation(
+                        reduceMotion ? .none : .easeInOut(duration: 0.3), value: profile.email)
             }
 
             // Phone
@@ -81,7 +83,8 @@ struct ProfileHeaderView: View {
                     .lineLimit(nil)
                     .multilineTextAlignment(.center)
                     .transition(.opacity.combined(with: .move(edge: .top)))
-                    .animation(reduceMotion ? .none : .easeInOut(duration: 0.3), value: profile.phone)
+                    .animation(
+                        reduceMotion ? .none : .easeInOut(duration: 0.3), value: profile.phone)
             }
 
             // Member Since

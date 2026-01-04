@@ -16,28 +16,28 @@ struct GradientColorHelper {
         }
     }
 
-    // MARK: - Income Gradient Colors
+    // MARK: - Income Gradient Colors (Using new 5-tier green palette)
 
-    /// Light mode: Light Green → Dark Green
+    /// Light mode: GREEN 1 → GREEN 5
     private static let incomeGradientStopsLight: [(threshold: Double, color: Color)] = [
-        (0,   Color(red: 0.91, green: 0.96, blue: 0.91)),  // #E8F5E9 - Lightest
-        (10,  Color(red: 0.78, green: 0.90, blue: 0.79)),  // #C8E6C9
-        (20,  Color(red: 0.65, green: 0.84, blue: 0.65)),  // #A5D6A7
-        (30,  Color(red: 0.40, green: 0.73, blue: 0.42)),  // #66BB6A
-        (50,  Color(red: 0.26, green: 0.63, blue: 0.28)),  // #43A047
-        (70,  Color(red: 0.18, green: 0.49, blue: 0.20)),  // #2E7D32
-        (100, Color(red: 0.04, green: 0.37, blue: 0.00))   // #0B5E00 - Darkest
+        (0,   Color(red: 238/255, green: 242/255, blue: 227/255)),  // GREEN 1 #EEF2E3 - Lightest
+        (10,  Color(red: 219/255, green: 241/255, blue: 166/255)),  // Interpolated
+        (20,  Color(red: 200/255, green: 241/255, blue: 105/255)),  // GREEN 2 #C8F169
+        (30,  Color(red: 160/255, green: 219/255, blue: 66/255)),   // Interpolated
+        (50,  Color(red: 120/255, green: 197/255, blue: 28/255)),   // GREEN 3 #78C51C
+        (70,  Color(red: 42/255, green: 111/255, blue: 43/255)),    // GREEN 4 #2A6F2B
+        (100, Color(red: 4/255, green: 63/255, blue: 46/255))       // GREEN 5 #043F2E - Darkest
     ]
 
     /// Dark mode: Subtle dark greens → Bright green (reversed direction for dark bg)
     private static let incomeGradientStopsDark: [(threshold: Double, color: Color)] = [
-        (0,   Color(red: 0.18, green: 0.29, blue: 0.18)),  // #2D4A2F - Subtle dark green
-        (10,  Color(red: 0.24, green: 0.37, blue: 0.25)),  // #3D5F3F
-        (20,  Color(red: 0.30, green: 0.45, blue: 0.31)),  // #4D7350
-        (30,  Color(red: 0.36, green: 0.54, blue: 0.38)),  // #5D8960
-        (50,  Color(red: 0.43, green: 0.62, blue: 0.44)),  // #6D9E70
-        (70,  Color(red: 0.49, green: 0.70, blue: 0.50)),  // #7DB380
-        (100, Color(red: 0.55, green: 0.78, blue: 0.56))   // #8DC890 - Brightest
+        (0,   Color(red: 4/255, green: 63/255, blue: 46/255).opacity(0.6)),  // GREEN 5 subtle
+        (10,  Color(red: 23/255, green: 87/255, blue: 44/255)),              // Interpolated
+        (20,  Color(red: 42/255, green: 111/255, blue: 43/255)),             // GREEN 4
+        (30,  Color(red: 81/255, green: 154/255, blue: 35/255)),             // Interpolated
+        (50,  Color(red: 120/255, green: 197/255, blue: 28/255)),            // GREEN 3
+        (70,  Color(red: 160/255, green: 219/255, blue: 66/255)),            // Interpolated
+        (100, Color(red: 200/255, green: 241/255, blue: 105/255))            // GREEN 2 - Brightest
     ]
 
     private static func incomeGradientColor(for percentage: Double, colorScheme: ColorScheme) -> Color {

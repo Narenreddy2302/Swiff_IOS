@@ -5,14 +5,13 @@
 //  Profile settings page for managing profile info, notifications, and storage
 //
 
-import SwiftUI
 import PhotosUI
+import SwiftUI
 
 struct ProfileSettingsPage: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var profileManager = UserProfileManager.shared
     @StateObject private var userSettings = UserSettings.shared
-    @StateObject private var notificationManager = NotificationManager.shared
 
     // Edit states
     @State private var showEditName = false
@@ -26,9 +25,6 @@ struct ProfileSettingsPage: View {
             VStack(spacing: 24) {
                 // Profile Section
                 profileSection
-
-                // Notifications Section
-                notificationsSection
 
                 // Storage Section
                 storageSection
@@ -88,12 +84,14 @@ struct ProfileSettingsPage: View {
             ProfileChangePhotoSheet(profileManager: profileManager)
         }
         .alert("Clear Cache?", isPresented: $showClearCacheAlert) {
-            Button("Cancel", role: .cancel) { }
+            Button("Cancel", role: .cancel) {}
             Button("Clear", role: .destructive) {
                 clearCache()
             }
         } message: {
-            Text("This will clear temporary files and cached data. Your personal data will not be affected.")
+            Text(
+                "This will clear temporary files and cached data. Your personal data will not be affected."
+            )
         }
     }
 
@@ -140,7 +138,8 @@ struct ProfileSettingsPage: View {
                 // Name
                 SettingsRowButton(
                     label: "Name",
-                    value: profileManager.profile.name.isEmpty ? "Add name" : profileManager.profile.name,
+                    value: profileManager.profile.name.isEmpty
+                        ? "Add name" : profileManager.profile.name,
                     showDivider: true
                 ) {
                     showEditName = true
@@ -149,7 +148,8 @@ struct ProfileSettingsPage: View {
                 // Email
                 SettingsRowButton(
                     label: "Email",
-                    value: profileManager.profile.email.isEmpty ? "Add email" : profileManager.profile.email,
+                    value: profileManager.profile.email.isEmpty
+                        ? "Add email" : profileManager.profile.email,
                     showDivider: true
                 ) {
                     showEditEmail = true
@@ -158,98 +158,12 @@ struct ProfileSettingsPage: View {
                 // Phone
                 SettingsRowButton(
                     label: "Phone",
-                    value: profileManager.profile.phone.isEmpty ? "Add phone" : profileManager.profile.phone,
+                    value: profileManager.profile.phone.isEmpty
+                        ? "Add phone" : profileManager.profile.phone,
                     showDivider: false
                 ) {
                     showEditPhone = true
                 }
-            }
-            .background(Color.wiseCardBackground)
-            .cornerRadius(12)
-        }
-    }
-
-    // MARK: - Notifications Section
-
-    private var notificationsSection: some View {
-        VStack(spacing: 0) {
-            SettingsSectionHeader(title: "NOTIFICATIONS")
-
-            VStack(spacing: 0) {
-                // System notifications permission
-                if !notificationManager.isAuthorized {
-                    Button(action: {
-                        HapticManager.shared.impact(.light)
-                        Task {
-                            if notificationManager.permissionStatus == .denied {
-                                notificationManager.openSettings()
-                            } else {
-                                _ = await notificationManager.requestPermission()
-                            }
-                        }
-                    }) {
-                        HStack(spacing: 12) {
-                            Circle()
-                                .fill(Color.wiseWarning.opacity(0.2))
-                                .frame(width: 40, height: 40)
-                                .overlay(
-                                    Image(systemName: "bell.badge.fill")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.wiseWarning)
-                                )
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Enable Notifications")
-                                    .font(.spotifyBodyLarge)
-                                    .foregroundColor(.wisePrimaryText)
-                                Text("Allow Swiff to send alerts")
-                                    .font(.spotifyBodySmall)
-                                    .foregroundColor(.wiseSecondaryText)
-                            }
-
-                            Spacer()
-
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.wiseSecondaryText.opacity(0.5))
-                        }
-                        .padding(16)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-
-                    Divider().padding(.leading, 68)
-                }
-
-                // Transaction alerts
-                SettingsToggleRow(
-                    title: "Transaction alerts",
-                    isOn: $userSettings.notificationsEnabled,
-                    showDivider: true
-                )
-
-                // Security alerts
-                SettingsToggleRow(
-                    title: "Security alerts",
-                    isOn: Binding(
-                        get: { userSettings.notificationsEnabled },
-                        set: { userSettings.notificationsEnabled = $0 }
-                    ),
-                    showDivider: true
-                )
-
-                // Weekly summary
-                SettingsToggleRow(
-                    title: "Weekly summary",
-                    isOn: $userSettings.subscriptionReminders,
-                    showDivider: true
-                )
-
-                // Promotions
-                SettingsToggleRow(
-                    title: "Promotions",
-                    isOn: $userSettings.paymentReminders,
-                    showDivider: false
-                )
             }
             .background(Color.wiseCardBackground)
             .cornerRadius(12)

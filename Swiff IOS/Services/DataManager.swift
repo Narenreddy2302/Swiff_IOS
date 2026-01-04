@@ -4,18 +4,20 @@
 //
 //  Created by Naren Reddy on 11/18/25.
 //  Centralized data manager for app state management
+//  Updated by Agent to remove Cloud dependencies.
 //
 
-import Foundation
 import Combine
+import Foundation
+import SwiftData
 import SwiftUI
 
 @MainActor
 class DataManager: ObservableObject {
-    
+
     // MARK: - Singleton
     static let shared = DataManager()
-    
+
     // MARK: - Published Properties
 
     @Published var people: [Person] = []
@@ -24,6 +26,7 @@ class DataManager: ObservableObject {
     @Published var transactions: [Transaction] = []
     @Published var splitBills: [SplitBill] = []
     @Published var accounts: [Account] = []
+    @Published var sharedSubscriptions: [SharedSubscription] = []
 
     @Published var isLoading = false
     @Published var error: Error?
@@ -44,12 +47,27 @@ class DataManager: ObservableObject {
 
     /// Enum describing what type of data change occurred
     enum DataChange: Equatable {
-        case personUpdated(UUID), personAdded(UUID), personDeleted(UUID)
-        case groupUpdated(UUID), groupAdded(UUID), groupDeleted(UUID)
-        case subscriptionUpdated(UUID), subscriptionAdded(UUID), subscriptionDeleted(UUID)
-        case transactionUpdated(UUID), transactionAdded(UUID), transactionDeleted(UUID)
-        case splitBillUpdated(UUID), splitBillAdded(UUID), splitBillDeleted(UUID)
-        case accountUpdated(UUID), accountAdded(UUID), accountDeleted(UUID)
+        case personUpdated(UUID)
+        case personAdded(UUID)
+        case personDeleted(UUID)
+        case groupUpdated(UUID)
+        case groupAdded(UUID)
+        case groupDeleted(UUID)
+        case subscriptionUpdated(UUID)
+        case subscriptionAdded(UUID)
+        case subscriptionDeleted(UUID)
+        case transactionUpdated(UUID)
+        case transactionAdded(UUID)
+        case transactionDeleted(UUID)
+        case splitBillUpdated(UUID)
+        case splitBillAdded(UUID)
+        case splitBillDeleted(UUID)
+        case accountUpdated(UUID)
+        case accountAdded(UUID)
+        case accountDeleted(UUID)
+        case sharedSubscriptionUpdated(UUID)
+        case sharedSubscriptionAdded(UUID)
+        case sharedSubscriptionDeleted(UUID)
         case allDataReloaded
     }
 
@@ -59,25 +77,35 @@ class DataManager: ObservableObject {
         dataRevision += 1
     }
 
+    // MARK: - Preview Mode Detection
+
+    // nonisolated so it can be accessed from deinit
+    private nonisolated static var isPreview: Bool {
+        ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    }
+
     // MARK: - Private Properties
 
     private let persistenceService = PersistenceService.shared
     private let renewalService = SubscriptionRenewalService.shared
     private let firstLaunchKey = "HasLaunchedBefore"
 
+    private var cancellables = Set<AnyCancellable>()
+
     // MARK: - Computed Properties
 
     var hasData: Bool {
-        !people.isEmpty || !groups.isEmpty || !subscriptions.isEmpty || !transactions.isEmpty || !splitBills.isEmpty || !accounts.isEmpty
+        !people.isEmpty || !groups.isEmpty || !subscriptions.isEmpty || !transactions.isEmpty
+            || !splitBills.isEmpty || !accounts.isEmpty
     }
 
     var accountsCount: Int { accounts.count }
-
     var peopleCount: Int { people.count }
     var groupsCount: Int { groups.count }
     var subscriptionsCount: Int { subscriptions.count }
     var transactionsCount: Int { transactions.count }
     var splitBillsCount: Int { splitBills.count }
+    var sharedSubscriptionsCount: Int { sharedSubscriptions.count }
 
     // MARK: - Initialization
 
@@ -99,19 +127,7 @@ class DataManager: ObservableObject {
             transactions = try persistenceService.fetchAllTransactions()
             splitBills = try persistenceService.fetchAllSplitBills()
             accounts = try persistenceService.fetchAllAccounts()
-
-            // If database is empty, populate sample data for easy visualization
-            if !hasData {
-                print("📊 Database is empty, populating sample data for visualization...")
-                try populateSampleData()
-                // Reload data after populating
-                people = try persistenceService.fetchAllPeople()
-                groups = try persistenceService.fetchAllGroups()
-                subscriptions = try persistenceService.fetchAllSubscriptions()
-                transactions = try persistenceService.fetchAllTransactions()
-                splitBills = try persistenceService.fetchAllSplitBills()
-                accounts = try persistenceService.fetchAllAccounts()
-            }
+            sharedSubscriptions = (try? persistenceService.fetchAllSharedSubscriptions()) ?? []
 
             isLoading = false
             print("✅ Data loaded successfully:")
@@ -121,6 +137,7 @@ class DataManager: ObservableObject {
             print("   - Transactions: \(transactions.count)")
             print("   - Split Bills: \(splitBills.count)")
             print("   - Accounts: \(accounts.count)")
+            print("   - Shared Subscriptions: \(sharedSubscriptions.count)")
 
             // Process overdue subscription renewals
             Task {
@@ -144,9 +161,10 @@ class DataManager: ObservableObject {
     // MARK: - Person CRUD Operations
 
     func addPerson(_ person: Person) throws {
+        // Save locally first
         try persistenceService.savePerson(person)
         people.append(person)
-        print("✅ Person added: \(person.name)")
+        print("Person added: \(person.name)")
 
         // Index in Spotlight
         indexPersonInSpotlight(person)
@@ -159,7 +177,7 @@ class DataManager: ObservableObject {
         try persistenceService.updatePerson(person)
         if let index = people.firstIndex(where: { $0.id == person.id }) {
             people[index] = person
-            print("✅ Person updated: \(person.name)")
+            print("Person updated: \(person.name)")
 
             // Update in Spotlight
             indexPersonInSpotlight(person)
@@ -172,7 +190,7 @@ class DataManager: ObservableObject {
     func deletePerson(id: UUID) throws {
         try persistenceService.deletePerson(id: id)
         people.removeAll { $0.id == id }
-        print("✅ Person deleted")
+        print("Person deleted")
 
         // Remove from Spotlight
         removePersonFromSpotlight(id)
@@ -193,7 +211,7 @@ class DataManager: ObservableObject {
     func addGroup(_ group: Group) throws {
         try persistenceService.saveGroup(group)
         groups.append(group)
-        print("✅ Group added: \(group.name)")
+        print("Group added: \(group.name)")
 
         // Notify views of the change
         notifyChange(.groupAdded(group.id))
@@ -203,7 +221,7 @@ class DataManager: ObservableObject {
         try persistenceService.updateGroup(group)
         if let index = groups.firstIndex(where: { $0.id == group.id }) {
             groups[index] = group
-            print("✅ Group updated: \(group.name)")
+            print("Group updated: \(group.name)")
 
             // Notify views of the change
             notifyChange(.groupUpdated(group.id))
@@ -213,7 +231,7 @@ class DataManager: ObservableObject {
     func deleteGroup(id: UUID) throws {
         try persistenceService.deleteGroup(id: id)
         groups.removeAll { $0.id == id }
-        print("✅ Group deleted")
+        print("Group deleted")
 
         // Notify views of the change
         notifyChange(.groupDeleted(id))
@@ -230,12 +248,7 @@ class DataManager: ObservableObject {
     func addSubscription(_ subscription: Subscription) throws {
         try persistenceService.saveSubscription(subscription)
         subscriptions.append(subscription)
-        print("✅ Subscription added: \(subscription.name)")
-
-        // AGENT 7: Schedule notifications for new subscription
-        Task {
-            await NotificationManager.shared.updateScheduledReminders(for: subscription)
-        }
+        print("Subscription added: \(subscription.name)")
 
         // Index in Spotlight
         indexSubscriptionInSpotlight(subscription)
@@ -245,7 +258,7 @@ class DataManager: ObservableObject {
     }
 
     func updateSubscription(_ subscription: Subscription) throws {
-        // AGENT 9: Detect price changes before updating
+        // Detect price changes before updating
         if let oldSubscription = subscriptions.first(where: { $0.id == subscription.id }) {
             if oldSubscription.price != subscription.price {
                 // Price has changed - create price change record
@@ -259,18 +272,8 @@ class DataManager: ObservableObject {
                 do {
                     try addPriceChange(priceChange)
 
-                    // Schedule notification if price increased
-                    if subscription.price > oldSubscription.price {
-                        Task {
-                            await NotificationManager.shared.schedulePriceChangeAlert(
-                                for: subscription,
-                                oldPrice: oldSubscription.price,
-                                newPrice: subscription.price
-                            )
-                        }
-                    }
                 } catch {
-                    print("⚠️ Failed to create price change record: \(error.localizedDescription)")
+                    print("Failed to create price change record: \(error.localizedDescription)")
                 }
             }
         }
@@ -278,12 +281,7 @@ class DataManager: ObservableObject {
         try persistenceService.updateSubscription(subscription)
         if let index = subscriptions.firstIndex(where: { $0.id == subscription.id }) {
             subscriptions[index] = subscription
-            print("✅ Subscription updated: \(subscription.name)")
-
-            // AGENT 7: Reschedule notifications with updated settings
-            Task {
-                await NotificationManager.shared.updateScheduledReminders(for: subscription)
-            }
+            print("Subscription updated: \(subscription.name)")
 
             // Update in Spotlight
             indexSubscriptionInSpotlight(subscription)
@@ -294,14 +292,10 @@ class DataManager: ObservableObject {
     }
 
     func deleteSubscription(id: UUID) throws {
-        // AGENT 7: Cancel all notifications for this subscription before deleting
-        if let subscription = subscriptions.first(where: { $0.id == id }) {
-            NotificationManager.shared.cancelAllReminders(for: subscription)
-        }
 
         try persistenceService.deleteSubscription(id: id)
         subscriptions.removeAll { $0.id == id }
-        print("✅ Subscription deleted")
+        print("Subscription deleted")
 
         // Remove from Spotlight
         removeSubscriptionFromSpotlight(id)
@@ -318,13 +312,100 @@ class DataManager: ObservableObject {
         subscriptions.filter { !$0.isActive }
     }
 
+    // MARK: - Shared Subscription CRUD Operations
+
+    /// Add a new shared subscription
+    func addSharedSubscription(_ sharedSubscription: SharedSubscription) throws {
+        try persistenceService.saveSharedSubscription(sharedSubscription)
+        sharedSubscriptions.append(sharedSubscription)
+        print("Shared subscription added: \(sharedSubscription.notes)")
+
+        notifyChange(.sharedSubscriptionAdded(sharedSubscription.id))
+    }
+
+    /// Update an existing shared subscription
+    func updateSharedSubscription(_ sharedSubscription: SharedSubscription) throws {
+        try persistenceService.updateSharedSubscription(sharedSubscription)
+        if let index = sharedSubscriptions.firstIndex(where: { $0.id == sharedSubscription.id }) {
+            sharedSubscriptions[index] = sharedSubscription
+            print("Shared subscription updated: \(sharedSubscription.notes)")
+
+            notifyChange(.sharedSubscriptionUpdated(sharedSubscription.id))
+        }
+    }
+
+    /// Delete a shared subscription
+    func deleteSharedSubscription(id: UUID) throws {
+        try persistenceService.deleteSharedSubscription(id: id)
+        sharedSubscriptions.removeAll { $0.id == id }
+        print("Shared subscription deleted")
+
+        notifyChange(.sharedSubscriptionDeleted(id))
+    }
+
+    /// Get shared subscriptions for a specific person (where they are sharedBy or in sharedWith)
+    func getSharedSubscriptionsForPerson(personId: UUID) -> [SharedSubscription] {
+        return sharedSubscriptions.filter { shared in
+            shared.sharedBy == personId || shared.sharedWith.contains(personId)
+        }
+    }
+
+    /// Create a shared subscription from an existing personal subscription
+    func shareSubscription(
+        _ subscription: Subscription,
+        with people: [UUID],
+        splitType: CostSplitType,
+        ownerId: UUID? = nil
+    ) throws {
+        // Calculate individual cost based on split type
+        let totalPeople = people.count + 1  // +1 for owner
+        let individualCost = subscription.monthlyEquivalent / Double(totalPeople)
+
+        // Create shared subscription record
+        var sharedSub = SharedSubscription(
+            subscriptionId: subscription.id,
+            sharedBy: ownerId ?? UUID(),  // In production, use current user ID
+            sharedWith: people,
+            costSplit: splitType
+        )
+        sharedSub.individualCost = individualCost
+        sharedSub.isAccepted = true  // Auto-accept for now
+        sharedSub.notes = subscription.name
+
+        // Save shared subscription
+        try addSharedSubscription(sharedSub)
+
+        // Update the base subscription's isShared flag
+        var updatedSubscription = subscription
+        updatedSubscription.isShared = true
+        updatedSubscription.sharedWith = people
+        try updateSubscription(updatedSubscription)
+    }
+
+    /// Unshare a subscription (remove shared subscription record)
+    func unshareSubscription(sharedSubscriptionId: UUID) throws {
+        guard let sharedSub = sharedSubscriptions.first(where: { $0.id == sharedSubscriptionId }) else {
+            return
+        }
+
+        // Find and update the base subscription
+        if var baseSubscription = subscriptions.first(where: { $0.id == sharedSub.subscriptionId }) {
+            baseSubscription.isShared = false
+            baseSubscription.sharedWith = []
+            try updateSubscription(baseSubscription)
+        }
+
+        // Delete the shared subscription record
+        try deleteSharedSubscription(id: sharedSubscriptionId)
+    }
+
     // MARK: - Account Operations
 
     /// Add a new account
     func addAccount(_ account: Account) throws {
         try persistenceService.saveAccount(account)
         accounts.append(account)
-        print("✅ Account added: \(account.name)")
+        print("Account added: \(account.name)")
 
         // Notify views of the change
         notifyChange(.accountAdded(account.id))
@@ -335,7 +416,7 @@ class DataManager: ObservableObject {
         try persistenceService.updateAccount(account)
         if let index = accounts.firstIndex(where: { $0.id == account.id }) {
             accounts[index] = account
-            print("✅ Account updated: \(account.name)")
+            print("Account updated: \(account.name)")
 
             // Notify views of the change
             notifyChange(.accountUpdated(account.id))
@@ -346,7 +427,7 @@ class DataManager: ObservableObject {
     func deleteAccount(id: UUID) throws {
         try persistenceService.deleteAccount(id: id)
         accounts.removeAll { $0.id == id }
-        print("✅ Account deleted")
+        print("Account deleted")
 
         // Notify views of the change
         notifyChange(.accountDeleted(id))
@@ -435,25 +516,25 @@ class DataManager: ObservableObject {
     /// Process overdue subscription renewals manually
     func processOverdueRenewals() async {
         await renewalService.processOverdueRenewals()
-        loadAllData() // Reload data to reflect changes
+        loadAllData()  // Reload data to reflect changes
     }
 
     /// Pause a subscription
     func pauseSubscription(_ subscription: Subscription) async {
         await renewalService.pauseSubscription(subscription)
-        loadAllData() // Reload data to reflect changes
+        loadAllData()  // Reload data to reflect changes
     }
 
     /// Resume a paused subscription
     func resumeSubscription(_ subscription: Subscription) async {
         await renewalService.resumeSubscription(subscription)
-        loadAllData() // Reload data to reflect changes
+        loadAllData()  // Reload data to reflect changes
     }
 
     /// Cancel a subscription permanently
     func cancelSubscription(_ subscription: Subscription) async {
         await renewalService.cancelSubscription(subscription)
-        loadAllData() // Reload data to reflect changes
+        loadAllData()  // Reload data to reflect changes
     }
 
     // MARK: - Transaction CRUD Operations
@@ -461,8 +542,8 @@ class DataManager: ObservableObject {
     func addTransaction(_ transaction: Transaction) throws {
         try persistenceService.saveTransaction(transaction)
         transactions.append(transaction)
-        transactions.sort { $0.date > $1.date } // Keep sorted by date
-        print("✅ Transaction added: \(transaction.title)")
+        transactions.sort { $0.date > $1.date }  // Keep sorted by date
+        print("Transaction added: \(transaction.title)")
 
         // Index in Spotlight
         indexTransactionInSpotlight(transaction)
@@ -475,8 +556,8 @@ class DataManager: ObservableObject {
         try persistenceService.updateTransaction(transaction)
         if let index = transactions.firstIndex(where: { $0.id == transaction.id }) {
             transactions[index] = transaction
-            transactions.sort { $0.date > $1.date } // Re-sort
-            print("✅ Transaction updated: \(transaction.title)")
+            transactions.sort { $0.date > $1.date }  // Re-sort
+            print("Transaction updated: \(transaction.title)")
 
             // Update in Spotlight
             indexTransactionInSpotlight(transaction)
@@ -489,7 +570,7 @@ class DataManager: ObservableObject {
     func deleteTransaction(id: UUID) throws {
         try persistenceService.deleteTransaction(id: id)
         transactions.removeAll { $0.id == id }
-        print("✅ Transaction deleted")
+        print("Transaction deleted")
 
         // Remove from Spotlight
         removeTransactionFromSpotlight(id)
@@ -502,8 +583,12 @@ class DataManager: ObservableObject {
         let now = Date()
         let calendar = Calendar.current
 
-        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now)),
-              let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
+        guard
+            let startOfMonth = calendar.date(
+                from: calendar.dateComponents([.year, .month], from: now)),
+            let endOfMonth = calendar.date(
+                byAdding: DateComponents(month: 1, day: -1), to: startOfMonth)
+        else {
             print("⚠️ Failed to calculate month boundaries, returning all transactions")
             return transactions
         }
@@ -552,7 +637,9 @@ class DataManager: ObservableObject {
             }
         }
 
-        print("✅ Bulk category update complete: \(transactionIds.count) transaction(s) updated to \(category.rawValue)")
+        print(
+            "✅ Bulk category update complete: \(transactionIds.count) transaction(s) updated to \(category.rawValue)"
+        )
     }
 
     /// Bulk add tags to multiple transactions
@@ -579,7 +666,9 @@ class DataManager: ObservableObject {
             }
         }
 
-        print("✅ Bulk tag addition complete: \(tags.count) tag(s) added to \(transactionIds.count) transaction(s)")
+        print(
+            "✅ Bulk tag addition complete: \(tags.count) tag(s) added to \(transactionIds.count) transaction(s)"
+        )
     }
 
     // MARK: - Group Expense Operations
@@ -606,7 +695,28 @@ class DataManager: ObservableObject {
             if let expenseIndex = updatedGroup.expenses.firstIndex(where: { $0.id == id }) {
                 updatedGroup.expenses[expenseIndex].isSettled = true
                 groups[groupIndex] = updatedGroup
+
+                // Notify views of the change
+                notifyChange(.groupUpdated(groupID))
                 print("✅ Expense settled")
+            }
+        }
+    }
+
+    func updateGroupExpense(_ expense: GroupExpense, inGroup groupID: UUID) throws {
+        // saveGroupExpense handles both create and update
+        try persistenceService.saveGroupExpense(expense, forGroup: groupID)
+
+        // Update local group
+        if let groupIndex = groups.firstIndex(where: { $0.id == groupID }) {
+            var updatedGroup = groups[groupIndex]
+            if let expenseIndex = updatedGroup.expenses.firstIndex(where: { $0.id == expense.id }) {
+                updatedGroup.expenses[expenseIndex] = expense
+                groups[groupIndex] = updatedGroup
+
+                // Notify views of the change
+                notifyChange(.groupUpdated(groupID))
+                print("✅ Group expense updated: \(expense.title)")
             }
         }
     }
@@ -620,7 +730,7 @@ class DataManager: ObservableObject {
         // Update Person balances
         try updateBalancesForSplitBill(splitBill)
 
-        print("✅ Split bill added: \(splitBill.title)")
+        print("Split bill added: \(splitBill.title)")
 
         // Notify views of the change
         notifyChange(.splitBillAdded(splitBill.id))
@@ -630,7 +740,7 @@ class DataManager: ObservableObject {
         try persistenceService.updateSplitBill(splitBill)
         if let index = splitBills.firstIndex(where: { $0.id == splitBill.id }) {
             splitBills[index] = splitBill
-            print("✅ Split bill updated: \(splitBill.title)")
+            print("Split bill updated: \(splitBill.title)")
 
             // Notify views of the change
             notifyChange(.splitBillUpdated(splitBill.id))
@@ -640,7 +750,7 @@ class DataManager: ObservableObject {
     func deleteSplitBill(id: UUID) throws {
         try persistenceService.deleteSplitBill(id: id)
         splitBills.removeAll { $0.id == id }
-        print("✅ Split bill deleted")
+        print("Split bill deleted")
 
         // Notify views of the change
         notifyChange(.splitBillDeleted(id))
@@ -650,11 +760,18 @@ class DataManager: ObservableObject {
         guard let index = splitBills.firstIndex(where: { $0.id == splitBillId }) else { return }
 
         var updatedSplitBill = splitBills[index]
-        if let participantIndex = updatedSplitBill.participants.firstIndex(where: { $0.id == participantId }) {
+        if let participantIndex = updatedSplitBill.participants.firstIndex(where: {
+            $0.id == participantId
+        }) {
             updatedSplitBill.participants[participantIndex].hasPaid = true
             updatedSplitBill.participants[participantIndex].paymentDate = Date()
 
-            try updateSplitBill(updatedSplitBill)
+            // Update local persistence
+            try persistenceService.updateSplitBill(updatedSplitBill)
+            splitBills[index] = updatedSplitBill
+
+            // Notify views of the change
+            notifyChange(.splitBillUpdated(splitBillId))
             print("✅ Participant marked as paid")
         }
     }
@@ -672,7 +789,8 @@ class DataManager: ObservableObject {
             // Skip if participant is the payer
             guard participant.personId != splitBill.paidById else { continue }
 
-            guard let personIndex = people.firstIndex(where: { $0.id == participant.personId }) else {
+            guard let personIndex = people.firstIndex(where: { $0.id == participant.personId })
+            else {
                 print("⚠️ Participant not found: \(participant.personId)")
                 continue
             }
@@ -692,7 +810,8 @@ class DataManager: ObservableObject {
     /// Get all split bills involving a specific person (as payer or participant)
     func getSplitBillsForPerson(personId: UUID) -> [SplitBill] {
         return splitBills.filter { splitBill in
-            splitBill.paidById == personId || splitBill.participants.contains { $0.personId == personId }
+            splitBill.paidById == personId
+                || splitBill.participants.contains { $0.personId == personId }
         }
     }
 
@@ -803,9 +922,12 @@ class DataManager: ObservableObject {
                 imported += 1
 
                 self.operationProgress = Double(index + 1) / total
-                self.operationMessage = "Imported \(imported) of \(subscriptions.count) subscriptions"
+                self.operationMessage =
+                    "Imported \(imported) of \(subscriptions.count) subscriptions"
 
-                print("📥 Imported subscription \(imported)/\(subscriptions.count): \(subscription.name)")
+                print(
+                    "📥 Imported subscription \(imported)/\(subscriptions.count): \(subscription.name)"
+                )
             }.value
         }
 
@@ -839,7 +961,9 @@ class DataManager: ObservableObject {
                 self.operationProgress = Double(index + 1) / total
                 self.operationMessage = "Imported \(imported) of \(transactions.count) transactions"
 
-                print("📥 Imported transaction \(imported)/\(transactions.count): \(transaction.title)")
+                print(
+                    "📥 Imported transaction \(imported)/\(transactions.count): \(transaction.title)"
+                )
             }.value
         }
 
@@ -1014,559 +1138,6 @@ class DataManager: ObservableObject {
         print("✅ First launch complete")
     }
 
-    // MARK: - Sample Data Population
-
-    private func populateSampleData() throws {
-        print("📝 Populating comprehensive sample data...")
-
-        // Sample People with diverse avatars and balances
-        var emma = Person(
-            name: "Emma Wilson",
-            email: "emma.wilson@email.com",
-            phone: "+1 (555) 123-4567",
-            avatarType: .emoji("👩‍💼")
-        )
-        emma.balance = 45.50
-        
-        var james = Person(
-            name: "James Chen",
-            email: "james.chen@email.com",
-            phone: "+1 (555) 234-5678",
-            avatarType: .emoji("👨‍💻")
-        )
-        james.balance = -32.00
-        
-        var sofia = Person(
-            name: "Sofia Rodriguez",
-            email: "sofia.rodriguez@email.com",
-            phone: "+1 (555) 345-6789",
-            avatarType: .emoji("👩‍🎨")
-        )
-        sofia.balance = 120.75
-        
-        var michael = Person(
-            name: "Michael Taylor",
-            email: "michael.taylor@email.com",
-            phone: "+1 (555) 456-7890",
-            avatarType: .emoji("👨‍🍳")
-        )
-        michael.balance = -25.00
-        
-        var aisha = Person(
-            name: "Aisha Patel",
-            email: "aisha.patel@email.com",
-            phone: "+1 (555) 567-8901",
-            avatarType: .emoji("👩‍⚕️")
-        )
-        aisha.balance = 0.0
-        
-        var david = Person(
-            name: "David Kim",
-            email: "david.kim@email.com",
-            phone: "+1 (555) 678-9012",
-            avatarType: .emoji("👨‍🔬")
-        )
-        david.balance = 78.25
-        
-        var olivia = Person(
-            name: "Olivia Brown",
-            email: "olivia.brown@email.com",
-            phone: "+1 (555) 789-0123",
-            avatarType: .emoji("👩‍🏫")
-        )
-        olivia.balance = -15.50
-
-        let samplePeople = [emma, james, sofia, michael, aisha, david, olivia]
-
-        // Save people first (no dependencies)
-        for person in samplePeople {
-            try persistenceService.savePerson(person)
-        }
-
-        // Comprehensive Sample Subscriptions
-        var netflixSub = Subscription(
-            name: "Netflix",
-            description: "Premium 4K streaming plan",
-            price: 19.99,
-            billingCycle: .monthly,
-            category: .entertainment,
-            icon: "tv.fill",
-            color: "#E50914"
-        )
-        netflixSub.isActive = true
-        netflixSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 15, to: Date()) ?? Date()
-
-        var spotifySub = Subscription(
-            name: "Spotify Premium",
-            description: "Ad-free music streaming",
-            price: 10.99,
-            billingCycle: .monthly,
-            category: .entertainment,
-            icon: "music.note",
-            color: "#1DB954"
-        )
-        spotifySub.isActive = true
-        spotifySub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date()
-
-        var gymSub = Subscription(
-            name: "Gym Membership",
-            description: "24/7 fitness center access",
-            price: 49.99,
-            billingCycle: .monthly,
-            category: .health,
-            icon: "figure.run",
-            color: "#FF6B35"
-        )
-        gymSub.isActive = true
-        gymSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
-        
-        var icloudSub = Subscription(
-            name: "iCloud+",
-            description: "200GB cloud storage",
-            price: 2.99,
-            billingCycle: .monthly,
-            category: .productivity,
-            icon: "cloud.fill",
-            color: "#007AFF"
-        )
-        icloudSub.isActive = true
-        icloudSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 12, to: Date()) ?? Date()
-        
-        var youtubeSub = Subscription(
-            name: "YouTube Premium",
-            description: "Ad-free videos & music",
-            price: 13.99,
-            billingCycle: .monthly,
-            category: .entertainment,
-            icon: "play.rectangle.fill",
-            color: "#FF0000"
-        )
-        youtubeSub.isActive = true
-        youtubeSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 8, to: Date()) ?? Date()
-        
-        var nytSub = Subscription(
-            name: "The New York Times",
-            description: "Digital news subscription",
-            price: 17.00,
-            billingCycle: .monthly,
-            category: .news,
-            icon: "newspaper.fill",
-            color: "#000000"
-        )
-        nytSub.isActive = true
-        nytSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 20, to: Date()) ?? Date()
-        
-        var hboSub = Subscription(
-            name: "HBO Max",
-            description: "Premium content streaming",
-            price: 15.99,
-            billingCycle: .monthly,
-            category: .entertainment,
-            icon: "sparkles.tv.fill",
-            color: "#7E22CE"
-        )
-        hboSub.isActive = true
-        hboSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 25, to: Date()) ?? Date()
-        
-        var duolingoSub = Subscription(
-            name: "Duolingo Plus",
-            description: "Language learning app",
-            price: 6.99,
-            billingCycle: .monthly,
-            category: .education,
-            icon: "character.book.closed.fill",
-            color: "#58CC02"
-        )
-        duolingoSub.isActive = true
-        duolingoSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 18, to: Date()) ?? Date()
-        
-        var adobeSub = Subscription(
-            name: "Adobe Creative Cloud",
-            description: "Full creative suite access",
-            price: 54.99,
-            billingCycle: .monthly,
-            category: .productivity,
-            icon: "paintbrush.fill",
-            color: "#FF0000"
-        )
-        adobeSub.isActive = true
-        adobeSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 10, to: Date()) ?? Date()
-        
-        var linkedinSub = Subscription(
-            name: "LinkedIn Premium",
-            description: "Career development tools",
-            price: 29.99,
-            billingCycle: .monthly,
-            category: .productivity,
-            icon: "briefcase.fill",
-            color: "#0A66C2"
-        )
-        linkedinSub.isActive = true
-        linkedinSub.nextBillingDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
-
-        let sampleSubscriptions = [netflixSub, spotifySub, gymSub, icloudSub, youtubeSub, 
-                                  nytSub, hboSub, duolingoSub, adobeSub, linkedinSub]
-
-        for subscription in sampleSubscriptions {
-            try persistenceService.saveSubscription(subscription)
-        }
-
-        // Comprehensive Sample Transactions (last 30 days)
-        let now = Date()
-        var sampleTransactions: [Transaction] = []
-        
-        // Income transactions
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Salary",
-            subtitle: "Monthly paycheck - Tech Corp",
-            amount: 5250.00,
-            category: .income,
-            date: Calendar.current.date(byAdding: .day, value: -25, to: now)!,
-            isRecurring: true,
-            tags: ["work", "monthly", "salary"],
-            merchant: "Tech Corp"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Freelance Project",
-            subtitle: "Website design work",
-            amount: 850.00,
-            category: .income,
-            date: Calendar.current.date(byAdding: .day, value: -15, to: now)!,
-            isRecurring: false,
-            tags: ["freelance", "design"],
-            merchant: "Client Inc"
-        ))
-        
-        // Housing & Utilities
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Rent Payment",
-            subtitle: "Monthly rent",
-            amount: -1800.00,
-            category: .utilities,
-            date: Calendar.current.date(byAdding: .day, value: -28, to: now)!,
-            isRecurring: true,
-            tags: ["housing", "monthly"],
-            merchant: "Property Management Co"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Electricity Bill",
-            subtitle: "Monthly utility",
-            amount: -125.50,
-            category: .utilities,
-            date: Calendar.current.date(byAdding: .day, value: -20, to: now)!,
-            isRecurring: true,
-            tags: ["utilities", "monthly"],
-            merchant: "Power Company"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Internet Service",
-            subtitle: "Fiber optic 1Gbps",
-            amount: -79.99,
-            category: .utilities,
-            date: Calendar.current.date(byAdding: .day, value: -18, to: now)!,
-            isRecurring: true,
-            tags: ["utilities", "internet"],
-            merchant: "ISP Provider"
-        ))
-        
-        // Groceries
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Weekly Groceries",
-            subtitle: "Whole Foods Market",
-            amount: -156.32,
-            category: .groceries,
-            date: Calendar.current.date(byAdding: .day, value: -2, to: now)!,
-            isRecurring: false,
-            tags: ["food", "weekly"],
-            merchant: "Whole Foods"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Grocery Shopping",
-            subtitle: "Trader Joe's",
-            amount: -98.75,
-            category: .groceries,
-            date: Calendar.current.date(byAdding: .day, value: -9, to: now)!,
-            isRecurring: false,
-            tags: ["food"],
-            merchant: "Trader Joe's"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Farmers Market",
-            subtitle: "Fresh produce",
-            amount: -45.00,
-            category: .groceries,
-            date: Calendar.current.date(byAdding: .day, value: -6, to: now)!,
-            isRecurring: false,
-            tags: ["food", "fresh"],
-            merchant: "Downtown Farmers Market"
-        ))
-        
-        // Dining Out
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Dinner",
-            subtitle: "Italian Restaurant",
-            amount: -92.50,
-            category: .dining,
-            date: Calendar.current.date(byAdding: .day, value: -1, to: now)!,
-            isRecurring: false,
-            tags: ["food", "dining", "italian"],
-            merchant: "La Bella Vista"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Coffee Shop",
-            subtitle: "Morning latte",
-            amount: -5.75,
-            category: .dining,
-            date: Calendar.current.date(byAdding: .day, value: 0, to: now)!,
-            isRecurring: false,
-            tags: ["coffee", "morning"],
-            merchant: "Starbucks"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Lunch",
-            subtitle: "Sushi restaurant",
-            amount: -32.00,
-            category: .dining,
-            date: Calendar.current.date(byAdding: .day, value: -4, to: now)!,
-            isRecurring: false,
-            tags: ["food", "lunch", "sushi"],
-            merchant: "Tokyo Sushi Bar"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Brunch",
-            subtitle: "Weekend brunch with friends",
-            amount: -67.80,
-            category: .dining,
-            date: Calendar.current.date(byAdding: .day, value: -7, to: now)!,
-            isRecurring: false,
-            tags: ["food", "brunch", "friends"],
-            merchant: "Sunny Side Cafe"
-        ))
-        
-        // Transportation
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Gas Station",
-            subtitle: "Shell fuel",
-            amount: -58.20,
-            category: .transportation,
-            date: Calendar.current.date(byAdding: .day, value: -3, to: now)!,
-            isRecurring: false,
-            tags: ["car", "fuel"],
-            merchant: "Shell"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Uber Ride",
-            subtitle: "Downtown to airport",
-            amount: -35.00,
-            category: .transportation,
-            date: Calendar.current.date(byAdding: .day, value: -12, to: now)!,
-            isRecurring: false,
-            tags: ["rideshare", "airport"],
-            merchant: "Uber"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Parking Fee",
-            subtitle: "Downtown garage",
-            amount: -18.00,
-            category: .transportation,
-            date: Calendar.current.date(byAdding: .day, value: -5, to: now)!,
-            isRecurring: false,
-            tags: ["parking"],
-            merchant: "City Parking"
-        ))
-        
-        // Shopping
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Amazon Purchase",
-            subtitle: "Electronics & home goods",
-            amount: -234.99,
-            category: .shopping,
-            date: Calendar.current.date(byAdding: .day, value: -8, to: now)!,
-            isRecurring: false,
-            tags: ["online", "electronics"],
-            merchant: "Amazon"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Clothing Store",
-            subtitle: "New work outfits",
-            amount: -189.50,
-            category: .shopping,
-            date: Calendar.current.date(byAdding: .day, value: -14, to: now)!,
-            isRecurring: false,
-            tags: ["clothing", "work"],
-            merchant: "Nordstrom"
-        ))
-        
-        // Entertainment
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Movie Tickets",
-            subtitle: "IMAX screening",
-            amount: -42.00,
-            category: .entertainment,
-            date: Calendar.current.date(byAdding: .day, value: -10, to: now)!,
-            isRecurring: false,
-            tags: ["movies", "entertainment"],
-            merchant: "AMC Theaters"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Concert Tickets",
-            subtitle: "Live music event",
-            amount: -125.00,
-            category: .entertainment,
-            date: Calendar.current.date(byAdding: .day, value: -16, to: now)!,
-            isRecurring: false,
-            tags: ["concert", "music"],
-            merchant: "Ticketmaster"
-        ))
-        
-        // Healthcare
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Doctor Visit",
-            subtitle: "Annual checkup copay",
-            amount: -35.00,
-            category: .healthcare,
-            date: Calendar.current.date(byAdding: .day, value: -22, to: now)!,
-            isRecurring: false,
-            tags: ["healthcare", "medical"],
-            merchant: "Healthcare Clinic"
-        ))
-        
-        sampleTransactions.append(Transaction(
-            id: UUID(),
-            title: "Pharmacy",
-            subtitle: "Prescription refill",
-            amount: -25.50,
-            category: .healthcare,
-            date: Calendar.current.date(byAdding: .day, value: -11, to: now)!,
-            isRecurring: false,
-            tags: ["pharmacy", "medication"],
-            merchant: "CVS Pharmacy"
-        ))
-
-        for transaction in sampleTransactions {
-            try persistenceService.saveTransaction(transaction)
-        }
-
-        // Sample Groups with detailed expenses
-        var weekendTrip = Group(
-            name: "Weekend Getaway",
-            description: "Beach house vacation",
-            emoji: "🏖️",
-            members: [emma.id, james.id, sofia.id]
-        )
-
-        let hotelExpense = GroupExpense(
-            title: "Beach House Rental",
-            amount: 450.00,
-            paidBy: emma.id,
-            splitBetween: [emma.id, james.id, sofia.id],
-            category: .travel,
-            notes: "3 nights at Ocean View",
-            receipt: nil,
-            isSettled: false
-        )
-        
-        let groceriesExpense = GroupExpense(
-            title: "Groceries for Trip",
-            amount: 180.00,
-            paidBy: james.id,
-            splitBetween: [emma.id, james.id, sofia.id],
-            category: .groceries,
-            notes: "Food and drinks for the weekend",
-            receipt: nil,
-            isSettled: false
-        )
-
-        weekendTrip.expenses = [hotelExpense, groceriesExpense]
-        weekendTrip.totalAmount = 630.00
-
-        var dinnerGroup = Group(
-            name: "Dinner Club",
-            description: "Monthly dinner meetups",
-            emoji: "🍽️",
-            members: [michael.id, aisha.id, david.id]
-        )
-
-        let dinnerExpense = GroupExpense(
-            title: "Italian Dinner",
-            amount: 195.00,
-            paidBy: michael.id,
-            splitBetween: [michael.id, aisha.id, david.id],
-            category: .dining,
-            notes: "Birthday celebration at La Trattoria",
-            receipt: nil,
-            isSettled: true
-        )
-
-        dinnerGroup.expenses = [dinnerExpense]
-        dinnerGroup.totalAmount = 195.00
-        
-        var studyGroup = Group(
-            name: "Study Buddies",
-            description: "Course materials sharing",
-            emoji: "📚",
-            members: [olivia.id, james.id, aisha.id, david.id]
-        )
-        
-        let textbooksExpense = GroupExpense(
-            title: "Textbooks",
-            amount: 320.00,
-            paidBy: olivia.id,
-            splitBetween: [olivia.id, james.id, aisha.id, david.id],
-            category: .shopping,
-            notes: "Semester textbooks bundle",
-            receipt: nil,
-            isSettled: false
-        )
-        
-        studyGroup.expenses = [textbooksExpense]
-        studyGroup.totalAmount = 320.00
-
-        let sampleGroups = [weekendTrip, dinnerGroup, studyGroup]
-
-        for group in sampleGroups {
-            try persistenceService.saveGroup(group)
-        }
-
-        print("✅ Comprehensive sample data populated successfully!")
-        print("   - 7 People with balances")
-        print("   - 10 Active subscriptions")
-        print("   - 25+ Transactions across various categories")
-        print("   - 3 Groups with multiple expenses")
-    }
-
     // MARK: - Utility Methods
 
     func clearAllData() throws {
@@ -1574,23 +1145,13 @@ class DataManager: ObservableObject {
         groups.removeAll()
         subscriptions.removeAll()
         transactions.removeAll()
+        splitBills.removeAll()
+        accounts.removeAll()
+        sharedSubscriptions.removeAll()
 
         // Note: This would require a clearAllData method in PersistenceService
         // For now, just clear the in-memory arrays
         print("⚠️ Data cleared from memory. Persistence clearing not yet implemented.")
-    }
-
-    func resetToSampleData() throws {
-        try clearAllData()
-        try populateSampleData()
-        loadAllData()
-    }
-    
-    /// Force populate sample data (useful for testing/demo)
-    func forcePopulateSampleData() throws {
-        print("🔄 Force populating sample data...")
-        try populateSampleData()
-        loadAllData()
     }
 
     // MARK: - Formatting Utilities
@@ -1603,5 +1164,63 @@ class DataManager: ObservableObject {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         )
+    }
+
+    // MARK: - Activity Computation
+
+    /// Shared activity computation for Recent Activity components
+    /// - Parameter limit: Optional limit on number of activities returned
+    /// - Returns: Array of ActivityItem sorted by date descending
+    func computeActivities(limit: Int? = nil) -> [RecentGroupActivitySection.ActivityItem] {
+        var activities: [RecentGroupActivitySection.ActivityItem] = []
+
+        // Collect all group expenses
+        for group in groups {
+            for expense in group.expenses {
+                if people.contains(where: { $0.id == expense.paidBy }) {
+                    activities.append(
+                        RecentGroupActivitySection.ActivityItem(
+                            emoji: group.emoji,
+                            name: group.name,
+                            activityType: expense.isSettled ? "settled" : "split bill",
+                            amount: expense.amount.asCurrency,
+                            date: expense.date,
+                            avatarColor: Theme.Colors.brandPrimary,
+                            personId: nil,
+                            groupId: group.id
+                        ))
+                }
+            }
+        }
+
+        // Collect person balance updates
+        for person in people where person.balance != 0 {
+            let emoji: String
+            if case .emoji(let emojiStr) = person.avatarType {
+                emoji = emojiStr
+            } else {
+                emoji = "👤"
+            }
+
+            activities.append(
+                RecentGroupActivitySection.ActivityItem(
+                    emoji: emoji,
+                    name: person.name,
+                    activityType: person.balance > 0 ? "owes you" : "you owe",
+                    amount: person.balance.asAbsoluteCurrency,
+                    date: person.lastModifiedDate,
+                    avatarColor: person.balance > 0 ? Theme.Colors.brandPrimary : Theme.Colors.brandAccent,
+                    personId: person.id,
+                    groupId: nil
+                ))
+        }
+
+        // Sort by date descending
+        let sorted = activities.sorted { $0.date > $1.date }
+
+        if let limit = limit {
+            return Array(sorted.prefix(limit))
+        }
+        return sorted
     }
 }

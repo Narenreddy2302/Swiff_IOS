@@ -6,15 +6,14 @@
 //  Service for managing subscription renewals and auto-renewal logic
 //
 
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 class SubscriptionRenewalService {
     static let shared = SubscriptionRenewalService()
 
     private let persistenceService = PersistenceService.shared
-    private let notificationManager = NotificationManager.shared
 
     private init() {}
 
@@ -51,15 +50,14 @@ class SubscriptionRenewalService {
         var updatedSubscription = subscription
 
         // Calculate next billing date based on billing cycle
-        if let nextDate = calculateNextBillingDate(from: subscription.nextBillingDate, cycle: subscription.billingCycle) {
+        if let nextDate = calculateNextBillingDate(
+            from: subscription.nextBillingDate, cycle: subscription.billingCycle)
+        {
             updatedSubscription.nextBillingDate = nextDate
 
             do {
                 try persistenceService.updateSubscription(updatedSubscription)
                 print("✅ Renewed subscription: \(subscription.name), next billing: \(nextDate)")
-
-                // AGENT 7: Reschedule reminders for new billing cycle
-                await notificationManager.updateScheduledReminders(for: updatedSubscription)
 
                 // Announce to user if needed
                 if AccessibilitySettings.isVoiceOverRunning {
@@ -91,7 +89,7 @@ class SubscriptionRenewalService {
         case .yearly, .annually:
             return calendar.date(byAdding: .year, value: 1, to: currentDate)
         case .lifetime:
-            return nil // Lifetime subscriptions don't renew
+            return nil  // Lifetime subscriptions don't renew
         }
     }
 
@@ -106,10 +104,8 @@ class SubscriptionRenewalService {
         let endDate = Calendar.current.date(byAdding: .day, value: days, to: Date()) ?? Date()
 
         return subscriptions.filter { subscription in
-            subscription.isActive &&
-            subscription.billingCycle != .lifetime &&
-            subscription.nextBillingDate >= Date() &&
-            subscription.nextBillingDate <= endDate
+            subscription.isActive && subscription.billingCycle != .lifetime
+                && subscription.nextBillingDate >= Date() && subscription.nextBillingDate <= endDate
         }.sorted { $0.nextBillingDate < $1.nextBillingDate }
     }
 
@@ -120,8 +116,7 @@ class SubscriptionRenewalService {
         }
 
         return subscriptions.filter { subscription in
-            subscription.isActive &&
-            Calendar.current.isDateInToday(subscription.nextBillingDate)
+            subscription.isActive && Calendar.current.isDateInToday(subscription.nextBillingDate)
         }
     }
 
@@ -136,9 +131,11 @@ class SubscriptionRenewalService {
     func scheduleAllRenewalReminders() async {
         do {
             let subscriptions = try persistenceService.fetchAllSubscriptions()
-            let activeSubscriptions = subscriptions.filter { $0.isActive && $0.billingCycle != .lifetime }
+            let activeSubscriptions = subscriptions.filter {
+                $0.isActive && $0.billingCycle != .lifetime
+            }
 
-            await notificationManager.scheduleAllSubscriptionReminders(subscriptions: activeSubscriptions)
+            // await notificationManager.scheduleAllSubscriptionReminders(subscriptions: activeSubscriptions)
 
             print("✅ Scheduled renewal reminders for \(activeSubscriptions.count) subscription(s)")
         } catch {
@@ -153,9 +150,6 @@ class SubscriptionRenewalService {
 
         do {
             try persistenceService.updateSubscription(updatedSubscription)
-
-            // Cancel pending reminders
-            notificationManager.cancelSubscriptionReminders(for: subscription.id)
 
             ToastManager.shared.showSuccess("\(subscription.name) paused")
             print("✅ Paused subscription: \(subscription.name)")
@@ -172,7 +166,9 @@ class SubscriptionRenewalService {
 
         // Recalculate next billing date if it's in the past
         if updatedSubscription.nextBillingDate < Date() {
-            if let nextDate = calculateNextBillingDate(from: Date(), cycle: subscription.billingCycle) {
+            if let nextDate = calculateNextBillingDate(
+                from: Date(), cycle: subscription.billingCycle)
+            {
                 updatedSubscription.nextBillingDate = nextDate
             }
         }
@@ -181,7 +177,7 @@ class SubscriptionRenewalService {
             try persistenceService.updateSubscription(updatedSubscription)
 
             // Schedule new reminder
-            await notificationManager.scheduleSubscriptionReminder(for: updatedSubscription)
+            // await notificationManager.scheduleSubscriptionReminder(for: updatedSubscription)
 
             ToastManager.shared.showSuccess("\(subscription.name) resumed")
             print("✅ Resumed subscription: \(subscription.name)")
@@ -201,7 +197,7 @@ class SubscriptionRenewalService {
             try persistenceService.updateSubscription(updatedSubscription)
 
             // Cancel pending reminders
-            notificationManager.cancelSubscriptionReminders(for: subscription.id)
+            // notificationManager.cancelSubscriptionReminders(for: subscription.id)
 
             ToastManager.shared.showSuccess("\(subscription.name) cancelled")
             print("✅ Cancelled subscription: \(subscription.name)")
@@ -265,7 +261,7 @@ class SubscriptionRenewalService {
             try persistenceService.updateSubscription(updatedSubscription)
 
             // Schedule renewal reminder
-            await notificationManager.scheduleSubscriptionReminder(for: updatedSubscription)
+            // await notificationManager.scheduleSubscriptionReminder(for: updatedSubscription)
 
             ToastManager.shared.showSuccess("\(subscription.name) trial converted to paid")
             print("✅ Converted trial to paid: \(subscription.name)")
@@ -285,8 +281,9 @@ class SubscriptionRenewalService {
 
         return subscriptions.filter { subscription in
             guard subscription.isFreeTrial,
-                  !subscription.isTrialExpired,
-                  let trialEndDate = subscription.trialEndDate else {
+                !subscription.isTrialExpired,
+                let trialEndDate = subscription.trialEndDate
+            else {
                 return false
             }
 
@@ -311,7 +308,8 @@ class SubscriptionRenewalService {
             return 0
         }
 
-        return subscriptions
+        return
+            subscriptions
             .filter { $0.isActive }
             .reduce(0) { $0 + $1.monthlyEquivalent }
     }
@@ -352,10 +350,12 @@ class SubscriptionRenewalService {
         // Calculate most expensive category
         let categoryTotals = Dictionary(grouping: activeSubscriptions, by: { $0.category })
             .mapValues { subs in subs.reduce(0.0) { $0 + $1.monthlyEquivalent } }
-        let mostExpensiveCategory = categoryTotals.max(by: { $0.value < $1.value })?.key.rawValue ?? "None"
+        let mostExpensiveCategory =
+            categoryTotals.max(by: { $0.value < $1.value })?.key.rawValue ?? "None"
 
         let totalMonthly = calculateMonthlyTotal()
-        let avgCost = activeSubscriptions.isEmpty ? 0 : totalMonthly / Double(activeSubscriptions.count)
+        let avgCost =
+            activeSubscriptions.isEmpty ? 0 : totalMonthly / Double(activeSubscriptions.count)
 
         return SubscriptionStatistics(
             totalActive: activeSubscriptions.count,

@@ -10,10 +10,16 @@ import SwiftUI
 struct CategoryHorizontalSelector: View {
     @Binding var selectedCategory: TransactionCategory
     let categories: [TransactionCategory]
+    var onSelect: (() -> Void)?  // Optional callback for keyboard dismissal
 
-    init(selectedCategory: Binding<TransactionCategory>, categories: [TransactionCategory] = TransactionCategory.allCases) {
+    init(
+        selectedCategory: Binding<TransactionCategory>,
+        categories: [TransactionCategory] = TransactionCategory.allCases,
+        onSelect: (() -> Void)? = nil
+    ) {
         self._selectedCategory = selectedCategory
         self.categories = categories
+        self.onSelect = onSelect
     }
 
     var body: some View {
@@ -22,6 +28,7 @@ struct CategoryHorizontalSelector: View {
                 ForEach(categories, id: \.self) { category in
                     Button(action: {
                         HapticManager.shared.light()
+                        onSelect?()  // Call callback to dismiss keyboard
                         selectedCategory = category
                     }) {
                         HStack(spacing: 6) {
@@ -35,11 +42,11 @@ struct CategoryHorizontalSelector: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
                         .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(selectedCategory == category ? Color.wisePrimaryText : Color.wiseCardBackground)
+                            Capsule()
+                                .fill(selectedCategory == category ? Color.wiseForestGreen : Color.wiseCardBackground)
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 20)
+                            Capsule()
                                 .stroke(selectedCategory == category ? Color.clear : Color.wiseBorder, lineWidth: 1)
                         )
                     }

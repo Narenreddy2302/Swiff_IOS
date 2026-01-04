@@ -497,6 +497,129 @@ class PersistenceService {
         }
     }
 
+    // MARK: - Shared Subscription Operations
+
+    func saveSharedSubscription(_ sharedSubscription: SharedSubscription) throws {
+        let descriptor = FetchDescriptor<SharedSubscriptionModel>(
+            predicate: #Predicate { $0.id == sharedSubscription.id }
+        )
+
+        do {
+            let existing = try modelContext.fetch(descriptor).first
+
+            if let existingShared = existing {
+                // Update existing shared subscription
+                existingShared.subscriptionID = sharedSubscription.subscriptionId
+                existingShared.sharedByID = sharedSubscription.sharedBy
+                existingShared.sharedWithIDs = sharedSubscription.sharedWith
+                existingShared.costSplitRaw = sharedSubscription.costSplit.rawValue
+                existingShared.individualCost = sharedSubscription.individualCost
+                existingShared.isAccepted = sharedSubscription.isAccepted
+                existingShared.notes = sharedSubscription.notes
+            } else {
+                // Create new shared subscription
+                let sharedModel = SharedSubscriptionModel(from: sharedSubscription)
+
+                // Link to base subscription if exists
+                let subDescriptor = FetchDescriptor<SubscriptionModel>(
+                    predicate: #Predicate { $0.id == sharedSubscription.subscriptionId }
+                )
+                if let baseSubscription = try modelContext.fetch(subDescriptor).first {
+                    sharedModel.subscription = baseSubscription
+                }
+
+                modelContext.insert(sharedModel)
+            }
+
+            try saveContext()
+        } catch {
+            throw PersistenceError.saveFailed(underlying: error)
+        }
+    }
+
+    func fetchAllSharedSubscriptions() throws -> [SharedSubscription] {
+        let descriptor = FetchDescriptor<SharedSubscriptionModel>(
+            sortBy: [SortDescriptor(\SharedSubscriptionModel.createdDate, order: .reverse)]
+        )
+
+        do {
+            let sharedSubscriptions = try modelContext.fetch(descriptor)
+            return sharedSubscriptions.map { $0.toDomain() }
+        } catch {
+            throw PersistenceError.fetchFailed(underlying: error)
+        }
+    }
+
+    func fetchSharedSubscription(byID id: UUID) throws -> SharedSubscription? {
+        let descriptor = FetchDescriptor<SharedSubscriptionModel>(
+            predicate: #Predicate { $0.id == id }
+        )
+
+        do {
+            return try modelContext.fetch(descriptor).first?.toDomain()
+        } catch {
+            throw PersistenceError.fetchFailed(underlying: error)
+        }
+    }
+
+    func updateSharedSubscription(_ sharedSubscription: SharedSubscription) throws {
+        let descriptor = FetchDescriptor<SharedSubscriptionModel>(
+            predicate: #Predicate { $0.id == sharedSubscription.id }
+        )
+
+        do {
+            guard let existing = try modelContext.fetch(descriptor).first else {
+                throw PersistenceError.entityNotFound(id: sharedSubscription.id)
+            }
+
+            existing.sharedWithIDs = sharedSubscription.sharedWith
+            existing.costSplitRaw = sharedSubscription.costSplit.rawValue
+            existing.individualCost = sharedSubscription.individualCost
+            existing.isAccepted = sharedSubscription.isAccepted
+            existing.notes = sharedSubscription.notes
+
+            try saveContext()
+        } catch let error as PersistenceError {
+            throw error
+        } catch {
+            throw PersistenceError.updateFailed(underlying: error)
+        }
+    }
+
+    func deleteSharedSubscription(id: UUID) throws {
+        let descriptor = FetchDescriptor<SharedSubscriptionModel>(
+            predicate: #Predicate { $0.id == id }
+        )
+
+        do {
+            guard let sharedSubscription = try modelContext.fetch(descriptor).first else {
+                throw PersistenceError.entityNotFound(id: id)
+            }
+
+            modelContext.delete(sharedSubscription)
+            try saveContext()
+        } catch let error as PersistenceError {
+            throw error
+        } catch {
+            throw PersistenceError.deleteFailed(underlying: error)
+        }
+    }
+
+    func fetchSharedSubscriptionsForPerson(personId: UUID) throws -> [SharedSubscription] {
+        // Fetch all and filter in memory since SwiftData predicates can't check array contains
+        let descriptor = FetchDescriptor<SharedSubscriptionModel>()
+
+        do {
+            let allShared = try modelContext.fetch(descriptor)
+            let filtered = allShared.filter { shared in
+                shared.sharedByID == personId || shared.sharedWithIDs.contains(personId)
+            }
+            return filtered.map { $0.toDomain() }
+        } catch {
+            throw PersistenceError.fetchFailed(underlying: error)
+        }
+    }
+
     // MARK: - Transaction Operations
 
     func saveTransaction(_ transaction: Transaction) throws {

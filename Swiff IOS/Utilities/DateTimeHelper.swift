@@ -341,9 +341,61 @@ enum DateTimeHelper {
     }
 }
 
+// MARK: - Relative Time Formatting
+
+extension DateTimeHelper {
+    /// Compact relative time format: "5m ago", "2h ago", "3d ago", "1w ago"
+    static func compactTimeAgo(from date: Date) -> String {
+        let seconds = Date().timeIntervalSince(date)
+
+        if seconds < 60 {
+            return "just now"
+        } else if seconds < 3600 {
+            let minutes = Int(seconds / 60)
+            return "\(minutes)m ago"
+        } else if seconds < 86400 {
+            let hours = Int(seconds / 3600)
+            return "\(hours)h ago"
+        } else if seconds < 604800 {
+            let days = Int(seconds / 86400)
+            return "\(days)d ago"
+        } else {
+            let weeks = Int(seconds / 604800)
+            return "\(weeks)w ago"
+        }
+    }
+
+    /// Verbose relative time format: "1 min ago", "2 hours ago", "Yesterday"
+    static func verboseTimeAgo(from date: Date) -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.minute, .hour, .day], from: date, to: now)
+
+        if let days = components.day, days > 0 {
+            return days == 1 ? "Yesterday" : "\(days) days ago"
+        } else if let hours = components.hour, hours > 0 {
+            return hours == 1 ? "1 hour ago" : "\(hours) hours ago"
+        } else if let minutes = components.minute, minutes > 0 {
+            return minutes == 1 ? "1 min ago" : "\(minutes) mins ago"
+        } else {
+            return "Just now"
+        }
+    }
+}
+
 // MARK: - Date Extension
 
 extension Date {
+    /// Compact relative time: "2h ago", "3d ago"
+    var timeAgoCompact: String {
+        return DateTimeHelper.compactTimeAgo(from: self)
+    }
+
+    /// Verbose relative time: "2 hours ago", "Yesterday"
+    var timeAgoVerbose: String {
+        return DateTimeHelper.verboseTimeAgo(from: self)
+    }
+
     /// Check if this date is during a DST transition
     var isDSTTransition: Bool {
         return DateTimeHelper.isDSTTransition(date: self)

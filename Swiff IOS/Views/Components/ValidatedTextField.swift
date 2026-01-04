@@ -51,8 +51,10 @@ struct ValidatedTextField: View {
                 .padding(16)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.wiseBorder.opacity(0.3))
-                        .stroke(hasError ? Color.wiseError : Color.wiseBorder, lineWidth: hasError ? 2 : 1)
+                        .fill(Color.wiseCardBackground)
+                        .stroke(
+                            hasError ? Color.wiseError : Color.wiseBorder,
+                            lineWidth: hasError ? 2 : 1)
                 )
                 .onChange(of: text) { oldValue, newValue in
                     if let onValidate = onValidate {
@@ -130,8 +132,9 @@ struct ValidatedAmountField: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.wiseBorder.opacity(0.3))
-                    .stroke(hasError ? Color.wiseError : Color.wiseBorder, lineWidth: hasError ? 2 : 1)
+                    .fill(Color.wiseCardBackground)
+                    .stroke(
+                        hasError ? Color.wiseError : Color.wiseBorder, lineWidth: hasError ? 2 : 1)
             )
 
             if let errorMessage = errorMessage {

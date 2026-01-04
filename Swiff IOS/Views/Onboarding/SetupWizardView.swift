@@ -6,9 +6,8 @@
 //  Quick setup wizard for onboarding
 //
 
-import SwiftUI
-import UserNotifications
 import Combine
+import SwiftUI
 
 struct SetupWizardView: View {
     @Binding var currentStep: Int
@@ -16,7 +15,6 @@ struct SetupWizardView: View {
     let onSkip: () -> Void
 
     @State private var selectedCurrency: String = "$"
-    @State private var notificationsEnabled: Bool = false
     @State private var importOption: ImportOption = .startFresh
     @State private var showingImportPicker: Bool = false
 
@@ -64,7 +62,7 @@ struct SetupWizardView: View {
 
                     Spacer()
 
-                    Text("Step \(currentStep + 1) of 3")
+                    Text("Step \(currentStep + 1) of 2")
                         .font(.caption)
                         .foregroundColor(.wiseSecondaryText)
                 }
@@ -80,7 +78,9 @@ struct SetupWizardView: View {
 
                         Rectangle()
                             .fill(Color.wiseForestGreen)
-                            .frame(width: geometry.size.width * CGFloat(currentStep + 1) / 3, height: 4)
+                            .frame(
+                                width: geometry.size.width * CGFloat(currentStep + 1) / 2, height: 4
+                            )
                             .animation(.smooth, value: currentStep)
                     }
                 }
@@ -95,13 +95,9 @@ struct SetupWizardView: View {
                 currencyStep
                     .tag(0)
 
-                // Step 2: Notifications
-                notificationsStep
-                    .tag(1)
-
-                // Step 3: Import Data
+                // Step 2: Import Data
                 importStep
-                    .tag(2)
+                    .tag(1)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .animation(.smooth, value: currentStep)
@@ -129,7 +125,7 @@ struct SetupWizardView: View {
 
                 Button(action: {
                     HapticManager.shared.medium()
-                    if currentStep < 2 {
+                    if currentStep < 1 {
                         withAnimation(.smooth) {
                             currentStep += 1
                         }
@@ -137,7 +133,7 @@ struct SetupWizardView: View {
                         completeSetup()
                     }
                 }) {
-                    Text(currentStep < 2 ? "Continue" : "Get Started")
+                    Text(currentStep < 1 ? "Continue" : "Get Started")
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -146,7 +142,7 @@ struct SetupWizardView: View {
                         .cornerRadius(16)
                 }
                 .buttonStyle(ScaleButtonStyle())
-                .accessibilityLabel(currentStep < 2 ? "Continue to next step" : "Complete setup")
+                .accessibilityLabel(currentStep < 1 ? "Continue to next step" : "Complete setup")
             }
             .padding(.horizontal, 32)
             .padding(.bottom, 40)
@@ -207,76 +203,26 @@ struct SetupWizardView: View {
                         .padding(16)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(selectedCurrency == currency.symbol
-                                      ? Color.wiseForestGreen.opacity(0.1)
-                                      : Color(UIColor.systemGray6))
+                                .fill(
+                                    selectedCurrency == currency.symbol
+                                        ? Color.wiseForestGreen.opacity(0.1)
+                                        : Color(UIColor.systemGray6))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(selectedCurrency == currency.symbol
+                                .stroke(
+                                    selectedCurrency == currency.symbol
                                         ? Color.wiseForestGreen
                                         : Color.clear, lineWidth: 2)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
                     .accessibilityLabel("\(currency.name), \(currency.code)")
-                    .accessibilityAddTraits(selectedCurrency == currency.symbol ? [.isSelected] : [])
+                    .accessibilityAddTraits(
+                        selectedCurrency == currency.symbol ? [.isSelected] : [])
                 }
             }
             .padding(.horizontal, 32)
-
-            Spacer()
-        }
-    }
-
-    // MARK: - Notifications Step
-
-    private var notificationsStep: some View {
-        VStack(spacing: 32) {
-            VStack(spacing: 12) {
-                Image(systemName: "bell.badge.fill")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 80, height: 80)
-                    .foregroundColor(.wiseBrightGreen)
-
-                Text("Enable Notifications")
-                    .font(.title2)
-                    .fontWeight(.bold)
-
-                Text("Get reminders before your subscriptions renew")
-                    .font(.subheadline)
-                    .foregroundColor(.wiseSecondaryText)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.top, 40)
-
-            VStack(spacing: 20) {
-                FeatureBullet(icon: "calendar.badge.clock", text: "Renewal reminders")
-                FeatureBullet(icon: "dollarsign.circle", text: "Payment due alerts")
-                FeatureBullet(icon: "chart.line.uptrend.xyaxis", text: "Spending insights")
-                FeatureBullet(icon: "bell.slash", text: "Easy to customize or disable")
-            }
-            .padding(.horizontal, 32)
-
-            Button(action: {
-                requestNotificationPermission()
-            }) {
-                HStack {
-                    Image(systemName: notificationsEnabled ? "checkmark.circle.fill" : "bell.fill")
-                    Text(notificationsEnabled ? "Notifications Enabled" : "Enable Notifications")
-                }
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(notificationsEnabled ? Color.wiseSuccess : Color.wiseBrightGreen)
-                .cornerRadius(16)
-            }
-            .buttonStyle(ScaleButtonStyle())
-            .padding(.horizontal, 32)
-            .disabled(notificationsEnabled)
-            .accessibilityLabel(notificationsEnabled ? "Notifications are enabled" : "Enable notifications")
 
             Spacer()
         }
@@ -335,13 +281,15 @@ struct SetupWizardView: View {
                         .padding(16)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(importOption == option
-                                      ? Color.wiseForestGreen.opacity(0.1)
-                                      : Color(UIColor.systemGray6))
+                                .fill(
+                                    importOption == option
+                                        ? Color.wiseForestGreen.opacity(0.1)
+                                        : Color(UIColor.systemGray6))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(importOption == option
+                                .stroke(
+                                    importOption == option
                                         ? Color.wiseForestGreen
                                         : Color.clear, lineWidth: 2)
                         )
@@ -380,24 +328,9 @@ struct SetupWizardView: View {
 
     // MARK: - Helper Methods
 
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
-            DispatchQueue.main.async {
-                if granted {
-                    HapticManager.shared.success()
-                    notificationsEnabled = true
-                    UserSettings.shared.notificationsEnabled = true
-                } else {
-                    HapticManager.shared.error()
-                }
-            }
-        }
-    }
-
     private func completeSetup() {
         // Save setup preferences
         UserSettings.shared.selectedCurrency = selectedCurrency
-        UserSettings.shared.notificationsEnabled = notificationsEnabled
 
         // Handle import option
         switch importOption {
@@ -405,7 +338,7 @@ struct SetupWizardView: View {
             SampleDataGenerator.shared.generateSampleData()
             UserSettings.shared.hasSampleData = true
         case .startFresh, .importCSV, .importBackup:
-            break // Handle later
+            break  // Handle later
         }
 
         onComplete()

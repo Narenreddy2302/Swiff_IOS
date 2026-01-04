@@ -6,8 +6,8 @@
 //  Service for creating, managing, and restoring data backups
 //
 
-import Foundation
 import Combine
+import Foundation
 
 @MainActor
 class BackupService {
@@ -17,7 +17,7 @@ class BackupService {
 
     // MARK: - Constants
 
-    private let backupInterval: TimeInterval = 7 * 24 * 60 * 60 // 7 days
+    private let backupInterval: TimeInterval = 7 * 24 * 60 * 60  // 7 days
     private let lastBackupKey = "LastBackupDate"
     private let backupDirectoryName = "Backups"
     private let backupFilePrefix = "swiff_backup_"
@@ -34,7 +34,9 @@ class BackupService {
 
     /// Get the URL for the backups directory
     private func getBackupDirectoryURL() throws -> URL {
-        guard let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        guard
+            let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+        else {
             throw BackupError.documentDirectoryNotFound
         }
 
@@ -57,7 +59,7 @@ class BackupService {
     /// Check if a backup should be created based on time interval
     func shouldCreateBackup() -> Bool {
         guard let lastBackup = UserDefaults.standard.object(forKey: lastBackupKey) as? Date else {
-            return true // Never backed up before
+            return true  // Never backed up before
         }
         return Date().timeIntervalSince(lastBackup) > backupInterval
     }
@@ -81,8 +83,12 @@ class BackupService {
         // Fetch all data
         let people = options.includePeople ? (try? persistenceService.fetchAllPeople()) ?? [] : []
         let groups = options.includeGroups ? (try? persistenceService.fetchAllGroups()) ?? [] : []
-        let subscriptions = options.includeSubscriptions ? (try? persistenceService.fetchAllSubscriptions()) ?? [] : []
-        let transactions = options.includeTransactions ? (try? persistenceService.fetchAllTransactions()) ?? [] : []
+        let subscriptions =
+            options.includeSubscriptions
+            ? (try? persistenceService.fetchAllSubscriptions()) ?? [] : []
+        let transactions =
+            options.includeTransactions
+            ? (try? persistenceService.fetchAllTransactions()) ?? [] : []
 
         // Create export data
         let exportData = ExportData(
@@ -109,7 +115,7 @@ class BackupService {
         // Validate storage space and write atomically
         do {
             try StorageQuotaManager.shared.atomicWrite(data: jsonData, to: backupFileURL)
-        } catch let error as StorageError {
+        } catch let error as AppStorageError {
             throw BackupError.fileWriteFailed(underlying: error)
         } catch {
             throw BackupError.fileWriteFailed(underlying: error)
@@ -120,7 +126,8 @@ class BackupService {
 
         // Calculate statistics
         let endTime = Date()
-        let fileSize = (try? fileManager.attributesOfItem(atPath: backupFileURL.path)[.size] as? Int64) ?? 0
+        let fileSize =
+            (try? fileManager.attributesOfItem(atPath: backupFileURL.path)[.size] as? Int64) ?? 0
 
         let statistics = BackupStatistics(
             startTime: startTime,
@@ -229,7 +236,7 @@ class BackupService {
         // Import subscriptions
         for subscription in exportData.subscriptions {
             do {
-                if let _ = try? persistenceService.fetchSubscription(byID: subscription.id) {
+                if (try? persistenceService.fetchSubscription(byID: subscription.id)) != nil {
                     switch options.conflictResolution {
                     case .keepExisting:
                         recordsSkipped += 1
@@ -254,7 +261,7 @@ class BackupService {
         // Import transactions
         for transaction in exportData.transactions {
             do {
-                if let _ = try? persistenceService.fetchTransaction(byID: transaction.id) {
+                if (try? persistenceService.fetchTransaction(byID: transaction.id)) != nil {
                     switch options.conflictResolution {
                     case .keepExisting:
                         recordsSkipped += 1
@@ -279,7 +286,7 @@ class BackupService {
         // Import groups (after people are imported)
         for group in exportData.groups {
             do {
-                if let _ = try? persistenceService.fetchGroup(byID: group.id) {
+                if (try? persistenceService.fetchGroup(byID: group.id)) != nil {
                     switch options.conflictResolution {
                     case .keepExisting:
                         recordsSkipped += 1
@@ -329,12 +336,14 @@ class BackupService {
                 options: [.skipsHiddenFiles]
             )
 
-            let backupFiles = fileURLs
+            let backupFiles =
+                fileURLs
                 .filter { $0.pathExtension == backupFileExtension }
                 .compactMap { url -> BackupFileInfo? in
                     guard let attributes = try? fileManager.attributesOfItem(atPath: url.path),
-                          let creationDate = attributes[.creationDate] as? Date,
-                          let fileSize = attributes[.size] as? Int64 else {
+                        let creationDate = attributes[.creationDate] as? Date,
+                        let fileSize = attributes[.size] as? Int64
+                    else {
                         return nil
                     }
 
@@ -348,7 +357,7 @@ class BackupService {
                         metadata: metadata
                     )
                 }
-                .sorted { $0.createdDate > $1.createdDate } // Most recent first
+                .sorted { $0.createdDate > $1.createdDate }  // Most recent first
 
             return backupFiles
         } catch {
@@ -423,9 +432,10 @@ class BackupService {
             let actualTransactionsCount = exportData.transactions.count
 
             guard exportData.metadata.peopleCount == actualPeopleCount,
-                  exportData.metadata.groupsCount == actualGroupsCount,
-                  exportData.metadata.subscriptionsCount == actualSubscriptionsCount,
-                  exportData.metadata.transactionsCount == actualTransactionsCount else {
+                exportData.metadata.groupsCount == actualGroupsCount,
+                exportData.metadata.subscriptionsCount == actualSubscriptionsCount,
+                exportData.metadata.transactionsCount == actualTransactionsCount
+            else {
                 throw BackupError.invalidBackupFormat
             }
 
@@ -454,8 +464,12 @@ class BackupService {
         // Fetch and encode data
         let people = options.includePeople ? (try? persistenceService.fetchAllPeople()) ?? [] : []
         let groups = options.includeGroups ? (try? persistenceService.fetchAllGroups()) ?? [] : []
-        let subscriptions = options.includeSubscriptions ? (try? persistenceService.fetchAllSubscriptions()) ?? [] : []
-        let transactions = options.includeTransactions ? (try? persistenceService.fetchAllTransactions()) ?? [] : []
+        let subscriptions =
+            options.includeSubscriptions
+            ? (try? persistenceService.fetchAllSubscriptions()) ?? [] : []
+        let transactions =
+            options.includeTransactions
+            ? (try? persistenceService.fetchAllTransactions()) ?? [] : []
 
         let exportData = ExportData(
             people: people,

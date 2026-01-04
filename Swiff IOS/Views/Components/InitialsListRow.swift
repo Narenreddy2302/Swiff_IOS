@@ -49,7 +49,7 @@ struct InitialsListRow: View {
 
                     Text(description)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                        .foregroundColor(.wiseDescriptionText)
                         .lineLimit(1)
                 }
 
@@ -63,7 +63,7 @@ struct InitialsListRow: View {
 
                     Text(timeText)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+                        .foregroundColor(.wiseTimeText)
                 }
             }
             .padding(.vertical, 14)
@@ -83,7 +83,7 @@ struct InitialsListRow: View {
 
             Text(initials)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                .foregroundColor(.wisePrimaryText)
         }
     }
 }
@@ -93,19 +93,19 @@ struct InitialsListRow: View {
 /// Pastel color palette for initials avatars
 struct InitialsAvatarColors {
     /// Green - for income, positive amounts
-    static let green = Color(red: 159/255, green: 232/255, blue: 112/255)
+    static let green = Color(red: 159 / 255, green: 232 / 255, blue: 112 / 255)
 
     /// Gray - for neutral, services, subscriptions
-    static let gray = Color(red: 212/255, green: 212/255, blue: 212/255)
+    static let gray = Color(red: 212 / 255, green: 212 / 255, blue: 212 / 255)
 
     /// Pink - for personal, people
-    static let pink = Color(red: 255/255, green: 177/255, blue: 200/255)
+    static let pink = Color(red: 255 / 255, green: 177 / 255, blue: 200 / 255)
 
     /// Yellow - for shopping, retail
-    static let yellow = Color(red: 255/255, green: 229/255, blue: 102/255)
+    static let yellow = Color(red: 255 / 255, green: 229 / 255, blue: 102 / 255)
 
     /// Purple - for entertainment
-    static let purple = Color(red: 196/255, green: 177/255, blue: 255/255)
+    static let purple = Color(red: 196 / 255, green: 177 / 255, blue: 255 / 255)
 
     /// All colors for cycling
     static let allColors: [Color] = [green, gray, pink, yellow, purple]
@@ -126,10 +126,10 @@ struct InitialsAvatarColors {
 /// Amount display colors for positive/negative values
 struct AmountColors {
     /// Positive/Income - green
-    static let positive = Color(red: 0/255, green: 135/255, blue: 90/255)
+    static let positive = Color(red: 0 / 255, green: 135 / 255, blue: 90 / 255)
 
     /// Negative/Expense - red
-    static let negative = Color(red: 217/255, green: 45/255, blue: 32/255)
+    static let negative = Color(red: 217 / 255, green: 45 / 255, blue: 32 / 255)
 
     /// Neutral - primary text color
     static let neutral = Color.wisePrimaryText
@@ -158,13 +158,14 @@ struct InitialsGenerator {
 
 // MARK: - Unified Divider
 
-/// Divider aligned with text (70pt left padding: 16pt container + 12pt row - 2pt + 44pt avatar)
+/// Divider aligned with text content in transaction rows
+/// Calculation: 16pt (card padding) + 56pt (avatar) + 16pt (spacing) = 88pt
 struct AlignedDivider: View {
-    var leftPadding: CGFloat = 70
+    var leftPadding: CGFloat = 88  // Updated for 56px avatars
 
     var body: some View {
         Rectangle()
-            .fill(Color(red: 238/255, green: 238/255, blue: 238/255))
+            .fill(Color.wiseSeparator)
             .frame(height: 1)
             .padding(.leading, leftPadding)
     }
@@ -311,7 +312,7 @@ struct AlignedDivider: View {
             )
         }
     }
-    .background(Color.white)
+    .background(Color.wiseCardBackground)
 }
 
 #Preview("InitialsListRow - People") {
@@ -350,7 +351,7 @@ struct AlignedDivider: View {
             timeText: "No activity"
         )
     }
-    .background(Color.white)
+    .background(Color.wiseCardBackground)
 }
 
 #Preview("InitialsListRow - Subscriptions") {
@@ -389,5 +390,5 @@ struct AlignedDivider: View {
             timeText: MockData.yearlySubscription.nextBillingDate.shortCardDate
         )
     }
-    .background(Color.white)
+    .background(Color.wiseCardBackground)
 }
