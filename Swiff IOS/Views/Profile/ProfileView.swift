@@ -160,13 +160,6 @@ struct ProfileView: View {
         return "Version \(version) (\(build))"
     }
 
-    // Member since formatted
-    private var memberSince: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: profileManager.profile.createdDate)
-    }
-
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -182,22 +175,253 @@ struct ProfileView: View {
                     .padding(.top, 8)
 
                     // Contact Information
-                    contactSection
+                    profileSection(title: "CONTACT INFORMATION") {
+                        UnifiedListRowV2(
+                            iconName: "envelope.fill",
+                            iconColor: .wiseBlue,
+                            title: "Email",
+                            subtitle: profileManager.profile.email.isEmpty ? "Add email" : profileManager.profile.email,
+                            value: profileManager.profile.email.isEmpty ? "Add" : "Verified",
+                            valueColor: profileManager.profile.email.isEmpty ? .wiseBlue : .wiseSuccess,
+                            showChevron: true,
+                            onTap: {
+                                HapticManager.shared.impact(.light)
+                                showEditEmail = true
+                            }
+                        )
+                        
+                        Divider().padding(.leading, 76)
+                        
+                        UnifiedListRowV2(
+                            iconName: "phone.fill",
+                            iconColor: .wiseForestGreen,
+                            title: "Phone",
+                            subtitle: profileManager.profile.phone.isEmpty ? "Add phone" : profileManager.profile.phone,
+                            value: profileManager.profile.phone.isEmpty ? "Add" : "Verified",
+                            valueColor: profileManager.profile.phone.isEmpty ? .wiseBlue : .wiseSuccess,
+                            showChevron: true,
+                            onTap: {
+                                HapticManager.shared.impact(.light)
+                                showEditPhone = true
+                            }
+                        )
+                    }
 
                     // Appearance
-                    appearanceSection
+                    profileSection(title: "APPEARANCE") {
+                        HStack(spacing: 12) {
+                            UnifiedIconCircle(icon: "circle.lefthalf.filled", color: .wisePurple)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("App Theme")
+                                    .font(.spotifyBodyLarge)
+                                    .foregroundColor(.wisePrimaryText)
+                                Text(userSettings.themeMode)
+                                    .font(.spotifyBodySmall)
+                                    .foregroundColor(.wiseSecondaryText)
+                            }
+                            
+                            Spacer()
+                            
+                            Picker("Theme", selection: $userSettings.themeMode) {
+                                Text("Light").tag("Light")
+                                Text("Dark").tag("Dark")
+                                Text("System").tag("System")
+                            }
+                            .labelsHidden()
+                            .tint(.wiseSecondaryText)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
 
                     // Preferences
-                    preferencesSection
+                    profileSection(title: "PREFERENCES") {
+                        NavigationLink(destination: ProfileSettingsPage()) {
+                            UnifiedListRowV2(
+                                iconName: "person.fill",
+                                iconColor: .wiseBlue,
+                                title: "Profile Settings",
+                                subtitle: "Profile, notifications & storage",
+                                value: "",
+                                valueColor: .clear,
+                                showChevron: true
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        Divider().padding(.leading, 76)
+
+                        NavigationLink(destination: PrivacySecurityPage()) {
+                            UnifiedListRowV2(
+                                iconName: "lock.shield.fill",
+                                iconColor: .wiseForestGreen,
+                                title: "Privacy & Security",
+                                subtitle: "Control access and security settings",
+                                value: "",
+                                valueColor: .clear,
+                                showChevron: true
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        Divider().padding(.leading, 76)
+
+                        NavigationLink(destination: AnalyticsInsightsPage().environmentObject(dataManager)) {
+                            UnifiedListRowV2(
+                                iconName: "chart.bar.fill",
+                                iconColor: .wiseBrightGreen,
+                                title: "Analytics & Insights",
+                                subtitle: "View spending insights and trends",
+                                value: "",
+                                valueColor: .clear,
+                                showChevron: true
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
+                        Divider().padding(.leading, 76)
+
+                        NavigationLink(destination: HelpSupportPage()) {
+                            UnifiedListRowV2(
+                                iconName: "questionmark.circle.fill",
+                                iconColor: .wiseOrange,
+                                title: "Help & Support",
+                                subtitle: "Get help using Swiff",
+                                value: "",
+                                valueColor: .clear,
+                                showChevron: true
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
 
                     // Linked Accounts
-                    linkedAccountsSection
+                    profileSection(title: "LINKED ACCOUNTS") {
+                        if viewModel.accounts.isEmpty {
+                            Text("No accounts linked yet")
+                                .font(.spotifyBodyLarge)
+                                .foregroundColor(.wiseSecondaryText)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 24)
+                        } else {
+                            ForEach(viewModel.accounts) { account in
+                                UnifiedListRowV2(
+                                    iconName: "creditcard.fill",
+                                    iconColor: .wiseSecondaryText,
+                                    title: account.name,
+                                    subtitle: "•••• \(account.last4)",
+                                    value: "",
+                                    valueColor: .clear,
+                                    showChevron: true,
+                                    onTap: {
+                                        HapticManager.shared.impact(.light)
+                                        selectedAccount = account
+                                        showAccountDetails = true
+                                    }
+                                )
+                                Divider().padding(.leading, 76)
+                            }
+                        }
+                        
+                        Button(action: {
+                            HapticManager.shared.impact(.light)
+                            showAddAccount = true
+                        }) {
+                            HStack(spacing: 12) {
+                                Circle()
+                                    .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [4]))
+                                    .foregroundColor(.wiseBlue.opacity(0.5))
+                                    .frame(width: 48, height: 48)
+                                    .overlay(
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 20, weight: .medium))
+                                            .foregroundColor(.wiseBlue)
+                                    )
+                                
+                                Text("Add New Account")
+                                    .font(.spotifyBodyLarge)
+                                    .foregroundColor(.wiseBlue)
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
 
                     // Settings
-                    settingsSection
+                    profileSection(title: "SETTINGS") {
+                        UnifiedListRowV2(
+                            iconName: "shield.fill",
+                            iconColor: .wisePurple,
+                            title: "Security",
+                            subtitle: viewModel.security["twoFactor"] == true ? "2FA enabled" : "Security settings",
+                            value: "",
+                            valueColor: .clear,
+                            showChevron: true,
+                            onTap: {
+                                HapticManager.shared.impact(.light)
+                                showSecurity = true
+                            }
+                        )
+                        
+                        Divider().padding(.leading, 76)
+                        
+                        UnifiedListRowV2(
+                            iconName: "wallet.pass.fill",
+                            iconColor: .wiseForestGreen,
+                            title: "Payment Methods",
+                            subtitle: "Manage payment options",
+                            value: "",
+                            valueColor: .clear,
+                            showChevron: true,
+                            onTap: {
+                                HapticManager.shared.impact(.light)
+                                showPaymentMethods = true
+                            }
+                        )
+                        
+                        Divider().padding(.leading, 76)
+                        
+                        UnifiedListRowV2(
+                            iconName: "gearshape.fill",
+                            iconColor: .wiseSecondaryText,
+                            title: "App Settings",
+                            subtitle: "General application settings",
+                            value: "",
+                            valueColor: .clear,
+                            showChevron: true,
+                            onTap: {
+                                HapticManager.shared.impact(.light)
+                                showAppSettings = true
+                            }
+                        )
+                    }
 
                     // Sign Out
-                    signOutButton
+                    profileSection {
+                        Button(action: {
+                            HapticManager.shared.impact(.medium)
+                            showSignOutAlert = true
+                        }) {
+                            HStack(spacing: 12) {
+                                UnifiedIconCircle(icon: "rectangle.portrait.and.arrow.right", color: .wiseError)
+                                
+                                Text("Sign Out")
+                                    .font(.spotifyBodyLarge)
+                                    .foregroundColor(.wiseError)
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
 
                     // Version
                     Text(appVersion)
@@ -206,9 +430,8 @@ struct ProfileView: View {
                         .padding(.top, 8)
                         .padding(.bottom, 100)
                 }
-                .padding(.horizontal)
             }
-            .background(Color.wiseBackground)
+            .background(Color.wiseGroupedBackground)
         }
 
         // MARK: - Sheets
@@ -328,308 +551,29 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Contact Section
-    private var contactSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("CONTACT INFORMATION")
-                .font(.spotifyLabelSmall)
-                .foregroundColor(.wiseSecondaryText)
-                .padding(.leading, 4)
+    // MARK: - Helper Views
 
-            VStack(spacing: 2) {
-                Button(action: {
-                    HapticManager.shared.impact(.light)
-                    showEditEmail = true
-                }) {
-                    UnifiedListRow(
-                        title: "Email",
-                        subtitle: profileManager.profile.email.isEmpty
-                            ? "Add email" : profileManager.profile.email,
-                        value: profileManager.profile.email.isEmpty ? "Add" : "Verified",
-                        valueColor: profileManager.profile.email.isEmpty ? .wiseBlue : .wiseSuccess,
-                        showChevron: true
-                    ) {
-                        UnifiedIconCircle(icon: "envelope.fill", color: .wiseBlue)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Button(action: {
-                    HapticManager.shared.impact(.light)
-                    showEditPhone = true
-                }) {
-                    UnifiedListRow(
-                        title: "Phone",
-                        subtitle: profileManager.profile.phone.isEmpty
-                            ? "Add phone" : profileManager.profile.phone,
-                        value: profileManager.profile.phone.isEmpty ? "Add" : "Verified",
-                        valueColor: profileManager.profile.phone.isEmpty ? .wiseBlue : .wiseSuccess,
-                        showChevron: true
-                    ) {
-                        UnifiedIconCircle(icon: "phone.fill", color: .wiseForestGreen)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
+    @ViewBuilder
+    private func profileSection<Content: View>(
+        title: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let title = title {
+                Text(title)
+                    .font(.spotifyLabelSmall)
+                    .foregroundColor(.wiseSecondaryText)
+                    .padding(.leading, 16)
             }
-        }
-    }
 
-    // MARK: - Appearance Section
-    private var appearanceSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("APPEARANCE")
-                .font(.spotifyLabelSmall)
-                .foregroundColor(.wiseSecondaryText)
-                .padding(.leading, 4)
-
-            VStack(spacing: 16) {
-                HStack(spacing: 16) {
-                    UnifiedIconCircle(icon: "circle.lefthalf.filled", color: .wisePurple)
-
-                    Text("App Theme")
-                        .font(.spotifyBodyLarge)
-                        .foregroundColor(.wisePrimaryText)
-
-                    Spacer()
-                }
-
-                Picker("Theme", selection: $userSettings.themeMode) {
-                    Text("Light").tag("Light")
-                    Text("Dark").tag("Dark")
-                    Text("System").tag("System")
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .onChange(of: userSettings.themeMode) { _, _ in
-                    HapticManager.shared.impact(.light)
-                }
+            VStack(spacing: 0) {
+                content()
             }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.wiseCardBackground)
-            )
+            .background(Color.wiseCardBackground)
+            .cornerRadius(12)
             .subtleShadow()
         }
-    }
-
-    // MARK: - Preferences Section
-    private var preferencesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("PREFERENCES")
-                .font(.spotifyLabelSmall)
-                .foregroundColor(.wiseSecondaryText)
-                .padding(.leading, 4)
-
-            VStack(spacing: 2) {
-                NavigationLink(destination: ProfileSettingsPage()) {
-                    UnifiedListRow(
-                        title: "Profile Settings",
-                        subtitle: "Profile, notifications & storage",
-                        value: "",
-                        valueColor: .clear,
-                        showChevron: true
-                    ) {
-                        UnifiedIconCircle(icon: "person.fill", color: .wiseBlue)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                NavigationLink(destination: PrivacySecurityPage()) {
-                    UnifiedListRow(
-                        title: "Privacy & Security",
-                        subtitle: "Control access and security settings",
-                        value: "",
-                        valueColor: .clear,
-                        showChevron: true
-                    ) {
-                        UnifiedIconCircle(icon: "lock.shield.fill", color: .wiseForestGreen)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                NavigationLink(destination: AnalyticsInsightsPage().environmentObject(dataManager))
-                {
-                    UnifiedListRow(
-                        title: "Analytics & Insights",
-                        subtitle: "View spending insights and trends",
-                        value: "",
-                        valueColor: .clear,
-                        showChevron: true
-                    ) {
-                        UnifiedIconCircle(icon: "chart.bar.fill", color: .wiseBrightGreen)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                NavigationLink(destination: HelpSupportPage()) {
-                    UnifiedListRow(
-                        title: "Help & Support",
-                        subtitle: "Get help using Swiff",
-                        value: "",
-                        valueColor: .clear,
-                        showChevron: true
-                    ) {
-                        UnifiedIconCircle(icon: "questionmark.circle.fill", color: .wiseOrange)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-    }
-
-    // MARK: - Linked Accounts Section
-    private var linkedAccountsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("LINKED ACCOUNTS")
-                .font(.spotifyLabelSmall)
-                .foregroundColor(.wiseSecondaryText)
-                .padding(.leading, 4)
-
-            VStack(spacing: 2) {
-                if viewModel.accounts.isEmpty {
-                    HStack {
-                        Spacer()
-                        Text("No accounts linked yet")
-                            .font(.spotifyBodyLarge)
-                            .foregroundColor(.wiseSecondaryText)
-                            .padding(.vertical, 24)
-                        Spacer()
-                    }
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.wiseCardBackground)
-                    )
-                    .subtleShadow()
-                } else {
-                    ForEach(viewModel.accounts) { account in
-                        Button(action: {
-                            HapticManager.shared.impact(.light)
-                            selectedAccount = account
-                            showAccountDetails = true
-                        }) {
-                            UnifiedListRow(
-                                title: account.name,
-                                subtitle: "•••• \(account.last4)",
-                                value: "",
-                                valueColor: .clear,
-                                showChevron: true
-                            ) {
-                                UnifiedIconCircle(
-                                    icon: "creditcard.fill", color: .wiseSecondaryText)
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-
-                Button(action: {
-                    HapticManager.shared.impact(.light)
-                    showAddAccount = true
-                }) {
-                    HStack {
-                        Image(systemName: "plus")
-                            .font(.system(size: 16, weight: .bold))
-                        Text("Add Account")
-                            .font(.spotifyBodyLarge)
-                            .fontWeight(.medium)
-                    }
-                    .foregroundColor(.wiseBlue)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.wiseCardBackground)
-                    )
-                    .subtleShadow()
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-    }
-
-    // MARK: - Settings Section
-    private var settingsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("SETTINGS")
-                .font(.spotifyLabelSmall)
-                .foregroundColor(.wiseSecondaryText)
-                .padding(.leading, 4)
-
-            VStack(spacing: 2) {
-                Button(action: {
-                    HapticManager.shared.impact(.light)
-                    showSecurity = true
-                }) {
-                    UnifiedListRow(
-                        title: "Security",
-                        subtitle: viewModel.security["twoFactor"] == true
-                            ? "2FA enabled" : "Security settings",
-                        value: "",
-                        valueColor: .clear,
-                        showChevron: true
-                    ) {
-                        UnifiedIconCircle(icon: "shield.fill", color: .wisePurple)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Button(action: {
-                    HapticManager.shared.impact(.light)
-                    showPaymentMethods = true
-                }) {
-                    UnifiedListRow(
-                        title: "Payment Methods",
-                        subtitle: "Manage payment options",
-                        value: "",
-                        valueColor: .clear,
-                        showChevron: true
-                    ) {
-                        UnifiedIconCircle(icon: "wallet.pass.fill", color: .wiseForestGreen)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-
-                Button(action: {
-                    HapticManager.shared.impact(.light)
-                    showAppSettings = true
-                }) {
-                    UnifiedListRow(
-                        title: "App Settings",
-                        subtitle: "General application settings",
-                        value: "",
-                        valueColor: .clear,
-                        showChevron: true
-                    ) {
-                        UnifiedIconCircle(icon: "gearshape.fill", color: .wiseSecondaryText)
-                    }
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
-        }
-    }
-
-    // MARK: - Sign Out Button
-    private var signOutButton: some View {
-        Button(action: {
-            HapticManager.shared.impact(.medium)
-            showSignOutAlert = true
-        }) {
-            HStack {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 16, weight: .bold))
-                Text("Sign Out")
-                    .font(.spotifyBodyLarge)
-                    .fontWeight(.medium)
-            }
-            .foregroundColor(.wiseError)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.wiseCardBackground)
-            )
-            .subtleShadow()
-        }
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Helper Functions
