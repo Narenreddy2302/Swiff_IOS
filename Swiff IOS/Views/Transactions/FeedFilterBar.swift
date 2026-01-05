@@ -47,12 +47,12 @@ struct FilterPillButton: View {
         Button(action: action) {
             Text(tab.rawValue)
                 .font(.spotifyLabelMedium)
-                .foregroundColor(isSelected ? .white : .wisePrimaryText)
+                .foregroundColor(isSelected ? Theme.Colors.textOnPrimary : Theme.Colors.textPrimary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(
                     Capsule()
-                        .fill(isSelected ? Color.wisePrimaryText : Color.wiseBorder.opacity(0.3))
+                        .fill(isSelected ? Theme.Colors.brandPrimary : Theme.Colors.border)
                 )
         }
         .buttonStyle(PlainButtonStyle())

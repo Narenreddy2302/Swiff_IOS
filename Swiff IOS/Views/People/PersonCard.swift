@@ -72,7 +72,7 @@ struct PersonCard: View {
 
                 Text(balanceStatus)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .foregroundColor(Theme.Colors.textSecondary)
                     .lineLimit(1)
             }
 
@@ -87,7 +87,7 @@ struct PersonCard: View {
                 if !lastActivityText.isEmpty {
                     Text(lastActivityText)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+                        .foregroundColor(Theme.Colors.textTertiary)
                 }
             }
         }

@@ -88,7 +88,7 @@ struct RecentActivityView: View {
                 // Main content
                 mainContent
             }
-            .background(Color.white)
+            .background(Theme.Colors.background)
             .navigationBarHidden(true)
         }
         .sheet(isPresented: $showingAddSheet) {
@@ -182,7 +182,7 @@ struct RecentActivityView: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color(red: 242 / 255, green: 242 / 255, blue: 247 / 255))
+                .fill(Theme.Colors.secondaryBackground)
         )
         .padding(.horizontal, 16)
         .padding(.top, 8)

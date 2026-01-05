@@ -135,15 +135,18 @@ struct SubscriptionQuickStatsView: View {
     }
 
     // Calculate trends (placeholder - in production, compare with previous period)
-    private func calculateTrend(for type: String) -> (percentage: Double, isPositive: Bool) {
+    // Returns: percentage change, isUp (direction), isGood (financially positive)
+    private func calculateTrend(for type: String) -> (percentage: Double, isUp: Bool, isGood: Bool) {
         // Mock trend data - in production, this would compare with previous period
         switch type {
         case "subscriptions":
-            return (2.1, false)  // Matching the image: down 2.1%
+            // Subscriptions DOWN = good (saving money)
+            return (2.1, false, true)
         case "monthly":
-            return (5.2, true)   // Up trend
+            // Monthly spend UP = bad (spending more)
+            return (5.2, true, false)
         default:
-            return (0, true)
+            return (0, true, true)
         }
     }
 
@@ -207,14 +210,17 @@ struct SharedSubscriptionQuickStatsView: View {
     }
 
     // Calculate trends (placeholder - in production, compare with previous period)
-    private func calculateTrend(for type: String) -> (percentage: Double, isPositive: Bool) {
+    // Returns: percentage change, isUp (direction), isGood (financially positive)
+    private func calculateTrend(for type: String) -> (percentage: Double, isUp: Bool, isGood: Bool) {
         switch type {
         case "shared":
-            return (1.5, true)
+            // More shared subscriptions = neutral/good (splitting costs)
+            return (1.5, true, true)
         case "monthly":
-            return (3.2, true)
+            // Monthly spend UP = bad (spending more)
+            return (3.2, true, false)
         default:
-            return (0, true)
+            return (0, true, true)
         }
     }
 
@@ -266,9 +272,14 @@ struct SubscriptionMetricCard: View {
     let iconColor: Color
     let title: String
     let value: String
-    let trend: (percentage: Double, isPositive: Bool)
+    let trend: (percentage: Double, isUp: Bool, isGood: Bool)
     let isCount: Bool
     var suffix: String = ""
+
+    /// Color based on whether the trend is financially good or bad
+    private var trendColor: Color {
+        trend.isGood ? Theme.Colors.brandPrimary : Theme.Colors.statusError
+    }
 
     var body: some View {
         SwiffCard {
@@ -280,30 +291,22 @@ struct SubscriptionMetricCard: View {
 
                     Spacer()
 
-                    // Trend indicator (matching EnhancedFinancialCard)
+                    // Trend indicator - arrow shows direction, color shows financial impact
                     if trend.percentage != 0 {
                         HStack(spacing: 2) {
-                            Image(systemName: trend.isPositive ? "arrow.up.right" : "arrow.down.right")
+                            Image(systemName: trend.isUp ? "arrow.up.right" : "arrow.down.right")
                                 .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(
-                                    trend.isPositive
-                                        ? Theme.Colors.brandPrimary : Theme.Colors.statusError)
+                                .foregroundColor(trendColor)
 
                             Text(String(format: "%.1f%%", abs(trend.percentage)))
                                 .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(
-                                    trend.isPositive
-                                        ? Theme.Colors.brandPrimary : Theme.Colors.statusError)
+                                .foregroundColor(trendColor)
                         }
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
                         .background(
                             Capsule()
-                                .fill(
-                                    (trend.isPositive
-                                        ? Theme.Colors.brandPrimary : Theme.Colors.statusError)
-                                        .opacity(0.1)
-                                )
+                                .fill(trendColor.opacity(0.15))
                         )
                     }
                 }

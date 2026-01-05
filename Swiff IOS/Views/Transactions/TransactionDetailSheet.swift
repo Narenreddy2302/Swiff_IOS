@@ -39,14 +39,11 @@ enum SheetEntityType: String, CaseIterable {
     var badgeColors: (bg: Color, text: Color) {
         switch self {
         case .contact:
-            return (Color(red: 0.859, green: 0.914, blue: 1.0),
-                    Color(red: 0.114, green: 0.306, blue: 0.851))
+            return (Theme.Colors.sheetContactBadgeBg, Theme.Colors.sheetContactBadgeText)
         case .group:
-            return (Color(red: 0.953, green: 0.910, blue: 1.0),
-                    Color(red: 0.576, green: 0.200, blue: 0.918))
+            return (Theme.Colors.sheetGroupBadgeBg, Theme.Colors.sheetGroupBadgeText)
         case .subscription:
-            return (Color(red: 0.996, green: 0.953, blue: 0.780),
-                    Color(red: 0.702, green: 0.263, blue: 0.035))
+            return (Theme.Colors.sheetSubscriptionBadgeBg, Theme.Colors.sheetSubscriptionBadgeText)
         }
     }
 }
@@ -128,7 +125,7 @@ struct TransactionDetailSheet: View {
             VStack(spacing: 0) {
                 // Drag Indicator
                 RoundedRectangle(cornerRadius: 100)
-                    .fill(Color(red: 0.886, green: 0.906, blue: 0.925))
+                    .fill(Theme.Colors.sheetBorder)
                     .frame(width: 36, height: 4)
                     .padding(.top, 10)
 
@@ -136,18 +133,18 @@ struct TransactionDetailSheet: View {
                 HStack {
                     Text("Transaction Details")
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
+                        .foregroundColor(Theme.Colors.textPrimary)
 
                     Spacer()
 
                     Button(action: { dismiss() }) {
                         Circle()
-                            .fill(Color(red: 0.945, green: 0.957, blue: 0.965))
+                            .fill(Theme.Colors.sheetPillBackground)
                             .frame(width: 30, height: 30)
                             .overlay(
                                 Image(systemName: "xmark")
                                     .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(Theme.Colors.feedPrimaryText)
+                                    .foregroundColor(Theme.Colors.textSecondary)
                             )
                     }
                 }
@@ -194,10 +191,10 @@ struct TransactionDetailSheet: View {
                     }) {
                         Text("Share")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(Theme.Colors.feedPrimaryText)
+                            .foregroundColor(Theme.Colors.textPrimary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(Color(red: 0.945, green: 0.957, blue: 0.965))
+                            .background(Theme.Colors.sheetPillBackground)
                             .cornerRadius(12)
                     }
 
@@ -205,21 +202,17 @@ struct TransactionDetailSheet: View {
                     Button(action: { repeatTransaction() }) {
                         Text("Repeat")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.white) // Always white as it's a primary button
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(Color(red: 0.020, green: 0.588, blue: 0.412))
+                            .background(Theme.Colors.sheetGreenPrimary)
                             .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color(red: 0.016, green: 0.502, blue: 0.353), lineWidth: 1)
-                            )
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
             }
-            .background(Color.white)
+            .background(Theme.Colors.background)
 
             // Toast
             if showToast {
@@ -295,11 +288,11 @@ private struct SheetSummaryCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.displayName)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Theme.Colors.feedPrimaryText)
+                    .foregroundColor(Theme.Colors.textPrimary)
 
                 Text(entityName)
                     .font(.system(size: 13))
-                    .foregroundColor(Theme.Colors.feedSecondaryText)
+                    .foregroundColor(Theme.Colors.textSecondary)
             }
 
             Spacer()
@@ -307,10 +300,10 @@ private struct SheetSummaryCard: View {
             // Amount
             Text(formattedAmount)
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(transaction.isExpense ? Theme.Colors.feedPrimaryText : Color(red: 0.020, green: 0.588, blue: 0.412))
+                .foregroundColor(transaction.isExpense ? Theme.Colors.textPrimary : Theme.Colors.sheetGreenPrimary)
         }
         .padding(14)
-        .background(Color(red: 0.973, green: 0.980, blue: 0.988))
+        .background(Theme.Colors.sheetCardBackground)
         .cornerRadius(14)
     }
 }
@@ -356,7 +349,7 @@ private struct SheetInfoCard: View {
 
                     Text(entityType.label(isIncome: !transaction.isExpense))
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
+                        .foregroundColor(Theme.Colors.textPrimary)
                 }
 
                 Spacer()
@@ -372,7 +365,7 @@ private struct SheetInfoCard: View {
             .padding(.bottom, 12)
 
             Rectangle()
-                .fill(Color(red: 0.886, green: 0.906, blue: 0.925))
+                .fill(Theme.Colors.sheetBorder)
                 .frame(height: 1)
                 .padding(.bottom, 12)
 
@@ -386,7 +379,7 @@ private struct SheetInfoCard: View {
             // Group Members (if applicable)
             if entityType == .group && !groupMembers.isEmpty {
                 Rectangle()
-                    .fill(Color(red: 0.886, green: 0.906, blue: 0.925))
+                    .fill(Theme.Colors.sheetBorder)
                     .frame(height: 1)
                     .padding(.top, 10)
                     .padding(.bottom, 10)
@@ -395,7 +388,7 @@ private struct SheetInfoCard: View {
             }
         }
         .padding(14)
-        .background(Color(red: 0.973, green: 0.980, blue: 0.988))
+        .background(Theme.Colors.sheetCardBackground)
         .cornerRadius(14)
     }
 
@@ -406,23 +399,23 @@ private struct SheetInfoCard: View {
             // From side
             HStack(spacing: 8) {
                 Circle()
-                    .fill(Color(red: 0.820, green: 0.980, blue: 0.902))
+                    .fill(Theme.Colors.green1)
                     .frame(width: 32, height: 32)
                     .overlay(
                         Text(transaction.isExpense ? "You" : InitialsGenerator.generate(from: entityName).prefix(2))
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(Color(red: 0.016, green: 0.471, blue: 0.341))
+                            .foregroundColor(Theme.Colors.green5)
                     )
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(transaction.isExpense ? "You" : entityName)
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
+                        .foregroundColor(Theme.Colors.textPrimary)
                         .lineLimit(1)
 
                     Text(transaction.isExpense ? "Paid by You" : "Sender")
                         .font(.system(size: 10))
-                        .foregroundColor(Theme.Colors.feedTertiaryText)
+                        .foregroundColor(Theme.Colors.textTertiary)
                 }
             }
 
@@ -432,11 +425,11 @@ private struct SheetInfoCard: View {
             VStack(spacing: 2) {
                 Image(systemName: "arrow.right")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.Colors.feedTertiaryText)
+                    .foregroundColor(Theme.Colors.textTertiary)
 
                 Text("$\(String(format: "%.2f", abs(transaction.amount)))")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundColor(Theme.Colors.feedSecondaryText)
+                    .foregroundColor(Theme.Colors.textSecondary)
             }
 
             Spacer()
@@ -446,21 +439,21 @@ private struct SheetInfoCard: View {
                 VStack(alignment: .trailing, spacing: 1) {
                     Text(transaction.isExpense ? entityName : "You")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
+                        .foregroundColor(Theme.Colors.textPrimary)
                         .lineLimit(1)
 
                     Text("Recipient")
                         .font(.system(size: 10))
-                        .foregroundColor(Theme.Colors.feedTertiaryText)
+                        .foregroundColor(Theme.Colors.textTertiary)
                 }
 
                 Circle()
-                    .fill(Color(red: 0.878, green: 0.949, blue: 0.992))
+                    .fill(Theme.Colors.sheetContactBadgeBg)
                     .frame(width: 32, height: 32)
                     .overlay(
                         Text(transaction.isExpense ? String(InitialsGenerator.generate(from: entityName).prefix(1)) : "You")
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(Color(red: 0.008, green: 0.518, blue: 0.780))
+                            .foregroundColor(Theme.Colors.sheetContactBadgeText)
                     )
             }
         }
@@ -472,7 +465,7 @@ private struct SheetInfoCard: View {
     private var infoRows: some View {
         VStack(spacing: 8) {
             Rectangle()
-                .fill(Color(red: 0.886, green: 0.906, blue: 0.925))
+                .fill(Theme.Colors.sheetBorder)
                 .frame(height: 1)
                 .padding(.top, 4)
 
@@ -514,7 +507,7 @@ private struct SheetInfoCard: View {
                         )
                         .overlay(
                             Circle()
-                                .stroke(Color(red: 0.973, green: 0.980, blue: 0.988), lineWidth: 2)
+                                .stroke(Theme.Colors.sheetCardBackground, lineWidth: 2)
                         )
                         .zIndex(Double(4 - index))
                 }
@@ -522,7 +515,7 @@ private struct SheetInfoCard: View {
 
             Text("\(groupMembers.count) members")
                 .font(.system(size: 12))
-                .foregroundColor(Theme.Colors.feedSecondaryText)
+                .foregroundColor(Theme.Colors.textSecondary)
 
             Spacer()
         }
@@ -539,13 +532,13 @@ private struct InfoRow: View {
         HStack {
             Text(label)
                 .font(.system(size: 13))
-                .foregroundColor(Theme.Colors.feedSecondaryText)
+                .foregroundColor(Theme.Colors.textSecondary)
 
             Spacer()
 
             Text(value)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(Theme.Colors.feedPrimaryText)
+                .foregroundColor(Theme.Colors.textPrimary)
         }
     }
 }
@@ -584,16 +577,16 @@ private struct SheetDetailItem: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(.system(size: 11))
-                .foregroundColor(Theme.Colors.feedTertiaryText)
+                .foregroundColor(Theme.Colors.textTertiary)
 
             Text(value)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(isSuccess ? Color(red: 0.020, green: 0.588, blue: 0.412) : Theme.Colors.feedPrimaryText)
+                .foregroundColor(isSuccess ? Theme.Colors.sheetGreenPrimary : Theme.Colors.textPrimary)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(Color(red: 0.973, green: 0.980, blue: 0.988))
+        .background(Theme.Colors.sheetCardBackground)
         .cornerRadius(10)
     }
 }
@@ -606,10 +599,10 @@ private struct SheetToast: View {
     var body: some View {
         Text(message)
             .font(.system(size: 13, weight: .medium))
-            .foregroundColor(.white)
+            .foregroundColor(Theme.Colors.background)
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
-            .background(Theme.Colors.feedPrimaryText)
+            .background(Theme.Colors.textPrimary)
             .cornerRadius(10)
     }
 }

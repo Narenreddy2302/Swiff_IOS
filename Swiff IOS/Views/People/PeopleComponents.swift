@@ -125,18 +125,22 @@ struct BalanceSummaryCard: View {
     let numberOfPeople: Int
 
     // Calculate trends (placeholder - in production, compare with previous period)
-    private func calculateTrend(for type: String) -> (percentage: Double, isPositive: Bool) {
+    // Returns: percentage change, isUp (direction), isGood (financially positive)
+    private func calculateTrend(for type: String) -> (percentage: Double, isUp: Bool, isGood: Bool) {
         switch type {
         case "balance":
-            return netBalance >= 0 ? (5.2, true) : (2.1, false)
+            // Net balance UP = good
+            return netBalance >= 0 ? (5.2, true, true) : (2.1, false, false)
         case "people":
-            return (0.0, true)  // Neutral for count
+            return (0.0, true, true)  // Neutral for count
         case "owed":
-            return (3.5, true)
+            // Money owed TO you UP = good (you're getting more back)
+            return (3.5, true, true)
         case "owing":
-            return (1.8, false)
+            // Money YOU owe UP = bad (you owe more)
+            return (1.8, true, false)
         default:
-            return (0, true)
+            return (0, true, true)
         }
     }
 
@@ -203,11 +207,25 @@ struct PeopleFilterPill: View {
 
     private var pillColor: Color {
         switch filter {
-        case .all: return .wisePrimaryText
+        case .all: return Theme.Colors.brandPrimary
         case .owesYou: return .wiseBrightGreen
-        case .youOwe: return .wiseError
-        case .settled: return .wiseSecondaryText
-        case .active: return .wiseBlue
+        case .youOwe: return Theme.Colors.statusError
+        case .settled: return Theme.Colors.textSecondary
+        case .active: return Theme.Colors.info
+        }
+    }
+
+    private var textColor: Color {
+        if isSelected {
+            switch filter {
+            case .all: return Theme.Colors.textOnPrimary
+            case .owesYou: return .black // Lime/Green needs dark text
+            case .youOwe: return .white // Red needs white text
+            case .settled: return .white // Gray needs white text
+            case .active: return .white // Blue needs white text
+            }
+        } else {
+            return Theme.Colors.textPrimary
         }
     }
 
@@ -215,12 +233,12 @@ struct PeopleFilterPill: View {
         Button(action: action) {
             Text(displayText)
                 .font(.spotifyLabelMedium)
-                .foregroundColor(isSelected ? .white : .wisePrimaryText)
+                .foregroundColor(textColor)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(
                     Capsule()
-                        .fill(isSelected ? pillColor : Color.wiseBorder.opacity(0.3))
+                        .fill(isSelected ? pillColor : Theme.Colors.border)
                 )
         }
         .buttonStyle(PlainButtonStyle())
@@ -408,7 +426,7 @@ struct PeopleListView: View {
                     }
                     .padding(.bottom, 20)
                 }
-                .background(Color.white)
+                .background(Theme.Colors.background)
                 .scrollDismissesKeyboard(.interactively)
                 .refreshable {
                     HapticManager.shared.pullToRefresh()
@@ -606,7 +624,7 @@ struct GroupsListView: View {
                     }
                     .padding(.bottom, 20)
                 }
-                .background(Color.white)
+                .background(Theme.Colors.background)
                 .scrollDismissesKeyboard(.interactively)
                 .refreshable {
                     HapticManager.shared.pullToRefresh()
@@ -809,9 +827,21 @@ struct GroupFilterPill: View {
 
     private var pillColor: Color {
         switch filter {
-        case .all: return .wisePrimaryText
+        case .all: return Theme.Colors.brandPrimary
         case .active: return .wiseBrightGreen
-        case .settled: return .wiseSecondaryText
+        case .settled: return Theme.Colors.textSecondary
+        }
+    }
+
+    private var textColor: Color {
+        if isSelected {
+            switch filter {
+            case .all: return Theme.Colors.textOnPrimary
+            case .active: return .black // Lime/Green needs dark text
+            case .settled: return .white // Gray needs white text
+            }
+        } else {
+            return Theme.Colors.textPrimary
         }
     }
 
@@ -819,12 +849,12 @@ struct GroupFilterPill: View {
         Button(action: action) {
             Text(filter.rawValue)
                 .font(.spotifyLabelMedium)
-                .foregroundColor(isSelected ? .white : .wisePrimaryText)
+                .foregroundColor(textColor)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(
                     Capsule()
-                        .fill(isSelected ? pillColor : Color.wiseBorder.opacity(0.3))
+                        .fill(isSelected ? pillColor : Theme.Colors.border)
                 )
         }
         .buttonStyle(PlainButtonStyle())

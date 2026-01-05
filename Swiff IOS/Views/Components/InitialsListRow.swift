@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 // MARK: - Initials List Row
 
@@ -124,34 +125,90 @@ struct InitialsAvatarColors {
 // MARK: - Feed Avatar Color (8-Color System)
 
 /// Modern avatar color palette for feed transactions
-/// Each color has a pastel background and contrasting foreground for text
+/// Each color has adaptive background/foreground for light and dark mode
 enum FeedAvatarColor: String, CaseIterable, Codable {
     case gray, yellow, emerald, violet, rose, amber, sky, slate
 
+    /// Background color - pastel in light mode, deeper/muted in dark mode
     var background: Color {
-        switch self {
-        case .gray: return Color(red: 0.886, green: 0.910, blue: 0.925)
-        case .yellow: return Color(red: 0.996, green: 0.941, blue: 0.541)
-        case .emerald: return Color(red: 0.820, green: 0.980, blue: 0.902)
-        case .violet: return Color(red: 0.929, green: 0.914, blue: 0.992)
-        case .rose: return Color(red: 1.0, green: 0.894, blue: 0.902)
-        case .amber: return Color(red: 0.996, green: 0.953, blue: 0.780)
-        case .sky: return Color(red: 0.878, green: 0.949, blue: 0.992)
-        case .slate: return Color(red: 0.945, green: 0.957, blue: 0.965)
-        }
+        Color(uiColor: UIColor { traitCollection in
+            let isDark = traitCollection.userInterfaceStyle == .dark
+            switch self {
+            case .gray:
+                return isDark
+                    ? UIColor(red: 0.25, green: 0.27, blue: 0.30, alpha: 1.0)
+                    : UIColor(red: 0.886, green: 0.910, blue: 0.925, alpha: 1.0)
+            case .yellow:
+                return isDark
+                    ? UIColor(red: 0.45, green: 0.38, blue: 0.15, alpha: 1.0)
+                    : UIColor(red: 0.996, green: 0.941, blue: 0.541, alpha: 1.0)
+            case .emerald:
+                return isDark
+                    ? UIColor(red: 0.12, green: 0.35, blue: 0.25, alpha: 1.0)
+                    : UIColor(red: 0.820, green: 0.980, blue: 0.902, alpha: 1.0)
+            case .violet:
+                return isDark
+                    ? UIColor(red: 0.30, green: 0.22, blue: 0.45, alpha: 1.0)
+                    : UIColor(red: 0.929, green: 0.914, blue: 0.992, alpha: 1.0)
+            case .rose:
+                return isDark
+                    ? UIColor(red: 0.45, green: 0.18, blue: 0.22, alpha: 1.0)
+                    : UIColor(red: 1.0, green: 0.894, blue: 0.902, alpha: 1.0)
+            case .amber:
+                return isDark
+                    ? UIColor(red: 0.45, green: 0.32, blue: 0.12, alpha: 1.0)
+                    : UIColor(red: 0.996, green: 0.953, blue: 0.780, alpha: 1.0)
+            case .sky:
+                return isDark
+                    ? UIColor(red: 0.12, green: 0.28, blue: 0.40, alpha: 1.0)
+                    : UIColor(red: 0.878, green: 0.949, blue: 0.992, alpha: 1.0)
+            case .slate:
+                return isDark
+                    ? UIColor(red: 0.22, green: 0.24, blue: 0.28, alpha: 1.0)
+                    : UIColor(red: 0.945, green: 0.957, blue: 0.965, alpha: 1.0)
+            }
+        })
     }
 
+    /// Foreground/text color - darker in light mode, brighter in dark mode
     var foreground: Color {
-        switch self {
-        case .gray: return Color(red: 0.392, green: 0.455, blue: 0.545)
-        case .yellow: return Color(red: 0.631, green: 0.384, blue: 0.027)
-        case .emerald: return Color(red: 0.016, green: 0.471, blue: 0.341)
-        case .violet: return Color(red: 0.427, green: 0.157, blue: 0.851)
-        case .rose: return Color(red: 0.882, green: 0.114, blue: 0.290)
-        case .amber: return Color(red: 0.851, green: 0.463, blue: 0.024)
-        case .sky: return Color(red: 0.008, green: 0.518, blue: 0.780)
-        case .slate: return Color(red: 0.278, green: 0.333, blue: 0.412)
-        }
+        Color(uiColor: UIColor { traitCollection in
+            let isDark = traitCollection.userInterfaceStyle == .dark
+            switch self {
+            case .gray:
+                return isDark
+                    ? UIColor(red: 0.75, green: 0.78, blue: 0.82, alpha: 1.0)
+                    : UIColor(red: 0.392, green: 0.455, blue: 0.545, alpha: 1.0)
+            case .yellow:
+                return isDark
+                    ? UIColor(red: 1.0, green: 0.85, blue: 0.35, alpha: 1.0)
+                    : UIColor(red: 0.631, green: 0.384, blue: 0.027, alpha: 1.0)
+            case .emerald:
+                return isDark
+                    ? UIColor(red: 0.45, green: 0.90, blue: 0.65, alpha: 1.0)
+                    : UIColor(red: 0.016, green: 0.471, blue: 0.341, alpha: 1.0)
+            case .violet:
+                return isDark
+                    ? UIColor(red: 0.75, green: 0.65, blue: 1.0, alpha: 1.0)
+                    : UIColor(red: 0.427, green: 0.157, blue: 0.851, alpha: 1.0)
+            case .rose:
+                return isDark
+                    ? UIColor(red: 1.0, green: 0.55, blue: 0.65, alpha: 1.0)
+                    : UIColor(red: 0.882, green: 0.114, blue: 0.290, alpha: 1.0)
+            case .amber:
+                return isDark
+                    ? UIColor(red: 1.0, green: 0.75, blue: 0.35, alpha: 1.0)
+                    : UIColor(red: 0.851, green: 0.463, blue: 0.024, alpha: 1.0)
+            case .sky:
+                return isDark
+                    ? UIColor(red: 0.45, green: 0.80, blue: 1.0, alpha: 1.0)
+                    : UIColor(red: 0.008, green: 0.518, blue: 0.780, alpha: 1.0)
+            case .slate:
+                return isDark
+                    ? UIColor(red: 0.70, green: 0.75, blue: 0.82, alpha: 1.0)
+                    : UIColor(red: 0.278, green: 0.333, blue: 0.412, alpha: 1.0)
+            }
+        })
     }
 
     /// Get a random color

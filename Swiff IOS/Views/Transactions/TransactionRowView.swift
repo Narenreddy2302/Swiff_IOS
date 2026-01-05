@@ -98,7 +98,7 @@ struct FeedTransactionRow: View {
     }
 
     private var amountColor: Color {
-        transaction.isExpense ? Theme.Colors.feedPrimaryText : Theme.Colors.feedPositiveAmount
+        transaction.isExpense ? Theme.Colors.amountNegative : Theme.Colors.feedPositiveAmount
     }
 
     /// Entity display name for the right side
@@ -250,7 +250,7 @@ struct TransactionRowView: View {
             .padding(.horizontal, 20)
         }
     }
-    .background(Color.white)
+    .background(Theme.Colors.background)
     .environmentObject(DataManager.shared)
 }
 
@@ -303,6 +303,6 @@ struct TransactionRowView: View {
         )
         .padding(.horizontal, 20)
     }
-    .background(Color.white)
+    .background(Theme.Colors.background)
     .environmentObject(DataManager.shared)
 }

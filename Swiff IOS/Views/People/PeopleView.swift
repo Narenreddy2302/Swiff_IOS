@@ -205,7 +205,7 @@ struct PeopleHeaderSection: View {
                 .padding(.vertical, 12)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.wiseBorder.opacity(0.3))
+                        .fill(Theme.Colors.secondaryBackground)
                 )
                 .padding(.horizontal, 16)
                 .transition(.opacity.combined(with: .move(edge: .top)))

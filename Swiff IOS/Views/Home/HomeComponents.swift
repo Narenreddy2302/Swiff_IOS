@@ -29,20 +29,21 @@ struct FinancialOverviewGrid: View {
     }
 
     // Simple trend calculation (mock data - in production, you'd compare with last month)
-    func calculateTrend(for type: String) -> (percentage: Double, isPositive: Bool) {
-        // For demo purposes, using random trend between -15% and +15%
+    // Returns: percentage change, isUp (direction), isGood (financially positive)
+    func calculateTrend(for type: String) -> (percentage: Double, isUp: Bool, isGood: Bool) {
+        // For demo purposes, using fixed trend values
         // In production, you would calculate actual change from previous month
         switch type {
         case "balance":
-            return (5.2, true)  // +5.2%
+            return (5.2, true, true)     // Balance UP = good (green)
         case "subscriptions":
-            return (-2.1, false)  // -2.1%
+            return (2.1, false, true)    // Subscriptions DOWN = good (green, saves money)
         case "income":
-            return (8.5, true)  // +8.5%
+            return (8.5, true, true)     // Income UP = good (green)
         case "expenses":
-            return (3.4, true)  // +3.4%
+            return (3.4, true, false)    // Expenses UP = bad (red)
         default:
-            return (0, true)
+            return (0, true, true)
         }
     }
 
@@ -162,7 +163,12 @@ struct EnhancedFinancialCard: View {
     let iconColor: Color
     let title: String
     let amount: String
-    let trend: (percentage: Double, isPositive: Bool)
+    let trend: (percentage: Double, isUp: Bool, isGood: Bool)
+
+    /// Color based on whether the trend is financially good or bad
+    private var trendColor: Color {
+        trend.isGood ? Theme.Colors.brandPrimary : Theme.Colors.statusError
+    }
 
     var body: some View {
         SwiffCard {
@@ -174,29 +180,21 @@ struct EnhancedFinancialCard: View {
 
                     Spacer()
 
-                    // Trend indicator
+                    // Trend indicator - arrow shows direction, color shows financial impact
                     HStack(spacing: 2) {
-                        Image(systemName: trend.isPositive ? "arrow.up.right" : "arrow.down.right")
+                        Image(systemName: trend.isUp ? "arrow.up.right" : "arrow.down.right")
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(
-                                trend.isPositive
-                                    ? Theme.Colors.brandPrimary : Theme.Colors.statusError)
+                            .foregroundColor(trendColor)
 
                         Text(String(format: "%.1f%%", abs(trend.percentage)))
                             .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(
-                                trend.isPositive
-                                    ? Theme.Colors.brandPrimary : Theme.Colors.statusError)
+                            .foregroundColor(trendColor)
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
                     .background(
                         Capsule()
-                            .fill(
-                                (trend.isPositive
-                                    ? Theme.Colors.brandPrimary : Theme.Colors.statusError)
-                                    .opacity(0.1)
-                            )
+                            .fill(trendColor.opacity(0.15))
                     )
                 }
 
