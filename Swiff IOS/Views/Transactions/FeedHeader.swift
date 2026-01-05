@@ -20,8 +20,8 @@ struct FeedHeader: View {
             // Main header row (matching People and Subscriptions design)
             HStack {
                 Text("Feed")
-                    .font(.spotifyDisplayLarge)
-                    .foregroundColor(.wisePrimaryText)
+                    .font(Theme.Fonts.displayLarge)
+                    .foregroundColor(Theme.Colors.textPrimary)
 
                 Spacer()
 

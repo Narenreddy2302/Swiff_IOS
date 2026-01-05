@@ -33,7 +33,7 @@ struct FeedTransactionRow: View {
                     // Left side - Name and Time · Category
                     VStack(alignment: .leading, spacing: 4) {
                         Text(displayName)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 15, weight: .bold))
                             .foregroundColor(Theme.Colors.feedPrimaryText)
                             .lineLimit(1)
 
@@ -55,7 +55,7 @@ struct FeedTransactionRow: View {
                     // Right side - Amount and Entity Name
                     VStack(alignment: .trailing, spacing: 4) {
                         Text(formattedAmount)
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.system(size: 15, weight: .bold))
                             .foregroundColor(amountColor)
 
                         Text(entityDisplayName)

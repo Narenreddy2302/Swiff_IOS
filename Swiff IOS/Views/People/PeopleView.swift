@@ -112,8 +112,8 @@ struct PeopleHeaderSection: View {
             // Top Header (matching design system)
             HStack {
                 Text("People")
-                    .font(.spotifyDisplayLarge)
-                    .foregroundColor(.wisePrimaryText)
+                    .font(Theme.Fonts.displayLarge)
+                    .foregroundColor(Theme.Colors.textPrimary)
 
                 Spacer()
 

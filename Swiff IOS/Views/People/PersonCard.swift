@@ -131,7 +131,7 @@ struct FeedPersonRow: View {
                 // Left side - Name and last transaction
                 VStack(alignment: .leading, spacing: 4) {
                     Text(person.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
                         .lineLimit(1)
 
@@ -146,7 +146,7 @@ struct FeedPersonRow: View {
                 // Right side - Balance and status
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(formattedBalance)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(balanceColor)
 
                     Text(balanceStatus)

@@ -120,8 +120,8 @@ struct RecentActivityView: View {
     private var feedHeader: some View {
         HStack {
             Text("Feed")
-                .font(.system(size: 34, weight: .bold))
-                .foregroundColor(Theme.Colors.feedPrimaryText)
+                .font(Theme.Fonts.displayLarge)
+                .foregroundColor(Theme.Colors.textPrimary)
 
             Spacer()
 

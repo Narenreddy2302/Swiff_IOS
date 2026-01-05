@@ -28,7 +28,7 @@ struct FeedSubscriptionRow: View {
                 // Left side - Name and Cycle + Next Billing
                 VStack(alignment: .leading, spacing: 4) {
                     Text(subscription.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
                         .lineLimit(1)
 
@@ -42,7 +42,7 @@ struct FeedSubscriptionRow: View {
                 // Right side - Amount and Payer
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(displayAmount)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
 
                     Text(payerLabel)
@@ -125,7 +125,7 @@ struct FeedSharedSubscriptionRow: View {
                 // Left side - Name and Cycle + Next Billing
                 VStack(alignment: .leading, spacing: 4) {
                     Text(displayName)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
                         .lineLimit(1)
 
@@ -139,7 +139,7 @@ struct FeedSharedSubscriptionRow: View {
                 // Right side - Balance and Member Avatars
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(formattedBalance)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(balanceColor)
 
                     SharedMembersAvatarStack(

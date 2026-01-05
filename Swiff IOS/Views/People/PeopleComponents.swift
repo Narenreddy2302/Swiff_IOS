@@ -723,7 +723,7 @@ struct FeedGroupRow: View {
                 // Left side - Name and last expense
                 VStack(alignment: .leading, spacing: 4) {
                     Text(group.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
                         .lineLimit(1)
 
@@ -738,7 +738,7 @@ struct FeedGroupRow: View {
                 // Right side - Amount and status
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(formattedAmount)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(Theme.Colors.feedPrimaryText)
 
                     Text(group.settlementStatus)
