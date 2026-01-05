@@ -50,8 +50,8 @@ struct SubscriptionsHeaderSectionEnhanced: View {
             .padding(.horizontal, 16)
             .padding(.top, 8)
 
-            // Segmented Control
-            HStack(spacing: 0) {
+            // Tabs (Pill Buttons)
+            HStack(spacing: 12) {
                 ForEach(SubscriptionsView.SubscriptionsTab.allCases, id: \.self) { tab in
                     Button(action: {
                         HapticManager.shared.selection()
@@ -62,24 +62,21 @@ struct SubscriptionsHeaderSectionEnhanced: View {
                     }) {
                         HStack(spacing: 8) {
                             Image(systemName: tab.icon)
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 14))
                             Text(tab.rawValue)
-                                .font(.system(size: 14, weight: .semibold))
                         }
-                        .foregroundColor(selectedTab == tab ? .white : Theme.Colors.textSecondary)
+                        .font(.spotifyLabelMedium)
+                        .foregroundColor(selectedTab == tab ? Theme.Colors.textOnPrimary : Theme.Colors.textPrimary)
                         .padding(.vertical, 12)
                         .frame(maxWidth: .infinity)
                         .background(
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(selectedTab == tab ? Theme.Colors.brandPrimary : Color.clear)
+                            Capsule()
+                                .fill(selectedTab == tab ? Theme.Colors.brandPrimary : Theme.Colors.border)
                         )
                     }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
-            .background(
-                RoundedRectangle(cornerRadius: 25)
-                    .fill(Theme.Colors.secondaryBackground)
-            )
             .padding(.horizontal, 16)
 
             // Search Bar (matching Feed design)

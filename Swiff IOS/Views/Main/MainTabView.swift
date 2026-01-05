@@ -126,16 +126,17 @@ struct MainTabView: View {
     // MARK: - Helper Functions
 
     private func handleTabChange(oldValue: Int, newValue: Int) {
-        // Haptic feedback
-        HapticManager.shared.selection()
-
-        // Open Add Transaction sheet when center tab is tapped
+        // Only trigger haptic for actual user navigation, not auto-reset from + button
         if newValue == 2 {
+            HapticManager.shared.selection()
             showingAddTransaction = true
             // Reset to previous tab
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 selectedTab = oldValue
             }
+        } else if oldValue != 2 {
+            // Normal tab navigation (exclude the auto-reset case where oldValue is 2)
+            HapticManager.shared.selection()
         }
     }
 

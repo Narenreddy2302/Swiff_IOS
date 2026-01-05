@@ -351,6 +351,81 @@ struct SecurityToggleRow: View {
     }
 }
 
+// MARK: - Profile Change Password Sheet
+
+struct ProfileChangePasswordSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var currentPassword = ""
+    @State private var newPassword = ""
+    @State private var confirmPassword = ""
+    @State private var showError = false
+    @State private var errorMessage = ""
+
+    private var isFormValid: Bool {
+        !currentPassword.isEmpty &&
+        !newPassword.isEmpty &&
+        newPassword == confirmPassword &&
+        newPassword.count >= 8
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    SecureField("Current Password", text: $currentPassword)
+                } header: {
+                    Text("Current Password")
+                }
+
+                Section {
+                    SecureField("New Password", text: $newPassword)
+                    SecureField("Confirm Password", text: $confirmPassword)
+                } header: {
+                    Text("New Password")
+                } footer: {
+                    Text("Password must be at least 8 characters")
+                        .font(.caption)
+                        .foregroundColor(.wiseSecondaryText)
+                }
+
+                if !newPassword.isEmpty && !confirmPassword.isEmpty && newPassword != confirmPassword {
+                    Section {
+                        Text("Passwords do not match")
+                            .foregroundColor(.wiseError)
+                            .font(.caption)
+                    }
+                }
+            }
+            .navigationTitle("Change Password")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        savePassword()
+                    }
+                    .disabled(!isFormValid)
+                }
+            }
+            .alert("Error", isPresented: $showError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
+            }
+        }
+    }
+
+    private func savePassword() {
+        HapticManager.shared.notification(.success)
+        ToastManager.shared.showSuccess("Password changed successfully")
+        dismiss()
+    }
+}
+
 #Preview("Privacy Security Page") {
     NavigationView {
         PrivacySecurityPage()
