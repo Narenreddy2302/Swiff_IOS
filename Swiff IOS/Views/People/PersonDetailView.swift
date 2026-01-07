@@ -20,7 +20,11 @@ struct PersonDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataManager: DataManager
 
-    let personId: UUID
+    public let personId: UUID
+
+    public init(personId: UUID) {
+        self.personId = personId
+    }
 
     // Sheet presentation states
     @State private var showingEditPerson = false
@@ -51,7 +55,8 @@ struct PersonDetailView: View {
         guard let person = person else { return [] }
         return dataManager.transactions
             .filter { transaction in
-                transaction.title.contains(person.name) || transaction.subtitle.contains(person.name)
+                transaction.title.contains(person.name)
+                    || transaction.subtitle.contains(person.name)
             }
             .sorted { $0.date > $1.date }
     }
@@ -70,7 +75,9 @@ struct PersonDetailView: View {
             Calendar.current.startOfDay(for: item.timestamp)
         }
 
-        return grouped.sorted { $0.key > $1.key }.map { ($0.key, $0.value.sorted { $0.timestamp > $1.timestamp }) }
+        return grouped.sorted { $0.key > $1.key }.map {
+            ($0.key, $0.value.sorted { $0.timestamp > $1.timestamp })
+        }
     }
 
     // Status banner config
@@ -90,7 +97,8 @@ struct PersonDetailView: View {
         }
 
         // Also count pending transactions
-        let pendingTransactionCount = personTransactions.filter { $0.paymentStatus != .completed }.count
+        let pendingTransactionCount = personTransactions.filter { $0.paymentStatus != .completed }
+            .count
 
         // Total pending count
         let totalPendingCount = pendingSplitCount + pendingTransactionCount
@@ -140,7 +148,10 @@ struct PersonDetailView: View {
         .background(Color.wiseBackground)
         .navigationBarHidden(true)
         .hidesTabBar()
-        .observeEntityWithRelated(personId, type: .person, relatedTypes: [.splitBill, .transaction], dataManager: dataManager)
+        .observeEntityWithRelated(
+            personId, type: .person, relatedTypes: [.splitBill, .transaction],
+            dataManager: dataManager
+        )
         .sheet(isPresented: $showingEditPerson) {
             if let person = person {
                 EditPersonSheet(
@@ -159,23 +170,29 @@ struct PersonDetailView: View {
         }
         .sheet(isPresented: $showingSettleUpSheet) {
             if let person = person {
-                SettleUpSheet(person: person, onSettled: {
-                    showingSettleUpSheet = false
-                })
+                SettleUpSheet(
+                    person: person,
+                    onSettled: {
+                        showingSettleUpSheet = false
+                    })
             }
         }
         .sheet(isPresented: $showingRecordPaymentSheet) {
             if let person = person {
-                RecordPaymentSheet(person: person, onPaymentRecorded: {
-                    showingRecordPaymentSheet = false
-                })
+                RecordPaymentSheet(
+                    person: person,
+                    onPaymentRecorded: {
+                        showingRecordPaymentSheet = false
+                    })
             }
         }
         .sheet(isPresented: $showingSendReminderSheet) {
             if let person = person {
-                SendReminderSheet(person: person, onReminderSent: {
-                    showingSendReminderSheet = false
-                })
+                SendReminderSheet(
+                    person: person,
+                    onReminderSent: {
+                        showingSendReminderSheet = false
+                    })
             }
         }
         .alert("Delete Person?", isPresented: $showingDeleteAlert) {
@@ -185,7 +202,9 @@ struct PersonDetailView: View {
             }
         } message: {
             if let person = person {
-                Text("This will permanently delete '\(person.name)'. They will be removed from all groups.")
+                Text(
+                    "This will permanently delete '\(person.name)'. They will be removed from all groups."
+                )
             }
         }
     }
@@ -326,9 +345,11 @@ struct PersonDetailView: View {
                     .font(.system(size: 12))
                     .foregroundColor(.wiseSecondaryText)
 
-                Text("Last activity: \(person.lastActivityText(transactions: dataManager.transactions))")
-                    .font(.spotifyCaptionMedium)
-                    .foregroundColor(.wiseSecondaryText)
+                Text(
+                    "Last activity: \(person.lastActivityText(transactions: dataManager.transactions))"
+                )
+                .font(.spotifyCaptionMedium)
+                .foregroundColor(.wiseSecondaryText)
             }
 
             // Contact Info
@@ -426,7 +447,8 @@ struct PersonDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(personSplitBills) { splitBill in
-                        NavigationLink(destination: SplitBillDetailView(splitBillId: splitBill.id)) {
+                        NavigationLink(destination: SplitBillDetailView(splitBillId: splitBill.id))
+                        {
                             SplitBillCard(splitBill: splitBill)
                                 .frame(width: 320)
                         }
@@ -469,8 +491,11 @@ struct PersonDetailView: View {
 
             // Transaction List
             VStack(spacing: 0) {
-                ForEach(Array(personTransactions.prefix(5).enumerated()), id: \.element.id) { index, transaction in
-                    NavigationLink(destination: TransactionDetailView(transactionId: transaction.id)) {
+                ForEach(Array(personTransactions.prefix(5).enumerated()), id: \.element.id) {
+                    index, transaction in
+                    NavigationLink(
+                        destination: TransactionDetailView(transactionId: transaction.id)
+                    ) {
                         transactionRow(transaction)
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -504,7 +529,7 @@ struct PersonDetailView: View {
 
                 Text(transaction.subtitle)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .foregroundColor(Color(red: 102 / 255, green: 102 / 255, blue: 102 / 255))
                     .lineLimit(1)
             }
 
@@ -518,7 +543,7 @@ struct PersonDetailView: View {
 
                 Text(relativeTime(for: transaction))
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+                    .foregroundColor(Color(red: 153 / 255, green: 153 / 255, blue: 153 / 255))
             }
         }
         .padding(.vertical, 14)
@@ -534,7 +559,7 @@ struct PersonDetailView: View {
 
             Text(InitialsGenerator.generate(from: transaction.title))
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                .foregroundColor(Color(red: 26 / 255, green: 26 / 255, blue: 26 / 255))
         }
     }
 
@@ -928,9 +953,12 @@ struct SettleUpSheet: View {
                     // Amount Display
                     VStack(spacing: 12) {
                         if settlementType == .full {
-                            Text(person.balance > 0 ? "\(person.name) owes you" : "You owe \(person.name)")
-                                .font(.spotifyHeadingMedium)
-                                .foregroundColor(.wisePrimaryText)
+                            Text(
+                                person.balance > 0
+                                    ? "\(person.name) owes you" : "You owe \(person.name)"
+                            )
+                            .font(.spotifyHeadingMedium)
+                            .foregroundColor(.wisePrimaryText)
 
                             Text(String(format: "$%.2f", totalBalance))
                                 .font(.system(size: 64, weight: .bold, design: .rounded))
@@ -999,9 +1027,12 @@ struct SettleUpSheet: View {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 18))
-                            Text(settlementType == .full ? "Mark as Settled" : "Record Partial Payment")
-                                .font(.spotifyBodyLarge)
-                                .fontWeight(.semibold)
+                            Text(
+                                settlementType == .full
+                                    ? "Mark as Settled" : "Record Partial Payment"
+                            )
+                            .font(.spotifyBodyLarge)
+                            .fontWeight(.semibold)
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -1049,8 +1080,10 @@ struct SettleUpSheet: View {
 
             // Create settlement transaction
             let transaction = Transaction(
-                title: settlementType == .full ? "Settlement with \(person.name)" : "Partial payment from \(person.name)",
-                subtitle: settlementType == .full ? "Full settlement" : String(format: "$%.2f partial payment", settlementAmount),
+                title: settlementType == .full
+                    ? "Settlement with \(person.name)" : "Partial payment from \(person.name)",
+                subtitle: settlementType == .full
+                    ? "Full settlement" : String(format: "$%.2f partial payment", settlementAmount),
                 amount: person.balance > 0 ? -settlementAmount : settlementAmount,
                 category: .transfer,
                 date: Date(),
@@ -1211,7 +1244,8 @@ struct RecordPaymentSheet: View {
 
             // Create a transaction record
             let transaction = Transaction(
-                title: paymentDirection == .youPaid ? "Payment to \(person.name)" : "Payment from \(person.name)",
+                title: paymentDirection == .youPaid
+                    ? "Payment to \(person.name)" : "Payment from \(person.name)",
                 subtitle: notes.isEmpty ? "Cash payment" : notes,
                 amount: amountValue,
                 category: .transfer,

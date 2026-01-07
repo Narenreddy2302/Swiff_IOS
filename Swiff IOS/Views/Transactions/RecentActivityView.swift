@@ -211,7 +211,8 @@ struct RecentActivityView: View {
             LazyVStack(spacing: 0, pinnedViews: []) {
                 ForEach(groupedSections) { section in
                     Section {
-                        ForEach(Array(section.transactions.enumerated()), id: \.element.id) { index, transaction in
+                        ForEach(Array(section.transactions.enumerated()), id: \.element.id) {
+                            index, transaction in
                             FeedTransactionRow(
                                 transaction: transaction,
                                 isLastInGroup: index == section.transactions.count - 1,

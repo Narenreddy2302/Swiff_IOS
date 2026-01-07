@@ -6,9 +6,9 @@
 //  Comprehensive data service layer for SwiftData persistence
 //
 
+import Combine
 import Foundation
 import SwiftData
-import Combine
 
 // MARK: - Persistence Errors
 // Note: Schema versioning and migration plan are defined in MigrationPlanV1toV2.swift
@@ -54,10 +54,10 @@ enum PersistenceError: LocalizedError {
 // MARK: - Persistence Service
 
 @MainActor
-class PersistenceService {
+public class PersistenceService {
     // MARK: - Singleton
 
-    static let shared = PersistenceService()
+    public static let shared = PersistenceService()
 
     // Public access to model container for app-wide use
     private(set) var modelContainer: ModelContainer!
@@ -81,7 +81,7 @@ class PersistenceService {
         TransactionModel.self,
         PriceChangeModel.self,
         SplitBillModel.self,
-        AccountModel.self
+        AccountModel.self,
     ])
 
     // MARK: - Initialization
@@ -156,16 +156,16 @@ class PersistenceService {
     /// Check if error is related to schema mismatch
     private static func isSchemaError(_ error: Error) -> Bool {
         let errorDescription = error.localizedDescription.lowercased()
-        return errorDescription.contains("schema") ||
-               errorDescription.contains("model") ||
-               errorDescription.contains("metadata") ||
-               errorDescription.contains("reflection")
+        return errorDescription.contains("schema") || errorDescription.contains("model")
+            || errorDescription.contains("metadata") || errorDescription.contains("reflection")
     }
 
     /// Delete the database file from disk
     private static func deleteDatabase() {
         let fileManager = FileManager.default
-        guard let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        guard
+            let documentsPath = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first
+        else {
             print("⚠️ Could not locate documents directory")
             return
         }
@@ -225,7 +225,7 @@ class PersistenceService {
                 existingPerson.email = person.email
                 existingPerson.phone = person.phone
                 existingPerson.balance = person.balance
-                existingPerson.lastModifiedDate = Date() // Update modification timestamp
+                existingPerson.lastModifiedDate = Date()  // Update modification timestamp
 
                 // Update avatar
                 switch person.avatarType {
@@ -483,9 +483,8 @@ class PersistenceService {
 
         let descriptor = FetchDescriptor<SubscriptionModel>(
             predicate: #Predicate { subscription in
-                subscription.isActive &&
-                subscription.nextBillingDate >= now &&
-                subscription.nextBillingDate <= futureDate
+                subscription.isActive && subscription.nextBillingDate >= now
+                    && subscription.nextBillingDate <= futureDate
             }
         )
 
@@ -745,11 +744,17 @@ class PersistenceService {
         let now = Date()
         let calendar = Calendar.current
 
-        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) else {
+        guard
+            let startOfMonth = calendar.date(
+                from: calendar.dateComponents([.year, .month], from: now))
+        else {
             throw PersistenceError.validationFailed(reason: "Failed to calculate start of month")
         }
 
-        guard let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
+        guard
+            let endOfMonth = calendar.date(
+                byAdding: DateComponents(month: 1, day: -1), to: startOfMonth)
+        else {
             throw PersistenceError.validationFailed(reason: "Failed to calculate end of month")
         }
 
@@ -981,7 +986,8 @@ class PersistenceService {
                 existingSplitBill.totalAmount = splitBill.totalAmount
                 existingSplitBill.paidById = splitBill.paidById
                 existingSplitBill.splitTypeRaw = splitBill.splitType.rawValue
-                existingSplitBill.participantsData = (try? JSONEncoder().encode(splitBill.participants)) ?? Data()
+                existingSplitBill.participantsData =
+                    (try? JSONEncoder().encode(splitBill.participants)) ?? Data()
                 existingSplitBill.notes = splitBill.notes
                 existingSplitBill.categoryRaw = splitBill.category.rawValue
                 existingSplitBill.date = splitBill.date
@@ -1030,7 +1036,8 @@ class PersistenceService {
             existingSplitBill.totalAmount = splitBill.totalAmount
             existingSplitBill.paidById = splitBill.paidById
             existingSplitBill.splitTypeRaw = splitBill.splitType.rawValue
-            existingSplitBill.participantsData = (try? JSONEncoder().encode(splitBill.participants)) ?? Data()
+            existingSplitBill.participantsData =
+                (try? JSONEncoder().encode(splitBill.participants)) ?? Data()
             existingSplitBill.notes = splitBill.notes
             existingSplitBill.categoryRaw = splitBill.category.rawValue
             existingSplitBill.date = splitBill.date
@@ -1236,7 +1243,9 @@ class PersistenceService {
     }
 
     /// Perform background task with a new context
-    func performBackgroundTask<T>(_ block: @escaping @Sendable (ModelContext) throws -> T) async throws -> T {
+    func performBackgroundTask<T>(_ block: @escaping @Sendable (ModelContext) throws -> T)
+        async throws -> T
+    {
         guard let container = modelContainer else {
             throw PersistenceError.contextError
         }
@@ -1279,7 +1288,8 @@ class PersistenceService {
         }
 
         guard subscription.price > 0 else {
-            throw PersistenceError.validationFailed(reason: "Subscription price must be greater than 0")
+            throw PersistenceError.validationFailed(
+                reason: "Subscription price must be greater than 0")
         }
     }
 
@@ -1313,7 +1323,8 @@ class PersistenceService {
         }
 
         guard !expense.splitBetween.isEmpty else {
-            throw PersistenceError.validationFailed(reason: "Expense must be split between at least one person")
+            throw PersistenceError.validationFailed(
+                reason: "Expense must be split between at least one person")
         }
     }
 

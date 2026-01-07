@@ -10,10 +10,10 @@ import Combine
 import Foundation
 
 @MainActor
-class BackupService {
+public class BackupService {
     // MARK: - Singleton
 
-    static let shared = BackupService()
+    public static let shared = BackupService()
 
     // MARK: - Constants
 

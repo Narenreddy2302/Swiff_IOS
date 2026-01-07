@@ -12,10 +12,12 @@ import PhotosUI
 import SwiftData
 import SwiftUI
 
-struct ContentView: View {
+public struct ContentView: View {
     @EnvironmentObject var dataManager: DataManager
 
-    var body: some View {
+    public init() {}
+
+    public var body: some View {
         MainTabView()
     }
 }

@@ -6,8 +6,8 @@
 //  CoreSpotlight integration for system-wide search of app content
 //
 
-import Foundation
 import CoreSpotlight
+import Foundation
 import MobileCoreServices
 import UniformTypeIdentifiers
 
@@ -16,11 +16,11 @@ import UniformTypeIdentifiers
 /// Service for indexing app content in iOS Spotlight search
 /// This allows users to search for subscriptions, people, and transactions from the system search
 @MainActor
-class SpotlightIndexingService {
+public class SpotlightIndexingService {
 
     // MARK: - Singleton
 
-    static let shared = SpotlightIndexingService()
+    public static let shared = SpotlightIndexingService()
 
     // MARK: - Constants
 
@@ -35,7 +35,9 @@ class SpotlightIndexingService {
     // MARK: - Public Methods
 
     /// Index all app content in Spotlight
-    func indexAllContent(people: [Person], subscriptions: [Subscription], transactions: [Transaction]) async {
+    func indexAllContent(
+        people: [Person], subscriptions: [Subscription], transactions: [Transaction]
+    ) async {
         print("SpotlightIndexingService: Starting full index...")
 
         // Index in batches to avoid overwhelming the system
@@ -110,7 +112,9 @@ class SpotlightIndexingService {
             try await CSSearchableIndex.default().deleteAllSearchableItems()
             print("SpotlightIndexingService: Cleared all indexed content")
         } catch {
-            print("SpotlightIndexingService: Error clearing indexed content - \(error.localizedDescription)")
+            print(
+                "SpotlightIndexingService: Error clearing indexed content - \(error.localizedDescription)"
+            )
         }
     }
 
@@ -127,7 +131,9 @@ class SpotlightIndexingService {
 
         // Additional metadata - append balance to description
         if person.balance != 0 {
-            let balanceText = person.balance > 0 ? "You owe $\(abs(person.balance))" : "Owes you $\(abs(person.balance))"
+            let balanceText =
+                person.balance > 0
+                ? "You owe $\(abs(person.balance))" : "Owes you $\(abs(person.balance))"
             attributeSet.contentDescription = "\(person.email) • \(balanceText)"
         }
 
@@ -138,7 +144,7 @@ class SpotlightIndexingService {
             person.name,
             person.email,
             "balance",
-            person.balance > 0 ? "debt" : "owed"
+            person.balance > 0 ? "debt" : "owed",
         ]
 
         // Thumbnail (if available)
@@ -167,7 +173,9 @@ class SpotlightIndexingService {
         attributeSet.contentDescription = "\(subscription.description) • \(priceText)"
 
         // Status
-        let statusText = subscription.isActive ? "Active" : (subscription.cancellationDate != nil ? "Cancelled" : "Paused")
+        let statusText =
+            subscription.isActive
+            ? "Active" : (subscription.cancellationDate != nil ? "Cancelled" : "Paused")
 
         // Keywords for better search
         var keywords = [
@@ -176,7 +184,7 @@ class SpotlightIndexingService {
             subscription.category.rawValue,
             subscription.billingCycle.rawValue,
             statusText,
-            priceText
+            priceText,
         ]
 
         if subscription.isFreeTrial {
@@ -217,8 +225,10 @@ class SpotlightIndexingService {
         attributeSet.contentDescription = transaction.subtitle
 
         // Transaction-specific metadata
-        let amountText = String(format: "%@$%.2f", transaction.isExpense ? "-" : "+", abs(transaction.amount))
-        attributeSet.contentDescription = "\(transaction.subtitle) • \(amountText) • \(transaction.category.rawValue)"
+        let amountText = String(
+            format: "%@$%.2f", transaction.isExpense ? "-" : "+", abs(transaction.amount))
+        attributeSet.contentDescription =
+            "\(transaction.subtitle) • \(amountText) • \(transaction.category.rawValue)"
 
         // Keywords for better search
         var keywords = [
@@ -227,7 +237,7 @@ class SpotlightIndexingService {
             transaction.subtitle,
             transaction.category.rawValue,
             amountText,
-            transaction.isExpense ? "expense" : "income"
+            transaction.isExpense ? "expense" : "income",
         ]
 
         // Add tags as keywords
@@ -243,8 +253,9 @@ class SpotlightIndexingService {
         attributeSet.contentModificationDate = transaction.date
 
         // Rating based on recency
-        let daysSinceTransaction = Calendar.current.dateComponents([.day], from: transaction.date, to: Date()).day ?? 0
-        let rating = max(1, 5 - (daysSinceTransaction / 7)) // Decrease rating over time
+        let daysSinceTransaction =
+            Calendar.current.dateComponents([.day], from: transaction.date, to: Date()).day ?? 0
+        let rating = max(1, 5 - (daysSinceTransaction / 7))  // Decrease rating over time
         attributeSet.rating = NSNumber(value: rating)
 
         let item = CSSearchableItem(
@@ -271,7 +282,8 @@ class SpotlightIndexingService {
 
     private func removeItems(withIdentifiers identifiers: [String]) async {
         do {
-            try await CSSearchableIndex.default().deleteSearchableItems(withIdentifiers: identifiers)
+            try await CSSearchableIndex.default().deleteSearchableItems(
+                withIdentifiers: identifiers)
         } catch {
             print("SpotlightIndexingService: Error removing items - \(error.localizedDescription)")
         }
@@ -294,9 +306,9 @@ class SpotlightIndexingService {
     // MARK: - Public Methods - Result Handling
 
     /// Parse a Spotlight search result identifier and extract the entity type and ID
-    static func parseSpotlightIdentifier(_ identifier: String) -> (type: String, id: UUID)? {
+    public static func parseSpotlightIdentifier(_ identifier: String) -> (type: String, id: UUID)? {
         let components = identifier.split(separator: "-")
-        guard components.count == 6 else { return nil } // UUID has 5 parts plus type prefix
+        guard components.count == 6 else { return nil }  // UUID has 5 parts plus type prefix
 
         let type = String(components[0])
         let uuidString = components.dropFirst().joined(separator: "-")
@@ -310,17 +322,17 @@ class SpotlightIndexingService {
 // MARK: - Spotlight Result Navigation
 
 /// Helper struct for handling navigation from Spotlight results
-struct SpotlightResultNavigation {
-    enum EntityType: String {
+public struct SpotlightResultNavigation {
+    public enum EntityType: String {
         case person
         case subscription
         case transaction
     }
 
-    let entityType: EntityType
-    let entityId: UUID
+    public let entityType: EntityType
+    public let entityId: UUID
 
-    init?(from identifier: String) {
+    public init?(from identifier: String) {
         guard let parsed = SpotlightIndexingService.parseSpotlightIdentifier(identifier) else {
             return nil
         }

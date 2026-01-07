@@ -83,7 +83,8 @@ struct SubscriptionsView: View {
             result = result.filter { sharedSub in
                 // Search by notes (subscription name) or by linked subscription name
                 let notesMatch = sharedSub.notes.localizedCaseInsensitiveContains(searchText)
-                let subscriptionMatch = dataManager.subscriptions
+                let subscriptionMatch =
+                    dataManager.subscriptions
                     .first { $0.id == sharedSub.subscriptionId }?
                     .name.localizedCaseInsensitiveContains(searchText) ?? false
                 return notesMatch || subscriptionMatch
@@ -93,7 +94,11 @@ struct SubscriptionsView: View {
         // 2. Category Filter (via linked subscription)
         if let category = selectedCategory {
             result = result.filter { sharedSub in
-                guard let subscription = dataManager.subscriptions.first(where: { $0.id == sharedSub.subscriptionId }) else {
+                guard
+                    let subscription = dataManager.subscriptions.first(where: {
+                        $0.id == sharedSub.subscriptionId
+                    })
+                else {
                     return false
                 }
                 return subscription.category == category
@@ -122,12 +127,13 @@ struct SubscriptionsView: View {
         netflix.balance = 0
         netflix.balanceStatus = .settled
         netflix.billingCycle = .monthly
-        netflix.nextBillingDate = Calendar.current.date(byAdding: .day, value: 15, to: Date()) ?? Date()
+        netflix.nextBillingDate =
+            Calendar.current.date(byAdding: .day, value: 15, to: Date()) ?? Date()
         netflix.members = [
             SharedMember(name: "You"),
             SharedMember(name: "Mom"),
             SharedMember(name: "Dad"),
-            SharedMember(name: "Sis")
+            SharedMember(name: "Sis"),
         ]
 
         var spotify = SharedSubscription(
@@ -142,13 +148,14 @@ struct SubscriptionsView: View {
         spotify.balance = -3.40
         spotify.balanceStatus = .youOwe
         spotify.billingCycle = .monthly
-        spotify.nextBillingDate = Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
+        spotify.nextBillingDate =
+            Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
         spotify.members = [
             SharedMember(name: "Mike"),
             SharedMember(name: "You"),
             SharedMember(name: "Sarah"),
             SharedMember(name: "Alex"),
-            SharedMember(name: "Tom")
+            SharedMember(name: "Tom"),
         ]
 
         var disney = SharedSubscription(
@@ -163,11 +170,12 @@ struct SubscriptionsView: View {
         disney.balance = 4.66
         disney.balanceStatus = .owesYou
         disney.billingCycle = .monthly
-        disney.nextBillingDate = Calendar.current.date(byAdding: .day, value: 20, to: Date()) ?? Date()
+        disney.nextBillingDate =
+            Calendar.current.date(byAdding: .day, value: 20, to: Date()) ?? Date()
         disney.members = [
             SharedMember(name: "You"),
             SharedMember(name: "James"),
-            SharedMember(name: "Emma")
+            SharedMember(name: "Emma"),
         ]
 
         var youtube = SharedSubscription(
@@ -182,12 +190,13 @@ struct SubscriptionsView: View {
         youtube.balance = 0
         youtube.balanceStatus = .settled
         youtube.billingCycle = .monthly
-        youtube.nextBillingDate = Calendar.current.date(byAdding: .day, value: 22, to: Date()) ?? Date()
+        youtube.nextBillingDate =
+            Calendar.current.date(byAdding: .day, value: 22, to: Date()) ?? Date()
         youtube.members = [
             SharedMember(name: "You"),
             SharedMember(name: "Mom"),
             SharedMember(name: "Dad"),
-            SharedMember(name: "Sis")
+            SharedMember(name: "Sis"),
         ]
 
         var icloud = SharedSubscription(
@@ -202,11 +211,12 @@ struct SubscriptionsView: View {
         icloud.balance = 0.99
         icloud.balanceStatus = .owesYou
         icloud.billingCycle = .monthly
-        icloud.nextBillingDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+        icloud.nextBillingDate =
+            Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
         icloud.members = [
             SharedMember(name: "You"),
             SharedMember(name: "Lisa"),
-            SharedMember(name: "David")
+            SharedMember(name: "David"),
         ]
 
         var hbo = SharedSubscription(
@@ -226,7 +236,7 @@ struct SubscriptionsView: View {
             SharedMember(name: "You"),
             SharedMember(name: "Lisa"),
             SharedMember(name: "David"),
-            SharedMember(name: "Kevin")
+            SharedMember(name: "Kevin"),
         ]
 
         return [netflix, spotify, disney, youtube, icloud, hbo]
@@ -341,7 +351,9 @@ struct SubscriptionsView: View {
                         }
                     } else {
                         // Shared tab - check if we have any base data (real or mock)
-                        let hasBaseData = !dataManager.sharedSubscriptions.isEmpty || !mockSharedSubscriptions.isEmpty
+                        let hasBaseData =
+                            !dataManager.sharedSubscriptions.isEmpty
+                            || !mockSharedSubscriptions.isEmpty
 
                         if !hasBaseData && !dataManager.isLoading {
                             // No shared subscriptions at all

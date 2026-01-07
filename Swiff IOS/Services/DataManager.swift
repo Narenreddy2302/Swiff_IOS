@@ -13,10 +13,10 @@ import SwiftData
 import SwiftUI
 
 @MainActor
-class DataManager: ObservableObject {
+public class DataManager: ObservableObject {
 
     // MARK: - Singleton
-    static let shared = DataManager()
+    public static let shared = DataManager()
 
     // MARK: - Published Properties
 
@@ -40,13 +40,13 @@ class DataManager: ObservableObject {
     // MARK: - Real-Time Change Notifications
 
     /// Revision counter - increment to force view updates across the app
-    @Published var dataRevision: Int = 0
+    @Published public var dataRevision: Int = 0
 
     /// Subject for granular change notifications
-    let dataChangeSubject = PassthroughSubject<DataChange, Never>()
+    public let dataChangeSubject = PassthroughSubject<DataChange, Never>()
 
     /// Enum describing what type of data change occurred
-    enum DataChange: Equatable {
+    public enum DataChange: Equatable {
         case personUpdated(UUID)
         case personAdded(UUID)
         case personDeleted(UUID)
@@ -115,7 +115,7 @@ class DataManager: ObservableObject {
 
     // MARK: - Data Loading
 
-    func loadAllData() {
+    public func loadAllData() {
         isLoading = true
         error = nil
 
@@ -154,13 +154,13 @@ class DataManager: ObservableObject {
         }
     }
 
-    func refreshAllData() {
+    public func refreshAllData() {
         loadAllData()
     }
 
     // MARK: - Person CRUD Operations
 
-    func addPerson(_ person: Person) throws {
+    public func addPerson(_ person: Person) throws {
         // Save locally first
         try persistenceService.savePerson(person)
         people.append(person)
@@ -173,7 +173,7 @@ class DataManager: ObservableObject {
         notifyChange(.personAdded(person.id))
     }
 
-    func updatePerson(_ person: Person) throws {
+    public func updatePerson(_ person: Person) throws {
         try persistenceService.updatePerson(person)
         if let index = people.firstIndex(where: { $0.id == person.id }) {
             people[index] = person
@@ -187,7 +187,7 @@ class DataManager: ObservableObject {
         }
     }
 
-    func deletePerson(id: UUID) throws {
+    public func deletePerson(id: UUID) throws {
         try persistenceService.deletePerson(id: id)
         people.removeAll { $0.id == id }
         print("Person deleted")
@@ -199,7 +199,7 @@ class DataManager: ObservableObject {
         notifyChange(.personDeleted(id))
     }
 
-    func searchPeople(byName searchTerm: String) -> [Person] {
+    public func searchPeople(byName searchTerm: String) -> [Person] {
         if searchTerm.isEmpty {
             return people
         }
@@ -228,7 +228,7 @@ class DataManager: ObservableObject {
         }
     }
 
-    func deleteGroup(id: UUID) throws {
+    public func deleteGroup(id: UUID) throws {
         try persistenceService.deleteGroup(id: id)
         groups.removeAll { $0.id == id }
         print("Group deleted")
@@ -291,7 +291,7 @@ class DataManager: ObservableObject {
         }
     }
 
-    func deleteSubscription(id: UUID) throws {
+    public func deleteSubscription(id: UUID) throws {
 
         try persistenceService.deleteSubscription(id: id)
         subscriptions.removeAll { $0.id == id }
@@ -335,7 +335,7 @@ class DataManager: ObservableObject {
     }
 
     /// Delete a shared subscription
-    func deleteSharedSubscription(id: UUID) throws {
+    public func deleteSharedSubscription(id: UUID) throws {
         try persistenceService.deleteSharedSubscription(id: id)
         sharedSubscriptions.removeAll { $0.id == id }
         print("Shared subscription deleted")
@@ -383,13 +383,15 @@ class DataManager: ObservableObject {
     }
 
     /// Unshare a subscription (remove shared subscription record)
-    func unshareSubscription(sharedSubscriptionId: UUID) throws {
-        guard let sharedSub = sharedSubscriptions.first(where: { $0.id == sharedSubscriptionId }) else {
+    public func unshareSubscription(sharedSubscriptionId: UUID) throws {
+        guard let sharedSub = sharedSubscriptions.first(where: { $0.id == sharedSubscriptionId })
+        else {
             return
         }
 
         // Find and update the base subscription
-        if var baseSubscription = subscriptions.first(where: { $0.id == sharedSub.subscriptionId }) {
+        if var baseSubscription = subscriptions.first(where: { $0.id == sharedSub.subscriptionId })
+        {
             baseSubscription.isShared = false
             baseSubscription.sharedWith = []
             try updateSubscription(baseSubscription)
@@ -402,7 +404,7 @@ class DataManager: ObservableObject {
     // MARK: - Account Operations
 
     /// Add a new account
-    func addAccount(_ account: Account) throws {
+    public func addAccount(_ account: Account) throws {
         try persistenceService.saveAccount(account)
         accounts.append(account)
         print("Account added: \(account.name)")
@@ -412,7 +414,7 @@ class DataManager: ObservableObject {
     }
 
     /// Update an existing account
-    func updateAccount(_ account: Account) throws {
+    public func updateAccount(_ account: Account) throws {
         try persistenceService.updateAccount(account)
         if let index = accounts.firstIndex(where: { $0.id == account.id }) {
             accounts[index] = account
@@ -424,7 +426,7 @@ class DataManager: ObservableObject {
     }
 
     /// Delete an account
-    func deleteAccount(id: UUID) throws {
+    public func deleteAccount(id: UUID) throws {
         try persistenceService.deleteAccount(id: id)
         accounts.removeAll { $0.id == id }
         print("Account deleted")
@@ -434,12 +436,12 @@ class DataManager: ObservableObject {
     }
 
     /// Get the default account
-    func getDefaultAccount() -> Account? {
+    public func getDefaultAccount() -> Account? {
         accounts.first { $0.isDefault } ?? accounts.first
     }
 
     /// Set an account as default
-    func setDefaultAccount(_ account: Account) throws {
+    public func setDefaultAccount(_ account: Account) throws {
         var updatedAccount = account
         updatedAccount.isDefault = true
         try updateAccount(updatedAccount)
@@ -452,12 +454,12 @@ class DataManager: ObservableObject {
 
     // MARK: - Price Change Operations (AGENT 9)
 
-    func addPriceChange(_ priceChange: PriceChange) throws {
+    public func addPriceChange(_ priceChange: PriceChange) throws {
         try persistenceService.savePriceChange(priceChange)
         print("✅ Price change recorded: $\(priceChange.oldPrice) → $\(priceChange.newPrice)")
     }
 
-    func getPriceHistory(for subscriptionId: UUID) -> [PriceChange] {
+    public func getPriceHistory(for subscriptionId: UUID) -> [PriceChange] {
         do {
             return try persistenceService.fetchPriceChanges(forSubscription: subscriptionId)
         } catch {
@@ -466,7 +468,7 @@ class DataManager: ObservableObject {
         }
     }
 
-    func getAllPriceChanges() -> [PriceChange] {
+    public func getAllPriceChanges() -> [PriceChange] {
         do {
             return try persistenceService.fetchAllPriceChanges()
         } catch {
@@ -475,7 +477,7 @@ class DataManager: ObservableObject {
         }
     }
 
-    func getRecentPriceIncreases(days: Int = 30) -> [PriceChange] {
+    public func getRecentPriceIncreases(days: Int = 30) -> [PriceChange] {
         do {
             return try persistenceService.fetchRecentPriceIncreases(days: days)
         } catch {
@@ -514,7 +516,7 @@ class DataManager: ObservableObject {
     }
 
     /// Process overdue subscription renewals manually
-    func processOverdueRenewals() async {
+    public func processOverdueRenewals() async {
         await renewalService.processOverdueRenewals()
         loadAllData()  // Reload data to reflect changes
     }
@@ -567,7 +569,7 @@ class DataManager: ObservableObject {
         }
     }
 
-    func deleteTransaction(id: UUID) throws {
+    public func deleteTransaction(id: UUID) throws {
         try persistenceService.deleteTransaction(id: id)
         transactions.removeAll { $0.id == id }
         print("Transaction deleted")
@@ -605,7 +607,7 @@ class DataManager: ObservableObject {
     // MARK: - Bulk Transaction Operations
 
     /// Bulk delete multiple transactions
-    func bulkDeleteTransactions(ids: [UUID]) throws {
+    public func bulkDeleteTransactions(ids: [UUID]) throws {
         guard !ids.isEmpty else { return }
 
         // Delete from persistence
@@ -643,7 +645,7 @@ class DataManager: ObservableObject {
     }
 
     /// Bulk add tags to multiple transactions
-    func bulkAddTags(transactionIds: [UUID], tags: [String]) throws {
+    public func bulkAddTags(transactionIds: [UUID], tags: [String]) throws {
         guard !transactionIds.isEmpty, !tags.isEmpty else { return }
 
         // Update each transaction
@@ -686,7 +688,7 @@ class DataManager: ObservableObject {
         }
     }
 
-    func settleExpense(id: UUID, inGroup groupID: UUID) throws {
+    public func settleExpense(id: UUID, inGroup groupID: UUID) throws {
         try persistenceService.settleExpense(id: id)
 
         // Update local group
@@ -747,7 +749,7 @@ class DataManager: ObservableObject {
         }
     }
 
-    func deleteSplitBill(id: UUID) throws {
+    public func deleteSplitBill(id: UUID) throws {
         try persistenceService.deleteSplitBill(id: id)
         splitBills.removeAll { $0.id == id }
         print("Split bill deleted")
@@ -756,7 +758,7 @@ class DataManager: ObservableObject {
         notifyChange(.splitBillDeleted(id))
     }
 
-    func markParticipantAsPaid(splitBillId: UUID, participantId: UUID) throws {
+    public func markParticipantAsPaid(splitBillId: UUID, participantId: UUID) throws {
         guard let index = splitBills.firstIndex(where: { $0.id == splitBillId }) else { return }
 
         var updatedSplitBill = splitBills[index]
@@ -1209,7 +1211,8 @@ class DataManager: ObservableObject {
                     activityType: person.balance > 0 ? "owes you" : "you owe",
                     amount: person.balance.asAbsoluteCurrency,
                     date: person.lastModifiedDate,
-                    avatarColor: person.balance > 0 ? Theme.Colors.brandPrimary : Theme.Colors.brandAccent,
+                    avatarColor: person.balance > 0
+                        ? Theme.Colors.brandPrimary : Theme.Colors.brandAccent,
                     personId: person.id,
                     groupId: nil
                 ))

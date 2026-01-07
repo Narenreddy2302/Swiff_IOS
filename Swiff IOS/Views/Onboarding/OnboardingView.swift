@@ -13,7 +13,11 @@ struct OnboardingView: View {
     @State private var featurePage: Int = 0
     @State private var setupStep: Int = 0
 
-    let onComplete: () -> Void
+    public let onComplete: () -> Void
+
+    public init(onComplete: @escaping () -> Void) {
+        self.onComplete = onComplete
+    }
 
     enum OnboardingStage {
         case welcome
@@ -30,10 +34,11 @@ struct OnboardingView: View {
                         onboardingStage = .features
                     }
                 })
-                .transition(.asymmetric(
-                    insertion: .opacity,
-                    removal: .move(edge: .leading).combined(with: .opacity)
-                ))
+                .transition(
+                    .asymmetric(
+                        insertion: .opacity,
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
 
             case .features:
                 FeatureShowcaseScreen(
@@ -47,10 +52,11 @@ struct OnboardingView: View {
                         completeOnboarding()
                     }
                 )
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .leading).combined(with: .opacity)
-                ))
+                .transition(
+                    .asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
 
             case .setup:
                 SetupWizardView(
@@ -62,10 +68,11 @@ struct OnboardingView: View {
                         completeOnboarding()
                     }
                 )
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .opacity
-                ))
+                .transition(
+                    .asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .opacity
+                    ))
             }
         }
         .animation(

@@ -6,8 +6,8 @@
 //  Deep link handler for widget interactions
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Deep Link Type
 
@@ -22,7 +22,8 @@ enum DeepLinkType: Equatable {
 
     init(url: URL) {
         guard url.scheme == "swiff",
-              url.host == "action" else {
+            url.host == "action"
+        else {
             self = .none
             return
         }
@@ -64,7 +65,7 @@ enum DeepLinkType: Equatable {
 // MARK: - Deep Link Handler
 
 @MainActor
-class DeepLinkHandler: ObservableObject {
+public class DeepLinkHandler: ObservableObject {
     @Published var currentDeepLink: DeepLinkType = .none
     @Published var showAddTransaction = false
     @Published var showAddSubscription = false
@@ -72,7 +73,7 @@ class DeepLinkHandler: ObservableObject {
     @Published var selectedSubscriptionId: String?
 
     /// Handle incoming deep link URL
-    func handle(url: URL) {
+    public func handle(url: URL) {
         let deepLink = DeepLinkType(url: url)
         currentDeepLink = deepLink
 
@@ -99,14 +100,14 @@ class DeepLinkHandler: ObservableObject {
                 self.showAddSubscription = true
 
             case .viewSubscriptions:
-                self.selectedTab = 3 // Subscriptions tab
+                self.selectedTab = 3  // Subscriptions tab
 
             case .viewFeed:
-                self.selectedTab = 4 // Feed tab
+                self.selectedTab = 4  // Feed tab
 
             case .viewSubscription(let id):
                 self.selectedSubscriptionId = id
-                self.selectedTab = 3 // Navigate to subscriptions tab
+                self.selectedTab = 3  // Navigate to subscriptions tab
 
             case .markAsPaid(let id):
                 // MOCK: In production, this would mark the subscription as paid
@@ -192,6 +193,6 @@ extension DeepLinkHelper {
         ("View Subscriptions", makeURL(for: .viewSubscriptions)),
         ("View Feed", makeURL(for: .viewFeed)),
         ("View Specific Subscription", makeURL(for: .viewSubscription(id: "test-id"))),
-        ("Mark As Paid", makeURL(for: .markAsPaid(id: "test-id")))
+        ("Mark As Paid", makeURL(for: .markAsPaid(id: "test-id"))),
     ]
 }

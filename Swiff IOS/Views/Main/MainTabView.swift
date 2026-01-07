@@ -27,7 +27,7 @@ struct MainTabView: View {
         }
     }
 
-    init() {
+    public init() {
         TabBarAccessor.setupAppearance()
     }
 

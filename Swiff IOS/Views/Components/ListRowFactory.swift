@@ -75,7 +75,9 @@ struct ListRowFactory {
     }
 
     /// Creates a simple row view for a Transaction
-    static func simpleRow(for transaction: Transaction, onTap: (() -> Void)? = nil) -> some View {
+    static func simpleRow(for transaction: Transaction, onTap: (() -> Void)? = nil)
+        -> some View
+    {
         row(for: transaction, onTap: onTap)
     }
 
@@ -161,7 +163,8 @@ struct ListRowFactory {
 
     /// Creates a row view for a Subscription
 
-    static func row(for subscription: Subscription, onTap: (() -> Void)? = nil) -> some View {
+    static func row(for subscription: Subscription, onTap: (() -> Void)? = nil) -> some View
+    {
         let (iconConfig, valueText, subtitle) = subscriptionConfig(subscription)
 
         return UniversalListRow(

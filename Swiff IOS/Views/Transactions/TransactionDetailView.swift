@@ -6,14 +6,18 @@
 //  Detailed view for transaction management
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 
 struct TransactionDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataManager: DataManager
 
-    let transactionId: UUID
+    public let transactionId: UUID
+
+    public init(transactionId: UUID) {
+        self.transactionId = transactionId
+    }
     @State private var showingEditSheet = false
     @State private var showingDeleteAlert = false
     @State private var showingReceiptFullscreen = false
@@ -25,7 +29,8 @@ struct TransactionDetailView: View {
 
     var linkedSubscription: Subscription? {
         guard let transaction = transaction,
-              let subscriptionId = transaction.linkedSubscriptionId else { return nil }
+            let subscriptionId = transaction.linkedSubscriptionId
+        else { return nil }
         return dataManager.subscriptions.first { $0.id == subscriptionId }
     }
 
@@ -37,10 +42,9 @@ struct TransactionDetailView: View {
     var relatedTransactions: [Transaction] {
         guard let transaction = transaction else { return [] }
         return dataManager.transactions.filter { t in
-            t.id != transaction.id && (
-                (transaction.merchant != nil && t.merchant == transaction.merchant) ||
-                t.category == transaction.category
-            )
+            t.id != transaction.id
+                && ((transaction.merchant != nil && t.merchant == transaction.merchant)
+                    || t.category == transaction.category)
         }
         .prefix(5)
         .map { $0 }
@@ -58,7 +62,7 @@ struct TransactionDetailView: View {
                                 LinearGradient(
                                     colors: [
                                         transaction.category.color.opacity(0.3),
-                                        transaction.category.color.opacity(0.1)
+                                        transaction.category.color.opacity(0.1),
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
@@ -79,8 +83,11 @@ struct TransactionDetailView: View {
 
                         // Type Badge - [Expense] or [Income]
                         HStack(spacing: 4) {
-                            Image(systemName: transaction.isExpense ? "arrow.down.circle.fill" : "arrow.up.circle.fill")
-                                .font(.system(size: 12))
+                            Image(
+                                systemName: transaction.isExpense
+                                    ? "arrow.down.circle.fill" : "arrow.up.circle.fill"
+                            )
+                            .font(.system(size: 12))
                             Text(transaction.isExpense ? "Expense" : "Income")
                                 .font(.spotifyLabelMedium)
                         }
@@ -253,7 +260,8 @@ struct TransactionDetailView: View {
                                     .font(.spotifyLabelSmall)
                                     .foregroundColor(.wiseSecondaryText)
 
-                                TransactionStatusBadge(status: transaction.paymentStatus, size: .medium)
+                                TransactionStatusBadge(
+                                    status: transaction.paymentStatus, size: .medium)
                             }
 
                             Spacer()
@@ -341,7 +349,8 @@ struct TransactionDetailView: View {
 
                     // TASK 3.6: Receipt image if attached (with zoom capability)
                     if let receiptData = transaction.receiptData,
-                       let uiImage = UIImage(data: receiptData) {
+                        let uiImage = UIImage(data: receiptData)
+                    {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Receipt")
                                 .font(.spotifyHeadingMedium)
@@ -361,9 +370,11 @@ struct TransactionDetailView: View {
                                             Color.black.opacity(0.3)
 
                                             VStack(spacing: 8) {
-                                                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                                    .font(.system(size: 24))
-                                                    .foregroundColor(.white)
+                                                Image(
+                                                    systemName: "arrow.up.left.and.arrow.down.right"
+                                                )
+                                                .font(.system(size: 24))
+                                                .foregroundColor(.white)
 
                                                 Text("Tap to view full size")
                                                     .font(.spotifyLabelSmall)
@@ -385,7 +396,9 @@ struct TransactionDetailView: View {
 
                     // TASK 3.7: Linked subscription badge with navigation
                     if let subscription = linkedSubscription {
-                        NavigationLink(destination: SubscriptionDetailView(subscriptionId: subscription.id)) {
+                        NavigationLink(
+                            destination: SubscriptionDetailView(subscriptionId: subscription.id)
+                        ) {
                             HStack(spacing: 12) {
                                 // Subscription icon
                                 UnifiedIconCircle(
@@ -434,8 +447,12 @@ struct TransactionDetailView: View {
                                 .padding(.horizontal, 16)
 
                             VStack(spacing: 0) {
-                                ForEach(Array(relatedTransactions.enumerated()), id: \.element.id) { index, relatedTx in
-                                    NavigationLink(destination: TransactionDetailView(transactionId: relatedTx.id)) {
+                                ForEach(Array(relatedTransactions.enumerated()), id: \.element.id) {
+                                    index, relatedTx in
+                                    NavigationLink(
+                                        destination: TransactionDetailView(
+                                            transactionId: relatedTx.id)
+                                    ) {
                                         HStack(spacing: 14) {
                                             // Initials-based avatar
                                             ZStack {
@@ -443,9 +460,15 @@ struct TransactionDetailView: View {
                                                     .fill(relatedTx.category.pastelAvatarColor)
                                                     .frame(width: 44, height: 44)
 
-                                                Text(InitialsGenerator.generate(from: relatedTx.title))
-                                                    .font(.system(size: 14, weight: .semibold))
-                                                    .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                                                Text(
+                                                    InitialsGenerator.generate(
+                                                        from: relatedTx.title)
+                                                )
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(
+                                                    Color(
+                                                        red: 26 / 255, green: 26 / 255,
+                                                        blue: 26 / 255))
                                             }
 
                                             // Title and status
@@ -457,7 +480,11 @@ struct TransactionDetailView: View {
 
                                                 Text(relatedTx.paymentStatus.displayText)
                                                     .font(.system(size: 13, weight: .medium))
-                                                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                                                    .foregroundColor(
+                                                        Color(
+                                                            red: 102 / 255, green: 102 / 255,
+                                                            blue: 102 / 255)
+                                                    )
                                                     .lineLimit(1)
                                             }
 
@@ -467,11 +494,17 @@ struct TransactionDetailView: View {
                                             VStack(alignment: .trailing, spacing: 3) {
                                                 Text(relatedTx.amountWithSign)
                                                     .font(.system(size: 15, weight: .semibold))
-                                                    .foregroundColor(relatedTx.isExpense ? AmountColors.negative : AmountColors.positive)
+                                                    .foregroundColor(
+                                                        relatedTx.isExpense
+                                                            ? AmountColors.negative
+                                                            : AmountColors.positive)
 
                                                 Text(relatedTx.date, style: .relative)
                                                     .font(.system(size: 12, weight: .medium))
-                                                    .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+                                                    .foregroundColor(
+                                                        Color(
+                                                            red: 153 / 255, green: 153 / 255,
+                                                            blue: 153 / 255))
                                             }
                                         }
                                         .padding(.vertical, 14)
@@ -542,7 +575,10 @@ struct TransactionDetailView: View {
         .navigationTitle(transaction?.title ?? "Transaction")
         .navigationBarTitleDisplayMode(.inline)
         .hidesTabBar()
-        .observeEntityWithRelated(transactionId, type: .transaction, relatedTypes: [.subscription, .splitBill], dataManager: dataManager)
+        .observeEntityWithRelated(
+            transactionId, type: .transaction, relatedTypes: [.subscription, .splitBill],
+            dataManager: dataManager
+        )
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 // TASK 3.11: Edit button
@@ -556,15 +592,18 @@ struct TransactionDetailView: View {
         .sheet(isPresented: $showingEditSheet) {
             // TASK 3.11: Edit flow preserving all fields
             if let transaction = transaction {
-                EditTransactionSheet(transaction: transaction, onTransactionUpdated: {
-                    showingEditSheet = false
-                })
+                EditTransactionSheet(
+                    transaction: transaction,
+                    onTransactionUpdated: {
+                        showingEditSheet = false
+                    })
             }
         }
         .fullScreenCover(isPresented: $showingReceiptFullscreen) {
             // TASK 3.6: Full-screen receipt viewer with zoom
             if let receiptData = transaction?.receiptData,
-               let uiImage = UIImage(data: receiptData) {
+                let uiImage = UIImage(data: receiptData)
+            {
                 ReceiptFullscreenViewer(image: uiImage, isPresented: $showingReceiptFullscreen)
             }
         }
@@ -575,7 +614,9 @@ struct TransactionDetailView: View {
             }
         } message: {
             if let transaction = transaction {
-                Text("This will permanently delete this \(transaction.isExpense ? "expense" : "income") of \(transaction.formattedAmount).")
+                Text(
+                    "This will permanently delete this \(transaction.isExpense ? "expense" : "income") of \(transaction.formattedAmount)."
+                )
             }
         }
     }
@@ -591,11 +632,11 @@ struct TransactionDetailView: View {
             subtitle: transaction.subtitle,
             amount: transaction.amount,
             category: transaction.category,
-            date: Date(), // Set to today
-            isRecurring: false, // Duplicates are not recurring
+            date: Date(),  // Set to today
+            isRecurring: false,  // Duplicates are not recurring
             tags: transaction.tags,
             merchant: transaction.merchant,
-            paymentStatus: .completed, // Default to completed
+            paymentStatus: .completed,  // Default to completed
             receiptData: transaction.receiptData,
             linkedSubscriptionId: transaction.linkedSubscriptionId,
             merchantCategory: transaction.merchantCategory,
@@ -696,14 +737,21 @@ struct FlowLayout: Layout {
     var spacing: CGFloat = 8
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = FlowLayoutResult(in: proposal.replacingUnspecifiedDimensions().width, subviews: subviews, spacing: spacing)
+        let result = FlowLayoutResult(
+            in: proposal.replacingUnspecifiedDimensions().width, subviews: subviews,
+            spacing: spacing)
         return result.size
     }
 
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+    func placeSubviews(
+        in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()
+    ) {
         let result = FlowLayoutResult(in: bounds.width, subviews: subviews, spacing: spacing)
         for (index, subview) in subviews.enumerated() {
-            subview.place(at: CGPoint(x: bounds.minX + result.frames[index].minX, y: bounds.minY + result.frames[index].minY), proposal: .unspecified)
+            subview.place(
+                at: CGPoint(
+                    x: bounds.minX + result.frames[index].minX,
+                    y: bounds.minY + result.frames[index].minY), proposal: .unspecified)
         }
     }
 
@@ -725,7 +773,8 @@ struct FlowLayout: Layout {
                     lineHeight = 0
                 }
 
-                frames.append(CGRect(x: currentX, y: currentY, width: size.width, height: size.height))
+                frames.append(
+                    CGRect(x: currentX, y: currentY, width: size.width, height: size.height))
                 lineHeight = max(lineHeight, size.height)
                 currentX += size.width + spacing
             }

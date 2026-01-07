@@ -12,13 +12,20 @@ import SwiftUI
 
 /// A consistent circular icon container for all list items.
 /// Displays an SF Symbol inside a colored circular background.
-struct UnifiedIconCircle: View {
-    let icon: String              // SF Symbol name
-    let color: Color              // Category/theme color
-    var size: CGFloat = 48        // Circle diameter
-    var iconSize: CGFloat = 20    // Icon size
+public struct UnifiedIconCircle: View {
+    public let icon: String  // SF Symbol name
+    public let color: Color  // Category/theme color
+    public var size: CGFloat = 48  // Circle diameter
+    public var iconSize: CGFloat = 20  // Icon size
 
-    var body: some View {
+    public init(icon: String, color: Color, size: CGFloat = 48, iconSize: CGFloat = 20) {
+        self.icon = icon
+        self.color = color
+        self.size = size
+        self.iconSize = iconSize
+    }
+
+    public var body: some View {
         Circle()
             .fill(color.opacity(0.2))
             .frame(width: size, height: size)
@@ -34,12 +41,18 @@ struct UnifiedIconCircle: View {
 
 /// A variant of UnifiedIconCircle that displays an emoji character.
 /// Used primarily for Groups which use emoji as their icons.
-struct UnifiedEmojiCircle: View {
-    let emoji: String
-    var backgroundColor: Color = .wiseBlue
-    var size: CGFloat = 48
+public struct UnifiedEmojiCircle: View {
+    public let emoji: String
+    public var backgroundColor: Color = .wiseBlue
+    public var size: CGFloat = 48
 
-    var body: some View {
+    public init(emoji: String, backgroundColor: Color = .wiseBlue, size: CGFloat = 48) {
+        self.emoji = emoji
+        self.backgroundColor = backgroundColor
+        self.size = size
+    }
+
+    public var body: some View {
         Circle()
             .fill(
                 LinearGradient(
@@ -60,14 +73,25 @@ struct UnifiedEmojiCircle: View {
 
 /// A variant of UnifiedIconCircle with outlined (stroke) style instead of filled.
 /// Used for card-based layouts inspired by Wise/Revolut design.
-struct OutlinedIconCircle: View {
-    let icon: String              // SF Symbol name
-    let color: Color              // Stroke and icon color
-    var size: CGFloat = 48        // Circle diameter
-    var strokeWidth: CGFloat = 2  // Border width
-    var iconSize: CGFloat = 20    // Icon size
+public struct OutlinedIconCircle: View {
+    public let icon: String  // SF Symbol name
+    public let color: Color  // Stroke and icon color
+    public var size: CGFloat = 48  // Circle diameter
+    public var strokeWidth: CGFloat = 2  // Border width
+    public var iconSize: CGFloat = 20  // Icon size
 
-    var body: some View {
+    public init(
+        icon: String, color: Color, size: CGFloat = 48, strokeWidth: CGFloat = 2,
+        iconSize: CGFloat = 20
+    ) {
+        self.icon = icon
+        self.color = color
+        self.size = size
+        self.strokeWidth = strokeWidth
+        self.iconSize = iconSize
+    }
+
+    public var body: some View {
         Circle()
             .stroke(color, lineWidth: strokeWidth)
             .frame(width: size, height: size)

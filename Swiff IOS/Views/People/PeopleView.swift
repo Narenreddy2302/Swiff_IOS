@@ -161,12 +161,17 @@ struct PeopleHeaderSection: View {
                             Text(tab.rawValue)
                         }
                         .font(.spotifyLabelMedium)
-                        .foregroundColor(selectedTab == tab ? Theme.Colors.textOnPrimary : Theme.Colors.textPrimary)
+                        .foregroundColor(
+                            selectedTab == tab
+                                ? Theme.Colors.textOnPrimary : Theme.Colors.textPrimary
+                        )
                         .padding(.vertical, 12)
                         .frame(maxWidth: .infinity)
                         .background(
                             Capsule()
-                                .fill(selectedTab == tab ? Theme.Colors.brandPrimary : Theme.Colors.border)
+                                .fill(
+                                    selectedTab == tab
+                                        ? Theme.Colors.brandPrimary : Theme.Colors.border)
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
