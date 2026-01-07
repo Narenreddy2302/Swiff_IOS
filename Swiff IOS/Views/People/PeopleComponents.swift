@@ -733,41 +733,38 @@ struct FeedGroupRow: View {
     private let avatarSize: CGFloat = 48
 
     var body: some View {
-        Button(action: { onTap?() }) {
-            HStack(spacing: 14) {
-                // Emoji avatar
-                emojiAvatar
+        HStack(spacing: 14) {
+            // Emoji avatar
+            emojiAvatar
 
-                // Left side - Name and last expense
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(group.name)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
-                        .lineLimit(1)
+            // Left side - Name and last expense
+            VStack(alignment: .leading, spacing: 4) {
+                Text(group.name)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(Theme.Colors.feedPrimaryText)
+                    .lineLimit(1)
 
-                    Text(group.lastExpenseDetails())
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(Theme.Colors.feedSecondaryText)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 8)
-
-                // Right side - Amount and status
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(formattedAmount)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
-
-                    Text(group.settlementStatus)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(statusColor)
-                }
+                Text(group.lastExpenseDetails())
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundColor(Theme.Colors.feedSecondaryText)
+                    .lineLimit(1)
             }
-            .padding(.vertical, 16)
-            .contentShape(Rectangle())
+
+            Spacer(minLength: 8)
+
+            // Right side - Amount and status
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(formattedAmount)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(Theme.Colors.feedPrimaryText)
+
+                Text(group.settlementStatus)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundColor(statusColor)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 16)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(group.name), \(formattedAmount), \(group.settlementStatus)")
     }

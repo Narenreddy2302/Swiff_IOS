@@ -20,40 +20,37 @@ struct FeedSubscriptionRow: View {
     private let avatarSize: CGFloat = 48
 
     var body: some View {
-        Button(action: { onTap?() }) {
-            HStack(spacing: 14) {
-                // Avatar - initials with colored background
-                initialsAvatar
+        HStack(spacing: 14) {
+            // Avatar - initials with colored background
+            initialsAvatar
 
-                // Left side - Name and Cycle + Next Billing
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(subscription.name)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
-                        .lineLimit(1)
+            // Left side - Name and Cycle + Next Billing
+            VStack(alignment: .leading, spacing: 4) {
+                Text(subscription.name)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(Theme.Colors.feedPrimaryText)
+                    .lineLimit(1)
 
-                    Text(cycleAndNextBillingText)
-                        .font(.system(size: 13))
-                        .foregroundColor(Theme.Colors.feedSecondaryText)
-                }
-
-                Spacer(minLength: 8)
-
-                // Right side - Amount and Payer
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(displayAmount)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
-
-                    Text(payerLabel)
-                        .font(.system(size: 13))
-                        .foregroundColor(Theme.Colors.feedSecondaryText)
-                }
+                Text(cycleAndNextBillingText)
+                    .font(.system(size: 13))
+                    .foregroundColor(Theme.Colors.feedSecondaryText)
             }
-            .padding(.vertical, 16)
-            .contentShape(Rectangle())
+
+            Spacer(minLength: 8)
+
+            // Right side - Amount and Payer
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(displayAmount)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(Theme.Colors.feedPrimaryText)
+
+                Text(payerLabel)
+                    .font(.system(size: 13))
+                    .foregroundColor(Theme.Colors.feedSecondaryText)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 16)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "\(subscription.name), \(displayAmount), \(payerLabel)")
@@ -117,40 +114,37 @@ struct FeedSharedSubscriptionRow: View {
     private let avatarSize: CGFloat = 48
 
     var body: some View {
-        Button(action: { onTap?() }) {
-            HStack(spacing: 14) {
-                // Avatar - initials with colored background
-                initialsAvatar
+        HStack(spacing: 14) {
+            // Avatar - initials with colored background
+            initialsAvatar
 
-                // Left side - Name and Cycle + Next Billing
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(displayName)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
-                        .lineLimit(1)
+            // Left side - Name and Cycle + Next Billing
+            VStack(alignment: .leading, spacing: 4) {
+                Text(displayName)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(Theme.Colors.feedPrimaryText)
+                    .lineLimit(1)
 
-                    Text(cycleAndNextBillingText)
-                        .font(.system(size: 13))
-                        .foregroundColor(Theme.Colors.feedSecondaryText)
-                }
-
-                Spacer(minLength: 8)
-
-                // Right side - Balance and Member Avatars
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(formattedBalance)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(balanceColor)
-
-                    SharedMembersAvatarStack(
-                        members: sharedSubscription.members
-                    )
-                }
+                Text(cycleAndNextBillingText)
+                    .font(.system(size: 13))
+                    .foregroundColor(Theme.Colors.feedSecondaryText)
             }
-            .padding(.vertical, 16)
-            .contentShape(Rectangle())
+
+            Spacer(minLength: 8)
+
+            // Right side - Balance and Member Avatars
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(formattedBalance)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(balanceColor)
+
+                SharedMembersAvatarStack(
+                    members: sharedSubscription.members
+                )
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 16)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "\(displayName), \(formattedBalance)")

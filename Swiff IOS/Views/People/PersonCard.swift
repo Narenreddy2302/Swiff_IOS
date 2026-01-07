@@ -123,41 +123,38 @@ struct FeedPersonRow: View {
     private let avatarSize: CGFloat = 48
 
     var body: some View {
-        Button(action: { onTap?() }) {
-            HStack(spacing: 14) {
-                // Avatar - initials with colored background
-                initialsAvatar
+        HStack(spacing: 14) {
+            // Avatar - initials with colored background
+            initialsAvatar
 
-                // Left side - Name and last transaction
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(person.name)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(Theme.Colors.feedPrimaryText)
-                        .lineLimit(1)
+            // Left side - Name and last transaction
+            VStack(alignment: .leading, spacing: 4) {
+                Text(person.name)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(Theme.Colors.feedPrimaryText)
+                    .lineLimit(1)
 
-                    Text(person.lastTransactionDetails(transactions: transactions))
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(Theme.Colors.feedSecondaryText)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 8)
-
-                // Right side - Balance and status
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(formattedBalance)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(balanceColor)
-
-                    Text(balanceStatus)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(Theme.Colors.feedSecondaryText)
-                }
+                Text(person.lastTransactionDetails(transactions: transactions))
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundColor(Theme.Colors.feedSecondaryText)
+                    .lineLimit(1)
             }
-            .padding(.vertical, 16)
-            .contentShape(Rectangle())
+
+            Spacer(minLength: 8)
+
+            // Right side - Balance and status
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(formattedBalance)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(balanceColor)
+
+                Text(balanceStatus)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundColor(Theme.Colors.feedSecondaryText)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 16)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(person.name), \(formattedBalance), \(balanceStatus)")
     }

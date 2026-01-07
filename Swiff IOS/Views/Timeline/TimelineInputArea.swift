@@ -14,68 +14,55 @@ struct TimelineInputArea: View {
     var onSend: ((String) -> Void)?
 
     @State private var messageText = ""
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                if config.showMessageField {
-                    // Text field with "Send a message..." placeholder
-                    TextField(config.placeholder, text: $messageText)
-                        .font(.system(size: 13))
-                        .padding(.horizontal, 12)
-                        .frame(height: 38)
-                        .background(Color.wiseCardBackground)
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.wiseBorder, lineWidth: 1)
-                        )
-                }
-
-                // Quick action button - "+ New split" format
+            Divider()
+            
+            HStack(spacing: 12) {
+                // Plus Button (Left)
                 Button(action: onQuickAction) {
-                    HStack(spacing: 5) {
-                        Image(systemName: config.quickActionIcon)
-                            .font(.system(size: 12, weight: .medium))
-                        Text(config.quickActionTitle)
-                            .font(.system(size: 13, weight: .medium))
-                    }
-                    .foregroundColor(.wisePrimaryText)
-                    .padding(.horizontal, 12)
-                    .frame(height: 38)
-                    .background(Color.wiseCardBackground)
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.wiseBorder, lineWidth: 1)
-                    )
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .light))
+                        .foregroundColor(.gray)
+                        .frame(width: 32, height: 32)
+                        .background(Color(UIColor.systemGray5))
+                        .clipShape(Circle())
                 }
 
-                // Send button - BLACK background with white text (always visible when message field enabled)
-                if config.showMessageField {
+                // Text Field (Center)
+                HStack {
+                    TextField("iMessage", text: $messageText)
+                        .font(.system(size: 17))
+                        .focused($isFocused)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                }
+                .background(
+                    Capsule()
+                        .stroke(Color(UIColor.systemGray4), lineWidth: 1)
+                )
+
+                // Send Button (Right) - Only visible when typing
+                if !messageText.isEmpty {
                     Button(action: {
                         onSend?(messageText)
                         messageText = ""
                     }) {
-                        Text("Send")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 14)
-                            .frame(height: 38)
-                            .background(Color.wisePrimaryText)
-                            .cornerRadius(8)
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.blue)
                     }
+                    .transition(.scale)
+                } else {
+                     // Placeholder for Mic or just empty space to keep alignment
+                     // For now, let's keep it clean
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color.wiseCardBackground)
-            .overlay(
-                Rectangle()
-                    .fill(Color.wiseBorder)
-                    .frame(height: 1),
-                alignment: .top
-            )
+            .padding(.vertical, 10)
+            .background(Color(UIColor.systemBackground))
         }
     }
 }
@@ -83,41 +70,15 @@ struct TimelineInputArea: View {
 #Preview {
     VStack {
         Spacer()
-
-        Text("Without message field")
-            .font(.caption)
-            .foregroundColor(.secondary)
-        TimelineInputArea(
-            config: TimelineInputAreaConfig(
-                quickActionTitle: "Record Payment",
-                quickActionIcon: "plus",
-                placeholder: "",
-                showMessageField: false
-            ),
-            onQuickAction: {
-                print("Quick action tapped")
-            }
-        )
-
-        Spacer()
-
-        Text("With message field")
-            .font(.caption)
-            .foregroundColor(.secondary)
         TimelineInputArea(
             config: TimelineInputAreaConfig(
                 quickActionTitle: "New split",
                 quickActionIcon: "plus",
-                placeholder: "Send a message...",
+                placeholder: "iMessage",
                 showMessageField: true
             ),
-            onQuickAction: {
-                print("Quick action tapped")
-            },
-            onSend: { message in
-                print("Sent message: \(message)")
-            }
+            onQuickAction: { print("Quick action") },
+            onSend: { _ in }
         )
     }
-    .background(Color.wiseBackground)
 }

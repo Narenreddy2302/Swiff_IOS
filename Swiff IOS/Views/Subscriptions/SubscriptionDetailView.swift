@@ -253,21 +253,49 @@ struct SubscriptionDetailView: View {
     @ViewBuilder
     private func timelineTab(subscription: Subscription) -> some View {
         ZStack(alignment: .bottom) {
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    // Status banner hidden to match conversation-style reference design
-                    // Alerts are still accessible via the Details tab
-
-                    // Timeline events
-                    if events.isEmpty {
-                        emptyTimelineView
-                            .padding(.top, 60)
-                    } else {
-                        timelineEventsList
-                            .padding(.top, 16)
+            ChatTimelineView(
+                groupedItems: SubscriptionEvent.groupByDate(events).map { ($0.date, $0.events) },
+                emptyStateConfig: TimelineEmptyStateConfig(
+                    icon: "clock.badge.questionmark",
+                    title: "No timeline events yet",
+                    subtitle: "Events will appear as you use this subscription"
+                )
+            ) { event in
+                switch event.eventType {
+                case .billingCharged:
+                    ChatBubble(direction: .outgoing, timestamp: event.eventDate) {
+                        TransactionBubbleContent(
+                            title: event.title,
+                            subtitle: event.subtitle,
+                            amount: event.amount ?? 0,
+                            isExpense: true
+                        )
+                    }
+                case .billingUpcoming:
+                    ChatBubble(direction: .center, timestamp: nil) {
+                        SystemMessageBubble(text: event.title, icon: event.eventType.icon)
+                    }
+                case .usageRecorded:
+                    ChatBubble(direction: .outgoing, timestamp: event.eventDate) {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(event.title)
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.white)
+                        }
+                    }
+                case .priceIncrease, .priceDecrease:
+                    ChatBubble(direction: .center, timestamp: nil) {
+                        SystemMessageBubble(text: event.title, icon: event.eventType.icon)
+                    }
+                case .memberPaid:
+                    ChatBubble(direction: .incoming, timestamp: event.eventDate) {
+                        PaymentBubbleContent(amount: event.amount ?? 0, note: event.title)
+                    }
+                default:
+                    ChatBubble(direction: .center, timestamp: nil) {
+                        SystemMessageBubble(text: event.title, icon: event.eventType.icon)
                     }
                 }
-                .padding(.bottom, 80)
             }
             .background(Color.wiseBackground)
             .onAppear {
@@ -291,43 +319,11 @@ struct SubscriptionDetailView: View {
     }
 
     private var timelineEventsList: some View {
-        LazyVStack(spacing: 0) {
-            let groupedEvents = SubscriptionEvent.groupByDate(events)
-
-            ForEach(Array(groupedEvents.enumerated()), id: \.offset) { index, group in
-                VStack(spacing: 14) {
-                    // Date headers
-                    TimelineDateSectionHeader(date: group.date)
-
-                    // Events for this date
-                    ForEach(group.events) { event in
-                        TimelineEventBubble(
-                            event: event,
-                            personName: getPersonName(for: event.relatedPersonId)
-                        )
-                    }
-                }
-                .padding(.bottom, index < groupedEvents.count - 1 ? 24 : 16)
-            }
-        }
+        EmptyView() // Deprecated by ChatTimelineView
     }
 
     private var emptyTimelineView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "clock.badge.questionmark")
-                .font(.system(size: 48))
-                .foregroundColor(.wiseSecondaryText)
-
-            Text("No timeline events yet")
-                .font(.spotifyHeadingMedium)
-                .foregroundColor(.wisePrimaryText)
-
-            Text("Events will appear as you use this subscription")
-                .font(.spotifyBodyMedium)
-                .foregroundColor(.wiseSecondaryText)
-                .multilineTextAlignment(.center)
-        }
-        .padding(.horizontal, 40)
+        EmptyView() // Deprecated by ChatTimelineView
     }
 
     @ViewBuilder
@@ -1605,5 +1601,18 @@ struct SubscriptionDetailView: View {
     NavigationView {
         SubscriptionDetailView(subscriptionId: MockData.sharedSubscription.id)
             .environmentObject(DataManager.shared)
+    }
+}
+
+// MARK: - Extensions
+extension SubscriptionEvent: TimelineItemProtocol {
+    var timestamp: Date { eventDate }
+    var timelineIconType: TimelineIconType {
+        switch eventType {
+        case .billingCharged: return .expense
+        case .memberPaid: return .payment
+        case .priceIncrease, .priceDecrease: return .system
+        default: return .system
+        }
     }
 }

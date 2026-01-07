@@ -233,24 +233,77 @@ struct GroupDetailView: View {
     @ViewBuilder
     private func activityTabContent(group: Group) -> some View {
         ZStack(alignment: .bottom) {
-            UnifiedTimelineView(
+            ChatTimelineView(
                 groupedItems: groupedGroupTimelineItems,
-                statusBanner: groupStatusBanner,
                 emptyStateConfig: TimelineEmptyStateConfig(
                     icon: "rectangle.3.group.bubble.left",
                     title: "No expenses yet",
                     subtitle: "Add an expense to start tracking"
                 )
-            ) { item, isLast in
-                GroupTimelineBubble(
-                    item: item,
-                    onSettle: {
-                        // Extract the expense from the item and settle it
-                        if case .expense(let expense, _, _) = item {
-                            settleExpense(expense)
+            ) { item in
+                switch item {
+                case .expense(let expense, let payer, _):
+                    // Determine direction - Assuming if payer is "You" (nil for now in mock), it's outgoing.
+                    // In a real app, check against current user ID.
+                    // For this context, we'll check if the payer's name is "You" or if payer is nil (self).
+                    let isPayerSelf = payer?.name == "You" // Simplified check
+                    
+                    ChatBubble(
+                        direction: isPayerSelf ? .outgoing : .incoming,
+                        timestamp: expense.date
+                    ) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            if !isPayerSelf, let payerName = payer?.name {
+                                Text(payerName)
+                                    .font(.caption)
+                                    .foregroundColor(.wiseSecondaryText)
+                            }
+                            
+                            TransactionBubbleContent(
+                                title: expense.title,
+                                subtitle: nil,
+                                amount: expense.amount,
+                                isExpense: true
+                            )
+                            
+                            if !expense.isSettled {
+                                Button(action: {
+                                    settleExpense(expense)
+                                }) {
+                                    Text("Settle share: \(String(format: "$%.2f", expense.amountPerPerson))")
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.wiseBrightGreen)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(8)
+                                }
+                                .padding(.top, 4)
+                            }
                         }
                     }
-                )
+                    
+                case .memberJoined(_, let person, _):
+                    ChatBubble(direction: .center, timestamp: nil) {
+                        SystemMessageBubble(text: "\(person.name) joined", icon: "person.badge.plus")
+                    }
+                    
+                case .memberLeft(_, let person, _):
+                    ChatBubble(direction: .center, timestamp: nil) {
+                        SystemMessageBubble(text: "\(person.name) left", icon: "person.badge.minus")
+                    }
+                    
+                case .settlement(_, let expense, _):
+                    ChatBubble(direction: .center, timestamp: nil) {
+                        SystemMessageBubble(text: "'\(expense.title)' settled", icon: "checkmark.circle.fill")
+                    }
+                    
+                case .splitBillCreated(let splitBill):
+                    ChatBubble(direction: .center, timestamp: splitBill.date) {
+                        SystemMessageBubble(text: "New split bill: \(splitBill.title)", icon: "doc.text")
+                    }
+                }
             }
 
             TimelineInputArea(

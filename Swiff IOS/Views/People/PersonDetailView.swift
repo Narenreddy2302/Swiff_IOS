@@ -214,20 +214,87 @@ struct PersonDetailView: View {
     @ViewBuilder
     private func timelineContent(for person: Person) -> some View {
         ZStack(alignment: .bottom) {
-            UnifiedTimelineView(
+            ChatTimelineView(
                 groupedItems: groupedPersonTimelineItems,
-                statusBanner: personStatusBanner,
                 emptyStateConfig: TimelineEmptyStateConfig(
                     icon: "tray.fill",
                     title: "No transactions yet",
                     subtitle: "Record a payment to get started"
                 )
-            ) { item, isLast in
-                PersonTimelineBubble(
-                    item: item,
-                    person: person,
-                    onEdit: { showingRecordPaymentSheet = true }
-                )
+            ) { item in
+                switch item {
+                case .transaction(let transaction, _):
+                    // Expense (negative amount) = I paid = Outgoing (Right)
+                    // Income (positive amount) = They paid = Incoming (Left)
+                    ChatBubble(
+                        direction: transaction.isExpense ? .outgoing : .incoming,
+                        timestamp: transaction.date
+                    ) {
+                        TransactionBubbleContent(
+                            title: transaction.title,
+                            subtitle: transaction.subtitle,
+                            amount: transaction.amount,
+                            isExpense: transaction.isExpense
+                        )
+                    }
+
+                case .payment(_, let amount, let direction, let description, let date):
+                    // Outgoing direction = Right, Incoming = Left
+                    ChatBubble(
+                        direction: direction == .outgoing ? .outgoing : .incoming,
+                        timestamp: date
+                    ) {
+                        PaymentBubbleContent(amount: amount, note: description)
+                    }
+                    
+                case .message(_, let text, let isFromPerson, let date):
+                    ChatBubble(
+                        direction: isFromPerson ? .incoming : .outgoing,
+                        timestamp: date
+                    ) {
+                        Text(text)
+                            .font(.system(size: 16))
+                    }
+                    
+                case .splitRequest(_, let title, _, let billTotal, _, let youOwe, let date):
+                    // If you owe > 0, it's a request FOR you (Incoming)
+                    // Otherwise it's a request FROM you (Outgoing)
+                    ChatBubble(
+                        direction: youOwe > 0 ? .incoming : .outgoing,
+                        timestamp: date
+                    ) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Image(systemName: "doc.text.fill")
+                                Text("Split Bill Request")
+                                    .font(.headline)
+                            }
+                            Text(title)
+                            Text("Total: \(String(format: "$%.2f", billTotal))")
+                                .font(.caption)
+                            if youOwe > 0 {
+                                Text("You owe: \(String(format: "$%.2f", youOwe))")
+                                    .fontWeight(.bold)
+                            }
+                        }
+                    }
+                    
+                case .settlement(_, let date):
+                    ChatBubble(direction: .center, timestamp: nil) {
+                        SystemMessageBubble(text: "Balances settled", icon: "checkmark.circle.fill")
+                    }
+                    
+                case .paidBill(_, let personName, let date):
+                    ChatBubble(direction: .center, timestamp: nil) {
+                        SystemMessageBubble(text: "\(personName) paid a bill", icon: "checkmark.seal.fill")
+                    }
+                    
+                case .reminder(_, let date):
+                    ChatBubble(direction: .outgoing, timestamp: date) {
+                        Text("Reminder sent")
+                            .italic()
+                    }
+                }
             }
 
             TimelineInputArea(
