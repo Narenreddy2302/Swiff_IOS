@@ -139,7 +139,7 @@ struct ProfileView: View {
 
                         // Appearance
                         ProfileSectionView(title: "APPEARANCE") {
-                            ProfileThemeMenuItemView(
+                            ProfileThemeToggleView(
                                 themeMode: $userSettings.themeMode
                             )
                         }
@@ -429,64 +429,57 @@ struct ProfileMenuItemViewContent: View {
     }
 }
 
-struct ProfileThemeMenuItemView: View {
+struct ProfileThemeToggleView: View {
     @Binding var themeMode: String
-    
-    var body: some View {
-        Menu {
-            Button("Light") { switchTheme(to: "Light") }
-            Button("Dark") { switchTheme(to: "Dark") }
-            Button("System") { switchTheme(to: "System") }
-        } label: {
-            HStack(spacing: 16) {
-                // Icon
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.profilePurple.opacity(0.12))
-                        .frame(width: 44, height: 44)
-                    
-                    Image(systemName: "sun.max.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.profilePurple)
-                }
-                
-                // Content
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("App Theme")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.wisePrimaryText)
-                    
-                    Text(themeMode)
-                        .font(.system(size: 14))
-                        .foregroundColor(.wiseSecondaryText)
-                }
-                
-                Spacer()
-                
-                // Theme toggle
-                HStack(spacing: 6) {
-                    Text(themeMode)
-                        .font(.system(size: 14))
-                        .foregroundColor(.wiseSecondaryText)
-                    
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.wiseTertiaryText.opacity(0.3))
+
+    private var isDarkMode: Binding<Bool> {
+        Binding(
+            get: { themeMode.lowercased() == "dark" },
+            set: { isDark in
+                let newMode = isDark ? "Dark" : "Light"
+                if themeMode != newMode {
+                    ThemeTransitionManager.shared.animateThemeChange {
+                        themeMode = newMode
+                    }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .contentShape(Rectangle())
-            .background(Color.wiseBackground)
-        }
-        .buttonStyle(ProfileMenuButtonStyle())
+        )
     }
     
-    private func switchTheme(to newTheme: String) {
-        guard themeMode != newTheme else { return }
-        ThemeTransitionManager.shared.animateThemeChange {
-            themeMode = newTheme
+    var body: some View {
+        HStack(spacing: 16) {
+            // Icon
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.profilePurple.opacity(0.12))
+                    .frame(width: 44, height: 44)
+                
+                Image(systemName: "moon.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.profilePurple)
+            }
+            
+            // Content
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Dark Mode")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.wisePrimaryText)
+                
+                Text(isDarkMode.wrappedValue ? "On" : "Off")
+                    .font(.system(size: 14))
+                    .foregroundColor(.wiseSecondaryText)
+            }
+            
+            Spacer()
+            
+            // Toggle
+            Toggle("", isOn: isDarkMode)
+                .labelsHidden()
+                .tint(.profilePurple)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color.wiseBackground)
     }
 }
 
