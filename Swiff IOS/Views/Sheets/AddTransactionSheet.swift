@@ -11,6 +11,7 @@ import SwiftUI
 struct AddTransactionSheet: View {
     @Binding var showingAddTransactionSheet: Bool
     let onTransactionAdded: (Transaction) -> Void
+    var preselectedParticipant: Person? = nil
 
     @EnvironmentObject var dataManager: DataManager
 
@@ -159,6 +160,13 @@ struct AddTransactionSheet: View {
             resetSplitInputs()
             initializeSplitDefaults(for: newType)
             updateValidationMessage()
+        }
+        .onAppear {
+            selectedParticipants.removeAll()
+            if let person = preselectedParticipant {
+                selectedParticipants.insert(person.id)
+                initializeSplitDefaults(for: splitType)
+            }
         }
     }
 
@@ -337,9 +345,9 @@ struct AddTransactionSheet: View {
 
                         Spacer()
 
-                        Button(action: { 
+                        Button(action: {
                             HapticManager.shared.light()
-                            selectedPayer = nil 
+                            selectedPayer = nil
                         }) {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.wiseSecondaryText)

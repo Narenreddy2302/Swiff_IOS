@@ -32,6 +32,7 @@ struct PersonDetailView: View {
     @State private var showingSettleUpSheet = false
     @State private var showingRecordPaymentSheet = false
     @State private var showingSendReminderSheet = false
+    @State private var showingAddTransactionSheet = false
 
     // MARK: - Computed Properties
 
@@ -207,6 +208,21 @@ struct PersonDetailView: View {
                 )
             }
         }
+        .sheet(isPresented: $showingAddTransactionSheet) {
+            if let person = person {
+                AddTransactionSheet(
+                    showingAddTransactionSheet: $showingAddTransactionSheet,
+                    onTransactionAdded: { transaction in
+                        do {
+                            try dataManager.addTransaction(transaction)
+                        } catch {
+                            dataManager.error = error
+                        }
+                    },
+                    preselectedParticipant: person
+                )
+            }
+        }
     }
 
     // MARK: - Timeline Content
@@ -304,7 +320,7 @@ struct PersonDetailView: View {
                     placeholder: "Send a message...",
                     showMessageField: true
                 ),
-                onQuickAction: { showingRecordPaymentSheet = true },
+                onQuickAction: { showingAddTransactionSheet = true },
                 onSend: { message in
                     // TODO: Handle sending message
                     print("Message sent: \(message)")
@@ -335,7 +351,7 @@ struct PersonDetailView: View {
                         icon: "plus.circle.fill",
                         title: "Record",
                         color: .wiseForestGreen,
-                        action: { showingRecordPaymentSheet = true }
+                        action: { showingAddTransactionSheet = true }
                     )
                     Spacer()
                     CompactActionButton(

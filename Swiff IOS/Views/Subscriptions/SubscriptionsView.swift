@@ -297,8 +297,20 @@ struct SubscriptionsView: View {
 
                     if selectedTab == .personal {
                         if dataManager.subscriptions.isEmpty && !dataManager.isLoading {
-                            // No subscriptions at all
-                            EmptySubscriptionsView()
+                            // No subscriptions at all - still show stats
+                            ScrollView {
+                                VStack(spacing: 20) {
+                                    // Stats Cards (shows $0 when empty)
+                                    SubscriptionQuickStatsView(
+                                        subscriptions: dataManager.subscriptions,
+                                        sharedSubscriptions: []
+                                    )
+                                    .padding(.top, 8)
+
+                                    EmptySubscriptionsView()
+                                }
+                                .padding(.bottom, 100)
+                            }
                         } else if filteredPersonalSubscriptions.isEmpty && selectedCategory != nil {
                             // Category filter has no matches - show stats, filter, and category empty state
                             ScrollView {
@@ -356,8 +368,20 @@ struct SubscriptionsView: View {
                             || !mockSharedSubscriptions.isEmpty
 
                         if !hasBaseData && !dataManager.isLoading {
-                            // No shared subscriptions at all
-                            EmptySharedSubscriptionsView()
+                            // No shared subscriptions at all - still show stats
+                            ScrollView {
+                                VStack(spacing: 20) {
+                                    // Stats Cards (shows $0 when empty)
+                                    SharedSubscriptionQuickStatsView(
+                                        sharedSubscriptions: [],
+                                        people: dataManager.people
+                                    )
+                                    .padding(.top, 8)
+
+                                    EmptySharedSubscriptionsView()
+                                }
+                                .padding(.bottom, 100)
+                            }
                         } else if filteredSharedSubscriptions.isEmpty && selectedCategory != nil {
                             // Category filter has no matches
                             ScrollView {

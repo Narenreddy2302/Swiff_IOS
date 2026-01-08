@@ -93,6 +93,11 @@ struct Swiff_IOSApp: App {
                             // Load all persisted data on app launch
                             DataManager.shared.loadAllData()
 
+                            // Sync device contacts (if permission granted)
+                            Task {
+                                await DataManager.shared.syncContacts()
+                            }
+
                             // Create automatic backup if needed (every 7 days)
                             BackupService.shared.createAutomaticBackupIfNeeded()
 
