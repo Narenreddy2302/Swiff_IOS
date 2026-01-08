@@ -87,30 +87,59 @@ struct ContactRowView: View {
 
 // MARK: - Contact Avatar View
 
+/// FIX 3.2: Updated to use lazy thumbnail loading via ContactThumbnailCache
 struct ContactAvatarView: View {
     let contact: ContactEntry
     var size: CGFloat = 48
 
+    /// Lazily loaded thumbnail image
+    @State private var thumbnailImage: UIImage?
+
+    /// Task for loading thumbnail (for cancellation on disappear)
+    @State private var loadTask: Task<Void, Never>?
+
     var body: some View {
-        if let imageData = contact.thumbnailImageData,
-            let uiImage = UIImage(data: imageData)
-        {
-            // Photo avatar
-            Image(uiImage: uiImage)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: size, height: size)
-                .clipShape(Circle())
-        } else {
-            // Initials avatar
-            Circle()
-                .fill(avatarColor.opacity(0.2))
-                .frame(width: size, height: size)
-                .overlay(
-                    Text(contact.initials)
-                        .font(.system(size: size * 0.4, weight: .semibold))
-                        .foregroundColor(avatarColor)
-                )
+        ZStack {
+            if let image = thumbnailImage {
+                // Photo avatar (lazy loaded)
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+            } else {
+                // Initials avatar (shown while loading or if no photo)
+                Circle()
+                    .fill(avatarColor.opacity(0.2))
+                    .frame(width: size, height: size)
+                    .overlay(
+                        Text(contact.initials)
+                            .font(.system(size: size * 0.4, weight: .semibold))
+                            .foregroundColor(avatarColor)
+                    )
+            }
+        }
+        .onAppear {
+            loadThumbnailIfNeeded()
+        }
+        .onDisappear {
+            // Cancel loading task when view disappears (scrolled off screen)
+            loadTask?.cancel()
+        }
+    }
+
+    /// Load thumbnail lazily using the cache
+    private func loadThumbnailIfNeeded() {
+        guard thumbnailImage == nil else { return }
+
+        loadTask = Task {
+            let image = await ContactThumbnailCache.shared.thumbnail(for: contact.id)
+
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                thumbnailImage = image
+            }
         }
     }
 

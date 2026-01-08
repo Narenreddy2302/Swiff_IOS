@@ -15,6 +15,8 @@ struct AddPersonFromContactsSheet: View {
     @StateObject private var permissionManager = SystemPermissionManager.shared
 
     @State private var searchText = ""
+    @State private var debouncedSearchText = ""  // FIX 1.2: Debounced search text
+    @State private var searchDebounceTask: Task<Void, Never>?  // FIX 1.2: Search debounce task
     @State private var showingManualEntry = false
     @State private var contactToInvite: ContactEntry?
     @State private var showingInviteSheet = false
@@ -60,20 +62,38 @@ struct AddPersonFromContactsSheet: View {
             // Check permission status
             _ = permissionManager.checkContactsPermission()
 
-            // Sync contacts if already authorized
+            // FIX 1.1: Use debounced sync to avoid redundant syncs
             if permissionManager.contactsStatus == .authorized {
                 Task {
-                    await syncManager.syncContactsIfPermitted()
+                    await syncManager.syncContactsIfNeeded()
                 }
             }
         }
         .onChange(of: permissionManager.contactsStatus) { oldValue, newValue in
-            // When permission becomes authorized, sync contacts
-            if newValue == .authorized {
+            // When permission becomes authorized for the first time, do a full sync
+            if newValue == .authorized && oldValue != .authorized {
                 Task {
                     await syncManager.syncContacts()
                 }
             }
+        }
+        // FIX 1.2: Debounce search input to avoid filtering on every keystroke
+        .onChange(of: searchText) { oldValue, newValue in
+            // Cancel any pending debounce task
+            searchDebounceTask?.cancel()
+
+            // Debounce for 300ms before filtering
+            searchDebounceTask = Task {
+                try? await Task.sleep(nanoseconds: 300_000_000)  // 300ms
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    debouncedSearchText = newValue
+                }
+            }
+        }
+        .onDisappear {
+            // Clean up debounce task
+            searchDebounceTask?.cancel()
         }
         .sheet(isPresented: $showingManualEntry) {
             AddPersonSheet(isPresented: $showingManualEntry)
@@ -132,10 +152,10 @@ struct AddPersonFromContactsSheet: View {
                 // Loading state
                 if syncManager.isSyncing && syncManager.contacts.isEmpty {
                     loadingView
-                } else if filteredContacts.isEmpty && searchText.isEmpty {
+                } else if filteredContacts.isEmpty && debouncedSearchText.isEmpty {
                     // No contacts on device
                     emptyContactsView
-                } else if filteredContacts.isEmpty && !searchText.isEmpty {
+                } else if filteredContacts.isEmpty && !debouncedSearchText.isEmpty {
                     // No search results
                     noSearchResultsView
                 } else {
@@ -265,11 +285,12 @@ struct AddPersonFromContactsSheet: View {
 
     // MARK: - Filtered Contacts
 
+    /// FIX 1.2: Use debouncedSearchText to avoid filtering on every keystroke
     private var filteredContacts: [ContactEntry] {
-        if searchText.isEmpty {
+        if debouncedSearchText.isEmpty {
             return syncManager.contacts
         }
-        return syncManager.contacts.search(searchText)
+        return syncManager.contacts.search(debouncedSearchText)
     }
 
     // MARK: - Denied Permission Content

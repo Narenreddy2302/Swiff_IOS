@@ -5,10 +5,9 @@ import SwiftUI
 struct PeopleView: View {
     @EnvironmentObject var dataManager: DataManager
     @State private var selectedTab: PeopleTab = .people
-    @State private var showingAddPersonSheet = false
-    @State private var showingAddGroupSheet = false
     @State private var showSearchBar = false
     @State private var searchText = ""
+    @State private var showingContactsSheet = false
 
     enum PeopleTab: String, CaseIterable {
         case people = "People"
@@ -37,10 +36,9 @@ struct PeopleView: View {
                         // Header
                         PeopleHeaderSection(
                             selectedTab: $selectedTab,
-                            showingAddPersonSheet: $showingAddPersonSheet,
-                            showingAddGroupSheet: $showingAddGroupSheet,
                             showSearchBar: $showSearchBar,
-                            searchText: $searchText
+                            searchText: $searchText,
+                            showingContactsSheet: $showingContactsSheet
                         )
                         .padding(.top, 10)  // Standard top padding after safe area
 
@@ -49,17 +47,10 @@ struct PeopleView: View {
                     .background(Color.wiseBackground)
                     .zIndex(1)  // Keep header on top
 
-                    // Content based on selected tab
+                    // Content based on selected tab (Contacts now shown in popup sheet)
                     switch selectedTab {
                     case .people:
                         PeopleListView(people: dataManager.people, searchText: $searchText)
-                            .transition(
-                                .asymmetric(
-                                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                                    removal: .move(edge: .leading).combined(with: .opacity)
-                                ))
-                    case .contacts:
-                        ContactsListView(searchText: $searchText)
                             .transition(
                                 .asymmetric(
                                     insertion: .move(edge: .trailing).combined(with: .opacity),
@@ -75,33 +66,19 @@ struct PeopleView: View {
                                 insertion: .move(edge: .trailing).combined(with: .opacity),
                                 removal: .move(edge: .leading).combined(with: .opacity)
                             ))
+                    case .contacts:
+                        // Contacts are now shown in popup sheet, but keep case for enum completeness
+                        EmptyView()
                     }
                 }
             }
             .navigationBarHidden(true)
         }
-        .sheet(isPresented: $showingAddPersonSheet) {
-            AddPersonFromContactsSheet(isPresented: $showingAddPersonSheet)
+        .sheet(isPresented: $showingContactsSheet) {
+            ContactsSheetView()
                 .environmentObject(dataManager)
-                .presentationDetents([.large])
+                .presentationDetents([.large, .medium])
                 .presentationDragIndicator(.visible)
-        }
-        .sheet(isPresented: $showingAddGroupSheet) {
-            AddGroupSheet(
-                showingAddGroupSheet: $showingAddGroupSheet,
-                editingGroup: nil as Group?,
-                people: dataManager.people,
-                onGroupAdded: { group in
-                    do {
-                        try dataManager.addGroup(group)
-                    } catch {
-                        dataManager.error = error
-                    }
-                }
-            )
-            .environmentObject(dataManager)
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
         }
     }
 }
@@ -109,10 +86,9 @@ struct PeopleView: View {
 // MARK: - People Header Section
 struct PeopleHeaderSection: View {
     @Binding var selectedTab: PeopleView.PeopleTab
-    @Binding var showingAddPersonSheet: Bool
-    @Binding var showingAddGroupSheet: Bool
     @Binding var showSearchBar: Bool
     @Binding var searchText: String
+    @Binding var showingContactsSheet: Bool
 
     private var searchPlaceholder: String {
         switch selectedTab {
@@ -120,11 +96,6 @@ struct PeopleHeaderSection: View {
         case .contacts: return "Search contacts..."
         case .groups: return "Search groups..."
         }
-    }
-
-    private var showAddButton: Bool {
-        // Don't show add button on Contacts tab (contacts are from phone)
-        selectedTab != .contacts
     }
 
     var body: some View {
@@ -137,7 +108,7 @@ struct PeopleHeaderSection: View {
 
                 Spacer()
 
-                // Search and Add Buttons
+                // Search and Contacts Buttons
                 HStack(spacing: 16) {
                     Button(action: {
                         HapticManager.shared.light()
@@ -153,23 +124,22 @@ struct PeopleHeaderSection: View {
                             .foregroundColor(showSearchBar ? .wiseBrightGreen : .wisePrimaryText)
                     }
 
-                    if showAddButton {
-                        HeaderActionButton(icon: "plus.circle.fill", color: .wiseForestGreen) {
-                            HapticManager.shared.light()
-                            if selectedTab == .people {
-                                showingAddPersonSheet = true
-                            } else if selectedTab == .groups {
-                                showingAddGroupSheet = true
-                            }
-                        }
+                    // Contacts button (icon only) - opens bottom sheet popup
+                    Button(action: {
+                        HapticManager.shared.light()
+                        showingContactsSheet = true
+                    }) {
+                        Image(systemName: "person.crop.circle")
+                            .font(.system(size: 20))
+                            .foregroundColor(.wisePrimaryText)
                     }
                 }
             }
             .padding(.horizontal, 16)
 
-            // Tabs (Pill Buttons)
+            // Tabs (Pill Buttons) - People and Groups only, Contacts moved to header icon
             HStack(spacing: 12) {
-                ForEach(PeopleView.PeopleTab.allCases, id: \.self) { tab in
+                ForEach([PeopleView.PeopleTab.people, PeopleView.PeopleTab.groups], id: \.self) { tab in
                     Button(action: {
                         HapticManager.shared.selection()
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -236,5 +206,29 @@ struct PeopleHeaderSection: View {
             }
         }
         .padding(.bottom, 8)  // Match Subscriptions header bottom padding
+    }
+}
+
+// MARK: - Contacts Sheet View (Bottom Sheet Popup)
+struct ContactsSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var dataManager: DataManager
+    @State private var searchText = ""
+
+    var body: some View {
+        NavigationStack {
+            ContactsListView(searchText: $searchText)
+                .navigationTitle("Contacts")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") {
+                            dismiss()
+                        }
+                        .font(.spotifyLabelMedium)
+                        .foregroundColor(Theme.Colors.brandPrimary)
+                    }
+                }
+        }
     }
 }

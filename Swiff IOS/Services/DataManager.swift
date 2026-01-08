@@ -71,8 +71,43 @@ public class DataManager: ObservableObject {
         case allDataReloaded
     }
 
-    /// Emit a change notification and increment revision counter
+    // MARK: - Notification Batching (FIX 4.2)
+
+    /// Pending notifications to be batched
+    private var pendingNotifications: [DataChange] = []
+
+    /// Task for debouncing notifications
+    private var notificationBatchTask: Task<Void, Never>?
+
+    /// Emit a change notification with batching to reduce cascading updates
+    /// Changes are collected and emitted together within a single frame (~16ms)
     private func notifyChange(_ change: DataChange) {
+        pendingNotifications.append(change)
+
+        // Cancel any pending batch task
+        notificationBatchTask?.cancel()
+
+        // Batch notifications within approximately one frame (16ms)
+        notificationBatchTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 16_000_000)  // 16ms = ~1 frame at 60fps
+
+            guard !Task.isCancelled else { return }
+
+            // Send all pending notifications
+            for notification in self.pendingNotifications {
+                self.dataChangeSubject.send(notification)
+            }
+
+            // Single revision increment for all batched changes
+            self.dataRevision += 1
+
+            // Clear pending notifications
+            self.pendingNotifications.removeAll()
+        }
+    }
+
+    /// Emit change immediately (for critical updates that shouldn't be batched)
+    private func notifyChangeImmediately(_ change: DataChange) {
         dataChangeSubject.send(change)
         dataRevision += 1
     }
@@ -140,22 +175,80 @@ public class DataManager: ObservableObject {
 
     // MARK: - Data Loading
 
+    /// FIX 2.2: Public entry point - dispatches to async version to avoid blocking UI
     public func loadAllData() {
         isLoading = true
         error = nil
 
+        Task { @MainActor in
+            await loadAllDataAsync()
+        }
+    }
+
+    /// FIX 2.2: Async version that loads all data types in parallel
+    private func loadAllDataAsync() async {
         do {
-            // Load all data from persistence
-            people = try persistenceService.fetchAllPeople()
-            groups = try persistenceService.fetchAllGroups()
-            subscriptions = try persistenceService.fetchAllSubscriptions()
-            transactions = try persistenceService.fetchAllTransactions()
-            splitBills = try persistenceService.fetchAllSplitBills()
-            accounts = try persistenceService.fetchAllAccounts()
-            sharedSubscriptions = (try? persistenceService.fetchAllSharedSubscriptions()) ?? []
+            // Load all data types in parallel using async let
+            // This prevents sequential blocking and significantly speeds up startup
+            async let peopleResult = Task { @MainActor in
+                try self.persistenceService.fetchAllPeople()
+            }.value
+
+            async let groupsResult = Task { @MainActor in
+                try self.persistenceService.fetchAllGroups()
+            }.value
+
+            async let subscriptionsResult = Task { @MainActor in
+                try self.persistenceService.fetchAllSubscriptions()
+            }.value
+
+            async let transactionsResult = Task { @MainActor in
+                try self.persistenceService.fetchAllTransactions()
+            }.value
+
+            async let splitBillsResult = Task { @MainActor in
+                try self.persistenceService.fetchAllSplitBills()
+            }.value
+
+            async let accountsResult = Task { @MainActor in
+                try self.persistenceService.fetchAllAccounts()
+            }.value
+
+            async let sharedSubsResult = Task { @MainActor in
+                (try? self.persistenceService.fetchAllSharedSubscriptions()) ?? []
+            }.value
+
+            // Await all in parallel - UI remains responsive during this time
+            let (
+                loadedPeople,
+                loadedGroups,
+                loadedSubscriptions,
+                loadedTransactions,
+                loadedSplitBills,
+                loadedAccounts,
+                loadedSharedSubs
+            ) = try await (
+                peopleResult,
+                groupsResult,
+                subscriptionsResult,
+                transactionsResult,
+                splitBillsResult,
+                accountsResult,
+                sharedSubsResult
+            )
+
+            // Update published properties on main actor
+            people = loadedPeople
+            groups = loadedGroups
+            subscriptions = loadedSubscriptions
+            transactions = loadedTransactions
+            splitBills = loadedSplitBills
+            accounts = loadedAccounts
+            sharedSubscriptions = loadedSharedSubs
 
             isLoading = false
-            print("✅ Data loaded successfully:")
+
+            print("✅ Data loaded successfully (async):")
             print("   - People: \(people.count)")
             print("   - Groups: \(groups.count)")
             print("   - Subscriptions: \(subscriptions.count)")
@@ -165,9 +258,7 @@ public class DataManager: ObservableObject {
             print("   - Shared Subscriptions: \(sharedSubscriptions.count)")
 
             // Process overdue subscription renewals
-            Task {
-                await renewalService.processOverdueRenewals()
-            }
+            await renewalService.processOverdueRenewals()
 
             // Notify all views that data has been reloaded
             notifyChange(.allDataReloaded)

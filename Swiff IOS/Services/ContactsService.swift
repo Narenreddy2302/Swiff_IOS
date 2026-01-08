@@ -27,6 +27,8 @@ class ContactsService: ObservableObject {
 
     // MARK: - Keys to Fetch
 
+    /// FIX 3.2: Remove CNContactThumbnailImageDataKey from initial fetch
+    /// Thumbnails will be loaded lazily via ContactThumbnailCache to save memory
     private let keysToFetch: [CNKeyDescriptor] = [
         CNContactIdentifierKey as CNKeyDescriptor,
         CNContactGivenNameKey as CNKeyDescriptor,
@@ -37,9 +39,22 @@ class ContactsService: ObservableObject {
         CNContactNicknameKey as CNKeyDescriptor,
         CNContactPhoneNumbersKey as CNKeyDescriptor,
         CNContactEmailAddressesKey as CNKeyDescriptor,
-        CNContactThumbnailImageDataKey as CNKeyDescriptor,
+        // REMOVED: CNContactThumbnailImageDataKey - loaded lazily now
         CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
     ]
+
+    /// Keys for thumbnail fetch only (used by lazy loading cache)
+    static let thumbnailKeys: [CNKeyDescriptor] = [
+        CNContactThumbnailImageDataKey as CNKeyDescriptor,
+    ]
+
+    // MARK: - Pagination Configuration
+
+    /// Configuration for paginated contact fetching
+    struct FetchConfig {
+        var batchSize: Int = 100
+        var maxContacts: Int = 10000
+    }
 
     // MARK: - Initialization
 
@@ -121,13 +136,14 @@ class ContactsService: ObservableObject {
                         // Get primary email
                         let email = contact.emailAddresses.first?.value as String?
 
-                        // Create contact entry
+                        // FIX 3.2: Create contact entry WITHOUT thumbnail data
+                        // Thumbnails will be loaded lazily via ContactThumbnailCache
                         let entry = ContactEntry(
                             id: contact.identifier,
                             name: finalName,
                             phoneNumbers: phoneNumbers,
                             email: email,
-                            thumbnailImageData: contact.thumbnailImageData,
+                            thumbnailImageData: nil,  // Lazy loaded via ContactThumbnailCache
                             hasAppAccount: false,
                             matchedUserId: nil,
                             matchedPhone: nil
@@ -155,6 +171,111 @@ class ContactsService: ObservableObject {
         return allContacts.filter { $0.hasPhoneNumber }
     }
 
+    // MARK: - Paginated Batch Fetching
+
+    /// FIX 3.1: Fetch contacts in batches using AsyncThrowingStream
+    /// This prevents memory spikes for devices with large contact lists
+    func fetchContactsInBatches(config: FetchConfig = FetchConfig()) -> AsyncThrowingStream<[ContactEntry], Error> {
+        AsyncThrowingStream { continuation in
+            Task.detached(priority: .userInitiated) { [keysToFetch, store] in
+                guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else {
+                    continuation.finish(throwing: ContactsError.permissionDenied)
+                    return
+                }
+
+                let request = CNContactFetchRequest(keysToFetch: keysToFetch)
+                request.sortOrder = .userDefault
+
+                var currentBatch: [ContactEntry] = []
+                var totalFetched = 0
+
+                do {
+                    try store.enumerateContacts(with: request) { contact, stopPointer in
+                        // Respect max contacts limit
+                        guard totalFetched < config.maxContacts else {
+                            stopPointer.pointee = true
+                            return
+                        }
+
+                        // Build name using formatter with fallback
+                        let name = CNContactFormatter.string(from: contact, style: .fullName) ?? ""
+
+                        var finalName = name
+                        if finalName.isEmpty {
+                            var components: [String] = []
+                            if !contact.namePrefix.isEmpty { components.append(contact.namePrefix) }
+                            if !contact.givenName.isEmpty { components.append(contact.givenName) }
+                            if !contact.middleName.isEmpty { components.append(contact.middleName) }
+                            if !contact.familyName.isEmpty { components.append(contact.familyName) }
+                            if !contact.nameSuffix.isEmpty { components.append(contact.nameSuffix) }
+
+                            if components.isEmpty && !contact.nickname.isEmpty {
+                                finalName = contact.nickname
+                            } else {
+                                finalName = components.joined(separator: " ")
+                            }
+                        }
+
+                        guard !finalName.isEmpty else { return }
+
+                        let phoneNumbers = contact.phoneNumbers.map { phoneValue in
+                            PhoneNumberNormalizer.normalize(phoneValue.value.stringValue)
+                        }.filter { !$0.isEmpty }
+
+                        let email = contact.emailAddresses.first?.value as String?
+
+                        let entry = ContactEntry(
+                            id: contact.identifier,
+                            name: finalName,
+                            phoneNumbers: phoneNumbers,
+                            email: email,
+                            thumbnailImageData: nil,  // Lazy loaded
+                            hasAppAccount: false
+                        )
+
+                        currentBatch.append(entry)
+                        totalFetched += 1
+
+                        // Yield batch when full
+                        if currentBatch.count >= config.batchSize {
+                            continuation.yield(currentBatch)
+                            print("DEBUG: Yielded batch of \(currentBatch.count) contacts, total: \(totalFetched)")
+                            currentBatch = []
+                        }
+                    }
+
+                    // Yield remaining contacts
+                    if !currentBatch.isEmpty {
+                        continuation.yield(currentBatch)
+                        print("DEBUG: Yielded final batch of \(currentBatch.count) contacts, total: \(totalFetched)")
+                    }
+
+                    continuation.finish()
+
+                } catch {
+                    continuation.finish(throwing: ContactsError.fetchFailed(error))
+                }
+            }
+        }
+    }
+
+    /// FIX 3.2: Fetch thumbnail for a single contact (for lazy loading cache)
+    func fetchThumbnail(for contactId: String) async -> Data? {
+        guard hasPermission else { return nil }
+
+        return await Task.detached {
+            do {
+                let contact = try self.store.unifiedContact(
+                    withIdentifier: contactId,
+                    keysToFetch: ContactsService.thumbnailKeys
+                )
+                return contact.thumbnailImageData
+            } catch {
+                return nil
+            }
+        }.value
+    }
+
     // MARK: - Single Contact Fetch
 
     /// Fetch a single contact by identifier
@@ -176,12 +297,13 @@ class ContactsService: ObservableObject {
 
             let email = contact.emailAddresses.first?.value as String?
 
+            // FIX 3.2: Don't include thumbnail - loaded lazily
             return ContactEntry(
                 id: contact.identifier,
                 name: name,
                 phoneNumbers: phoneNumbers,
                 email: email,
-                thumbnailImageData: contact.thumbnailImageData,
+                thumbnailImageData: nil,  // Lazy loaded via ContactThumbnailCache
                 hasAppAccount: false
             )
         } catch {

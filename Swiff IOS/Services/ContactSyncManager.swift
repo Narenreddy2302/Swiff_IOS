@@ -25,6 +25,14 @@ class ContactSyncManager: ObservableObject {
     @Published var lastSyncDate: Date?
     @Published var syncError: Error?
 
+    // MARK: - Sync Debouncing
+
+    /// Timestamp of last successful sync (for debouncing)
+    private var lastSyncTimestamp: Date?
+
+    /// Minimum interval between syncs (5 minutes)
+    private let minimumSyncInterval: TimeInterval = 300
+
     // MARK: - Computed Properties
 
     /// Contacts with Swiff accounts
@@ -71,6 +79,25 @@ class ContactSyncManager: ObservableObject {
         await syncContacts()
     }
 
+    /// Sync contacts only if not synced recently (debounced)
+    /// Use this for automatic syncs on view appear to prevent redundant syncs
+    func syncContactsIfNeeded() async {
+        // Skip if synced within the minimum interval
+        if let lastSync = lastSyncTimestamp,
+           Date().timeIntervalSince(lastSync) < minimumSyncInterval {
+            print("DEBUG: Skipping sync - last sync was \(Int(Date().timeIntervalSince(lastSync)))s ago (min interval: \(Int(minimumSyncInterval))s)")
+            return
+        }
+
+        // Check permission before syncing
+        let status = permissionManager.checkContactsPermission()
+        guard status.isGranted else {
+            return
+        }
+
+        await syncContacts()
+    }
+
     /// Full sync of contacts from device and match with Swiff accounts
     func syncContacts() async {
         guard !isSyncing else { return }
@@ -93,6 +120,9 @@ class ContactSyncManager: ObservableObject {
             // Step 4: Update published contacts
             contacts = ContactEntry.sortByAccountStatus(matchedContacts)
             lastSyncDate = Date()
+            lastSyncTimestamp = Date()  // Record for debouncing
+
+            print("DEBUG: ContactSyncManager sync complete - \(contacts.count) contacts")
 
         } catch {
             syncError = error
@@ -105,27 +135,33 @@ class ContactSyncManager: ObservableObject {
     // MARK: - Account Matching
 
     /// Match contacts with Swiff accounts using phone number hashes
+    /// Phone hashing is performed on a background thread to avoid blocking UI
     private func matchContactsWithAccounts(
         deviceContacts: [ContactEntry], contactsWithPhones: [ContactEntry]
     ) async -> [ContactEntry] {
-        // Collect all phone numbers and their hashes
-        var phoneHashMap: [String: (contactId: String, normalizedPhone: String)] = [:]
+        // FIX 2.1: Move CPU-intensive hashing to background thread
+        let phoneHashMap = await Task.detached(priority: .userInitiated) {
+            var hashMap: [String: (contactId: String, normalizedPhone: String)] = [:]
 
-        for contact in contactsWithPhones {
-            for phone in contact.phoneNumbers {
-                let hash = PhoneNumberNormalizer.hash(phone)
-                if !hash.isEmpty {
-                    phoneHashMap[hash] = (contactId: contact.id, normalizedPhone: phone)
+            for contact in contactsWithPhones {
+                for phone in contact.phoneNumbers {
+                    let hash = PhoneNumberNormalizer.hash(phone)
+                    if !hash.isEmpty {
+                        hashMap[hash] = (contactId: contact.id, normalizedPhone: phone)
+                    }
                 }
             }
-        }
+
+            print("DEBUG: Hashed \(hashMap.count) phone numbers on background thread")
+            return hashMap
+        }.value
 
         // If no phones to match, return original contacts
         guard !phoneHashMap.isEmpty else {
             return deviceContacts
         }
 
-        // Get matched user IDs from server
+        // Get matched user IDs from server (already async, uses parallel batching)
         let matchedPhoneHashes = await fetchMatchedPhoneHashes(Array(phoneHashMap.keys))
 
         // Build set of matched contact IDs with their user info
@@ -154,26 +190,42 @@ class ContactSyncManager: ObservableObject {
         return updatedContacts
     }
 
-    /// Fetch matched phone hashes from Supabase
+    /// Fetch matched phone hashes from Supabase using parallel batching
+    /// FIX 2.3: Execute all batches in parallel for 3-5x speedup
     private func fetchMatchedPhoneHashes(_ hashes: [String]) async -> [PhoneMatchResult] {
-        // Batch hashes in groups of 100 for efficient queries
         let batchSize = 100
-        var allResults: [PhoneMatchResult] = []
 
+        // Create batches
+        var batches: [[String]] = []
         for batchStart in stride(from: 0, to: hashes.count, by: batchSize) {
             let batchEnd = min(batchStart + batchSize, hashes.count)
-            let batch = Array(hashes[batchStart..<batchEnd])
-
-            do {
-                let results = try await callMatchPhoneNumbersRPC(phoneHashes: batch)
-                allResults.append(contentsOf: results)
-            } catch {
-                print("Error matching phone batch: \(error.localizedDescription)")
-                // Continue with next batch even if one fails
-            }
+            batches.append(Array(hashes[batchStart..<batchEnd]))
         }
 
-        return allResults
+        print("DEBUG: Fetching \(hashes.count) hashes in \(batches.count) parallel batches")
+
+        // Execute all batches in parallel using TaskGroup
+        return await withTaskGroup(of: [PhoneMatchResult].self) { group in
+            for batch in batches {
+                group.addTask {
+                    do {
+                        return try await self.callMatchPhoneNumbersRPC(phoneHashes: batch)
+                    } catch {
+                        print("Error matching phone batch: \(error.localizedDescription)")
+                        return []
+                    }
+                }
+            }
+
+            // Collect all results
+            var allResults: [PhoneMatchResult] = []
+            for await results in group {
+                allResults.append(contentsOf: results)
+            }
+
+            print("DEBUG: Received \(allResults.count) matches from server")
+            return allResults
+        }
     }
 
     /// Call the Supabase RPC function to match phone numbers

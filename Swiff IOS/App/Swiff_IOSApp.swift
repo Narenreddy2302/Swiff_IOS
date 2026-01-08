@@ -93,9 +93,9 @@ struct Swiff_IOSApp: App {
                             // Load all persisted data on app launch
                             DataManager.shared.loadAllData()
 
-                            // Sync device contacts (if permission granted)
+                            // FIX 1.1: Use debounced sync to avoid redundant syncs on every app launch
                             Task {
-                                await DataManager.shared.syncContacts()
+                                await ContactSyncManager.shared.syncContactsIfNeeded()
                             }
 
                             // Create automatic backup if needed (every 7 days)

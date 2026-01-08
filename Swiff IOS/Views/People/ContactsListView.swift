@@ -13,6 +13,8 @@ struct ContactsListView: View {
     @StateObject private var permissionManager = SystemPermissionManager.shared
     @EnvironmentObject var dataManager: DataManager
     @Binding var searchText: String
+    @State private var debouncedSearchText = ""  // FIX 1.2: Debounced search text
+    @State private var searchDebounceTask: Task<Void, Never>?  // FIX 1.2: Search debounce task
     @State private var selectedFilter: ContactsFilter = .all
     @State private var contactToInvite: ContactEntry?
     @State private var showingInviteSheet = false
@@ -32,20 +34,38 @@ struct ContactsListView: View {
             // Check and update permission status
             _ = permissionManager.checkContactsPermission()
 
-            // Sync contacts if permitted
+            // FIX 1.1: Use debounced sync to avoid redundant syncs
             if permissionManager.contactsStatus == .authorized {
                 Task {
-                    await syncManager.syncContactsIfPermitted()
+                    await syncManager.syncContactsIfNeeded()
                 }
             }
         }
         .onChange(of: permissionManager.contactsStatus) { oldValue, newValue in
-            // When permission changes to authorized, sync contacts
-            if newValue == .authorized {
+            // When permission changes to authorized for the first time, do a full sync
+            if newValue == .authorized && oldValue != .authorized {
                 Task {
                     await syncManager.syncContacts()
                 }
             }
+        }
+        // FIX 1.2: Debounce search input to avoid filtering on every keystroke
+        .onChange(of: searchText) { oldValue, newValue in
+            // Cancel any pending debounce task
+            searchDebounceTask?.cancel()
+
+            // Debounce for 300ms before filtering
+            searchDebounceTask = Task {
+                try? await Task.sleep(nanoseconds: 300_000_000)  // 300ms
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    debouncedSearchText = newValue
+                }
+            }
+        }
+        .onDisappear {
+            // Clean up debounce task
+            searchDebounceTask?.cancel()
         }
         .sheet(isPresented: $showingInviteSheet) {
             if let contact = contactToInvite {
@@ -115,12 +135,13 @@ struct ContactsListView: View {
 
     // MARK: - Filtered Contacts
 
+    /// FIX 1.2: Use debouncedSearchText to avoid filtering on every keystroke
     private var filteredContacts: [ContactEntry] {
         var result = syncManager.contacts
 
-        // Apply search filter
-        if !searchText.isEmpty {
-            result = result.search(searchText)
+        // Apply search filter using debounced text
+        if !debouncedSearchText.isEmpty {
+            result = result.search(debouncedSearchText)
         }
 
         // Apply category filter
@@ -221,7 +242,7 @@ struct ContactsListView: View {
         VStack(spacing: 16) {
             Spacer()
 
-            if searchText.isEmpty && syncManager.totalContactsCount == 0 {
+            if debouncedSearchText.isEmpty && syncManager.totalContactsCount == 0 {
                 // No contacts on device case
                 Image(systemName: "person.2.slash.fill")
                     .font(.system(size: 50, weight: .light))
@@ -237,19 +258,19 @@ struct ContactsListView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
             } else {
-                // Search/Filter empty case
+                // Search/Filter empty case - show the actual typed text for feedback
                 Image(
-                    systemName: searchText.isEmpty
+                    systemName: debouncedSearchText.isEmpty
                         ? "person.crop.circle.badge.questionmark" : "magnifyingglass"
                 )
                 .font(.system(size: 50, weight: .light))
                 .foregroundColor(Theme.Colors.textTertiary)
 
-                Text(searchText.isEmpty ? "No contacts found" : "No results for \"\(searchText)\"")
+                Text(debouncedSearchText.isEmpty ? "No contacts found" : "No results for \"\(searchText)\"")
                     .font(.spotifyBodyLarge)
                     .foregroundColor(Theme.Colors.textSecondary)
 
-                if !searchText.isEmpty {
+                if !debouncedSearchText.isEmpty {
                     Text("Try a different search term")
                         .font(.spotifyBodySmall)
                         .foregroundColor(Theme.Colors.textTertiary)
