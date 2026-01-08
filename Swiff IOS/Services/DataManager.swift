@@ -107,6 +107,31 @@ public class DataManager: ObservableObject {
     var splitBillsCount: Int { splitBills.count }
     var sharedSubscriptionsCount: Int { sharedSubscriptions.count }
 
+    // MARK: - Contacts (Delegated to ContactSyncManager)
+
+    /// Device contacts (fetched from CNContactStore)
+    var contacts: [ContactEntry] {
+        ContactSyncManager.shared.contacts
+    }
+
+    /// Contacts with Swiff accounts
+    var contactsOnSwiff: [ContactEntry] {
+        ContactSyncManager.shared.contactsOnSwiff
+    }
+
+    /// Contacts available to invite
+    var contactsToInvite: [ContactEntry] {
+        ContactSyncManager.shared.contactsToInvite
+    }
+
+    var contactsCount: Int { contacts.count }
+    var contactsOnSwiffCount: Int { contactsOnSwiff.count }
+
+    /// Sync device contacts and match with Swiff accounts
+    func syncContacts() async {
+        await ContactSyncManager.shared.syncContactsIfPermitted()
+    }
+
     // MARK: - Initialization
 
     private init() {
@@ -204,6 +229,41 @@ public class DataManager: ObservableObject {
             return people
         }
         return people.filter { $0.name.localizedStandardContains(searchTerm) }
+    }
+
+    func importContact(_ contact: ContactEntry) throws -> Person {
+        // Check if person already exists by contact ID
+        if let existing = people.first(where: { $0.contactId == contact.id }) {
+            return existing
+        }
+
+        // Check if person exists by phone number (cleaning it first)
+        let contactPhones = contact.phoneNumbers.map { PhoneNumberNormalizer.normalize($0) }
+        if let existing = people.first(where: { person in
+            let personPhone = PhoneNumberNormalizer.normalize(person.phone)
+            return contactPhones.contains(personPhone)
+        }) {
+            // Update contact ID for future reference
+            var updated = existing
+            updated.contactId = contact.id
+            try updatePerson(updated)
+            return updated
+        }
+
+        // Create new person
+        let newPerson = Person(
+            name: contact.name,
+            email: contact.email ?? "",
+            phone: contact.primaryPhone ?? "",
+            avatarType: .initials(
+                contact.initials,
+                colorIndex: AvatarColorPalette.colorIndex(for: contact.name)
+            ),
+            contactId: contact.id
+        )
+
+        try addPerson(newPerson)
+        return newPerson
     }
 
     // MARK: - Group CRUD Operations
