@@ -62,6 +62,12 @@ final class SubscriptionModel {
     var retentionOffersData: Data?  // Encoded [RetentionOffer]
     var documentsData: Data?        // Encoded [SubscriptionDocument]
 
+    // Supabase sync metadata
+    var syncVersion: Int = 1
+    var deletedAt: Date?
+    var pendingSync: Bool = false
+    var lastSyncedAt: Date?
+
     // Relationships
     @Relationship(deleteRule: .nullify)
     var sharedSubscriptions: [SharedSubscriptionModel]?

@@ -20,6 +20,12 @@ final class GroupModel {
     var totalAmount: Double
     var memberIds: [UUID]
 
+    // Supabase sync metadata
+    var syncVersion: Int = 1
+    var deletedAt: Date?
+    var pendingSync: Bool = false
+    var lastSyncedAt: Date?
+
     // Relationships
     @Relationship(deleteRule: .nullify)
     var members: [PersonModel] = []

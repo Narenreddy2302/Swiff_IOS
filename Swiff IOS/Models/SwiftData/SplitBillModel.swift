@@ -13,7 +13,7 @@ final class SplitBillModel {
     @Attribute(.unique) var id: UUID
     var title: String
     var totalAmount: Double
-    var paidById: UUID
+    var paidById: UUID?
     var splitTypeRaw: String
     var participantsData: Data  // Encoded [SplitParticipant]
     var notes: String
@@ -21,6 +21,12 @@ final class SplitBillModel {
     var date: Date
     var createdDate: Date
     var groupId: UUID?
+
+    // Supabase sync metadata
+    var syncVersion: Int = 1
+    var deletedAt: Date?
+    var pendingSync: Bool = false
+    var lastSyncedAt: Date?
 
     // Relationships
     @Relationship(deleteRule: .nullify)
@@ -51,7 +57,7 @@ final class SplitBillModel {
         var splitBill = SplitBill(
             title: title,
             totalAmount: totalAmount,
-            paidById: paidById,
+            paidById: paidById ?? UUID(),
             splitType: splitType,
             participants: participants,
             notes: notes,

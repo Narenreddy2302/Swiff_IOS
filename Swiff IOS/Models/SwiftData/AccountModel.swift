@@ -17,6 +17,12 @@ final class AccountModel {
     var isDefault: Bool
     var createdDate: Date
 
+    // Supabase sync metadata
+    var syncVersion: Int = 1
+    var deletedAt: Date?
+    var pendingSync: Bool = false
+    var lastSyncedAt: Date?
+
     init(
         id: UUID = UUID(),
         name: String,

@@ -41,6 +41,12 @@ final class TransactionModel {
     // Transaction Type for feed display
     var transactionTypeRaw: String?
 
+    // Supabase sync metadata
+    var syncVersion: Int = 1
+    var deletedAt: Date?
+    var pendingSync: Bool = false
+    var lastSyncedAt: Date?
+
     // Relationships
     @Relationship(deleteRule: .nullify)
     var relatedPerson: PersonModel?

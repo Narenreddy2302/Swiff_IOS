@@ -34,6 +34,12 @@ final class PersonModel {
     var relationshipType: String?
     var personNotes: String?
 
+    // Supabase sync metadata
+    var syncVersion: Int = 1
+    var deletedAt: Date?
+    var pendingSync: Bool = false
+    var lastSyncedAt: Date?
+
     // Relationships
     @Relationship(deleteRule: .nullify)
     var groups: [GroupModel] = []

@@ -6,6 +6,8 @@
 //  Updated on 11/18/25 to use SwiftData and DataManager
 //  Updated on 11/21/25 to add widget deep link support
 //  Updated by Agent 12 on 11/21/25 to add Spotlight search integration
+//  Updated on 01/07/26 to add Supabase integration
+//  Updated on 01/07/26 to add authentication flow
 //
 
 import Combine
@@ -32,22 +34,61 @@ struct Swiff_IOSApp: App {
     // Spotlight search result navigation
     @StateObject private var spotlightNavigation = SpotlightNavigationHandler()
 
+    // Supabase services
+    @StateObject private var authService = SupabaseAuthService.shared
+    @StateObject private var syncService = SyncService.shared
+
     var body: some Scene {
         WindowGroup {
             SwiftUI.Group {
-                if showOnboarding {
+                // Check authentication state first
+                if authService.isCheckingAuth {
+                    // Show loading screen while checking auth
+                    AuthLoadingView()
+                        .environmentObject(authService)
+                } else if !authService.isAuthenticated {
+                    // User not authenticated - show login/signup
+                    AuthenticationView()
+                        .environmentObject(authService)
+                } else if !authService.isEmailVerified {
+                    // User authenticated but email not verified
+                    EmailVerificationPendingView(
+                        email: authService.currentUserEmail ?? "",
+                        onBackToLogin: {
+                            Task {
+                                try? await authService.signOut()
+                            }
+                        },
+                        onUseDifferentEmail: {
+                            Task {
+                                try? await authService.signOut()
+                            }
+                        },
+                        onVerified: {
+                            // Refresh verification status
+                            Task {
+                                _ = await authService.checkEmailVerification()
+                            }
+                        }
+                    )
+                    .environmentObject(authService)
+                } else if showOnboarding {
+                    // User authenticated and verified - show onboarding
                     OnboardingView {
                         withAnimation(.smooth) {
                             showOnboarding = false
                         }
                     }
                     .environmentObject(deepLinkHandler)
+                    .environmentObject(authService)
                 } else {
-                    // Show main app (Local Mode)
+                    // User fully authenticated, verified, and onboarded - show main app
                     ContentView()
                         .environmentObject(DataManager.shared)
                         .environmentObject(deepLinkHandler)
                         .environmentObject(spotlightNavigation)
+                        .environmentObject(authService)
+                        .environmentObject(syncService)
                         .onAppear {
                             // Load all persisted data on app launch
                             DataManager.shared.loadAllData()
@@ -60,6 +101,9 @@ struct Swiff_IOSApp: App {
 
                             // Enable Spotlight indexing
                             DataManager.shared.enableSpotlightIndexing()
+
+                            // Initialize Supabase sync if user is authenticated
+                            initializeSupabaseSync()
                         }
                         .onOpenURL { url in
                             // Handle deep links from widgets
@@ -104,6 +148,48 @@ struct Swiff_IOSApp: App {
         WidgetCenter.shared.reloadAllTimelines()
 
         print("✅ Widget data refreshed")
+    }
+
+    // MARK: - Supabase Sync Initialization
+
+    /// Initialize Supabase sync if user is authenticated
+    private func initializeSupabaseSync() {
+        Task {
+            await setupSupabaseSync()
+        }
+    }
+
+    @MainActor
+    private func setupSupabaseSync() async {
+        // Check if user is authenticated
+        guard SupabaseService.shared.currentUser != nil else {
+            print("📱 No authenticated user, skipping Supabase sync")
+            return
+        }
+
+        print("📱 Initializing Supabase sync...")
+
+        do {
+            // Get the model context from the shared container
+            let modelContext = ModelContext(sharedModelContainer)
+
+            // Check for pending changes that need to be synced
+            if syncService.pendingChangesCount > 0 {
+                print("📤 Syncing \(syncService.pendingChangesCount) pending changes...")
+                await syncService.syncPendingChanges()
+            }
+
+            // Start realtime sync for live updates
+            await syncService.startRealtimeSync(modelContext: modelContext)
+
+            // Perform incremental sync to get any changes from server
+            try await syncService.performIncrementalSync(modelContext: modelContext)
+
+            print("✅ Supabase sync initialized successfully")
+        } catch {
+            print("⚠️ Supabase sync initialization failed: \(error.localizedDescription)")
+            // Continue with local data - offline-first approach
+        }
     }
 
     // MARK: - Spotlight Search Result Handling
