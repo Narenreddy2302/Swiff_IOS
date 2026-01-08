@@ -13,10 +13,12 @@ struct PeopleView: View {
     enum PeopleTab: String, CaseIterable {
         case people = "People"
         case groups = "Groups"
+        case contacts = "Contacts"
 
         var icon: String {
             switch self {
             case .people: return "person.2.fill"
+            case .contacts: return "person.crop.circle.fill"
             case .groups: return "person.3.fill"
             }
         }
@@ -42,23 +44,28 @@ struct PeopleView: View {
                         )
                         .padding(.top, 10)  // Standard top padding after safe area
 
-                        // Quick Stats Cards
-                        PeopleQuickStatsView(people: dataManager.people)
-
                         // No category filter section for People (Groups don't need filters like subscription categories)
                     }
                     .background(Color.wiseBackground)
                     .zIndex(1)  // Keep header on top
 
                     // Content based on selected tab
-                    if selectedTab == .people {
+                    switch selectedTab {
+                    case .people:
                         PeopleListView(people: dataManager.people, searchText: $searchText)
                             .transition(
                                 .asymmetric(
                                     insertion: .move(edge: .trailing).combined(with: .opacity),
                                     removal: .move(edge: .leading).combined(with: .opacity)
                                 ))
-                    } else {
+                    case .contacts:
+                        ContactsListView(searchText: $searchText)
+                            .transition(
+                                .asymmetric(
+                                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                                    removal: .move(edge: .leading).combined(with: .opacity)
+                                ))
+                    case .groups:
                         GroupsListView(
                             groups: dataManager.groups, people: dataManager.people,
                             searchText: $searchText
@@ -74,9 +81,9 @@ struct PeopleView: View {
             .navigationBarHidden(true)
         }
         .sheet(isPresented: $showingAddPersonSheet) {
-            AddPersonSheet(isPresented: $showingAddPersonSheet)
+            AddPersonFromContactsSheet(isPresented: $showingAddPersonSheet)
                 .environmentObject(dataManager)
-                .presentationDetents([.height(320)])
+                .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingAddGroupSheet) {
@@ -107,6 +114,19 @@ struct PeopleHeaderSection: View {
     @Binding var showSearchBar: Bool
     @Binding var searchText: String
 
+    private var searchPlaceholder: String {
+        switch selectedTab {
+        case .people: return "Search people..."
+        case .contacts: return "Search contacts..."
+        case .groups: return "Search groups..."
+        }
+    }
+
+    private var showAddButton: Bool {
+        // Don't show add button on Contacts tab (contacts are from phone)
+        selectedTab != .contacts
+    }
+
     var body: some View {
         VStack(spacing: 16) {
             // Top Header (matching design system)
@@ -133,12 +153,14 @@ struct PeopleHeaderSection: View {
                             .foregroundColor(showSearchBar ? .wiseBrightGreen : .wisePrimaryText)
                     }
 
-                    HeaderActionButton(icon: "plus.circle.fill", color: .wiseForestGreen) {
-                        HapticManager.shared.light()
-                        if selectedTab == .people {
-                            showingAddPersonSheet = true
-                        } else {
-                            showingAddGroupSheet = true
+                    if showAddButton {
+                        HeaderActionButton(icon: "plus.circle.fill", color: .wiseForestGreen) {
+                            HapticManager.shared.light()
+                            if selectedTab == .people {
+                                showingAddPersonSheet = true
+                            } else if selectedTab == .groups {
+                                showingAddGroupSheet = true
+                            }
                         }
                     }
                 }
@@ -187,7 +209,7 @@ struct PeopleHeaderSection: View {
                         .font(.system(size: 16))
 
                     TextField(
-                        selectedTab == .people ? "Search people..." : "Search groups...",
+                        searchPlaceholder,
                         text: $searchText
                     )
                     .font(.spotifyBodyMedium)

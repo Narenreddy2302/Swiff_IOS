@@ -326,58 +326,63 @@ struct PeopleListView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Filter Pills
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(PeopleFilter.allCases, id: \.self) { filter in
-                        PeopleFilterPill(
-                            filter: filter,
-                            isSelected: selectedFilter == filter,
-                            count: 0,  // Placeholder
-                            action: {
-                                HapticManager.shared.selection()
-                                withAnimation {
-                                    selectedFilter = filter
+        // Single ScrollView with stats, filters, and content
+        ScrollView {
+            VStack(spacing: 0) {
+                // 1. Stats cards - ALWAYS shown at top
+                PeopleQuickStatsView(people: people)
+
+                // 2. Filter Pills - below stats cards
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(PeopleFilter.allCases, id: \.self) { filter in
+                            PeopleFilterPill(
+                                filter: filter,
+                                isSelected: selectedFilter == filter,
+                                count: 0,  // Placeholder
+                                action: {
+                                    HapticManager.shared.selection()
+                                    withAnimation {
+                                        selectedFilter = filter
+                                    }
                                 }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+                .padding(.bottom, 12)
+
+                // 3. Content
+                if dataManager.isLoading && people.isEmpty {
+                        SkeletonListView(rowCount: 5, rowType: .person)
+                    } else if filteredPeople.isEmpty {
+                        // Empty State with better design
+                        VStack(spacing: 16) {
+                            Spacer()
+                                .frame(height: 40)
+                            ZStack {
+                                Circle()
+                                    .fill(Color.wiseSecondaryText.opacity(0.1))
+                                    .frame(width: 80, height: 80)
+
+                                Image(systemName: "person.2.slash")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.wiseSecondaryText)
                             }
-                        )
-                    }
-                }
-                .padding(.horizontal, 16)
-            }
-            .padding(.bottom, 12)
 
-            // People List
-            if dataManager.isLoading && people.isEmpty {
-                SkeletonListView(rowCount: 5, rowType: .person)
-            } else if filteredPeople.isEmpty {
-                // Empty State with better design
-                VStack(spacing: 16) {
-                    Spacer()
-                    ZStack {
-                        Circle()
-                            .fill(Color.wiseSecondaryText.opacity(0.1))
-                            .frame(width: 80, height: 80)
+                            Text("No people found")
+                                .font(.spotifyHeadingSmall)
+                                .foregroundColor(.wisePrimaryText)
 
-                        Image(systemName: "person.2.slash")
-                            .font(.system(size: 32))
-                            .foregroundColor(.wiseSecondaryText)
-                    }
-
-                    Text("No people found")
-                        .font(.spotifyHeadingSmall)
-                        .foregroundColor(.wisePrimaryText)
-
-                    Text("Try adjusting your filters or search")
-                        .font(.spotifyBodyMedium)
-                        .foregroundColor(.wiseSecondaryText)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-            } else {
-                ScrollView {
-                    VStack(spacing: 0) {
+                            Text("Try adjusting your filters or search")
+                                .font(.spotifyBodyMedium)
+                                .foregroundColor(.wiseSecondaryText)
+                            Spacer()
+                                .frame(height: 40)
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else {
                         ForEach(Array(filteredPeople.enumerated()), id: \.element.id) {
                             index, person in
                             NavigationLink(destination: PersonDetailView(personId: person.id)) {
@@ -420,20 +425,19 @@ struct PeopleListView: View {
                                 FeedRowDivider()
                             }
                         }
-
-                        // Bottom padding for tab bar
-                        Color.clear.frame(height: 100)
                     }
-                    .padding(.bottom, 20)
-                }
-                .background(Theme.Colors.background)
-                .scrollDismissesKeyboard(.interactively)
-                .refreshable {
-                    HapticManager.shared.pullToRefresh()
-                    dataManager.loadAllData()
-                    ToastManager.shared.showSuccess("Refreshed")
-                }
+
+                // Bottom padding for tab bar
+                Color.clear.frame(height: 100)
             }
+            .padding(.bottom, 20)
+        }
+        .background(Theme.Colors.background)
+        .scrollDismissesKeyboard(.interactively)
+        .refreshable {
+            HapticManager.shared.pullToRefresh()
+            dataManager.loadAllData()
+            ToastManager.shared.showSuccess("Refreshed")
         }
         .sheet(isPresented: $showingEditSheet) {
             if let person = editingPerson {
@@ -541,17 +545,21 @@ struct GroupsListView: View {
             }
             .padding(.bottom, 12)
 
-            // Groups List
-            if dataManager.isLoading && groups.isEmpty {
-                // Loading State
-                SkeletonListView(rowCount: 5, rowType: .group)
-            } else if filteredGroups.isEmpty {
-                // Empty State
-                GeometryReader { geometry in
-                    VStack(spacing: 0) {
-                        Spacer()
+            // Groups List - Single ScrollView with stats always visible
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Stats cards - ALWAYS shown at top
+                    PeopleQuickStatsView(people: people)
 
+                    if dataManager.isLoading && groups.isEmpty {
+                        // Loading State
+                        SkeletonListView(rowCount: 5, rowType: .group)
+                    } else if filteredGroups.isEmpty {
+                        // Empty State
                         VStack(spacing: 24) {
+                            Spacer()
+                                .frame(height: 40)
+
                             // Icon - Properly sized and centered
                             ZStack {
                                 // Background circle for visual weight
@@ -578,16 +586,12 @@ struct GroupsListView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                             .padding(.horizontal, 48)
+
+                            Spacer()
+                                .frame(height: 40)
                         }
                         .frame(maxWidth: .infinity)
-
-                        Spacer()
-                    }
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-                }
-            } else {
-                ScrollView {
-                    VStack(spacing: 0) {
+                    } else {
                         ForEach(Array(filteredGroups.enumerated()), id: \.element.id) {
                             index, group in
                             NavigationLink(destination: GroupDetailView(groupId: group.id)) {
@@ -618,19 +622,19 @@ struct GroupsListView: View {
                                 FeedRowDivider()
                             }
                         }
-
-                        // Bottom padding for tab bar
-                        Color.clear.frame(height: 100)
                     }
-                    .padding(.bottom, 20)
+
+                    // Bottom padding for tab bar
+                    Color.clear.frame(height: 100)
                 }
-                .background(Theme.Colors.background)
-                .scrollDismissesKeyboard(.interactively)
-                .refreshable {
-                    HapticManager.shared.pullToRefresh()
-                    dataManager.loadAllData()
-                    ToastManager.shared.showSuccess("Refreshed")
-                }
+                .padding(.bottom, 20)
+            }
+            .background(Theme.Colors.background)
+            .scrollDismissesKeyboard(.interactively)
+            .refreshable {
+                HapticManager.shared.pullToRefresh()
+                dataManager.loadAllData()
+                ToastManager.shared.showSuccess("Refreshed")
             }
         }
         .sheet(isPresented: $showingEditSheet) {
