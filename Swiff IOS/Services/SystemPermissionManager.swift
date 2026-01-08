@@ -12,6 +12,7 @@ import AVFoundation
 import Photos
 import UserNotifications
 import UIKit
+import Contacts
 
 // MARK: - Permission Type
 
@@ -19,6 +20,7 @@ enum PermissionType: String, CaseIterable {
     case camera = "Camera"
     case photoLibrary = "Photo Library"
     case notifications = "Notifications"
+    case contacts = "Contacts"
 
     var displayName: String {
         return self.rawValue
@@ -29,6 +31,7 @@ enum PermissionType: String, CaseIterable {
         case .camera: return "camera.fill"
         case .photoLibrary: return "photo.fill"
         case .notifications: return "bell.fill"
+        case .contacts: return "person.crop.circle.fill"
         }
     }
 }
@@ -123,6 +126,7 @@ class SystemPermissionManager: ObservableObject {
     @Published var cameraStatus: PermissionStatus = .notDetermined
     @Published var photoLibraryStatus: PermissionStatus = .notDetermined
     @Published var notificationStatus: PermissionStatus = .notDetermined
+    @Published var contactsStatus: PermissionStatus = .notDetermined
 
     private var permissionHistory: [PermissionType: [PermissionResult]] = [:]
 
@@ -331,6 +335,73 @@ class SystemPermissionManager: ObservableObject {
         return status
     }
 
+    // MARK: - Contacts Permission
+
+    /// Request contacts permission
+    func requestContactsPermission() async throws -> PermissionStatus {
+        let store = CNContactStore()
+        let currentStatus = CNContactStore.authorizationStatus(for: .contacts)
+
+        switch currentStatus {
+        case .authorized:
+            contactsStatus = .authorized
+            recordPermissionResult(.contacts, status: .authorized)
+            return .authorized
+
+        case .denied:
+            contactsStatus = .denied
+            throw PermissionError.denied(.contacts)
+
+        case .restricted:
+            contactsStatus = .restricted
+            throw PermissionError.restricted(.contacts)
+
+        case .notDetermined:
+            do {
+                let granted = try await store.requestAccess(for: .contacts)
+                let status: PermissionStatus = granted ? .authorized : .denied
+                contactsStatus = status
+                recordPermissionResult(.contacts, status: status)
+
+                if !granted {
+                    throw PermissionError.denied(.contacts)
+                }
+
+                return status
+            } catch {
+                contactsStatus = .denied
+                throw PermissionError.requestFailed(.contacts, underlying: error)
+            }
+
+        @unknown default:
+            contactsStatus = .notDetermined
+            throw PermissionError.notDetermined(.contacts)
+        }
+    }
+
+    /// Check contacts permission status
+    func checkContactsPermission() -> PermissionStatus {
+        let status = CNContactStore.authorizationStatus(for: .contacts)
+
+        switch status {
+        case .authorized:
+            contactsStatus = .authorized
+            return .authorized
+        case .denied:
+            contactsStatus = .denied
+            return .denied
+        case .restricted:
+            contactsStatus = .restricted
+            return .restricted
+        case .notDetermined:
+            contactsStatus = .notDetermined
+            return .notDetermined
+        @unknown default:
+            contactsStatus = .notDetermined
+            return .notDetermined
+        }
+    }
+
     // MARK: - Batch Operations
 
     /// Request multiple permissions at once
@@ -348,6 +419,8 @@ class SystemPermissionManager: ObservableObject {
                     status = try await requestPhotoLibraryPermission()
                 case .notifications:
                     status = try await requestNotificationPermission()
+                case .contacts:
+                    status = try await requestContactsPermission()
                 }
 
                 results[type] = .success(status)
@@ -365,6 +438,7 @@ class SystemPermissionManager: ObservableObject {
         _ = checkCameraPermission()
         _ = checkPhotoLibraryPermission()
         _ = await checkNotificationPermission()
+        _ = checkContactsPermission()
     }
 
     /// Get all current permission statuses
@@ -374,7 +448,8 @@ class SystemPermissionManager: ObservableObject {
         return [
             .camera: cameraStatus,
             .photoLibrary: photoLibraryStatus,
-            .notifications: notificationStatus
+            .notifications: notificationStatus,
+            .contacts: contactsStatus
         ]
     }
 
@@ -389,6 +464,8 @@ class SystemPermissionManager: ObservableObject {
             return checkPhotoLibraryPermission().isGranted
         case .notifications:
             return await checkNotificationPermission().isGranted
+        case .contacts:
+            return checkContactsPermission().isGranted
         }
     }
 
