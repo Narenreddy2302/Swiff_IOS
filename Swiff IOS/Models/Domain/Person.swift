@@ -9,6 +9,23 @@
 import Combine
 import Foundation
 
+// MARK: - Person Source Enum
+
+/// Tracks the origin of a Person record for auto-linking when contacts join the app
+public enum PersonSource: String, Codable, CaseIterable, Sendable {
+    case manual = "manual"       // Manually created by user
+    case contact = "contact"     // Imported from iOS contacts (no app account)
+    case appUser = "app_user"    // Has a verified Swiff account
+
+    public var displayName: String {
+        switch self {
+        case .manual: return "Manual"
+        case .contact: return "Contact"
+        case .appUser: return "App User"
+        }
+    }
+}
+
 // MARK: - Person Model
 
 public struct Person: Identifiable, Codable {
@@ -27,6 +44,9 @@ public struct Person: Identifiable, Codable {
     public var notificationPreferences: NotificationPreferences  // How to notify this person
     public var relationshipType: String?  // e.g., "Friend", "Family", "Coworker", "Other"
     public var notes: String?  // User notes about this person
+
+    // Contact Due Feature: Track person origin for auto-linking
+    public var personSource: PersonSource  // Origin of this person record
 
     // Legacy support for emoji string
     @available(*, deprecated, message: "Use avatarType instead")
@@ -51,7 +71,8 @@ public struct Person: Identifiable, Codable {
         preferredPaymentMethod: PaymentMethod? = nil,
         notificationPreferences: NotificationPreferences = NotificationPreferences(),
         relationshipType: String? = nil,
-        notes: String? = nil
+        notes: String? = nil,
+        personSource: PersonSource = .manual
     ) {
         self.name = name
         self.email = email
@@ -66,6 +87,7 @@ public struct Person: Identifiable, Codable {
         self.notificationPreferences = notificationPreferences
         self.relationshipType = relationshipType
         self.notes = notes
+        self.personSource = personSource
     }
 
     // Convenience init for emoji (backward compatibility)

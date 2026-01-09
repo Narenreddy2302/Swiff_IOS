@@ -1266,19 +1266,20 @@ public class PersistenceService {
     // MARK: - Validation Methods
 
     private func validatePerson(_ person: Person) throws {
+        // Name is always required
         guard !person.name.trimmingCharacters(in: .whitespaces).isEmpty else {
             throw PersistenceError.validationFailed(reason: "Person name cannot be empty")
         }
 
-        guard !person.email.trimmingCharacters(in: .whitespaces).isEmpty else {
-            throw PersistenceError.validationFailed(reason: "Person email cannot be empty")
-        }
-
-        // Email format validation
-        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
-        guard emailPredicate.evaluate(with: person.email) else {
-            throw PersistenceError.validationFailed(reason: "Invalid email format")
+        // Email is optional - but if provided, must be valid format
+        // This allows importing contacts who only have phone numbers
+        let trimmedEmail = person.email.trimmingCharacters(in: .whitespaces)
+        if !trimmedEmail.isEmpty {
+            let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+            let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+            guard emailPredicate.evaluate(with: trimmedEmail) else {
+                throw PersistenceError.validationFailed(reason: "Invalid email format")
+            }
         }
     }
 

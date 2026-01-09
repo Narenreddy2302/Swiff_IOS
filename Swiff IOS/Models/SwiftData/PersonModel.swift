@@ -34,6 +34,9 @@ final class PersonModel {
     var relationshipType: String?
     var personNotes: String?
 
+    // Contact Due Feature: Track person origin for auto-linking
+    var personSourceRaw: String = PersonSource.manual.rawValue
+
     // Supabase sync metadata
     var syncVersion: Int = 1
     var deletedAt: Date?
@@ -63,7 +66,8 @@ final class PersonModel {
         preferredPaymentMethod: PaymentMethod? = nil,
         notificationPreferences: NotificationPreferences = NotificationPreferences(),
         relationshipType: String? = nil,
-        notes: String? = nil
+        notes: String? = nil,
+        personSource: PersonSource = .manual
     ) {
         self.id = id
         self.name = name
@@ -105,6 +109,9 @@ final class PersonModel {
         // Use a simple encoding approach that avoids MainActor isolation issues
         self.notificationPreferencesData = Self.encodeNotificationPreferences(
             notificationPreferences)
+
+        // Contact Due Feature: Set person source
+        self.personSourceRaw = personSource.rawValue
     }
 
     // Convert to domain model
@@ -129,6 +136,9 @@ final class PersonModel {
             preferredPaymentMethodRaw != nil
             ? PaymentMethod(rawValue: preferredPaymentMethodRaw!) : nil
 
+        // Decode person source
+        let personSource = PersonSource(rawValue: personSourceRaw) ?? .manual
+
         var person = Person(
             name: name,
             email: email,
@@ -138,7 +148,8 @@ final class PersonModel {
             preferredPaymentMethod: prefPaymentMethod,
             notificationPreferences: notifPrefs,
             relationshipType: relationshipType,
-            notes: personNotes
+            notes: personNotes,
+            personSource: personSource
         )
 
         // Preserve critical fields that were lost in original implementation
@@ -165,7 +176,8 @@ final class PersonModel {
             preferredPaymentMethod: person.preferredPaymentMethod,
             notificationPreferences: person.notificationPreferences,
             relationshipType: person.relationshipType,
-            notes: person.notes
+            notes: person.notes,
+            personSource: person.personSource
         )
     }
 

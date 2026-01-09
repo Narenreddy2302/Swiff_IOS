@@ -21,6 +21,9 @@ struct ContactsListView: View {
     @State private var showingAddTransactionSheet = false
     @State private var selectedPersonForTransaction: Person?
 
+    // Contact Conversation Navigation
+    @State private var selectedContactForNavigation: ContactEntry?
+
     var body: some View {
         SwiftUI.Group {
             // Check permission status
@@ -89,6 +92,10 @@ struct ContactsListView: View {
                 preselectedParticipant: selectedPersonForTransaction
             )
         }
+        // Navigation to Contact Conversation View
+        .navigationDestination(item: $selectedContactForNavigation) { contact in
+            ContactConversationView(contact: contact)
+        }
     }
 
     // MARK: - Contacts Content
@@ -148,6 +155,9 @@ struct ContactsListView: View {
         switch selectedFilter {
         case .all:
             break
+        case .withDues:
+            // Filter to only contacts with non-zero balance
+            result = result.filter { dataManager.getBalanceForContact($0) != nil }
         case .onSwiff:
             result = result.onSwiff
         case .toInvite:
@@ -157,15 +167,54 @@ struct ContactsListView: View {
         return result
     }
 
+    /// Get contacts with pending dues (for the "With Dues" section)
+    private var contactsWithDues: [ContactEntry] {
+        syncManager.contacts.filter { dataManager.getBalanceForContact($0) != nil }
+    }
+
     // MARK: - Contacts List
 
     private var contactsList: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
-                // On Swiff Section
+                // With Dues Section (shown at top when filter is .all or .withDues)
+                if selectedFilter == .all || selectedFilter == .withDues {
+                    let withDues = selectedFilter == .withDues ? filteredContacts : contactsWithDues
+                    if !withDues.isEmpty {
+                        ContactsSectionHeader(title: "With Pending Dues", count: withDues.count)
+                        ForEach(withDues) { contact in
+                            ContactRowView(
+                                contact: contact,
+                                onInvite: {
+                                    contactToInvite = contact
+                                    showingInviteSheet = true
+                                },
+                                onSelect: {
+                                    selectedContactForNavigation = contact
+                                },
+                                pendingBalance: dataManager.getBalanceForContact(contact)
+                            )
+                            if contact.id != withDues.last?.id {
+                                Divider()
+                                    .padding(.leading, 76)
+                            }
+                        }
+
+                        if selectedFilter == .all {
+                            Divider()
+                                .padding(.top, 8)
+                        }
+                    }
+                }
+
+                // On Swiff Section (exclude those with dues to avoid duplicates when filter is .all)
                 if selectedFilter == .all || selectedFilter == .onSwiff {
-                    let onSwiff =
-                        selectedFilter == .onSwiff ? filteredContacts : filteredContacts.onSwiff
+                    // Calculate onSwiff using ternary to avoid ViewBuilder issues
+                    let dueContactIds = Set(contactsWithDues.map { $0.id })
+                    let onSwiff = selectedFilter == .onSwiff
+                        ? filteredContacts
+                        : filteredContacts.onSwiff.filter { !dueContactIds.contains($0.id) }
+
                     if !onSwiff.isEmpty {
                         ContactsSectionHeader(title: "On Swiff", count: onSwiff.count)
                         ForEach(onSwiff) { contact in
@@ -175,8 +224,9 @@ struct ContactsListView: View {
                                     // On Swiff contacts don't need invite
                                 },
                                 onSelect: {
-                                    importAndTransact(contact: contact)
-                                }
+                                    selectedContactForNavigation = contact
+                                },
+                                pendingBalance: dataManager.getBalanceForContact(contact)
                             )
                             if contact.id != onSwiff.last?.id {
                                 Divider()
@@ -186,10 +236,14 @@ struct ContactsListView: View {
                     }
                 }
 
-                // To Invite Section
+                // To Invite Section (exclude those with dues to avoid duplicates when filter is .all)
                 if selectedFilter == .all || selectedFilter == .toInvite {
-                    let toInvite =
-                        selectedFilter == .toInvite ? filteredContacts : filteredContacts.invitable
+                    // Calculate toInvite using ternary to avoid ViewBuilder issues
+                    let dueContactIdsForInvite = Set(contactsWithDues.map { $0.id })
+                    let toInvite = selectedFilter == .toInvite
+                        ? filteredContacts
+                        : filteredContacts.invitable.filter { !dueContactIdsForInvite.contains($0.id) }
+
                     if !toInvite.isEmpty {
                         if selectedFilter == .all {
                             Divider()
@@ -204,8 +258,9 @@ struct ContactsListView: View {
                                     showingInviteSheet = true
                                 },
                                 onSelect: {
-                                    importAndTransact(contact: contact)
-                                }
+                                    selectedContactForNavigation = contact
+                                },
+                                pendingBalance: dataManager.getBalanceForContact(contact)
                             )
                             if contact.id != toInvite.last?.id {
                                 Divider()
@@ -281,23 +336,13 @@ struct ContactsListView: View {
         }
     }
 
-    // MARK: - Helper Methods
-
-    private func importAndTransact(contact: ContactEntry) {
-        do {
-            let person = try dataManager.importContact(contact)
-            selectedPersonForTransaction = person
-            showingAddTransactionSheet = true
-        } catch {
-            dataManager.error = error
-        }
-    }
 }
 
 // MARK: - Contacts Filter
 
 enum ContactsFilter: String, CaseIterable {
     case all = "All"
+    case withDues = "With Dues"
     case onSwiff = "On Swiff"
     case toInvite = "To Invite"
 }
@@ -307,6 +352,7 @@ enum ContactsFilter: String, CaseIterable {
 struct ContactsFilterPillsView: View {
     @Binding var selectedFilter: ContactsFilter
     let contacts: [ContactEntry]
+    @EnvironmentObject var dataManager: DataManager
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -329,6 +375,7 @@ struct ContactsFilterPillsView: View {
     private func countForFilter(_ filter: ContactsFilter) -> Int {
         switch filter {
         case .all: return contacts.count
+        case .withDues: return dataManager.contactsWithDuesCount
         case .onSwiff: return contacts.onSwiff.count
         case .toInvite: return contacts.invitable.count
         }
@@ -346,6 +393,7 @@ struct ContactsFilterPill: View {
     private var pillColor: Color {
         switch filter {
         case .all: return Theme.Colors.brandPrimary
+        case .withDues: return Theme.Colors.warning
         case .onSwiff: return Theme.Colors.success
         case .toInvite: return Theme.Colors.info
         }
@@ -355,6 +403,7 @@ struct ContactsFilterPill: View {
         if isSelected {
             switch filter {
             case .all: return Theme.Colors.textOnPrimary
+            case .withDues: return .white
             case .onSwiff: return .white
             case .toInvite: return .white
             }

@@ -122,6 +122,12 @@ class ContactSyncManager: ObservableObject {
             lastSyncDate = Date()
             lastSyncTimestamp = Date()  // Record for debouncing
 
+            // Step 5: Check for newly matched app users to link dues
+            let newlyMatchedAppUsers = matchedContacts.filter { $0.hasAppAccount }
+            if !newlyMatchedAppUsers.isEmpty {
+                await DueLinkingService.shared.linkNewAppUsers(matchedContacts: newlyMatchedAppUsers)
+            }
+
             print("DEBUG: ContactSyncManager sync complete - \(contacts.count) contacts")
 
         } catch {

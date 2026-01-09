@@ -12,6 +12,28 @@ import Foundation
 import SwiftData
 import SwiftUI
 
+// MARK: - DataManager Errors
+
+public enum DataManagerError: LocalizedError {
+    case invalidAmount
+    case personNotFound
+    case contactImportFailed
+    case persistenceError(Error)
+
+    public var errorDescription: String? {
+        switch self {
+        case .invalidAmount:
+            return "Amount must be greater than zero"
+        case .personNotFound:
+            return "Person not found"
+        case .contactImportFailed:
+            return "Failed to import contact"
+        case .persistenceError(let error):
+            return "Persistence error: \(error.localizedDescription)"
+        }
+    }
+}
+
 @MainActor
 public class DataManager: ObservableObject {
 
@@ -341,7 +363,9 @@ public class DataManager: ObservableObject {
             return updated
         }
 
-        // Create new person
+        // Create new person with appropriate source
+        let personSource: PersonSource = contact.hasAppAccount ? .appUser : .contact
+
         let newPerson = Person(
             name: contact.name,
             email: contact.email ?? "",
@@ -350,7 +374,8 @@ public class DataManager: ObservableObject {
                 contact.initials,
                 colorIndex: AvatarColorPalette.colorIndex(for: contact.name)
             ),
-            contactId: contact.id
+            contactId: contact.id,
+            personSource: personSource
         )
 
         try addPerson(newPerson)
@@ -976,6 +1001,148 @@ public class DataManager: ObservableObject {
     /// Get unsettled split bills (where not all participants have paid)
     func getUnsettledSplitBills() -> [SplitBill] {
         return splitBills.filter { !$0.isFullySettled }
+    }
+
+    // MARK: - Contact Due Operations
+
+    /// Create a simple due (IOU) with a contact
+    /// - Parameters:
+    ///   - contact: The contact entry from iOS contacts
+    ///   - amount: The amount of the due
+    ///   - theyOweMe: If true, the contact owes the current user; if false, current user owes them
+    ///   - description: Description of what the due is for
+    ///   - category: Transaction category
+    ///   - date: The date of the due (defaults to now)
+    ///   - notes: Optional notes
+    /// - Returns: The created SplitBill representing the due
+    @discardableResult
+    func createSimpleDue(
+        contact: ContactEntry,
+        amount: Double,
+        theyOweMe: Bool,
+        description: String,
+        category: TransactionCategory,
+        date: Date = Date(),
+        notes: String? = nil
+    ) throws -> SplitBill {
+        // Validate amount
+        guard amount > 0 else {
+            throw DataManagerError.invalidAmount
+        }
+
+        // 1. Import contact as Person if not exists
+        var person = try importContact(contact)
+
+        // 2. Ensure person source is set correctly
+        if person.personSource == .manual {
+            person.personSource = contact.hasAppAccount ? .appUser : .contact
+        }
+
+        // 3. Update person's balance directly
+        // Balance convention: positive = they owe you, negative = you owe them
+        if theyOweMe {
+            // They owe me: increase their balance (they owe more)
+            person.balance += amount
+        } else {
+            // I owe them: decrease their balance (I owe them, shown as negative from my perspective)
+            person.balance -= amount
+        }
+
+        // 4. Save the updated person
+        try updatePerson(person)
+
+        // 5. Get current user ID for record keeping
+        let currentUserId = getCurrentUserId()
+
+        // 6. Determine payer for the split bill record
+        let paidById = theyOweMe ? currentUserId : person.id
+
+        // 7. Create participant record
+        let participant = SplitParticipant(
+            personId: theyOweMe ? person.id : currentUserId,
+            amount: amount,
+            hasPaid: false
+        )
+
+        // 8. Create SplitBill for record keeping (not for balance calculation)
+        let splitBill = SplitBill(
+            title: description,
+            totalAmount: amount,
+            paidById: paidById,
+            splitType: .exactAmounts,
+            participants: [participant],
+            notes: notes ?? "",
+            category: category,
+            date: date
+        )
+
+        // 9. Save the split bill WITHOUT calling updateBalancesForSplitBill
+        // (balance was already updated above)
+        try persistenceService.saveSplitBill(splitBill)
+        splitBills.append(splitBill)
+        notifyChange(.splitBillAdded(splitBill.id))
+
+        print("✅ Due created: \(description) - $\(amount) (\(theyOweMe ? "they owe me" : "I owe them"))")
+
+        return splitBill
+    }
+
+    /// Get the balance for a contact (if they have a linked Person record)
+    /// - Parameter contact: The contact entry
+    /// - Returns: The balance (positive = they owe you, negative = you owe them), or nil if no linked person
+    func getBalanceForContact(_ contact: ContactEntry) -> Double? {
+        // First try to find by contactId
+        if let person = people.first(where: { $0.contactId == contact.id }) {
+            return person.balance != 0 ? person.balance : nil
+        }
+
+        // Fallback: try to find by phone number
+        let contactPhones = contact.phoneNumbers.map { PhoneNumberNormalizer.normalize($0) }
+        if let person = people.first(where: { person in
+            let personPhone = PhoneNumberNormalizer.normalize(person.phone)
+            return contactPhones.contains(personPhone)
+        }) {
+            return person.balance != 0 ? person.balance : nil
+        }
+
+        return nil
+    }
+
+    /// Get all contacts that have pending dues (non-zero balance)
+    /// - Returns: Array of tuples containing contact and their balance
+    func getContactsWithDues() -> [(contact: ContactEntry, balance: Double)] {
+        var results: [(ContactEntry, Double)] = []
+
+        for contact in contacts {
+            if let balance = getBalanceForContact(contact), balance != 0 {
+                results.append((contact, balance))
+            }
+        }
+
+        // Sort by absolute balance (highest first)
+        return results.sorted { abs($0.1) > abs($1.1) }
+    }
+
+    /// Get count of contacts with pending dues
+    var contactsWithDuesCount: Int {
+        contacts.filter { getBalanceForContact($0) != nil }.count
+    }
+
+    /// Get all dues (split bills) for a specific contact
+    /// - Parameter contact: The contact entry to get dues for
+    /// - Returns: Array of SplitBill objects sorted by date (newest first)
+    func getDuesForContact(_ contact: ContactEntry) -> [SplitBill] {
+        // Find person by contactId
+        guard let person = people.first(where: { $0.contactId == contact.id }) else {
+            return []
+        }
+        return getSplitBillsForPerson(personId: person.id)
+            .sorted { $0.date > $1.date }
+    }
+
+    /// Get the current user's ID from UserProfileManager
+    private func getCurrentUserId() -> UUID {
+        return UserProfileManager.shared.profile.id
     }
 
     // MARK: - Statistics & Analytics

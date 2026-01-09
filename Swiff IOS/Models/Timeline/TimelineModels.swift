@@ -167,6 +167,66 @@ enum GroupTimelineItem: TimelineItemProtocol {
     }
 }
 
+// MARK: - Contact Timeline Item
+
+enum ContactTimelineItem: TimelineItemProtocol {
+    case due(SplitBill, isTheyOweMe: Bool)  // Due transaction (they owe me = positive, I owe them = negative)
+    case settlement(id: UUID, amount: Double, date: Date)  // Settlement/payment
+
+    var id: UUID {
+        switch self {
+        case .due(let splitBill, _): return splitBill.id
+        case .settlement(let id, _, _): return id
+        }
+    }
+
+    var timestamp: Date {
+        switch self {
+        case .due(let splitBill, _): return splitBill.date
+        case .settlement(_, _, let date): return date
+        }
+    }
+
+    var timelineIconType: TimelineIconType {
+        switch self {
+        case .due(_, let isTheyOweMe):
+            return isTheyOweMe ? .payment : .expense
+        case .settlement:
+            return .payment
+        }
+    }
+
+    /// Get the amount for display
+    var amount: Double {
+        switch self {
+        case .due(let splitBill, _):
+            return splitBill.totalAmount
+        case .settlement(_, let amount, _):
+            return amount
+        }
+    }
+
+    /// Get the description for display
+    var displayDescription: String {
+        switch self {
+        case .due(let splitBill, _):
+            return splitBill.title
+        case .settlement:
+            return "Payment received"
+        }
+    }
+
+    /// Check if this represents money coming to the user (they owe me)
+    var isIncoming: Bool {
+        switch self {
+        case .due(_, let isTheyOweMe):
+            return isTheyOweMe
+        case .settlement:
+            return true  // Settlements are always incoming (money received)
+        }
+    }
+}
+
 // MARK: - Subscription Timeline Item
 
 enum SubscriptionTimelineItem: TimelineItemProtocol {

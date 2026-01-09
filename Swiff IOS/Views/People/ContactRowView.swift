@@ -12,20 +12,24 @@ struct ContactRowView: View {
     let contact: ContactEntry
     let onInvite: () -> Void
     var onSelect: (() -> Void)? = nil
+    var pendingBalance: Double? = nil  // Balance with this contact (positive = owes you)
 
     var body: some View {
         HStack(spacing: 12) {
             // Avatar
             ContactAvatarView(contact: contact)
 
-            // Name and Phone
+            // Name and Phone/Balance indicator
             VStack(alignment: .leading, spacing: 2) {
                 Text(contact.name)
                     .font(.spotifyBodyLarge)
                     .foregroundColor(Theme.Colors.textPrimary)
                     .lineLimit(1)
 
-                if let phone = contact.primaryPhone {
+                // Show balance indicator if balance exists, otherwise show phone
+                if let balance = pendingBalance, balance != 0 {
+                    balanceIndicator(balance: balance)
+                } else if let phone = contact.primaryPhone {
                     Text(formatPhoneForDisplay(phone))
                         .font(.spotifyBodySmall)
                         .foregroundColor(Theme.Colors.textSecondary)
@@ -35,8 +39,11 @@ struct ContactRowView: View {
 
             Spacer()
 
-            // Status Badge or Invite Button
-            if contact.hasAppAccount {
+            // Right side: Balance amount OR Status Badge/Invite Button
+            if let balance = pendingBalance, balance != 0 {
+                // Show balance amount
+                balanceAmountView(balance: balance)
+            } else if contact.hasAppAccount {
                 // On Swiff badge
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
@@ -65,6 +72,42 @@ struct ContactRowView: View {
         .contentShape(Rectangle())
         .onTapGesture {
             onSelect?()
+        }
+    }
+
+    // MARK: - Balance Views
+
+    private func balanceIndicator(balance: Double) -> some View {
+        let isPositive = balance > 0
+        let color = isPositive ? Theme.Colors.amountPositive : Theme.Colors.amountNegative
+        let label = isPositive ? "Owes you" : "You owe"
+
+        return HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 6, height: 6)
+
+            Text(label)
+                .font(.spotifyCaptionMedium)
+                .foregroundColor(color)
+        }
+    }
+
+    private func balanceAmountView(balance: Double) -> some View {
+        let isPositive = balance > 0
+        let formattedAmount = String(format: "$%.2f", abs(balance))
+        let color = isPositive ? Theme.Colors.amountPositive : Theme.Colors.amountNegative
+        let label = isPositive ? "owes you" : "you owe"
+
+        return VStack(alignment: .trailing, spacing: 2) {
+            Text(formattedAmount)
+                .font(.spotifyBodyMedium)
+                .fontWeight(.semibold)
+                .foregroundColor(color)
+
+            Text(label)
+                .font(.spotifyCaptionMedium)
+                .foregroundColor(Theme.Colors.textSecondary)
         }
     }
 
