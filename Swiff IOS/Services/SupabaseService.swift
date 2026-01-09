@@ -41,10 +41,15 @@ final class SupabaseService: ObservableObject {
     // MARK: - Initialization
 
     private init() {
-        // Initialize the Supabase client
+        // Initialize the Supabase client with new session emission behavior
         self.client = SupabaseClient(
             supabaseURL: SupabaseConfig.projectURL,
-            supabaseKey: SupabaseConfig.apiKey
+            supabaseKey: SupabaseConfig.apiKey,
+            options: .init(
+                auth: .init(
+                    emitLocalSessionAsInitialSession: true
+                )
+            )
         )
 
         // Start listening to auth state changes
@@ -218,7 +223,7 @@ final class SupabaseService: ObservableObject {
             table: table
         )
 
-        await channel.subscribe()
+        try await channel.subscribeWithError()
 
         realtimeChannels[channelName] = channel
 
@@ -228,13 +233,57 @@ final class SupabaseService: ObservableObject {
                 await MainActor.run {
                     let message = RealtimeMessage(
                         table: table,
-                        eventType: change.rawMessage.payload["type"] as? String ?? "unknown",
-                        newRecord: change.rawMessage.payload["new"] as? [String: Any],
-                        oldRecord: change.rawMessage.payload["old"] as? [String: Any]
+                        eventType: extractString(from: change.rawMessage.payload["type"]) ?? "unknown",
+                        newRecord: extractDictionary(from: change.rawMessage.payload["new"]),
+                        oldRecord: extractDictionary(from: change.rawMessage.payload["old"])
                     )
                     onChange(message)
                 }
             }
+        }
+    }
+
+    // MARK: - AnyJSON Helpers
+
+    /// Extract string from AnyJSON
+    private func extractString(from json: AnyJSON?) -> String? {
+        guard let json = json else { return nil }
+        switch json {
+        case .string(let value):
+            return value
+        default:
+            return nil
+        }
+    }
+
+    /// Extract dictionary from AnyJSON
+    private func extractDictionary(from json: AnyJSON?) -> [String: Any]? {
+        guard let json = json else { return nil }
+        switch json {
+        case .object(let dict):
+            return dict.mapValues { convertAnyJSON($0) }
+        default:
+            return nil
+        }
+    }
+
+    /// Convert AnyJSON to Any for general use
+    private func convertAnyJSON(_ json: AnyJSON) -> Any {
+        switch json {
+        case .string(let value):
+            return value
+        case .double(let value):
+            return value
+        case .integer(let value):
+            return value
+        case .bool(let value):
+            return value
+        case .null:
+            return NSNull()
+        case .array(let arr):
+            return arr.map { convertAnyJSON($0) }
+        case .object(let dict):
+            return dict.mapValues { convertAnyJSON($0) }
         }
     }
 
@@ -281,7 +330,7 @@ final class SupabaseService: ObservableObject {
     /// Get the server timestamp
     func getServerTime() async throws -> Date {
         // Use a simple query to get server time
-        let response = try await client.rpc("now").execute()
+        _ = try await client.rpc("now").execute()
         // Parse the response to get the timestamp
         // For now, return local time as fallback
         return Date()

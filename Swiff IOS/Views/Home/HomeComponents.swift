@@ -179,23 +179,6 @@ struct EnhancedFinancialCard: View {
                         .foregroundColor(iconColor)
 
                     Spacer()
-
-                    // Trend indicator - arrow shows direction, color shows financial impact
-                    HStack(spacing: 2) {
-                        Image(systemName: trend.isUp ? "arrow.up.right" : "arrow.down.right")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(trendColor)
-
-                        Text(String(format: "%.1f%%", abs(trend.percentage)))
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(trendColor)
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(
-                        Capsule()
-                            .fill(trendColor.opacity(0.15))
-                    )
                 }
 
                 Text(title)

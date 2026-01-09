@@ -283,16 +283,21 @@ struct ListRowFactory {
         let iconConfig: UniversalIconConfig
 
         switch person.avatarType {
-        case .initials:
+        case .initials(let initials, let colorIndex):
             iconConfig = .initials(
-                text: person.name, backgroundColor: InitialsAvatarColors.color(for: person.name))
+                text: initials.isEmpty ? person.name : initials,
+                backgroundColor: AvatarColorPalette.color(for: colorIndex))
         case .emoji(let emoji):
             iconConfig = .emoji(
                 text: emoji, backgroundColor: InitialsAvatarColors.color(for: person.name))
-        // Handle image case if needed in future, adding to UniversalIconConfig
-        @unknown default:
-            iconConfig = .initials(
-                text: person.name, backgroundColor: InitialsAvatarColors.color(for: person.name))
+        case .photo(let data):
+            if let uiImage = UIImage(data: data) {
+                iconConfig = .image(uiImage)
+            } else {
+                // Fallback to initials if image data is corrupted
+                iconConfig = .initials(
+                    text: person.name, backgroundColor: InitialsAvatarColors.color(for: person.name))
+            }
         }
 
         let (valueText, valueColor) = personBalanceFormatted(person)

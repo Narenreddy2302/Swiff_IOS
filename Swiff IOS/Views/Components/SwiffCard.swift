@@ -31,7 +31,7 @@ struct SwiffCard<Content: View>: View {
         Theme.Colors.background.ignoresSafeArea()
         SwiffCard {
             Text("Swiff Card Content")
-                .font(Theme.Fonts.bodyMedium)
+                .font(.footnote.weight(.medium))
                 .foregroundColor(Theme.Colors.textPrimary)
         }
         .padding()

@@ -106,21 +106,21 @@ struct SubscriptionStatusBanner: View {
                 // Warning icon
                 Circle()
                     .fill(alert.color.opacity(0.15))
-                    .frame(width: 40, height: 40)
+                    .frame(width: Theme.Metrics.avatarStandard, height: Theme.Metrics.avatarStandard)
                     .overlay(
                         Image(systemName: alert.icon)
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(Theme.Fonts.navigationIcon)
                             .foregroundColor(alert.color)
                     )
 
                 // Title and subtitle
                 VStack(alignment: .leading, spacing: 4) {
                     Text(alert.title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(Theme.Fonts.labelLarge)
                         .foregroundColor(.wisePrimaryText)
 
                     Text(alert.subtitle)
-                        .font(.system(size: 13))
+                        .font(Theme.Fonts.bodyMedium)
                         .foregroundColor(.wiseSecondaryText)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -133,26 +133,27 @@ struct SubscriptionStatusBanner: View {
                 Button(action: action) {
                     HStack(spacing: 6) {
                         Text(buttonTitle)
-                            .font(.spotifyLabelMedium)
-                            .fontWeight(.medium)
+                            .font(Theme.Fonts.labelMedium)
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(Theme.Fonts.badgeCompact)
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, Theme.Metrics.paddingSmall)
                     .background(alert.color)
-                    .cornerRadius(8)
+                    .cornerRadius(Theme.Metrics.cornerRadiusSmall)
                 }
             }
         }
         .padding(12)
         .background(alert.color.opacity(0.08))
-        .cornerRadius(10)
+        .cornerRadius(Theme.Metrics.cornerRadiusMedium)
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
                 .stroke(alert.color.opacity(0.2), lineWidth: 1)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(alert.title). \(alert.subtitle)")
     }
 }
 

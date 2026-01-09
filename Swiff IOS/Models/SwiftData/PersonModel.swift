@@ -210,16 +210,14 @@ final class PersonModel {
     // MARK: - Static Encoding/Decoding Helpers
 
     /// Encode NotificationPreferences to Data
-    /// NotificationPreferences is Sendable and Codable, so this is safe in any context
-    nonisolated private static func encodeNotificationPreferences(_ prefs: NotificationPreferences)
+    private static func encodeNotificationPreferences(_ prefs: NotificationPreferences)
         -> Data?
     {
         try? JSONEncoder().encode(prefs)
     }
 
     /// Decode NotificationPreferences from Data
-    /// NotificationPreferences is Sendable and Codable, so this is safe in any context
-    nonisolated private static func decodeNotificationPreferences(_ data: Data?)
+    private static func decodeNotificationPreferences(_ data: Data?)
         -> NotificationPreferences
     {
         guard let data = data,

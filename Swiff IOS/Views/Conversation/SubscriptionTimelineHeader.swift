@@ -46,12 +46,12 @@ struct SubscriptionTimelineHeader: View {
             // Name and price
             VStack(spacing: 6) {
                 Text(subscription.name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(Theme.Fonts.headerSmall)
                     .foregroundColor(.wisePrimaryText)
                     .multilineTextAlignment(.center)
 
                 Text(String(format: "$%.2f/%@", subscription.price, subscription.billingCycle.displayShort))
-                    .font(.system(size: 12))
+                    .font(Theme.Fonts.bodyMedium)
                     .foregroundColor(.wiseSecondaryText)
 
                 // Show shared indicator below price
@@ -111,10 +111,10 @@ struct SubscriptionTimelineHeader: View {
                     endPoint: .bottomTrailing
                 )
             )
-            .frame(width: 64, height: 64)
+            .frame(width: Theme.Metrics.avatarLarge, height: Theme.Metrics.avatarLarge)
             .overlay(
                 Image(systemName: subscription.icon)
-                    .font(.system(size: 32))
+                    .font(.system(size: Theme.Metrics.iconSizeLarge))
                     .foregroundColor(subscriptionColor)
             )
     }
@@ -122,26 +122,26 @@ struct SubscriptionTimelineHeader: View {
     // MARK: - Shared Members Section
 
     private var sharedMembersSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: Theme.Metrics.paddingSmall) {
             HStack(spacing: 6) {
                 Image(systemName: "person.2.fill")
-                    .font(.system(size: 12))
+                    .font(Theme.Fonts.badgeText)
                     .foregroundColor(.wiseSecondaryText)
 
                 Text("Shared with \(sharedPeople.count) \(sharedPeople.count == 1 ? "person" : "people")")
-                    .font(.spotifyCaptionMedium)
+                    .font(Theme.Fonts.captionMedium)
                     .foregroundColor(.wiseSecondaryText)
             }
 
             MemberAvatarStack(
                 people: sharedPeople,
                 maxVisible: 4,
-                avatarSize: 32,
+                avatarSize: Theme.Metrics.avatarCompact,
                 overlap: 8
             )
 
             Text(String(format: "$%.2f per person", subscription.costPerPerson))
-                .font(.spotifyLabelSmall)
+                .font(Theme.Fonts.labelSmall)
                 .foregroundColor(.wiseBrightGreen)
         }
         .padding(.top, 4)

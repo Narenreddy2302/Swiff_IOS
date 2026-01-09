@@ -3,7 +3,7 @@
 //  Swiff IOS
 //
 //  Compact header for subscription conversation view
-//  70pt height with icon, name, price, status, and quick actions
+//  Uses BaseConversationHeader for consistent styling
 //
 
 import SwiftUI
@@ -14,97 +14,53 @@ struct SubscriptionConversationHeader: View {
     var onEdit: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 10) {
-            // Back button (plain chevron - matches conversation-style reference)
-            if let onBack = onBack {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .semibold))
+        BaseConversationHeader(
+            onBack: onBack,
+            leading: {
+                subscriptionIcon
+            },
+            title: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(subscription.name)
+                        .font(Theme.Fonts.headerTitle)
                         .foregroundColor(.wisePrimaryText)
+                        .lineLimit(1)
+
+                    priceAndStatusView
+                }
+            },
+            trailing: {
+                if let onEdit = onEdit {
+                    Button(action: onEdit) {
+                        Text("Edit")
+                            .textActionButtonStyle()
+                    }
                 }
             }
-
-            // Subscription info (name + price/status)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(subscription.name)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.wisePrimaryText)
-
-                // Price + billing cycle and status
-                priceAndStatusView
-            }
-
-            Spacer()
-
-            // Edit button (if provided)
-            if let onEdit = onEdit {
-                Button(action: onEdit) {
-                    Text("Edit")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(.wiseForestGreen)
-                }
-            }
-
-            // Subscription icon on right (matching avatar position)
-            subscriptionIcon
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .frame(height: 70)
-        .background(Color.wiseCardBackground)
-        .overlay(
-            Rectangle()
-                .fill(Color.wiseBorder)
-                .frame(height: 1)
-            , alignment: .bottom
         )
     }
 
+    // MARK: - Subviews
+
     @ViewBuilder
     private var priceAndStatusView: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            // Price with billing cycle
-            Text("$\(String(format: "%.2f", subscription.price))/\(subscription.billingCycle.displayShort)")
-                .font(.system(size: 12))
+        HStack(spacing: 6) {
+            Text(priceText)
+                .font(Theme.Fonts.headerSubtitle)
                 .foregroundColor(.wiseSecondaryText)
 
-            // Status indicator
-            statusIndicator
+            if !subscription.isActive {
+                statusIndicator
+            }
         }
     }
 
     @ViewBuilder
     private var statusIndicator: some View {
-        if subscription.isActive {
-            // Active status - green dot
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(Color.wiseBrightGreen)
-                    .frame(width: 6, height: 6)
-                Text("Active")
-                    .font(.system(size: 12))
-                    .foregroundColor(.wiseSecondaryText)
-            }
-        } else if subscription.cancellationDate != nil {
-            // Cancelled status - red dot
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(Color.wiseError)
-                    .frame(width: 6, height: 6)
-                Text("Cancelled")
-                    .font(.system(size: 12))
-                    .foregroundColor(.wiseSecondaryText)
-            }
+        if subscription.cancellationDate != nil {
+            SubscriptionStatusPill(status: .cancelled)
         } else {
-            // Paused status - orange dot
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(Color.wiseWarning)
-                    .frame(width: 6, height: 6)
-                Text("Paused")
-                    .font(.system(size: 12))
-                    .foregroundColor(.wiseSecondaryText)
-            }
+            SubscriptionStatusPill(status: .paused)
         }
     }
 
@@ -112,12 +68,54 @@ struct SubscriptionConversationHeader: View {
         ZStack {
             Circle()
                 .fill(subscription.category.pastelAvatarColor)
-                .frame(width: 48, height: 48)
+                .frame(width: Theme.Metrics.avatarStandard, height: Theme.Metrics.avatarStandard)
 
             Text(InitialsGenerator.generate(from: subscription.name))
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                .font(Theme.Fonts.labelLarge)
+                .foregroundColor(.wisePrimaryText)
         }
+    }
+
+    // MARK: - Computed Properties
+
+    private var priceText: String {
+        "$\(String(format: "%.2f", subscription.price))/\(subscription.billingCycle.displayShort)"
+    }
+}
+
+// MARK: - Status Pill Component
+
+/// Reusable subscription status pill
+struct SubscriptionStatusPill: View {
+    enum Status {
+        case cancelled
+        case paused
+
+        var text: String {
+            switch self {
+            case .cancelled: return "Cancelled"
+            case .paused: return "Paused"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .cancelled: return .wiseError
+            case .paused: return .wiseWarning
+            }
+        }
+    }
+
+    let status: Status
+
+    var body: some View {
+        Text(status.text)
+            .font(Theme.Fonts.badgeText)
+            .foregroundColor(status.color)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(status.color.opacity(0.1))
+            .cornerRadius(Theme.Metrics.cornerRadiusSmall / 2)
     }
 }
 

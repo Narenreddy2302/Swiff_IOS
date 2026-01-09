@@ -111,7 +111,7 @@ class DueLinkingService: ObservableObject {
     /// - Returns: True if a person was linked
     private func linkContactToAppUser(_ contact: ContactEntry) async -> Bool {
         guard contact.hasAppAccount,
-              let matchedUserId = contact.matchedUserId
+              contact.matchedUserId != nil
         else {
             return false
         }

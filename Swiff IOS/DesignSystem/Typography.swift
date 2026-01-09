@@ -51,5 +51,27 @@ extension Theme {
         public static let numberLarge = Font.title2.weight(.black)
         /// Body, Semibold - Transaction Amounts
         public static let numberMedium = Font.body.weight(.semibold)
+
+        // MARK: - Header Typography
+        /// 16pt semibold - Header titles
+        public static let headerTitle = Font.system(size: 16, weight: .semibold)
+        /// Footnote - Header subtitles
+        public static let headerSubtitle = Font.footnote
+
+        // MARK: - Navigation
+        /// 18pt semibold - Back button icon
+        public static let navigationIcon = Font.system(size: 18, weight: .semibold)
+
+        // MARK: - Badges
+        /// Caption2, medium - Status badges
+        public static let badgeText = Font.caption2.weight(.medium)
+        /// 10pt medium - Compact badges
+        public static let badgeCompact = Font.system(size: 10, weight: .medium)
+
+        // MARK: - System Events
+        /// Caption2, medium - Event messages
+        public static let eventText = Font.caption2.weight(.medium)
+        /// 10pt regular - Timestamps
+        public static let eventTimestamp = Font.system(size: 10)
     }
 }

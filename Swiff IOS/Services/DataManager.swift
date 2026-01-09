@@ -50,6 +50,9 @@ public class DataManager: ObservableObject {
     @Published var accounts: [Account] = []
     @Published var sharedSubscriptions: [SharedSubscription] = []
 
+    /// Conversation messages keyed by entity ID (Person/Contact/Group/Subscription)
+    @Published var conversationMessages: [UUID: [ConversationMessage]] = [:]
+
     @Published var isLoading = false
     @Published var error: Error?
     @Published var isFirstLaunch = false
@@ -90,6 +93,8 @@ public class DataManager: ObservableObject {
         case sharedSubscriptionUpdated(UUID)
         case sharedSubscriptionAdded(UUID)
         case sharedSubscriptionDeleted(UUID)
+        case messageAdded(entityId: UUID)
+        case messageDeleted(entityId: UUID)
         case allDataReloaded
     }
 
@@ -1143,6 +1148,123 @@ public class DataManager: ObservableObject {
     /// Get the current user's ID from UserProfileManager
     private func getCurrentUserId() -> UUID {
         return UserProfileManager.shared.profile.id
+    }
+
+    // MARK: - Conversation Message Operations
+
+    /// Send a message to an entity (person, contact, group, or subscription)
+    /// - Parameters:
+    ///   - entityId: The UUID of the entity to send the message to
+    ///   - entityType: The type of entity (.person, .contact, .group, .subscription)
+    ///   - content: The message content
+    /// - Returns: The created ConversationMessage
+    @discardableResult
+    func sendMessage(
+        to entityId: UUID,
+        entityType: MessageEntityType,
+        content: String
+    ) throws -> ConversationMessage {
+        guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw DataManagerError.invalidAmount  // Reuse existing error type
+        }
+
+        let message = ConversationMessage(
+            entityId: entityId,
+            entityType: entityType,
+            content: content,
+            isSent: true,
+            status: .sent
+        )
+
+        // Add to in-memory storage
+        var messages = conversationMessages[entityId] ?? []
+        messages.append(message)
+        conversationMessages[entityId] = messages
+
+        // Notify views of the change
+        notifyChange(.messageAdded(entityId: entityId))
+
+        print("📨 Message sent to \(entityType): \(content.prefix(30))...")
+        return message
+    }
+
+    /// Get all messages for a specific entity
+    /// - Parameter entityId: The UUID of the entity
+    /// - Returns: Array of ConversationMessage sorted by timestamp (oldest first)
+    func getMessages(for entityId: UUID) -> [ConversationMessage] {
+        return conversationMessages[entityId]?.sorted { $0.timestamp < $1.timestamp } ?? []
+    }
+
+    /// Get messages for a contact (by contact ID string)
+    /// - Parameter contactId: The string ID of the contact
+    /// - Returns: Array of ConversationMessage sorted by timestamp
+    func getMessagesForContact(_ contactId: String) -> [ConversationMessage] {
+        // Find the person linked to this contact
+        guard let person = people.first(where: { $0.contactId == contactId }) else {
+            return []
+        }
+        return getMessages(for: person.id)
+    }
+
+    /// Delete a message
+    /// - Parameters:
+    ///   - messageId: The UUID of the message to delete
+    ///   - entityId: The UUID of the entity the message belongs to
+    func deleteMessage(messageId: UUID, from entityId: UUID) {
+        guard var messages = conversationMessages[entityId] else { return }
+
+        messages.removeAll { $0.id == messageId }
+        conversationMessages[entityId] = messages
+
+        notifyChange(.messageDeleted(entityId: entityId))
+        print("🗑️ Message deleted")
+    }
+
+    /// Clear all messages for an entity
+    /// - Parameter entityId: The UUID of the entity
+    func clearMessages(for entityId: UUID) {
+        conversationMessages[entityId] = nil
+        notifyChange(.messageDeleted(entityId: entityId))
+        print("🗑️ All messages cleared for entity")
+    }
+
+    /// Get the count of messages for an entity
+    /// - Parameter entityId: The UUID of the entity
+    /// - Returns: The number of messages
+    func messageCount(for entityId: UUID) -> Int {
+        return conversationMessages[entityId]?.count ?? 0
+    }
+
+    /// Add an incoming message (received from another user)
+    /// - Parameters:
+    ///   - entityId: The UUID of the entity
+    ///   - entityType: The type of entity
+    ///   - content: The message content
+    ///   - timestamp: The message timestamp (defaults to now)
+    /// - Returns: The created ConversationMessage
+    @discardableResult
+    func receiveMessage(
+        from entityId: UUID,
+        entityType: MessageEntityType,
+        content: String,
+        timestamp: Date = Date()
+    ) -> ConversationMessage {
+        let message = ConversationMessage(
+            entityId: entityId,
+            entityType: entityType,
+            content: content,
+            isSent: false,
+            timestamp: timestamp,
+            status: .delivered
+        )
+
+        var messages = conversationMessages[entityId] ?? []
+        messages.append(message)
+        conversationMessages[entityId] = messages
+
+        notifyChange(.messageAdded(entityId: entityId))
+        print("📬 Message received from \(entityType): \(content.prefix(30))...")
+        return message
     }
 
     // MARK: - Statistics & Analytics

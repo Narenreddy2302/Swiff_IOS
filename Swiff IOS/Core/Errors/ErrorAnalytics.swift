@@ -292,7 +292,7 @@ class ErrorAnalytics {
 
     // MARK: - Singleton
 
-    nonisolated static let shared = ErrorAnalytics()
+    nonisolated(unsafe) static let shared = ErrorAnalytics()
 
     // MARK: - Properties
 
@@ -315,8 +315,9 @@ class ErrorAnalytics {
         // Create directory
         try? FileManager.default.createDirectory(at: storageURL, withIntermediateDirectories: true)
 
-        // Load existing events and perform cleanup on the main actor
-        Task { @MainActor in
+        // Load existing events and perform cleanup
+        Task { @MainActor [weak self] in
+            guard let self else { return }
             self.loadEvents()
 
             // Perform cleanup if needed

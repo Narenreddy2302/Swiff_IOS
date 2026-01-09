@@ -2,7 +2,7 @@
 //  ChatTimelineComponents.swift
 //  Swiff IOS
 //
-//  Created for SWIFF iOS "iMessage Style" Redesign
+//  Simple rectangular message components
 //  Specific bubble contents for transactions, payments, etc.
 //
 
@@ -16,31 +16,33 @@ struct TransactionBubbleContent: View {
     let isExpense: Bool
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.system(size: 16, weight: .regular))
+                .font(.system(size: 16, weight: .medium))
                 .fixedSize(horizontal: false, vertical: true)
             
             if let sub = subtitle, !sub.isEmpty {
                 Text(sub)
-                    .font(.system(size: 13))
-                    .opacity(0.8)
+                    .font(.system(size: 14))
+                    .opacity(0.7)
             }
             
             HStack(spacing: 4) {
                 if isExpense {
                     Image(systemName: "arrow.up.right")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 11, weight: .semibold))
                 } else {
                     Image(systemName: "arrow.down.left")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 11, weight: .semibold))
                 }
                 
                 Text(formatCurrency(abs(amount)))
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
             }
             .padding(.top, 2)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
     }
     
     private func formatCurrency(_ value: Double) -> String {
@@ -57,24 +59,27 @@ struct PaymentBubbleContent: View {
     let note: String?
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
                 Image(systemName: "banknote.fill")
                     .font(.system(size: 14))
                 Text("Payment")
                     .font(.system(size: 14, weight: .semibold))
             }
-            .opacity(0.9)
+            .opacity(0.85)
             
             if let note = note, !note.isEmpty {
                 Text(note)
                     .font(.system(size: 16))
+                    .padding(.top, 2)
             }
             
             Text(formatCurrency(amount))
                 .font(.system(size: 20, weight: .bold))
-                .padding(.top, 2)
+                .padding(.top, 4)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
     }
     
     private func formatCurrency(_ value: Double) -> String {
@@ -97,12 +102,12 @@ struct SystemMessageBubble: View {
                     .font(.system(size: 12))
             }
             Text(text)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
         }
         .foregroundColor(.wiseSecondaryText)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(Color.wiseSecondaryText.opacity(0.1))
-        .cornerRadius(12)
+        .cornerRadius(14)
     }
 }

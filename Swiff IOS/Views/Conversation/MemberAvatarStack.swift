@@ -8,6 +8,24 @@
 
 import SwiftUI
 
+// MARK: - Avatar Info Provider Protocol
+
+/// Protocol for avatar information - allows any model to provide avatar data
+/// Conforming types can be used with MemberAvatarStack without tight coupling
+protocol AvatarInfoProvider {
+    var id: UUID { get }
+    var displayName: String { get }
+    var avatarData: Data? { get }
+    var avatarEmoji: String? { get }
+    var avatarColor: Color { get }
+}
+
+extension AvatarInfoProvider {
+    var initials: String {
+        InitialsGenerator.generate(from: displayName)
+    }
+}
+
 // MARK: - Member Avatar Stack
 
 struct MemberAvatarStack: View {
@@ -57,13 +75,14 @@ struct MemberAvatarStack: View {
             } else {
                 Text(member.initials)
                     .font(.system(size: avatarSize * 0.35, weight: .semibold))
-                    .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                    .foregroundColor(.wisePrimaryText)
             }
         }
         .overlay(
             Circle()
                 .stroke(Color.wiseCardBackground, lineWidth: 2)
         )
+        .accessibilityLabel(member.name)
     }
 
     private var extraCountBadge: some View {
@@ -80,6 +99,7 @@ struct MemberAvatarStack: View {
             Circle()
                 .stroke(Color.wiseCardBackground, lineWidth: 2)
         )
+        .accessibilityLabel("\(extraCount) more members")
     }
 }
 
@@ -118,7 +138,7 @@ extension MemberAvatarStack {
     init(
         people: [Person],
         maxVisible: Int = 4,
-        avatarSize: CGFloat = 32,
+        avatarSize: CGFloat = Theme.Metrics.avatarCompact,
         overlap: CGFloat = 8
     ) {
         self.members = people.map { person in
@@ -138,6 +158,28 @@ extension MemberAvatarStack {
                     return nil
                 }(),
                 avatarColor: InitialsAvatarColors.color(for: person.name)
+            )
+        }
+        self.maxVisible = maxVisible
+        self.avatarSize = avatarSize
+        self.overlap = overlap
+        self.showNames = false
+    }
+
+    /// Initialize from any AvatarInfoProvider conforming array
+    init<T: AvatarInfoProvider>(
+        providers: [T],
+        maxVisible: Int = 4,
+        avatarSize: CGFloat = Theme.Metrics.avatarCompact,
+        overlap: CGFloat = 8
+    ) {
+        self.members = providers.map { provider in
+            MemberAvatarInfo(
+                id: provider.id,
+                name: provider.displayName,
+                photoData: provider.avatarData,
+                emoji: provider.avatarEmoji,
+                avatarColor: provider.avatarColor
             )
         }
         self.maxVisible = maxVisible

@@ -8,6 +8,14 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Bubble Type
+
+public enum BubbleType {
+    case incoming   // Left-aligned (gray)
+    case outgoing   // Right-aligned (blue)
+    case systemEvent  // Centered (system messages)
+}
+
 // MARK: - Subscription Event Type
 
 public enum SubscriptionEventType: String, Codable {

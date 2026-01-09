@@ -66,7 +66,6 @@ public class BackupService {
 
     /// Create a backup of all app data
     @discardableResult
-    @MainActor
     func createBackup(options: BackupOptions = .all) throws -> BackupStatistics {
         let startTime = Date()
 
@@ -162,7 +161,6 @@ public class BackupService {
 
     /// Restore data from a backup file
     @discardableResult
-    @MainActor
     func restoreFromBackup(
         url: URL,
         options: RestoreOptions = .default
@@ -452,7 +450,6 @@ public class BackupService {
     // MARK: - Export to Share
 
     /// Export data to a temporary file for sharing
-    @MainActor
     func exportForSharing(options: BackupOptions = .all) throws -> URL {
         let tempDirectory = fileManager.temporaryDirectory
         let dateFormatter = DateFormatter()

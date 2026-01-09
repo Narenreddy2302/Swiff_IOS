@@ -51,9 +51,11 @@ class ContactsService: ObservableObject {
     // MARK: - Pagination Configuration
 
     /// Configuration for paginated contact fetching
-    struct FetchConfig {
+    struct FetchConfig: Sendable {
         var batchSize: Int = 100
         var maxContacts: Int = 10000
+
+        nonisolated(unsafe) static let `default` = FetchConfig()
     }
 
     // MARK: - Initialization
@@ -175,7 +177,7 @@ class ContactsService: ObservableObject {
 
     /// FIX 3.1: Fetch contacts in batches using AsyncThrowingStream
     /// This prevents memory spikes for devices with large contact lists
-    func fetchContactsInBatches(config: FetchConfig = FetchConfig()) -> AsyncThrowingStream<[ContactEntry], Error> {
+    func fetchContactsInBatches(config: FetchConfig = .default) -> AsyncThrowingStream<[ContactEntry], Error> {
         AsyncThrowingStream { continuation in
             Task.detached(priority: .userInitiated) { [keysToFetch, store] in
                 guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else {

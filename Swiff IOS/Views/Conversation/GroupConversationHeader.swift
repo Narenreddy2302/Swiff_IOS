@@ -20,63 +20,75 @@ struct GroupConversationHeader: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Large emoji circle (80pt)
-            UnifiedEmojiCircle(
-                emoji: group.emoji,
-                backgroundColor: backgroundColor,
-                size: 80
-            )
-
-            // Group name
-            Text(group.name)
-                .font(.spotifyDisplayMedium)
-                .foregroundColor(.wisePrimaryText)
-                .multilineTextAlignment(.center)
-
-            // Description (if present)
-            if !group.description.isEmpty {
-                Text(group.description)
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wiseSecondaryText)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-            }
-
-            // Stats row (members + total)
-            HStack(spacing: 24) {
-                // Member count
-                HStack(spacing: 4) {
-                    Image(systemName: "person.2.fill")
-                        .font(.system(size: 12))
-                    Text("\(members.count) member\(members.count == 1 ? "" : "s")")
-                        .font(.spotifyLabelMedium)
-                }
-                .foregroundColor(.wiseSecondaryText)
-
-                // Separator dot
-                Text("•")
-                    .foregroundColor(.wiseBorder)
-
-                // Total amount
-                Text(String(format: "$%.2f total", totalAmount))
-                    .font(.spotifyLabelMedium)
-                    .foregroundColor(.wiseSecondaryText)
-            }
-
-            // Member avatar stack (centered)
-            if !members.isEmpty {
-                MemberAvatarStack(
-                    people: members,
-                    maxVisible: 5,
-                    avatarSize: 36,
-                    overlap: 8
+        VStack(spacing: 0) {
+            VStack(spacing: Theme.Metrics.paddingMedium) {
+                // Large emoji circle (hero size)
+                UnifiedEmojiCircle(
+                    emoji: group.emoji,
+                    backgroundColor: backgroundColor,
+                    size: Theme.Metrics.avatarHero
                 )
-                .frame(maxWidth: .infinity, alignment: .center)
+                .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 4)
+
+                VStack(spacing: 4) {
+                    // Group name
+                    Text(group.name)
+                        .font(Theme.Fonts.displayMedium)
+                        .foregroundColor(.wisePrimaryText)
+                        .multilineTextAlignment(.center)
+
+                    // Description (if present)
+                    if !group.description.isEmpty {
+                        Text(group.description)
+                            .font(Theme.Fonts.bodyLarge)
+                            .foregroundColor(.wiseSecondaryText)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                    }
+                }
+
+                // Stats row (members + total)
+                HStack(spacing: Theme.Metrics.paddingMedium) {
+                    // Member count
+                    Label("\(members.count) member\(members.count == 1 ? "" : "s")", systemImage: "person.2.fill")
+                        .font(Theme.Fonts.labelLarge)
+                        .foregroundColor(.wiseSecondaryText)
+
+                    // Separator dot
+                    Circle()
+                        .fill(Color.wiseBorder)
+                        .frame(width: 4, height: 4)
+
+                    // Total amount
+                    Text(String(format: "$%.2f total", totalAmount))
+                        .font(Theme.Fonts.labelLarge)
+                        .foregroundColor(.wiseSecondaryText)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.wiseBorder.opacity(0.2))
+                .clipShape(Capsule())
+
+                // Member avatar stack (centered)
+                if !members.isEmpty {
+                    MemberAvatarStack(
+                        people: members,
+                        maxVisible: 5,
+                        avatarSize: Theme.Metrics.avatarStandard,
+                        overlap: 10
+                    )
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, Theme.Metrics.paddingSmall)
+                }
             }
+            .padding(.top, Theme.Metrics.paddingLarge)
+            .padding(.bottom, Theme.Metrics.paddingLarge)
         }
-        .padding(.top, 20)
-        .padding(.bottom, 16)
+        .background(
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+        )
     }
 }
 

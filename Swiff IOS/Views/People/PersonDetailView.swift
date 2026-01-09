@@ -9,13 +9,6 @@
 
 import SwiftUI
 
-// MARK: - Person Conversation Tab
-
-enum PersonConversationTab: String, ConversationTabProtocol, CaseIterable {
-    case timeline = "Timeline"
-    case summary = "Summary"
-}
-
 struct PersonDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataManager: DataManager
@@ -26,30 +19,20 @@ struct PersonDetailView: View {
         self.personId = personId
     }
 
+    // Message input state
+    @State private var messageText: String = ""
+
     // Sheet presentation states
     @State private var showingEditPerson = false
     @State private var showingDeleteAlert = false
     @State private var showingSettleUpSheet = false
     @State private var showingRecordPaymentSheet = false
-    @State private var showingSendReminderSheet = false
     @State private var showingAddTransactionSheet = false
 
     // MARK: - Computed Properties
 
     var person: Person? {
         dataManager.people.first { $0.id == personId }
-    }
-
-    var personGroups: [Group] {
-        guard let person = person else { return [] }
-        return dataManager.groups.filter { group in
-            group.members.contains(person.id)
-        }
-    }
-
-    var personSplitBills: [SplitBill] {
-        guard let person = person else { return [] }
-        return dataManager.getSplitBillsForPerson(personId: person.id)
     }
 
     var personTransactions: [Transaction] {
@@ -81,66 +64,19 @@ struct PersonDetailView: View {
         }
     }
 
-    // Status banner config
-    private var personStatusBanner: StatusBannerConfig? {
-        guard let person = person else { return nil }
-
-        // Count pending split requests from timeline items (where youOwe > 0)
-        let timelineItems = MockData.timelineItems(for: person.id, personName: person.name)
-        var pendingSplitCount = 0
-        var pendingSplitTotal: Double = 0
-
-        for item in timelineItems {
-            if case .splitRequest(_, _, _, _, _, let youOwe, _) = item, youOwe > 0 {
-                pendingSplitCount += 1
-                pendingSplitTotal += youOwe
-            }
-        }
-
-        // Also count pending transactions
-        let pendingTransactionCount = personTransactions.filter { $0.paymentStatus != .completed }
-            .count
-
-        // Total pending count
-        let totalPendingCount = pendingSplitCount + pendingTransactionCount
-
-        // Determine total amount and direction
-        let totalAmount: Double
-        let isUserOwing: Bool
-
-        if person.balance != 0 {
-            totalAmount = abs(person.balance)
-            isUserOwing = person.balance < 0
-        } else if pendingSplitTotal > 0 {
-            totalAmount = pendingSplitTotal
-            isUserOwing = true
-        } else {
-            return nil
-        }
-
-        // Only show banner if there are pending items
-        guard totalPendingCount > 0 else { return nil }
-
-        return StatusBannerConfig(
-            pendingCount: totalPendingCount,
-            totalAmount: totalAmount,
-            isUserOwing: isUserOwing,
-            personName: person.name
-        )
-    }
-
     // MARK: - Body
 
     var body: some View {
         VStack(spacing: 0) {
             if let person = person {
-                // Compact header (no edit button, matches reference)
+                // Compact header with Edit button
                 PersonConversationHeader(
                     person: person,
-                    onBack: { dismiss() }
+                    onBack: { dismiss() },
+                    onEdit: { showingEditPerson = true }
                 )
 
-                // Timeline content directly (no tabs)
+                // Timeline content
                 timelineContent(for: person)
             } else {
                 personNotFoundView
@@ -187,27 +123,6 @@ struct PersonDetailView: View {
                     })
             }
         }
-        .sheet(isPresented: $showingSendReminderSheet) {
-            if let person = person {
-                SendReminderSheet(
-                    person: person,
-                    onReminderSent: {
-                        showingSendReminderSheet = false
-                    })
-            }
-        }
-        .alert("Delete Person?", isPresented: $showingDeleteAlert) {
-            Button("Cancel", role: .cancel) {}
-            Button("Delete", role: .destructive) {
-                deletePerson()
-            }
-        } message: {
-            if let person = person {
-                Text(
-                    "This will permanently delete '\(person.name)'. They will be removed from all groups."
-                )
-            }
-        }
         .sheet(isPresented: $showingAddTransactionSheet) {
             if let person = person {
                 AddTransactionSheet(
@@ -240,29 +155,21 @@ struct PersonDetailView: View {
             ) { item in
                 switch item {
                 case .transaction(let transaction, _):
-                    // Expense (negative amount) = I paid = Outgoing (Right)
-                    // Income (positive amount) = They paid = Incoming (Left)
-                    ChatBubble(
-                        direction: transaction.isExpense ? .outgoing : .incoming,
-                        timestamp: transaction.date
-                    ) {
-                        TransactionBubbleContent(
-                            title: transaction.title,
-                            subtitle: transaction.subtitle,
-                            amount: transaction.amount,
-                            isExpense: transaction.isExpense
-                        )
-                    }
+                    // Use the redesigned bubble card
+                    TransactionBubbleCard(
+                        transaction: transaction,
+                        personName: person.name
+                    )
+                    .padding(.horizontal, 16)
 
                 case .payment(_, let amount, let direction, let description, let date):
-                    // Outgoing direction = Right, Incoming = Left
                     ChatBubble(
                         direction: direction == .outgoing ? .outgoing : .incoming,
                         timestamp: date
                     ) {
                         PaymentBubbleContent(amount: amount, note: description)
                     }
-                    
+
                 case .message(_, let text, let isFromPerson, let date):
                     ChatBubble(
                         direction: isFromPerson ? .incoming : .outgoing,
@@ -270,413 +177,73 @@ struct PersonDetailView: View {
                     ) {
                         Text(text)
                             .font(.system(size: 16))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
                     }
-                    
+
                 case .splitRequest(_, let title, _, let billTotal, _, let youOwe, let date):
-                    // If you owe > 0, it's a request FOR you (Incoming)
-                    // Otherwise it's a request FROM you (Outgoing)
                     ChatBubble(
                         direction: youOwe > 0 ? .incoming : .outgoing,
                         timestamp: date
                     ) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(spacing: 6) {
                                 Image(systemName: "doc.text.fill")
+                                    .font(.system(size: 14))
                                 Text("Split Bill Request")
-                                    .font(.headline)
+                                    .font(.system(size: 16, weight: .semibold))
                             }
+                            
                             Text(title)
+                                .font(.system(size: 16))
+                                .padding(.top, 2)
+                            
                             Text("Total: \(String(format: "$%.2f", billTotal))")
-                                .font(.caption)
+                                .font(.system(size: 14))
+                                .opacity(0.8)
+                            
                             if youOwe > 0 {
                                 Text("You owe: \(String(format: "$%.2f", youOwe))")
-                                    .fontWeight(.bold)
+                                    .font(.system(size: 16, weight: .bold))
+                                    .padding(.top, 2)
                             }
                         }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
                     }
-                    
-                case .settlement(_, let date):
+
+                case .settlement(_, _):
                     ChatBubble(direction: .center, timestamp: nil) {
                         SystemMessageBubble(text: "Balances settled", icon: "checkmark.circle.fill")
                     }
-                    
-                case .paidBill(_, let personName, let date):
+
+                case .paidBill(_, let personName, _):
                     ChatBubble(direction: .center, timestamp: nil) {
-                        SystemMessageBubble(text: "\(personName) paid a bill", icon: "checkmark.seal.fill")
+                        SystemMessageBubble(
+                            text: "\(personName) paid a bill", icon: "checkmark.seal.fill")
                     }
-                    
+
                 case .reminder(_, let date):
                     ChatBubble(direction: .outgoing, timestamp: date) {
                         Text("Reminder sent")
+                            .font(.system(size: 16))
                             .italic()
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
                     }
                 }
             }
 
-            TimelineInputArea(
-                config: TimelineInputAreaConfig(
-                    quickActionTitle: "New split",
-                    quickActionIcon: "plus",
-                    placeholder: "Send a message...",
-                    showMessageField: true
-                ),
-                onQuickAction: { showingAddTransactionSheet = true },
+            ConversationInputView(
+                messageText: $messageText,
+                placeholder: "iMessage",
                 onSend: { message in
-                    // TODO: Handle sending message
-                    print("Message sent: \(message)")
-                }
+                    sendMessage(message, to: person)
+                },
+                onAddTransaction: { showingAddTransactionSheet = true },
+                additionalActions: []  // No additional action buttons per design spec
             )
         }
-    }
-
-    // MARK: - Tab Content (Legacy - keeping for Summary tab access)
-
-    @ViewBuilder
-    private func timelineTabContent(for person: Person) -> some View {
-        timelineContent(for: person)
-    }
-
-    @ViewBuilder
-    private func summaryTabContent(for person: Person) -> some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                // 1. Compact Balance Row
-                CompactBalanceRow(person: person)
-                    .padding(.horizontal, 16)
-
-                // 2. Streamlined Action Buttons (3 only)
-                HStack(spacing: 0) {
-                    Spacer()
-                    CompactActionButton(
-                        icon: "plus.circle.fill",
-                        title: "Record",
-                        color: .wiseForestGreen,
-                        action: { showingAddTransactionSheet = true }
-                    )
-                    Spacer()
-                    CompactActionButton(
-                        icon: "bell.fill",
-                        title: "Remind",
-                        color: .wiseBlue,
-                        action: { showingSendReminderSheet = true }
-                    )
-                    Spacer()
-                    ContactMenuButton(
-                        person: person,
-                        onCall: { callPerson(person) },
-                        onMessage: { messagePerson(person) },
-                        onWhatsApp: { whatsappPerson(person) },
-                        onEmail: { emailPerson(person) }
-                    )
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-
-                // 3. Settle Up Button (conditional)
-                if person.balance != 0 {
-                    Button(action: { showingSettleUpSheet = true }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 18))
-                            Text("Settle Up")
-                                .font(.spotifyBodyLarge)
-                                .fontWeight(.semibold)
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.wiseBrightGreen)
-                        .cornerRadius(12)
-                    }
-                    .padding(.horizontal, 16)
-                }
-
-                // 4. Shared Groups (keep existing)
-                if !personGroups.isEmpty {
-                    sharedGroupsSection
-                }
-
-                // 5. Split Bills (keep existing)
-                if !personSplitBills.isEmpty {
-                    splitBillsSection
-                }
-
-                // 6. Delete Person (keep existing)
-                deletePersonButton
-            }
-            .padding(.top, 16)
-            .padding(.bottom, 40)
-        }
-    }
-
-    // MARK: - Header Section
-
-    @ViewBuilder
-    private func headerSection(for person: Person) -> some View {
-        VStack(spacing: 16) {
-            // Avatar - xxlarge size (80pt)
-            AvatarView(person: person, size: .xxlarge, style: .solid)
-
-            // Name - large display font
-            Text(person.name)
-                .font(.spotifyDisplayMedium)
-                .foregroundColor(.wisePrimaryText)
-
-            // Last Activity
-            HStack(spacing: 6) {
-                Image(systemName: "clock.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(.wiseSecondaryText)
-
-                Text(
-                    "Last activity: \(person.lastActivityText(transactions: dataManager.transactions))"
-                )
-                .font(.spotifyCaptionMedium)
-                .foregroundColor(.wiseSecondaryText)
-            }
-
-            // Contact Info
-            VStack(spacing: 8) {
-                if !person.email.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "envelope.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.wiseSecondaryText)
-                        Text(person.email)
-                            .font(.spotifyBodyMedium)
-                            .foregroundColor(.wiseSecondaryText)
-                    }
-                }
-
-                if !person.phone.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "phone.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.wiseSecondaryText)
-                        Text(person.phone)
-                            .font(.spotifyBodyMedium)
-                            .foregroundColor(.wiseSecondaryText)
-                    }
-                }
-            }
-        }
-        .padding(.top, 20)
-    }
-
-    // MARK: - Shared Groups Section
-
-    @ViewBuilder
-    private var sharedGroupsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Section Header
-            HStack {
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(.wiseBlue)
-
-                Text("Shared Groups")
-                    .font(.spotifyHeadingMedium)
-                    .foregroundColor(.wisePrimaryText)
-
-                Spacer()
-
-                Text("\(personGroups.count)")
-                    .font(.spotifyLabelMedium)
-                    .foregroundColor(.wiseSecondaryText)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(Color.wiseBorder.opacity(0.3))
-                    )
-            }
-            .padding(.horizontal, 16)
-
-            // Group Cards
-            VStack(spacing: 12) {
-                ForEach(personGroups) { group in
-                    NavigationLink(destination: GroupDetailView(groupId: group.id)) {
-                        GroupMembershipRow(group: group)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-            .padding(.horizontal, 16)
-        }
-    }
-
-    // MARK: - Split Bills Section
-
-    @ViewBuilder
-    private var splitBillsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "rectangle.3.group.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(Color(red: 0.891, green: 0.118, blue: 0.459))
-
-                Text("Split Bills")
-                    .font(.spotifyHeadingMedium)
-                    .foregroundColor(.wisePrimaryText)
-
-                Spacer()
-
-                Text("\(personSplitBills.count)")
-                    .font(.spotifyLabelMedium)
-                    .foregroundColor(.wiseSecondaryText)
-            }
-            .padding(.horizontal, 16)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(personSplitBills) { splitBill in
-                        NavigationLink(destination: SplitBillDetailView(splitBillId: splitBill.id))
-                        {
-                            SplitBillCard(splitBill: splitBill)
-                                .frame(width: 320)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .padding(.horizontal, 16)
-            }
-        }
-    }
-
-    // MARK: - Recent Activity Section
-
-    @ViewBuilder
-    private var recentActivitySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Section Header
-            HStack {
-                Image(systemName: "clock.fill")
-                    .font(.system(size: 18))
-                    .foregroundColor(.wiseBlue)
-
-                Text("Recent Activity")
-                    .font(.spotifyHeadingMedium)
-                    .foregroundColor(.wisePrimaryText)
-
-                Spacer()
-
-                Text("\(personTransactions.count)")
-                    .font(.spotifyLabelMedium)
-                    .foregroundColor(.wiseSecondaryText)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        Capsule()
-                            .fill(Color.wiseBorder.opacity(0.3))
-                    )
-            }
-            .padding(.horizontal, 16)
-
-            // Transaction List
-            VStack(spacing: 0) {
-                ForEach(Array(personTransactions.prefix(5).enumerated()), id: \.element.id) {
-                    index, transaction in
-                    NavigationLink(
-                        destination: TransactionDetailView(transactionId: transaction.id)
-                    ) {
-                        transactionRow(transaction)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-
-                    if index < min(4, personTransactions.count - 1) {
-                        AlignedDivider()
-                    }
-                }
-            }
-            .background(Color.wiseCardBackground)
-            .cornerRadius(12)
-            .cardShadow()
-            .padding(.horizontal, 16)
-        }
-    }
-
-    // MARK: - Transaction Row
-
-    @ViewBuilder
-    private func transactionRow(_ transaction: Transaction) -> some View {
-        HStack(spacing: 14) {
-            // Initials avatar
-            initialsAvatar(for: transaction)
-
-            // Title and description
-            VStack(alignment: .leading, spacing: 3) {
-                Text(transaction.title)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.wisePrimaryText)
-                    .lineLimit(1)
-
-                Text(transaction.subtitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(red: 102 / 255, green: 102 / 255, blue: 102 / 255))
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            // Amount and time
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(formattedAmount(for: transaction))
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(amountColor(for: transaction))
-
-                Text(relativeTime(for: transaction))
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(red: 153 / 255, green: 153 / 255, blue: 153 / 255))
-            }
-        }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 20)
-    }
-
-    @ViewBuilder
-    private func initialsAvatar(for transaction: Transaction) -> some View {
-        ZStack {
-            Circle()
-                .fill(avatarColor(for: transaction))
-                .frame(width: 44, height: 44)
-
-            Text(InitialsGenerator.generate(from: transaction.title))
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(red: 26 / 255, green: 26 / 255, blue: 26 / 255))
-        }
-    }
-
-    private func avatarColor(for transaction: Transaction) -> Color {
-        transaction.category.pastelAvatarColor
-    }
-
-    private func amountColor(for transaction: Transaction) -> Color {
-        transaction.isExpense ? AmountColors.negative : AmountColors.positive
-    }
-
-    private func formattedAmount(for transaction: Transaction) -> String {
-        let sign = transaction.isExpense ? "- " : "+ "
-        return "\(sign)\(transaction.formattedAmount)"
-    }
-
-    private func relativeTime(for transaction: Transaction) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: transaction.date, relativeTo: Date())
-    }
-
-    // MARK: - Delete Button
-
-    private var deletePersonButton: some View {
-        Button(action: { showingDeleteAlert = true }) {
-            Text("Delete Person")
-                .font(.spotifyBodyMedium)
-                .foregroundColor(.wiseError)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 20)
     }
 
     // MARK: - Person Not Found View
@@ -694,278 +261,20 @@ struct PersonDetailView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: - Contact Actions
+    // MARK: - Send Message
 
-    private func callPerson(_ person: Person) {
-        let phoneNumber = person.phone.filter { $0.isNumber }
-        if let url = URL(string: "tel://\(phoneNumber)") {
-            UIApplication.shared.open(url)
-        }
-    }
-
-    private func messagePerson(_ person: Person) {
-        let phoneNumber = person.phone.filter { $0.isNumber }
-        if let url = URL(string: "sms:\(phoneNumber)") {
-            UIApplication.shared.open(url)
-        }
-    }
-
-    private func emailPerson(_ person: Person) {
-        if let url = URL(string: "mailto:\(person.email)") {
-            UIApplication.shared.open(url)
-        }
-    }
-
-    private func whatsappPerson(_ person: Person) {
-        let phoneNumber = person.phone
-            .replacingOccurrences(of: " ", with: "")
-            .replacingOccurrences(of: "-", with: "")
-            .replacingOccurrences(of: "(", with: "")
-            .replacingOccurrences(of: ")", with: "")
-
-        if let url = URL(string: "whatsapp://send?phone=\(phoneNumber)") {
-            if UIApplication.shared.canOpenURL(url) {
-                UIApplication.shared.open(url)
-            } else {
-                // Fallback to web WhatsApp
-                if let webURL = URL(string: "https://wa.me/\(phoneNumber)") {
-                    UIApplication.shared.open(webURL)
-                }
-            }
-        }
-    }
-
-    // MARK: - Delete Action
-
-    private func deletePerson() {
-        guard let person = person else { return }
+    private func sendMessage(_ content: String, to person: Person) {
         do {
-            try dataManager.deletePerson(id: person.id)
-            dismiss()
+            try dataManager.sendMessage(
+                to: person.id,
+                entityType: .person,
+                content: content
+            )
+            HapticManager.shared.impact(.light)
         } catch {
-            dataManager.error = error
+            print("Failed to send message: \(error)")
+            ToastManager.shared.showError("Failed to send message")
         }
-    }
-}
-
-// MARK: - Compact Balance Row
-
-struct CompactBalanceRow: View {
-    let person: Person
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // Status icon in circle
-            Image(systemName: statusIcon)
-                .font(.system(size: 16))
-                .foregroundColor(statusColor)
-                .frame(width: 32, height: 32)
-                .background(statusColor.opacity(0.15))
-                .clipShape(Circle())
-
-            // Status text + amount
-            HStack(spacing: 4) {
-                Text(statusText)
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wiseSecondaryText)
-
-                if person.balance != 0 {
-                    Text(String(format: "$%.2f", abs(person.balance)))
-                        .font(.spotifyNumberMedium)
-                        .fontWeight(.bold)
-                        .foregroundColor(amountColor)
-                }
-            }
-
-            Spacer()
-
-            // Chevron
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.wiseSecondaryText.opacity(0.5))
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color.wiseCardBackground)
-        .cornerRadius(12)
-        .subtleShadow()
-    }
-
-    private var statusIcon: String {
-        if person.balance > 0 { return "arrow.down.circle.fill" }
-        if person.balance < 0 { return "arrow.up.circle.fill" }
-        return "checkmark.circle.fill"
-    }
-
-    private var statusColor: Color {
-        if person.balance > 0 { return AmountColors.positive }
-        if person.balance < 0 { return AmountColors.negative }
-        return .wiseBrightGreen
-    }
-
-    private var statusText: String {
-        if person.balance > 0 { return "owes you" }
-        if person.balance < 0 { return "you owe" }
-        return "Settled up"
-    }
-
-    private var amountColor: Color {
-        person.balance > 0 ? AmountColors.positive : AmountColors.negative
-    }
-}
-
-// MARK: - Compact Action Button
-
-struct CompactActionButton: View {
-    let icon: String
-    let title: String
-    let color: Color
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: {
-            HapticManager.shared.impact(.medium)
-            action()
-        }) {
-            VStack(spacing: 6) {
-                Circle()
-                    .fill(color.opacity(0.15))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Image(systemName: icon)
-                            .font(.system(size: 20))
-                            .foregroundColor(color)
-                    )
-
-                Text(title)
-                    .font(.spotifyCaptionMedium)
-                    .foregroundColor(.wisePrimaryText)
-            }
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Contact Menu Button
-
-struct ContactMenuButton: View {
-    let person: Person
-    var onCall: () -> Void
-    var onMessage: () -> Void
-    var onWhatsApp: () -> Void
-    var onEmail: () -> Void
-
-    private var hasContactOptions: Bool {
-        !person.phone.isEmpty || !person.email.isEmpty
-    }
-
-    var body: some View {
-        Menu {
-            if !person.phone.isEmpty {
-                Button(action: onCall) {
-                    Label("Call", systemImage: "phone.fill")
-                }
-                Button(action: onMessage) {
-                    Label("Message", systemImage: "message.fill")
-                }
-                Button(action: onWhatsApp) {
-                    Label("WhatsApp", systemImage: "phone.bubble.left.fill")
-                }
-            }
-            if !person.email.isEmpty {
-                Button(action: onEmail) {
-                    Label("Email", systemImage: "envelope.fill")
-                }
-            }
-        } label: {
-            VStack(spacing: 6) {
-                Circle()
-                    .fill(Color.wiseBrightGreen.opacity(0.15))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Image(systemName: "ellipsis.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.wiseBrightGreen)
-                    )
-
-                Text("Contact")
-                    .font(.spotifyCaptionMedium)
-                    .foregroundColor(.wisePrimaryText)
-            }
-        }
-        .disabled(!hasContactOptions)
-        .opacity(hasContactOptions ? 1.0 : 0.5)
-    }
-}
-
-// MARK: - Group Membership Row
-
-struct GroupMembershipRow: View {
-    let group: Group
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // Group Emoji
-            Circle()
-                .fill(Color.wiseBlue.opacity(0.2))
-                .frame(width: 44, height: 44)
-                .overlay(
-                    Text(group.emoji)
-                        .font(.system(size: 24))
-                )
-
-            // Group Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(group.name)
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(.wisePrimaryText)
-
-                HStack(spacing: 4) {
-                    Image(systemName: "person.2.fill")
-                        .font(.system(size: 10))
-                    Text("\(group.members.count) members")
-                        .font(.spotifyCaptionMedium)
-                        .foregroundColor(.wiseSecondaryText)
-
-                    Text("•")
-                        .font(.spotifyCaptionSmall)
-                        .foregroundColor(.wiseSecondaryText)
-
-                    Image(systemName: "dollarsign.circle.fill")
-                        .font(.system(size: 10))
-                    Text("\(group.expenses.count) expenses")
-                        .font(.spotifyCaptionMedium)
-                        .foregroundColor(.wiseSecondaryText)
-                }
-            }
-
-            Spacer()
-
-            // Amount
-            if group.totalAmount > 0 {
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(String(format: "$%.2f", group.totalAmount))
-                        .font(.spotifyNumberSmall)
-                        .foregroundColor(.wisePrimaryText)
-
-                    let unsettledCount = group.expenses.filter { !$0.isSettled }.count
-                    if unsettledCount > 0 {
-                        Text("\(unsettledCount) pending")
-                            .font(.spotifyCaptionSmall)
-                            .foregroundColor(.wiseError)
-                    }
-                }
-            }
-
-            // Chevron
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.wiseSecondaryText.opacity(0.5))
-        }
-        .padding(12)
-        .background(Color.wiseCardBackground)
-        .cornerRadius(12)
-        .subtleShadow()
     }
 }
 

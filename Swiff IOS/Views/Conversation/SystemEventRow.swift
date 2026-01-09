@@ -148,29 +148,41 @@ struct SystemEventRow: View {
         HStack(spacing: 0) {
             Spacer()
 
-            VStack(spacing: 4) {
-                HStack(spacing: 6) {
-                    Image(systemName: eventType.icon)
-                        .font(.system(size: 14))
-                        .foregroundColor(eventType.iconColor)
+            VStack(spacing: 2) {
+                HStack(spacing: 4) {
+                    // Only show icon for important events to reduce noise
+                    if shouldShowIcon {
+                        Image(systemName: eventType.icon)
+                            .font(Theme.Fonts.eventText)
+                            .foregroundColor(eventType.iconColor)
+                    }
 
                     Text(eventType.text)
-                        .font(.spotifyCaptionMedium)
+                        .font(Theme.Fonts.eventText)
                         .foregroundColor(.wiseSecondaryText)
                 }
 
                 if showTimestamp {
                     Text(relativeTime)
-                        .font(.spotifyCaptionSmall)
+                        .font(Theme.Fonts.eventTimestamp)
                         .foregroundColor(.wiseTertiaryText)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color.wiseBorder.opacity(0.15))
-            .clipShape(Capsule())
+            .padding(.vertical, 4)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(eventType.text), \(relativeTime)")
 
             Spacer()
+        }
+    }
+
+    private var shouldShowIcon: Bool {
+        // Only show icons for things that need visual distinction
+        switch eventType {
+        case .paymentReceived, .paymentSent, .memberJoined:
+            return true
+        default:
+            return false
         }
     }
 }
@@ -183,13 +195,15 @@ struct CompactSystemEvent: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: eventType.icon)
-                .font(.system(size: 12))
+                .font(Theme.Fonts.badgeText)
                 .foregroundColor(eventType.iconColor)
 
             Text(eventType.text)
-                .font(.spotifyCaptionSmall)
+                .font(Theme.Fonts.captionSmall)
                 .foregroundColor(.wiseSecondaryText)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(eventType.text)
     }
 }
 

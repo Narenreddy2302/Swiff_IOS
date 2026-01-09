@@ -135,6 +135,7 @@ enum GroupTimelineItem: TimelineItemProtocol {
     case memberLeft(id: UUID, person: Person, date: Date)
     case settlement(id: UUID, expense: GroupExpense, date: Date)
     case splitBillCreated(SplitBill)
+    case textMessage(ConversationMessage, senderName: String?)  // Text message in group chat
 
     var id: UUID {
         switch self {
@@ -143,6 +144,7 @@ enum GroupTimelineItem: TimelineItemProtocol {
         case .memberLeft(let id, _, _): return id
         case .settlement(let id, _, _): return id
         case .splitBillCreated(let sb): return sb.id
+        case .textMessage(let message, _): return message.id
         }
     }
 
@@ -153,6 +155,7 @@ enum GroupTimelineItem: TimelineItemProtocol {
         case .memberLeft(_, _, let date): return date
         case .settlement(_, _, let date): return date
         case .splitBillCreated(let sb): return sb.date
+        case .textMessage(let message, _): return message.timestamp
         }
     }
 
@@ -163,6 +166,7 @@ enum GroupTimelineItem: TimelineItemProtocol {
         case .memberLeft: return .system
         case .settlement: return .payment
         case .splitBillCreated: return .request
+        case .textMessage: return .message
         }
     }
 }
@@ -172,11 +176,13 @@ enum GroupTimelineItem: TimelineItemProtocol {
 enum ContactTimelineItem: TimelineItemProtocol {
     case due(SplitBill, isTheyOweMe: Bool)  // Due transaction (they owe me = positive, I owe them = negative)
     case settlement(id: UUID, amount: Double, date: Date)  // Settlement/payment
+    case textMessage(ConversationMessage)  // Text message in conversation
 
     var id: UUID {
         switch self {
         case .due(let splitBill, _): return splitBill.id
         case .settlement(let id, _, _): return id
+        case .textMessage(let message): return message.id
         }
     }
 
@@ -184,6 +190,7 @@ enum ContactTimelineItem: TimelineItemProtocol {
         switch self {
         case .due(let splitBill, _): return splitBill.date
         case .settlement(_, _, let date): return date
+        case .textMessage(let message): return message.timestamp
         }
     }
 
@@ -193,6 +200,8 @@ enum ContactTimelineItem: TimelineItemProtocol {
             return isTheyOweMe ? .payment : .expense
         case .settlement:
             return .payment
+        case .textMessage:
+            return .message
         }
     }
 
@@ -203,6 +212,8 @@ enum ContactTimelineItem: TimelineItemProtocol {
             return splitBill.totalAmount
         case .settlement(_, let amount, _):
             return amount
+        case .textMessage:
+            return 0  // Messages don't have amounts
         }
     }
 
@@ -213,6 +224,8 @@ enum ContactTimelineItem: TimelineItemProtocol {
             return splitBill.title
         case .settlement:
             return "Payment received"
+        case .textMessage(let message):
+            return message.content
         }
     }
 
@@ -223,6 +236,8 @@ enum ContactTimelineItem: TimelineItemProtocol {
             return isTheyOweMe
         case .settlement:
             return true  // Settlements are always incoming (money received)
+        case .textMessage(let message):
+            return !message.isSent  // Incoming if not sent by current user
         }
     }
 }

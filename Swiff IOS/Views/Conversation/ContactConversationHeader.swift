@@ -2,9 +2,8 @@
 //  ContactConversationHeader.swift
 //  Swiff IOS
 //
-//  Created by Claude Code on 1/8/26.
 //  Compact header for contact conversation view
-//  70pt height with avatar, name, balance, and back button
+//  Uses BaseConversationHeader for consistent styling
 //
 
 import SwiftUI
@@ -15,99 +14,72 @@ struct ContactConversationHeader: View {
     var onBack: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 10) {
-            // Back button (circular with gray filled background)
-            if let onBack = onBack {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.wisePrimaryText)
-                        .frame(width: 32, height: 32)
-                        .background(Color.wiseBorder.opacity(0.3))
-                        .clipShape(Circle())
+        BaseConversationHeader(
+            onBack: onBack,
+            leading: {
+                ContactAvatarView(contact: contact, size: Theme.Metrics.avatarStandard)
+            },
+            title: {
+                HeaderTitleView(
+                    title: contact.name,
+                    subtitle: subtitleText,
+                    subtitleColor: subtitleColor
+                ) {
+                    if contact.hasAppAccount {
+                        appBadge
+                    }
                 }
-            }
-
-            // Contact info (name + balance)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(contact.name)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.wisePrimaryText)
-                    .lineLimit(1)
-
-                // Balance summary
-                balanceView
-            }
-
-            Spacer()
-
-            // On Swiff badge (if applicable)
-            if contact.hasAppAccount {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 12))
-                    Text("On Swiff")
-                        .font(.system(size: 11, weight: .medium))
-                }
-                .foregroundColor(.wiseBrightGreen)
-            }
-
-            // Avatar on right (matching reference design)
-            ContactAvatarView(contact: contact, size: 44)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .frame(height: 70)
-        .background(Color.wiseCardBackground)
-        .overlay(
-            Rectangle()
-                .fill(Color.wiseBorder)
-                .frame(height: 1)
-            , alignment: .bottom
+            },
+            trailing: { EmptyView() }
         )
     }
 
-    @ViewBuilder
-    private var balanceView: some View {
+    // MARK: - Computed Properties
+
+    private var subtitleText: String {
         if let balance = balance, balance != 0 {
             if balance > 0 {
-                // Contact owes you - split into gray + green
-                HStack(spacing: 4) {
-                    Text("Owes you")
-                        .font(.system(size: 12))
-                        .foregroundColor(.wiseSecondaryText)
-                    Text("$\(String(format: "%.2f", balance))")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AmountColors.positive)
-                }
+                return "Owes you \(formatCurrency(balance))"
             } else {
-                // You owe contact - split into gray + red
-                HStack(spacing: 4) {
-                    Text("You owe")
-                        .font(.system(size: 12))
-                        .foregroundColor(.wiseSecondaryText)
-                    Text("$\(String(format: "%.2f", abs(balance)))")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.wiseError)
-                }
-            }
-        } else {
-            // No balance - show phone number or "No dues"
-            if let phone = contact.primaryPhone {
-                Text(formatPhoneForDisplay(phone))
-                    .font(.system(size: 12))
-                    .foregroundColor(.wiseSecondaryText)
-            } else {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.wiseBrightGreen)
-                    Text("No pending dues")
-                        .font(.system(size: 12))
-                        .foregroundColor(.wiseSecondaryText)
-                }
+                return "You owe \(formatCurrency(abs(balance)))"
             }
         }
+
+        if let phone = contact.primaryPhone {
+            return formatPhoneForDisplay(phone)
+        }
+
+        return "No pending dues"
+    }
+
+    private var subtitleColor: Color {
+        if let balance = balance, balance < 0 {
+            return .wiseError
+        }
+        return .wiseSecondaryText
+    }
+
+    private var appBadge: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(Color.wiseBorder)
+                .frame(width: 3, height: 3)
+
+            Text("On Swiff")
+                .font(Theme.Fonts.badgeText)
+                .foregroundColor(.wiseBrightGreen)
+        }
+    }
+
+    // MARK: - Helper Methods
+
+    private func formatCurrency(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "USD"
+        formatter.maximumFractionDigits = 2
+        formatter.minimumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: amount)) ?? "$\(String(format: "%.2f", amount))"
     }
 
     private func formatPhoneForDisplay(_ phone: String) -> String {
@@ -168,6 +140,21 @@ struct ContactConversationHeader: View {
             hasAppAccount: false
         ),
         balance: nil
+    )
+    .background(Color.wiseBackground)
+}
+
+#Preview("ContactConversationHeader - On Swiff") {
+    ContactConversationHeader(
+        contact: ContactEntry(
+            id: "4",
+            name: "Alice Brown",
+            phoneNumbers: ["+12025550000"],
+            email: nil,
+            thumbnailImageData: nil,
+            hasAppAccount: true
+        ),
+        balance: 0
     )
     .background(Color.wiseBackground)
 }

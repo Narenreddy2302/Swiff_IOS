@@ -64,15 +64,15 @@ struct SharedSubscriptionCostCard: View {
             // Total cost
             VStack(alignment: .leading, spacing: 4) {
                 Text("Total Cost")
-                    .font(.spotifyLabelSmall)
+                    .font(Theme.Fonts.labelSmall)
                     .foregroundColor(.wiseSecondaryText)
 
                 Text(String(format: "$%.2f", totalCost))
-                    .font(.spotifyNumberLarge)
+                    .font(Theme.Fonts.numberLarge)
                     .foregroundColor(.wisePrimaryText)
 
                 Text("per month")
-                    .font(.spotifyCaptionSmall)
+                    .font(Theme.Fonts.captionSmall)
                     .foregroundColor(.wiseSecondaryText)
             }
 
@@ -80,7 +80,7 @@ struct SharedSubscriptionCostCard: View {
 
             // Arrow separator
             Image(systemName: "arrow.right")
-                .font(.system(size: 14))
+                .font(Theme.Fonts.bodyMedium)
                 .foregroundColor(.wiseSecondaryText)
 
             Spacer()
@@ -88,15 +88,15 @@ struct SharedSubscriptionCostCard: View {
             // Your share
             VStack(alignment: .trailing, spacing: 4) {
                 Text("Your Share")
-                    .font(.spotifyLabelSmall)
+                    .font(Theme.Fonts.labelSmall)
                     .foregroundColor(.wiseSecondaryText)
 
                 Text(String(format: "$%.2f", costPerPerson))
-                    .font(.spotifyNumberLarge)
+                    .font(Theme.Fonts.numberLarge)
                     .foregroundColor(.wiseForestGreen)
 
                 Text("per month")
-                    .font(.spotifyCaptionSmall)
+                    .font(Theme.Fonts.captionSmall)
                     .foregroundColor(.wiseSecondaryText)
             }
         }
@@ -110,21 +110,21 @@ struct SharedSubscriptionCostCard: View {
             ZStack {
                 Circle()
                     .fill(Color.wiseForestGreen.opacity(0.2))
-                    .frame(width: 44, height: 44)
+                    .frame(width: Theme.Metrics.minTapTarget, height: Theme.Metrics.minTapTarget)
 
                 Image(systemName: "person.fill")
-                    .font(.system(size: 18))
+                    .font(Theme.Fonts.navigationIcon)
                     .foregroundColor(.wiseForestGreen)
             }
 
             // Name
             VStack(alignment: .leading, spacing: 3) {
                 Text("You")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(Theme.Fonts.headerSmall)
                     .foregroundColor(.wisePrimaryText)
 
                 Text("Owner")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(Theme.Fonts.bodyMedium)
                     .foregroundColor(.wiseSecondaryText)
             }
 
@@ -132,7 +132,7 @@ struct SharedSubscriptionCostCard: View {
 
             // Share amount
             Text(String(format: "$%.2f", costPerPerson))
-                .font(.system(size: 15, weight: .semibold))
+                .font(Theme.Fonts.headerSmall)
                 .foregroundColor(AmountColors.positive)
         }
         .padding(.vertical, 12)
@@ -145,18 +145,18 @@ struct SharedSubscriptionCostCard: View {
         HStack(spacing: 14) {
             // Avatar
             AvatarView(person: person, size: .medium, style: .solid)
-                .frame(width: 44, height: 44)
+                .frame(width: Theme.Metrics.minTapTarget, height: Theme.Metrics.minTapTarget)
 
             // Name and email
             VStack(alignment: .leading, spacing: 3) {
                 Text(person.name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(Theme.Fonts.headerSmall)
                     .foregroundColor(.wisePrimaryText)
                     .lineLimit(1)
 
                 if !person.email.isEmpty {
                     Text(person.email)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(Theme.Fonts.bodyMedium)
                         .foregroundColor(.wiseSecondaryText)
                         .lineLimit(1)
                 }
@@ -166,10 +166,12 @@ struct SharedSubscriptionCostCard: View {
 
             // Share amount
             Text(String(format: "$%.2f", costPerPerson))
-                .font(.system(size: 15, weight: .semibold))
+                .font(Theme.Fonts.headerSmall)
                 .foregroundColor(AmountColors.positive)
         }
         .padding(.vertical, 12)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(person.name), share: \(String(format: "$%.2f", costPerPerson))")
     }
 }
 

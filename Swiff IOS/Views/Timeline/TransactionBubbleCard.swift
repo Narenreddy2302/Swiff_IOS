@@ -3,27 +3,29 @@
 //  Swiff IOS
 //
 //  Created for Swiff iOS Redesign
-//  Matches precise design from user request:
+//  Simple rectangular card design - clean and functional
+//  Features:
 //  - Label outside: "Who Created the transaction"
-//  - Card with Title, Amount/State
-//  - Details: Total, Paid by, Split Method, Involved
+//  - Rectangular card with Title, Amount/State
+//  - Details: Total Bill, Paid by, Split Method, Involved
 //
 
 import SwiftUI
 
 struct TransactionBubbleCard: View {
-    // Flexible Data Model for current & future uses
+    // Flexible Data Model
     let headerText: String
     let title: String
     let amountString: String
     let amountLabel: String  // e.g. "You Owe" or "You Sent"
     let amountColor: Color
 
-    // Dynamic List of details
+    // Section for details
     struct DetailRow: Identifiable {
         let id = UUID()
         let label: String
         let value: String
+        let valueColor: Color? = nil
     }
     let details: [DetailRow]
 
@@ -43,145 +45,129 @@ struct TransactionBubbleCard: View {
         self.details = details
     }
 
-    // Convenience init for Transaction (backward compatibility / ease of use)
+    // MARK: - Convenience Initializers
+
+    // 1. For standard Transactions (PersonDetailView)
     init(transaction: Transaction, personName: String) {
-        // Determine header
         let isCreator = transaction.isExpense  // Simple logic: Expense = You created
         self.headerText =
             isCreator ? "You Created the transaction" : "\(personName) Created the transaction"
-
         self.title = transaction.title
         self.amountString = transaction.formattedAmount
-        self.amountLabel = "You Owe"
-        self.amountColor = Theme.Colors.amountNegative  // Matching image color (Orange/Red)
 
-        // Mock Details
+        // Logic for label: If I paid (Expense), they owe me. If they paid (Income), I owe them.
+        self.amountLabel = transaction.isExpense ? "You Lent" : "You Owe"
+        self.amountColor =
+            transaction.isExpense ? .wiseBrightGreen : .wiseOrange  // Green if I lent (positive for me), Orange if I owe
+
+        // Details
         self.details = [
             DetailRow(
                 label: "Total Bill",
-                value: TransactionBubbleCard.formatCurrency(abs(transaction.amount * 3))),
+                value: TransactionBubbleCard.formatCurrency(abs(transaction.amount))),  // Assuming amount is share, normally we'd have total bill
             DetailRow(label: "Paid by", value: isCreator ? "You" : personName),
-            DetailRow(label: "Split Method", value: "Equally"),
+            DetailRow(label: "Split Method", value: "Equally"),  // Placeholder logic
             DetailRow(label: "Who are all involved", value: "You, \(personName)"),
         ]
     }
 
-    // Convenience init for Payment items
-    init(payment amount: Double, direction: PaymentDirection, description: String, personName: String, date: Date) {
-        self.headerText = direction == .outgoing
-            ? "You sent a payment"
-            : "\(personName) sent a payment"
-        self.title = description.isEmpty ? "Payment" : description
-        self.amountString = TransactionBubbleCard.formatCurrency(amount)
-        self.amountLabel = direction == .outgoing ? "You Sent" : "You Received"
-        self.amountColor = direction == .outgoing
-            ? Theme.Colors.amountNegative
-            : Theme.Colors.amountPositive
-        self.details = [
-            DetailRow(label: "Amount", value: TransactionBubbleCard.formatCurrency(amount)),
-            DetailRow(label: "Date", value: TransactionBubbleCard.formatDate(date)),
-        ]
-    }
-
-    // Convenience init for PaidBill items
-    init(paidBill personName: String, date: Date) {
-        self.headerText = "\(personName) paid the bill"
-        self.title = "Bill Paid"
-        self.amountString = ""
-        self.amountLabel = "Confirmed"
-        self.amountColor = Theme.Colors.amountPositive
-        self.details = [
-            DetailRow(label: "Paid by", value: personName),
-            DetailRow(label: "Date", value: TransactionBubbleCard.formatDate(date)),
-        ]
-    }
-
-    // Convenience init for GroupExpense items
+    // 2. For Group Expenses
     init(groupExpense expense: GroupExpense, payer: Person?, splitMembers: [Person]) {
-        self.headerText = payer != nil
-            ? "\(payer!.name) Created the transaction"
-            : "Someone Created the transaction"
+        self.headerText =
+            (payer != nil)
+            ? "\(payer!.name) Created the transaction" : "Someone Created the transaction"
         self.title = expense.title
         self.amountString = TransactionBubbleCard.formatCurrency(expense.amountPerPerson)
-        self.amountLabel = "You Owe"
-        self.amountColor = Theme.Colors.amountNegative
+        self.amountLabel = "Your Share"
+        self.amountColor = .wiseOrange  // Orange for amounts you owe
+
         self.details = [
-            DetailRow(label: "Total Bill", value: TransactionBubbleCard.formatCurrency(expense.amount)),
+            DetailRow(
+                label: "Total Bill", value: TransactionBubbleCard.formatCurrency(expense.amount)),
             DetailRow(label: "Paid by", value: payer?.name ?? "Unknown"),
             DetailRow(label: "Split Method", value: "Equally"),
-            DetailRow(label: "Who are all involved", value: "\(splitMembers.count) members"),
+            DetailRow(
+                label: "Who are all involved",
+                value: splitMembers.isEmpty
+                    ? "All Members" : splitMembers.map { $0.name }.joined(separator: ", ")),
         ]
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // 1. "Who Created" label
+        VStack(alignment: .leading, spacing: 4) {
+            // 1. "Who Created" label (Outside the card)
             Text(headerText)
-                .font(.system(size: 13, weight: .medium))  // Slightly larger than caption
-                .foregroundColor(Theme.Colors.textTertiary)
-                .padding(.leading, 8)  // Align with curve start roughly
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(Color(UIColor.systemGray))
+                .padding(.leading, 16)
 
-            // 2. The Card
-            VStack(spacing: 20) {  // Spacing between Header Row and Details
-                // Header Row
-                HStack(alignment: .top) {
+            // 2. The Rectangular Card
+            VStack(spacing: 14) {
+
+                // --- Top Row: Title + Amount ---
+                HStack(alignment: .top, spacing: 8) {
                     Text(title)
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(Theme.Colors.textPrimary)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.primary)
                         .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(2)
 
                     Spacer()
 
-                    // Amount / Label e.g. "$ 9.99 / You Own"
-                    HStack(spacing: 4) {
-                        Text("\(amountString) /")
-                            .font(.system(size: 16, weight: .bold))
+                    // Amount Stack: "$ 9.99 / You Owe"
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(amountString)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(amountColor)
+                        
                         Text(amountLabel)
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundColor(amountColor.opacity(0.75))
                     }
-                    .foregroundColor(amountColor)
                 }
 
-                // Details
-                VStack(spacing: 10) {
+                // Divider
+                Rectangle()
+                    .fill(Color(UIColor.separator).opacity(0.5))
+                    .frame(height: 0.5)
+                    .padding(.horizontal, -14)
+
+                // --- Details Section ---
+                VStack(spacing: 9) {
                     ForEach(details) { row in
                         HStack(alignment: .top) {
                             Text(row.label)
-                                .font(.system(size: 14, weight: .bold))  // Bold Label
-                                .foregroundColor(Theme.Colors.textPrimary)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.secondary)
 
                             Spacer()
 
                             Text(row.value)
-                                .font(.system(size: 14, weight: .bold))  // Bold Value
-                                .foregroundColor(Theme.Colors.textPrimary)  // Dark text for value
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.primary)
                                 .multilineTextAlignment(.trailing)
+                                .lineLimit(2)
                         }
                     }
                 }
             }
-            .padding(20)  // Generous padding inside card
-            .background(Theme.Colors.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 24))  // Specific large radius
+            .padding(14)
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .cornerRadius(16)  // Simple rounded corners - rectangular style
             .overlay(
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(Theme.Colors.border, lineWidth: 1.5)  // Distinct border
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color(UIColor.separator), lineWidth: 0.5)
             )
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 3)
+        .frame(maxWidth: .infinity)
     }
 
+    // Formatting Helpers
     static func formatCurrency(_ amount: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
+        formatter.currencySymbol = "$"
         return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
-    }
-
-    static func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
     }
 }

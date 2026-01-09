@@ -3,14 +3,39 @@
 //  Swiff IOS
 //
 //  Custom segmented control for conversation views
-//  Matches the reference design with underline indicator
+//  Three styles available for different contexts
 //
 
 import SwiftUI
 
+// MARK: - Segmented Control Usage Guide
+///
+/// This file contains THREE segmented control styles for different contexts:
+///
+/// 1. `ConversationSegmentedControl` (Background Style)
+///    - USE FOR: Primary navigation within a view
+///    - CONTEXT: Top-level tab switching (e.g., Transactions | Summary)
+///    - STYLE: Filled background with card-style selected state
+///
+/// 2. `UnderlineSegmentedControl`
+///    - USE FOR: Secondary navigation or filtering
+///    - CONTEXT: Content filtering within a section
+///    - STYLE: Underline indicator (bright green, 2pt), subtle appearance
+///
+/// 3. `PillSegmentedControl` (Apple Native Style - Recommended Default)
+///    - USE FOR: iOS-native look and feel contexts
+///    - CONTEXT: Settings, forms, or when matching iOS system style
+///    - STYLE: Pill with shadow, closest to UISegmentedControl
+///
+/// Selection Guide:
+/// - Use PillSegmentedControl as default for new features (Apple HIG compliant)
+/// - Use ConversationSegmentedControl for chat/conversation contexts
+/// - Use UnderlineSegmentedControl for dense filtering scenarios
+
 // MARK: - Conversation Tab Protocol
 
-protocol ConversationTabProtocol: Hashable, CaseIterable, RawRepresentable where RawValue == String {}
+protocol ConversationTabProtocol: Hashable, CaseIterable, RawRepresentable
+where RawValue == String {}
 
 // MARK: - Conversation Segmented Control
 
@@ -109,36 +134,35 @@ struct PillSegmentedControl<Tab: ConversationTabProtocol>: View {
     @Namespace private var namespace
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 2) {
             ForEach(Array(Tab.allCases), id: \.self) { tab in
                 pillTabButton(for: tab)
             }
         }
-        .padding(4)
-        .background(Color.wiseBorder.opacity(0.3))
-        .cornerRadius(25)
+        .padding(2)
+        .background(Color(.systemGroupedBackground))  // Native-like background
+        .cornerRadius(20)
         .padding(.horizontal, 16)
     }
 
     private func pillTabButton(for tab: Tab) -> some View {
         Button {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                 selectedTab = tab
             }
         } label: {
             Text(tab.rawValue)
-                .font(.spotifyBodyMedium)
-                .fontWeight(selectedTab == tab ? .semibold : .medium)
-                .foregroundColor(selectedTab == tab ? .wisePrimaryText : .wiseSecondaryText)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
+                .font(selectedTab == tab ? Theme.Fonts.labelLarge : Theme.Fonts.bodyMedium)
+                .foregroundColor(selectedTab == tab ? .primary : .secondary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
                 .frame(maxWidth: .infinity)
                 .background(
                     ZStack {
                         if selectedTab == tab {
-                            Color.wiseCardBackground
-                                .cornerRadius(20)
-                                .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
+                            Color(.systemBackground)
+                                .cornerRadius(18)
+                                .shadow(color: Color.black.opacity(0.12), radius: 3, x: 0, y: 1)
                                 .matchedGeometryEffect(id: "pill", in: namespace)
                         }
                     }

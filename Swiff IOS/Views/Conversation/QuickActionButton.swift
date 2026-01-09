@@ -11,10 +11,10 @@ import SwiftUI
 // MARK: - Quick Action Style
 
 enum QuickActionStyle {
-    case primary    // Green background (settle, confirm)
+    case primary  // Green background (settle, confirm)
     case secondary  // Gray background (remind, view)
-    case destructive // Red background (delete, cancel)
-    case outline    // Border only
+    case destructive  // Red background (delete, cancel)
+    case outline  // Border only
 
     var backgroundColor: Color {
         switch self {
@@ -69,22 +69,21 @@ struct QuickActionButton: View {
             HStack(spacing: 4) {
                 if let icon = icon {
                     Image(systemName: icon)
-                        .font(.system(size: isCompact ? 12 : 14))
+                        .font(isCompact ? Theme.Fonts.badgeCompact : Theme.Fonts.badgeText)
                 }
 
                 Text(title)
-                    .font(isCompact ? .spotifyCaptionMedium : .spotifyBodyMedium)
-                    .fontWeight(.semibold)
+                    .font(isCompact ? Theme.Fonts.badgeText : Theme.Fonts.labelLarge)
             }
             .foregroundColor(style.foregroundColor)
             .padding(.horizontal, isCompact ? 10 : 14)
             .padding(.vertical, isCompact ? 6 : 8)
             .background(style.backgroundColor)
             .overlay(
-                RoundedRectangle(cornerRadius: isCompact ? 8 : 10)
+                RoundedRectangle(cornerRadius: isCompact ? 14 : 16)  // More rounded
                     .stroke(style.borderColor, lineWidth: 1)
             )
-            .cornerRadius(isCompact ? 8 : 10)
+            .clipShape(Capsule())  // Capsule shape for more modern look
         }
         .buttonStyle(ScaleButtonStyle())
     }
@@ -193,12 +192,12 @@ extension QuickActionButton {
                 .foregroundColor(.wiseSecondaryText)
 
             HStack(spacing: 8) {
-                QuickActionButton.settle(amount: 45.00) { }
+                QuickActionButton.settle(amount: 45.00) {}
                 QuickActionButton(
                     title: "Pay Now",
                     icon: "dollarsign.circle.fill",
                     style: .primary
-                ) { }
+                ) {}
             }
         }
 
@@ -208,12 +207,12 @@ extension QuickActionButton {
                 .foregroundColor(.wiseSecondaryText)
 
             HStack(spacing: 8) {
-                QuickActionButton.remind { }
+                QuickActionButton.remind {}
                 QuickActionButton(
                     title: "Edit",
                     icon: "pencil",
                     style: .secondary
-                ) { }
+                ) {}
             }
         }
 
@@ -223,12 +222,12 @@ extension QuickActionButton {
                 .foregroundColor(.wiseSecondaryText)
 
             HStack(spacing: 8) {
-                QuickActionButton.viewDetails { }
+                QuickActionButton.viewDetails {}
                 QuickActionButton(
                     title: "More",
                     icon: "ellipsis",
                     style: .outline
-                ) { }
+                ) {}
             }
         }
 
@@ -238,12 +237,12 @@ extension QuickActionButton {
                 .foregroundColor(.wiseSecondaryText)
 
             HStack(spacing: 8) {
-                QuickActionButton.cancel { }
+                QuickActionButton.cancel {}
                 QuickActionButton(
                     title: "Delete",
                     icon: "trash.fill",
                     style: .destructive
-                ) { }
+                ) {}
             }
         }
 
@@ -258,13 +257,13 @@ extension QuickActionButton {
                     icon: "checkmark",
                     style: .primary,
                     isCompact: true
-                ) { }
+                ) {}
                 QuickActionButton(
                     title: "Remind",
                     icon: "bell",
                     style: .secondary,
                     isCompact: true
-                ) { }
+                ) {}
             }
         }
 
@@ -274,8 +273,8 @@ extension QuickActionButton {
                 .foregroundColor(.wiseSecondaryText)
 
             QuickActionButtonGroup(buttons: [
-                QuickActionConfig(title: "Settle", icon: "checkmark", style: .primary) { },
-                QuickActionConfig(title: "Remind", icon: "bell", style: .secondary) { }
+                QuickActionConfig(title: "Settle", icon: "checkmark", style: .primary) {},
+                QuickActionConfig(title: "Remind", icon: "bell", style: .secondary) {},
             ])
         }
 

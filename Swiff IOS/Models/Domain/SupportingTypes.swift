@@ -621,10 +621,21 @@ extension Color {
         })
 
     // MARK: - Text Colors (Adaptive)
+    // NOTE: These are defined directly to avoid circular references with Theme.Colors
 
-    public static let wisePrimaryText = Theme.Colors.textPrimary
+    public static let wisePrimaryText = Color(
+        uiColor: UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark
+                ? UIColor.white
+                : UIColor(red: 0.102, green: 0.102, blue: 0.102, alpha: 1.0)
+        })
 
-    public static let wiseSecondaryText = Theme.Colors.textSecondary
+    public static let wiseSecondaryText = Color(
+        uiColor: UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark
+                ? UIColor(red: 0.92, green: 0.92, blue: 0.96, alpha: 1.0)
+                : UIColor(red: 0.235, green: 0.235, blue: 0.235, alpha: 1.0)
+        })
 
     public static let wiseBodyText = Color(
         uiColor: UIColor { traitCollection in
@@ -817,9 +828,23 @@ extension Color {
 
     // MARK: - System Colors (Static)
 
-    public static let wiseBlue = Color(red: 0.0, green: 0.725, blue: 1.0)  // #00B9FF
+    public static let wiseBlue = Color(red: 0.0, green: 0.478, blue: 1.0)  // #007AFF - iMessage blue
     public static let wiseAccentBlue = Color(red: 0.0, green: 0.478, blue: 1.0)  // #007AFF
     public static let wiseAccentOrange = Color(red: 1.0, green: 0.596, blue: 0.0)  // #FF9800
+
+    // MARK: - iMessage Bubble Colors
+
+    /// iMessage sent bubble blue (#007AFF)
+    public static let iMessageBlue = Color(red: 0.0, green: 0.478, blue: 1.0)  // #007AFF
+
+    /// iMessage received bubble gray (#E9E9EB)
+    public static let iMessageGray = Color(red: 0.914, green: 0.914, blue: 0.922)  // #E9E9EB
+
+    /// Transaction amount yellow for sent bubbles (#FFD60A)
+    public static let transactionYellow = Color(red: 1.0, green: 0.839, blue: 0.039)  // #FFD60A
+
+    /// Transaction amount orange for received bubbles (#FF6B35)
+    public static let transactionOrange = Color(red: 1.0, green: 0.420, blue: 0.208)  // #FF6B35
 
     // Additional UI Colors
     public static let wiseGray = Color(red: 0.557, green: 0.557, blue: 0.576)  // #8E8E93

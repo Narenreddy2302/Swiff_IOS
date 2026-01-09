@@ -2,8 +2,9 @@
 //  CompactGroupHeader.swift
 //  Swiff IOS
 //
-//  Compact header for group conversation view
-//  Matches PersonConversationHeader style
+//  Professional compact header for group/person conversation view
+//  Uses BaseConversationHeader for consistent styling
+//  Enhanced with balance information and better visual hierarchy
 //
 
 import SwiftUI
@@ -11,67 +12,113 @@ import SwiftUI
 struct CompactGroupHeader: View {
     let group: Group
     let members: [Person]
+    var balance: ConversationBalance?
     var onBack: (() -> Void)?
     var onInfo: (() -> Void)?
+    
+    @State private var showBalanceDetail: Bool = false
 
     var body: some View {
-        HStack(spacing: 8) {
-            // Back button
-            if let onBack = onBack {
-                Button(action: onBack) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .medium))
-                    }
-                    .foregroundColor(Theme.Colors.brandPrimary)
-                    .frame(height: 44)
-                    .contentShape(Rectangle())
-                }
-            }
-
-            // Centered Title Info
-            Spacer()
-
-            VStack(spacing: 2) {
-                // Emoji + Name
-                HStack(spacing: 6) {
+        VStack(spacing: 0) {
+            BaseConversationHeader(
+                onBack: onBack,
+                leading: {
                     UnifiedEmojiCircle(
                         emoji: group.emoji,
                         backgroundColor: .clear,
-                        size: 24
+                        size: Theme.Metrics.avatarCompact
                     )
-
-                    Text(group.name)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Theme.Colors.textPrimary)
+                },
+                title: {
+                    HeaderTitleView(
+                        title: group.name,
+                        subtitle: balanceSubtitle
+                    )
+                },
+                trailing: {
+                    if let onInfo = onInfo {
+                        Button(action: onInfo) {
+                            Image(systemName: "info.circle")
+                                .iconActionButtonStyle(color: .wiseForestGreen)
+                        }
+                        .accessibilityLabel("Group info")
+                    }
                 }
-
-                // Member count (Subtitle)
-                Text("\(members.count) members")
-                    .font(.system(size: 12))
-                    .foregroundColor(.wiseSecondaryText)
+            )
+            
+            // Balance banner (if available)
+            if let balance = balance {
+                ConversationBalanceBanner(balance: balance)
             }
-            .offset(x: onBack != nil ? -16 : 0)  // Optical centering compensation
+        }
+    }
+    
+    private var balanceSubtitle: String {
+        if let balance = balance {
+            return balance.formattedBalance
+        } else {
+            return "\(members.count) member\(members.count == 1 ? "" : "s")"
+        }
+    }
+}
 
+// MARK: - Conversation Balance
+
+/// Balance information for conversation header
+struct ConversationBalance {
+    let amount: Double
+    let type: BalanceType
+    
+    enum BalanceType {
+        case youOwe     // You owe them
+        case theyOwe    // They owe you
+        case settled    // All settled
+    }
+    
+    var formattedBalance: String {
+        let absAmount = abs(amount)
+        let formattedAmount = String(format: "$%.2f", absAmount)
+        
+        switch type {
+        case .youOwe:
+            return "You owe \(formattedAmount)"
+        case .theyOwe:
+            return "You are owed \(formattedAmount)"
+        case .settled:
+            return "All settled up"
+        }
+    }
+    
+    var color: Color {
+        switch type {
+        case .youOwe: return .wiseError
+        case .theyOwe: return .wiseBrightGreen
+        case .settled: return .wiseSecondaryText
+        }
+    }
+}
+
+// MARK: - Balance Banner
+
+/// Subtle balance banner below header
+struct ConversationBalanceBanner: View {
+    let balance: ConversationBalance
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: balance.type == .settled ? "checkmark.circle.fill" : "dollarsign.circle.fill")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(balance.color)
+            
+            Text(balance.formattedBalance)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(balance.color)
+            
             Spacer()
-
-            // Info Button
-            if let onInfo = onInfo {
-                Button(action: onInfo) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 20))
-                        .foregroundColor(Theme.Colors.brandPrimary)
-                }
-            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.ultraThinMaterial)
-        .overlay(
-            Rectangle()
-                .fill(Theme.Colors.border)
-                .frame(height: 0.5), alignment: .bottom
-        )
+        .background(balance.color.opacity(0.08))
     }
 }
 
@@ -86,5 +133,52 @@ struct CompactGroupHeader: View {
             onBack: {},
             onInfo: {}
         )
+    }
+}
+
+#Preview("CompactGroupHeader - With Balance") {
+    ZStack {
+        Color.wiseBackground.ignoresSafeArea()
+        VStack(spacing: 0) {
+            CompactGroupHeader(
+                group: MockData.groupWithExpenses,
+                members: [MockData.personOwedMoney, MockData.personOwingMoney],
+                balance: ConversationBalance(amount: 500.0, type: .theyOwe),
+                onBack: {},
+                onInfo: {}
+            )
+            Spacer()
+        }
+    }
+}
+
+#Preview("CompactGroupHeader - You Owe") {
+    ZStack {
+        Color.wiseBackground.ignoresSafeArea()
+        VStack(spacing: 0) {
+            CompactGroupHeader(
+                group: MockData.groupWithExpenses,
+                members: [MockData.personOwedMoney],
+                balance: ConversationBalance(amount: -250.0, type: .youOwe),
+                onBack: {}
+            )
+            Spacer()
+        }
+    }
+}
+
+#Preview("CompactGroupHeader - Settled") {
+    ZStack {
+        Color.wiseBackground.ignoresSafeArea()
+        VStack(spacing: 0) {
+            CompactGroupHeader(
+                group: MockData.groupWithExpenses,
+                members: [MockData.personOwedMoney],
+                balance: ConversationBalance(amount: 0, type: .settled),
+                onBack: {},
+                onInfo: {}
+            )
+            Spacer()
+        }
     }
 }

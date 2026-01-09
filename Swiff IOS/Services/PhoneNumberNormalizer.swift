@@ -8,7 +8,7 @@
 
 import Foundation
 
-struct PhoneNumberNormalizer {
+struct PhoneNumberNormalizer: Sendable {
 
     // MARK: - Default Country Code
 

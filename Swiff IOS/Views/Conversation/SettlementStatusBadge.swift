@@ -52,17 +52,17 @@ struct SettlementStatusBadge: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: status.icon)
-                .font(.system(size: isCompact ? 10 : 12))
+                .font(isCompact ? Theme.Fonts.badgeCompact : Theme.Fonts.badgeText)
 
             Text(status.text)
-                .font(isCompact ? .spotifyCaptionSmall : .spotifyCaptionMedium)
-                .fontWeight(.semibold)
+                .font(isCompact ? Theme.Fonts.badgeText : Theme.Fonts.labelMedium)
         }
         .foregroundColor(status.color)
-        .padding(.horizontal, isCompact ? 8 : 10)
+        .padding(.horizontal, isCompact ? Theme.Metrics.paddingSmall : 10)
         .padding(.vertical, isCompact ? 4 : 6)
         .background(status.backgroundColor)
         .clipShape(Capsule())
+        .accessibilityLabel("Settlement status: \(status.text)")
     }
 }
 

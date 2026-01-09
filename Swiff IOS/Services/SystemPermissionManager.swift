@@ -343,7 +343,7 @@ class SystemPermissionManager: ObservableObject {
         let currentStatus = CNContactStore.authorizationStatus(for: .contacts)
 
         switch currentStatus {
-        case .authorized:
+        case .authorized, .limited:
             contactsStatus = .authorized
             recordPermissionResult(.contacts, status: .authorized)
             return .authorized
@@ -384,7 +384,7 @@ class SystemPermissionManager: ObservableObject {
         let status = CNContactStore.authorizationStatus(for: .contacts)
 
         switch status {
-        case .authorized:
+        case .authorized, .limited:
             contactsStatus = .authorized
             return .authorized
         case .denied:

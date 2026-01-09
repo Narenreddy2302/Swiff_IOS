@@ -14,7 +14,7 @@ enum UniversalIconConfig {
     case system(name: String, color: Color)
     case initials(text: String, backgroundColor: Color)
     case emoji(text: String, backgroundColor: Color)
-    // Add image case later if needed
+    case image(UIImage)
 }
 
 // MARK: - Universal List Row
@@ -131,6 +131,13 @@ struct UniversalListRow: View {
                         Text(text)
                             .font(.system(size: 26))
                     )
+
+            case .image(let uiImage):
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: avatarSize, height: avatarSize)
+                    .clipShape(Circle())
             }
         }
     }

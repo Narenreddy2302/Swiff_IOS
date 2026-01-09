@@ -7,15 +7,19 @@
 //  Enhanced with comprehensive features for expense tracking and settlement
 //
 
-import SwiftUI
-import Combine
 import Charts
+import Combine
+import SwiftUI
 
 struct GroupDetailView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var dataManager: DataManager
 
     let groupId: UUID
+
+    // Message input state
+    @State private var messageText: String = ""
+
     @State private var showingAddExpense = false
     @State private var showingEditGroup = false
     @State private var showingDeleteAlert = false
@@ -95,7 +99,9 @@ struct GroupDetailView: View {
             Calendar.current.startOfDay(for: item.timestamp)
         }
 
-        return grouped.sorted { $0.key > $1.key }.map { ($0.key, $0.value.sorted { $0.timestamp > $1.timestamp }) }
+        return grouped.sorted { $0.key > $1.key }.map {
+            ($0.key, $0.value.sorted { $0.timestamp > $1.timestamp })
+        }
     }
 
     // Status banner config for group
@@ -165,7 +171,9 @@ struct GroupDetailView: View {
         .navigationTitle(group?.name ?? "Group")
         .navigationBarTitleDisplayMode(.inline)
         .hidesTabBar()
-        .observeEntityWithRelated(groupId, type: .group, relatedTypes: [.splitBill, .person], dataManager: dataManager)
+        .observeEntityWithRelated(
+            groupId, type: .group, relatedTypes: [.splitBill, .person], dataManager: dataManager
+        )
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showingEditGroup = true }) {
@@ -215,7 +223,9 @@ struct GroupDetailView: View {
             }
         } message: {
             if let group = group {
-                Text("This will permanently delete '\(group.name)' and all \(group.expenses.count) expenses.")
+                Text(
+                    "This will permanently delete '\(group.name)' and all \(group.expenses.count) expenses."
+                )
             }
         }
         .alert("Settle All Expenses?", isPresented: $showingSettleAllAlert) {
@@ -242,83 +252,94 @@ struct GroupDetailView: View {
                 )
             ) { item in
                 switch item {
-                case .expense(let expense, let payer, _):
-                    // Determine direction - Assuming if payer is "You" (nil for now in mock), it's outgoing.
-                    // In a real app, check against current user ID.
-                    // For this context, we'll check if the payer's name is "You" or if payer is nil (self).
-                    let isPayerSelf = payer?.name == "You" // Simplified check
-                    
-                    ChatBubble(
-                        direction: isPayerSelf ? .outgoing : .incoming,
-                        timestamp: expense.date
-                    ) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            if !isPayerSelf, let payerName = payer?.name {
-                                Text(payerName)
-                                    .font(.caption)
-                                    .foregroundColor(.wiseSecondaryText)
+                case .expense(let expense, let payer, let splitMembers):
+                    // Group Expense - Professional rectangular card
+                    VStack(spacing: 8) {
+                        ConversationTransactionCardBuilder.groupExpense(
+                            description: expense.title,
+                            amount: formatCurrencyAmount(expense.amountPerPerson),
+                            totalBill: formatCurrencyAmount(expense.amount),
+                            paidBy: payer?.name ?? "Unknown",
+                            splitMethod: "Equally",
+                            participants: splitMembers.isEmpty ? "All Members" : splitMembers.map { $0.name }.joined(separator: ", "),
+                            creatorName: payer?.name ?? "Unknown",
+                            onTap: {
+                                // Handle tap - could navigate to expense detail view
+                                HapticManager.shared.impact(.light)
                             }
-                            
-                            TransactionBubbleContent(
-                                title: expense.title,
-                                subtitle: nil,
-                                amount: expense.amount,
-                                isExpense: true
-                            )
-                            
-                            if !expense.isSettled {
+                        )
+
+                        // Settle Button only if not settled
+                        if !expense.isSettled {
+                            HStack {
+                                Spacer()
                                 Button(action: {
                                     settleExpense(expense)
                                 }) {
-                                    Text("Settle share: \(String(format: "$%.2f", expense.amountPerPerson))")
-                                        .font(.caption)
-                                        .fontWeight(.bold)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.wiseBrightGreen)
-                                        .foregroundColor(.white)
-                                        .cornerRadius(8)
+                                    Text(
+                                        "Settle share: \(String(format: "$%.2f", expense.amountPerPerson))"
+                                    )
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.wiseBrightGreen)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
                                 }
-                                .padding(.top, 4)
+                                .padding(.trailing, 4)
                             }
                         }
                     }
-                    
+                    .padding(.horizontal, 12)
+
                 case .memberJoined(_, let person, _):
                     ChatBubble(direction: .center, timestamp: nil) {
-                        SystemMessageBubble(text: "\(person.name) joined", icon: "person.badge.plus")
+                        SystemMessageBubble(
+                            text: "\(person.name) joined", icon: "person.badge.plus")
                     }
-                    
+
                 case .memberLeft(_, let person, _):
                     ChatBubble(direction: .center, timestamp: nil) {
                         SystemMessageBubble(text: "\(person.name) left", icon: "person.badge.minus")
                     }
-                    
+
                 case .settlement(_, let expense, _):
                     ChatBubble(direction: .center, timestamp: nil) {
-                        SystemMessageBubble(text: "'\(expense.title)' settled", icon: "checkmark.circle.fill")
+                        SystemMessageBubble(
+                            text: "'\(expense.title)' settled", icon: "checkmark.circle.fill")
                     }
-                    
+
                 case .splitBillCreated(let splitBill):
                     ChatBubble(direction: .center, timestamp: splitBill.date) {
-                        SystemMessageBubble(text: "New split bill: \(splitBill.title)", icon: "doc.text")
+                        SystemMessageBubble(
+                            text: "New split bill: \(splitBill.title)", icon: "doc.text")
+                    }
+
+                case .textMessage(let message, let senderName):
+                    VStack(alignment: message.isSent ? .trailing : .leading, spacing: 2) {
+                        if !message.isSent, let name = senderName {
+                            Text(name)
+                                .font(.system(size: 11))
+                                .foregroundColor(.wiseSecondaryText)
+                                .padding(.horizontal, 16)
+                        }
+                        MessageBubbleView(
+                            message: message,
+                            showTail: true
+                        )
                     }
                 }
             }
 
-            TimelineInputArea(
-                config: TimelineInputAreaConfig(
-                    quickActionTitle: "New split",
-                    quickActionIcon: "plus",
-                    placeholder: "Quick expense...",
-                    showMessageField: true
-                ),
-                onQuickAction: { showingAddExpense = true },
+            ConversationInputView(
+                messageText: $messageText,
+                placeholder: "iMessage",
                 onSend: { message in
-                    // Optional: Handle quick expense creation from text
-                    // For now, just open the add expense sheet
-                    showingAddExpense = true
-                }
+                    sendGroupMessage(message, to: group)
+                },
+                onAddTransaction: { showingAddExpense = true },
+                additionalActions: []  // No additional action buttons per design spec
             )
         }
     }
@@ -396,7 +417,8 @@ struct GroupDetailView: View {
     private func memberStatsRow(member: Person, in group: Group) -> some View {
         let memberStats = calculateMemberStats(member: member, in: group)
         let paidExpensesCount = group.expenses.filter { $0.paidBy == member.id }.count
-        let involvedExpensesCount = group.expenses.filter { $0.splitBetween.contains(member.id) }.count
+        let involvedExpensesCount = group.expenses.filter { $0.splitBetween.contains(member.id) }
+            .count
 
         HStack(spacing: 12) {
             AvatarView(person: member, size: .medium, style: .solid)
@@ -542,7 +564,9 @@ struct GroupDetailView: View {
                 StatisticsCardComponent(
                     icon: "chart.pie.fill",
                     title: "Per Person",
-                    value: String(format: "$%.2f", members.isEmpty ? 0 : totalGroupExpenses / Double(members.count)),
+                    value: String(
+                        format: "$%.2f",
+                        members.isEmpty ? 0 : totalGroupExpenses / Double(members.count)),
                     iconColor: .wiseBlue,
                     showIcon: true
                 )
@@ -652,7 +676,9 @@ struct GroupDetailView: View {
         }
     }
 
-    private func calculateMemberStats(member: Person, in group: Group) -> (subtitle: String, amount: Double, color: Color, label: String) {
+    private func calculateMemberStats(member: Person, in group: Group) -> (
+        subtitle: String, amount: Double, color: Color, label: String
+    ) {
         let paidExpenses = group.expenses.filter { $0.paidBy == member.id }
         let totalPaid = paidExpenses.reduce(0) { $0 + $1.amount }
 
@@ -662,9 +688,15 @@ struct GroupDetailView: View {
         let netBalance = totalPaid - totalOwes
 
         if netBalance > 0 {
-            return ("Paid \(String(format: "$%.2f", totalPaid))", netBalance, .wiseBrightGreen, "owed to them")
+            return (
+                "Paid \(String(format: "$%.2f", totalPaid))", netBalance, .wiseBrightGreen,
+                "owed to them"
+            )
         } else if netBalance < 0 {
-            return ("Owes \(String(format: "$%.2f", abs(netBalance)))", abs(netBalance), .wiseError, "they owe")
+            return (
+                "Owes \(String(format: "$%.2f", abs(netBalance)))", abs(netBalance), .wiseError,
+                "they owe"
+            )
         } else {
             return ("All settled up", 0, .wiseMidGray, "balanced")
         }
@@ -712,7 +744,8 @@ struct GroupDetailView: View {
 
     private func dateRangeText(from expenses: [GroupExpense]) -> String {
         guard let earliest = expenses.map({ $0.date }).min(),
-              let latest = expenses.map({ $0.date }).max() else {
+            let latest = expenses.map({ $0.date }).max()
+        else {
             return "No expenses"
         }
 
@@ -775,7 +808,8 @@ struct GroupDetailView: View {
 
     @ViewBuilder
     private func expenseListByDate(group: Group) -> some View {
-        let groupedExpenses = Dictionary(grouping: group.expenses.sorted(by: { $0.date > $1.date })) { expense in
+        let groupedExpenses = Dictionary(grouping: group.expenses.sorted(by: { $0.date > $1.date }))
+        { expense in
             Calendar.current.startOfDay(for: expense.date)
         }
 
@@ -792,7 +826,10 @@ struct GroupDetailView: View {
 
                     // Expenses for this date
                     VStack(spacing: 0) {
-                        ForEach(Array(groupedExpenses[date]?.enumerated() ?? [].enumerated()), id: \.element.id) { index, expense in
+                        ForEach(
+                            Array(groupedExpenses[date]?.enumerated() ?? [].enumerated()),
+                            id: \.element.id
+                        ) { index, expense in
                             ExpenseRowView(
                                 expense: expense,
                                 members: members,
@@ -859,7 +896,8 @@ struct GroupDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(groupSplitBills) { splitBill in
-                        NavigationLink(destination: SplitBillDetailView(splitBillId: splitBill.id)) {
+                        NavigationLink(destination: SplitBillDetailView(splitBillId: splitBill.id))
+                        {
                             SplitBillCard(splitBill: splitBill)
                                 .frame(width: 320)
                         }
@@ -894,7 +932,8 @@ struct GroupDetailView: View {
 
                 // Recent expense
                 if let recentExpense = group.expenses.sorted(by: { $0.date > $1.date }).first,
-                   let payer = members.first(where: { $0.id == recentExpense.paidBy }) {
+                    let payer = members.first(where: { $0.id == recentExpense.paidBy })
+                {
                     activityRowItem(
                         icon: "clock.fill",
                         title: "Latest Expense",
@@ -905,11 +944,13 @@ struct GroupDetailView: View {
 
                 // Largest expense
                 if let largestExpense = group.expenses.max(by: { $0.amount < $1.amount }),
-                   let _ = members.first(where: { $0.id == largestExpense.paidBy }) {
+                    members.first(where: { $0.id == largestExpense.paidBy }) != nil
+                {
                     activityRowItem(
                         icon: "chart.bar.fill",
                         title: "Largest Expense",
-                        subtitle: "\(String(format: "$%.2f", largestExpense.amount)) - \(largestExpense.title)",
+                        subtitle:
+                            "\(String(format: "$%.2f", largestExpense.amount)) - \(largestExpense.title)",
                         color: .wiseForestGreen
                     )
                 }
@@ -919,7 +960,9 @@ struct GroupDetailView: View {
     }
 
     @ViewBuilder
-    private func activityRowItem(icon: String, title: String, subtitle: String, color: Color) -> some View {
+    private func activityRowItem(icon: String, title: String, subtitle: String, color: Color)
+        -> some View
+    {
         HStack(spacing: 12) {
             Circle()
                 .fill(color.opacity(0.1))
@@ -956,7 +999,8 @@ struct GroupDetailView: View {
             memberExpenseCount[expense.paidBy, default: 0] += 1
         }
 
-        guard let mostActiveMemberId = memberExpenseCount.max(by: { $0.value < $1.value })?.key else {
+        guard let mostActiveMemberId = memberExpenseCount.max(by: { $0.value < $1.value })?.key
+        else {
             return nil
         }
 
@@ -1051,6 +1095,16 @@ struct GroupDetailView: View {
 
     // MARK: - Helper Functions
 
+    /// Format currency amount for display
+    private func formatCurrencyAmount(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencySymbol = "$"
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+    }
+
     private func settleExpense(_ expense: GroupExpense) {
         guard let group = group else { return }
         do {
@@ -1074,6 +1128,22 @@ struct GroupDetailView: View {
             dismiss()
         } catch {
             dataManager.error = error
+        }
+    }
+
+    // MARK: - Send Message
+
+    private func sendGroupMessage(_ content: String, to group: Group) {
+        do {
+            try dataManager.sendMessage(
+                to: group.id,
+                entityType: .group,
+                content: content
+            )
+            HapticManager.shared.impact(.light)
+        } catch {
+            print("Failed to send group message: \(error)")
+            ToastManager.shared.showError("Failed to send message")
         }
     }
 }
@@ -1136,7 +1206,7 @@ struct ExpenseRowView: View {
 
                 Text(statusText)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Color(red: 102/255, green: 102/255, blue: 102/255))
+                    .foregroundColor(Color(red: 102 / 255, green: 102 / 255, blue: 102 / 255))
                     .lineLimit(1)
             }
 
@@ -1150,7 +1220,7 @@ struct ExpenseRowView: View {
 
                 Text(relativeTime)
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+                    .foregroundColor(Color(red: 153 / 255, green: 153 / 255, blue: 153 / 255))
             }
         }
         .padding(.vertical, 14)
@@ -1174,7 +1244,7 @@ struct ExpenseRowView: View {
 
             Text(initials)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(Color(red: 26/255, green: 26/255, blue: 26/255))
+                .foregroundColor(Color(red: 26 / 255, green: 26 / 255, blue: 26 / 255))
         }
     }
 }
@@ -1413,8 +1483,12 @@ struct ExportGroupSheet: View {
                         ForEach(ExportFormat.allCases, id: \.self) { format in
                             Button(action: { exportFormat = format }) {
                                 HStack {
-                                    Image(systemName: exportFormat == format ? "checkmark.circle.fill" : "circle")
-                                        .foregroundColor(exportFormat == format ? .wiseForestGreen : .wiseMidGray)
+                                    Image(
+                                        systemName: exportFormat == format
+                                            ? "checkmark.circle.fill" : "circle"
+                                    )
+                                    .foregroundColor(
+                                        exportFormat == format ? .wiseForestGreen : .wiseMidGray)
 
                                     Text(format.rawValue)
                                         .font(.spotifyBodyMedium)
@@ -1427,7 +1501,9 @@ struct ExportGroupSheet: View {
                                 .cornerRadius(12)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .stroke(exportFormat == format ? Color.wiseForestGreen : Color.clear, lineWidth: 2)
+                                        .stroke(
+                                            exportFormat == format
+                                                ? Color.wiseForestGreen : Color.clear, lineWidth: 2)
                                 )
                             }
                         }
@@ -1515,10 +1591,12 @@ struct ExportGroupSheet: View {
                 members.first { $0.id == id }?.name
             }.joined(separator: "; ")
 
-            let date = DateFormatter.localizedString(from: expense.date, dateStyle: .short, timeStyle: .none)
+            let date = DateFormatter.localizedString(
+                from: expense.date, dateStyle: .short, timeStyle: .none)
             let status = expense.isSettled ? "Settled" : "Pending"
 
-            csv += "\(date),\(expense.title),\(expense.amount),\(payer),\"\(splitNames)\",\(expense.category.rawValue),\(status),\"\(expense.notes)\"\n"
+            csv +=
+                "\(date),\(expense.title),\(expense.amount),\(payer),\"\(splitNames)\",\(expense.category.rawValue),\(status),\"\(expense.notes)\"\n"
         }
 
         return csv
@@ -1557,7 +1635,8 @@ struct ExportGroupSheet: View {
         summary += "Settled: \(settled)\n"
         summary += "Pending: \(pending)\n"
         summary += "Members: \(members.count)\n"
-        summary += "Average per person: $\(String(format: "%.2f", members.isEmpty ? 0 : total / Double(members.count)))\n"
+        summary +=
+            "Average per person: $\(String(format: "%.2f", members.isEmpty ? 0 : total / Double(members.count)))\n"
 
         return summary
     }

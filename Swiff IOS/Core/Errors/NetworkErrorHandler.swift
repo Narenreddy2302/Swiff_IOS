@@ -327,7 +327,7 @@ class NetworkErrorHandler: ObservableObject {
     // MARK: - Retry Logic
 
     /// Perform request with automatic retry
-    nonisolated func performWithRetry<T>(
+    func performWithRetry<T>(
         retryConfig: NetworkRetryConfiguration = .default,
         operation: @escaping () async throws -> T
     ) async throws -> NetworkRequestResult<T> {
@@ -382,7 +382,7 @@ class NetworkErrorHandler: ObservableObject {
     }
 
     /// Perform HTTP request with retry and error handling
-    nonisolated func performHTTPRequest<T: Decodable>(
+    func performHTTPRequest<T: Decodable>(
         url: URL,
         method: String = "GET",
         body: Data? = nil,
