@@ -60,10 +60,11 @@ struct SplitParticipant: Identifiable, Codable, Equatable, Sendable {
     var percentage: Double?     // For percentage split (0-100)
     var shares: Int?            // For shares split (1, 2, 3...)
 
-    init(personId: UUID, amount: Double = 0.0, hasPaid: Bool = false, percentage: Double? = nil, shares: Int? = nil) {
+    init(personId: UUID, amount: Double = 0.0, hasPaid: Bool = false, paymentDate: Date? = nil, percentage: Double? = nil, shares: Int? = nil) {
         self.personId = personId
         self.amount = amount
         self.hasPaid = hasPaid
+        self.paymentDate = paymentDate
         self.percentage = percentage
         self.shares = shares
     }
