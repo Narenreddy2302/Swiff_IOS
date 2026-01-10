@@ -131,6 +131,7 @@ struct BalanceDetailView: View {
             }
             .sheet(item: $selectedPerson) { person in
                 PersonDetailView(personId: person.id)
+                    .environmentObject(dataManager)
             }
         }
     }
