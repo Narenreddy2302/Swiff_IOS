@@ -64,14 +64,14 @@ struct TrialStatusSection: View {
                         TrialInfoCard(
                             icon: "arrow.right.circle.fill",
                             title: "Converts To",
-                            value: String(format: "$%.2f/%@", priceAfterTrial, subscription.billingCycle.shortName),
+                            value: "\(priceAfterTrial.asCurrency)/\(subscription.billingCycle.shortName)",
                             color: .wiseForestGreen
                         )
                     } else {
                         TrialInfoCard(
                             icon: "arrow.right.circle.fill",
                             title: "Converts To",
-                            value: String(format: "$%.2f/%@", subscription.price, subscription.billingCycle.shortName),
+                            value: "\(subscription.price.asCurrency)/\(subscription.billingCycle.shortName)",
                             color: .wiseForestGreen
                         )
                     }

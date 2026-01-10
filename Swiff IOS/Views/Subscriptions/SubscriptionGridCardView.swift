@@ -57,7 +57,7 @@ struct SubscriptionGridCardView: View {
 
                 // Price with billing cycle
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(String(format: "$%.2f", subscription.price))
+                    Text(subscription.price.asCurrency)
                         .font(.spotifyNumberLarge)
                         .fontWeight(.bold)
                         .foregroundColor(.wisePrimaryText)

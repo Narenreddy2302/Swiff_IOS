@@ -70,11 +70,11 @@ enum SubscriptionAlertType {
     var subtitle: String {
         switch self {
         case .trialEnding(_, let priceAfter):
-            return String(format: "You'll be charged $%.2f after trial ends", priceAfter)
+            return "You'll be charged \(priceAfter.asCurrency) after trial ends"
         case .priceIncreased(let newPrice, _):
-            return String(format: "New price: $%.2f", newPrice)
+            return "New price: \(newPrice.asCurrency)"
         case .paymentUpcoming(_, let amount):
-            return String(format: "Amount: $%.2f", amount)
+            return "Amount: \(amount.asCurrency)"
         case .subscriptionPaused:
             return "Resume to continue billing"
         }

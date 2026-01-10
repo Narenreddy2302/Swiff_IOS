@@ -29,7 +29,7 @@ struct SubscriptionCard: View {
     }
 
     private var priceText: String {
-        String(format: "$%.2f", subscription.price)
+        subscription.price.asCurrency
     }
 
     private var formattedPriceWithSign: String {

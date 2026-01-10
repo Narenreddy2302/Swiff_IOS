@@ -67,10 +67,7 @@ struct FeedSubscriptionRow: View {
 
     private var displayAmount: String {
         let amount = subscription.isShared ? subscription.costPerPerson : subscription.price
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+        return amount.asCurrency
     }
 
     private var payerLabel: String {
@@ -170,11 +167,11 @@ struct FeedSharedSubscriptionRow: View {
     private var formattedBalance: String {
         let balance = sharedSubscription.balance
         if balance > 0 {
-            return String(format: "+$%.2f", balance)
+            return "+\(balance.asCurrency)"
         } else if balance < 0 {
-            return String(format: "-$%.2f", abs(balance))
+            return "-\(abs(balance).asCurrency)"
         }
-        return "$0.00"
+        return 0.0.asCurrency
     }
 
     private var balanceColor: Color {

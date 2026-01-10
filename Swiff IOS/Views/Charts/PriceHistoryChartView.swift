@@ -86,13 +86,13 @@ struct PriceHistoryChartView: View {
             ], spacing: 12) {
                 StatCard(
                     title: "Current Price",
-                    value: String(format: "$%.2f", subscription.price),
+                    value: subscription.price.asCurrency,
                     color: .wiseBlue
                 )
 
                 StatCard(
                     title: "Original Price",
-                    value: String(format: "$%.2f", stats.originalPrice),
+                    value: stats.originalPrice.asCurrency,
                     color: .wiseSecondaryText
                 )
 
@@ -113,7 +113,7 @@ struct PriceHistoryChartView: View {
                 if stats.changeCount > 0 {
                     StatCard(
                         title: "Average Price",
-                        value: String(format: "$%.2f", stats.averagePrice),
+                        value: stats.averagePrice.asCurrency,
                         color: .wiseSecondaryText
                     )
 
@@ -182,7 +182,7 @@ struct PriceHistoryChartView: View {
                         AxisGridLine()
                         AxisValueLabel {
                             if let price = value.as(Double.self) {
-                                Text(String(format: "$%.2f", price))
+                                Text(price.asCurrency)
                                     .font(.spotifyCaptionMedium)
                             }
                         }
@@ -220,7 +220,7 @@ struct PriceHistoryChartView: View {
                                 .font(.spotifyLabelSmall)
                                 .foregroundColor(.wiseSecondaryText)
 
-                            Text(String(format: "$%.2f", selected.price))
+                            Text(selected.price.asCurrency)
                                 .font(.spotifyNumberLarge)
                                 .foregroundColor(.wisePrimaryText)
                         }
@@ -423,8 +423,8 @@ struct PriceStatistics {
     let largestPercentage: Double
 
     var totalChangeFormatted: String {
-        let sign = totalChange >= 0 ? "+" : ""
-        return String(format: "%@$%.2f", sign, abs(totalChange))
+        let sign = totalChange >= 0 ? "+" : "-"
+        return "\(sign)\(abs(totalChange).asCurrency)"
     }
 
     var totalPercentageFormatted: String {
@@ -433,8 +433,8 @@ struct PriceStatistics {
     }
 
     var largestChangeFormatted: String {
-        let sign = largestChange >= 0 ? "+" : ""
-        return String(format: "%@$%.2f", sign, abs(largestChange))
+        let sign = largestChange >= 0 ? "+" : "-"
+        return "\(sign)\(abs(largestChange).asCurrency)"
     }
 
     var largestPercentageFormatted: String {
