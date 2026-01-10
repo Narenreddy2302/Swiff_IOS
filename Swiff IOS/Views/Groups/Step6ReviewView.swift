@@ -183,7 +183,7 @@ struct Step6ReviewView: View {
 
                                     Spacer()
 
-                                    Text(String(format: "$%.2f", participant.amount))
+                                    Text(participant.amount.asCurrency)
                                         .font(.spotifyBodyMedium)
                                         .fontWeight(.semibold)
                                         .foregroundColor(.wisePrimaryText)

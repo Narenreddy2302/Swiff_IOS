@@ -244,10 +244,11 @@ struct SubscriptionComparisonChart: View {
     // MARK: - Helper Methods
 
     private func formatAxisAmount(_ amount: Double) -> String {
+        let symbol = UserSettings.shared.selectedCurrency.symbol
         if amount >= 1000 {
-            return String(format: "$%.0fk", amount / 1000)
+            return String(format: "%@%.0fk", symbol, amount / 1000)
         } else {
-            return String(format: "$%.0f", amount)
+            return amount.asCurrency
         }
     }
 }

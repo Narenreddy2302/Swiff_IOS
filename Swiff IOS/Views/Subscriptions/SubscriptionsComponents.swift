@@ -131,20 +131,13 @@ struct SubscriptionQuickStatsView: View {
         subscriptions.count
     }
 
-    // Calculate trends (placeholder - in production, compare with previous period)
+    // Calculate trends based on actual data
     // Returns: percentage change, isUp (direction), isGood (financially positive)
+    // Currently returns 0 to hide trend indicators since no historical data is available
     private func calculateTrend(for type: String) -> (percentage: Double, isUp: Bool, isGood: Bool) {
-        // Mock trend data - in production, this would compare with previous period
-        switch type {
-        case "subscriptions":
-            // Subscriptions DOWN = good (saving money)
-            return (2.1, false, true)
-        case "monthly":
-            // Monthly spend UP = bad (spending more)
-            return (5.2, true, false)
-        default:
-            return (0, true, true)
-        }
+        // No historical data available yet - show no trend
+        // In a future update, this could compare with previous period data
+        return (0, false, true)
     }
 
     var body: some View {
@@ -182,11 +175,7 @@ struct SubscriptionQuickStatsView: View {
     }
 
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
+        return amount.asCurrency
     }
 }
 
@@ -206,19 +195,13 @@ struct SharedSubscriptionQuickStatsView: View {
         }
     }
 
-    // Calculate trends (placeholder - in production, compare with previous period)
+    // Calculate trends based on actual data
     // Returns: percentage change, isUp (direction), isGood (financially positive)
+    // Currently returns 0 to hide trend indicators since no historical data is available
     private func calculateTrend(for type: String) -> (percentage: Double, isUp: Bool, isGood: Bool) {
-        switch type {
-        case "shared":
-            // More shared subscriptions = neutral/good (splitting costs)
-            return (1.5, true, true)
-        case "monthly":
-            // Monthly spend UP = bad (spending more)
-            return (3.2, true, false)
-        default:
-            return (0, true, true)
-        }
+        // No historical data available yet - show no trend
+        // In a future update, this could compare with previous period data
+        return (0, false, true)
     }
 
     var body: some View {
@@ -255,11 +238,7 @@ struct SharedSubscriptionQuickStatsView: View {
     }
 
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
+        return amount.asCurrency
     }
 }
 
@@ -354,11 +333,7 @@ struct SubscriptionStatCard: View {
         if isCount {
             return String(Int(amount))
         } else if isAmount {
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .currency
-            formatter.currencySymbol = "$"
-            formatter.maximumFractionDigits = amount >= 1000 ? 0 : 2
-            return formatter.string(from: NSNumber(value: amount)) ?? "$0"
+            return amount.asCurrency
         }
         return String(format: "%.2f", amount)
     }
@@ -894,11 +869,11 @@ struct SharedSubscriptionRow: View {
     }
 
     private var formattedPriceWithSign: String {
-        String(format: "- $%.2f", totalPrice)
+        "- \(totalPrice.asCurrency)"
     }
 
     private var costPerPersonText: String {
-        String(format: "$%.2f/person", sharedSubscription.individualCost)
+        "\(sharedSubscription.individualCost.asCurrency)/person"
     }
 
     private var amountColor: Color {
@@ -992,7 +967,7 @@ struct EnhancedSharedSubscriptionRowView: View {
         }
 
         // Cost per person
-        components.append(String(format: "$%.2f/person", sharedSubscription.individualCost))
+        components.append("\(sharedSubscription.individualCost.asCurrency)/person")
 
         return components.joined(separator: " • ")
     }
@@ -1031,7 +1006,7 @@ struct EnhancedSharedSubscriptionRowView: View {
             Spacer()
 
             // Total Price - Right aligned
-            Text(String(format: "$%.2f", totalPrice))
+            Text(totalPrice.asCurrency)
                 .font(.spotifyNumberMedium)
                 .foregroundColor(.wisePrimaryText)
         }
@@ -1115,7 +1090,7 @@ struct SharedSubscriptionRowView: View {
 
             Spacer()
 
-            Text(String(format: "$%.2f", sharedSubscription.individualCost))
+            Text(sharedSubscription.individualCost.asCurrency)
                 .font(.spotifyNumberMedium)
                 .foregroundColor(.wisePrimaryText)
         }

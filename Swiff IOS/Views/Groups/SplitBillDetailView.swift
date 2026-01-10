@@ -73,7 +73,7 @@ struct SplitBillDetailView: View {
                                 .font(.spotifyBodyMedium)
                                 .foregroundColor(.wiseSecondaryText)
                             Spacer()
-                            Text(String(format: "$%.2f", splitBill.totalAmount))
+                            Text(splitBill.totalAmount.asCurrency)
                                 .font(.spotifyNumberLarge)
                                 .foregroundColor(.wisePrimaryText)
                         }
@@ -155,7 +155,7 @@ struct SplitBillDetailView: View {
                             .frame(height: 8)
 
                             if splitBill.totalPending > 0 {
-                                Text(String(format: "$%.2f remaining", splitBill.totalPending))
+                                Text("\(splitBill.totalPending.asCurrency) remaining")
                                     .font(.spotifyCaptionMedium)
                                     .foregroundColor(.wiseWarning)
                             }
@@ -299,7 +299,7 @@ struct SplitBillDetailView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 3) {
-                Text(String(format: "$%.2f", participant.amount))
+                Text(participant.amount.asCurrency)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.wisePrimaryText)
 

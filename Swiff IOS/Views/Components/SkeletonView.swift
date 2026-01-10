@@ -285,22 +285,6 @@ struct SkeletonActivityCard: View {
     }
 }
 
-/// Skeleton for FriendActivityCard (horizontal scroll cards)
-struct SkeletonFriendActivityCard: View {
-    var body: some View {
-        VStack(spacing: 8) {
-            SkeletonCircle(size: 48)
-
-            VStack(spacing: 4) {
-                SkeletonText(width: 50, height: 16)  // Matches numberMedium
-                SkeletonText(width: 45, height: 12)  // Matches captionMedium
-                SkeletonText(width: 40, height: 12)  // Matches captionMedium
-            }
-        }
-        .frame(minWidth: 80, maxWidth: 100)  // Matches FriendActivityCard
-    }
-}
-
 struct SkeletonDashboard: View {
     var body: some View {
         VStack(spacing: 20) {

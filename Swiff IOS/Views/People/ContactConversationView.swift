@@ -120,14 +120,9 @@ struct ContactConversationView: View {
         }
     }
 
-    /// Format currency amount
+    /// Format currency amount using user's selected currency
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+        amount.asCurrency
     }
 
     /// Get your share amount for a split bill

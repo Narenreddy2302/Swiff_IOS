@@ -31,7 +31,7 @@ struct GroupCard: View {
     }
 
     private var amountText: String {
-        String(format: "$%.2f", totalAmount)
+        totalAmount.asCurrency
     }
 
     private var summaryText: String {

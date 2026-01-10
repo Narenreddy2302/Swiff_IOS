@@ -159,7 +159,7 @@ struct ReminderSettingsSheet: View {
 
             Spacer()
 
-            Text(String(format: "$%.2f", subscription.price))
+            Text(subscription.price.asCurrency)
                 .font(.spotifyNumberMedium)
                 .foregroundColor(.wisePrimaryText)
         }
@@ -296,7 +296,7 @@ struct ReminderSettingsSheet: View {
                             .fontWeight(.semibold)
                             .foregroundColor(.wisePrimaryText)
 
-                        Text("$\(String(format: "%.2f", subscription.price)) will be charged in \(daysBefore) day\(daysBefore == 1 ? "" : "s")")
+                        Text("\(subscription.price.asCurrency) will be charged in \(daysBefore) day\(daysBefore == 1 ? "" : "s")")
                             .font(.spotifyCaptionMedium)
                             .foregroundColor(.wiseSecondaryText)
                     }

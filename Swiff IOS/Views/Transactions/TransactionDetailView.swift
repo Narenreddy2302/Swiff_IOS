@@ -418,7 +418,7 @@ struct TransactionDetailView: View {
                                         .foregroundColor(.wisePrimaryText)
                                         .fontWeight(.semibold)
 
-                                    Text(String(format: "$%.2f", subscription.price))
+                                    Text(subscription.price.asCurrency)
                                         .font(.spotifyLabelSmall)
                                         .foregroundColor(.wiseSecondaryText)
                                 }

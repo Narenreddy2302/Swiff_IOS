@@ -20,13 +20,59 @@ struct WidgetQuickAction: Identifiable {
     let deepLink: String
 }
 
+// MARK: - Widget Currency Helper
+
+/// Currency helper for widgets that reads from App Groups shared storage
+enum WidgetCurrencyFormatter {
+    private static let currencyKey = "selectedCurrency"
+
+    /// Get the user's selected currency code from shared storage
+    static var currencyCode: String {
+        let storage = UserDefaults(suiteName: WidgetConfiguration.appGroupIdentifier) ?? UserDefaults.standard
+        return storage.string(forKey: currencyKey) ?? "USD"
+    }
+
+    /// Get the currency symbol for the selected currency
+    static var currencySymbol: String {
+        switch currencyCode {
+        case "USD": return "$"
+        case "EUR": return "€"
+        case "GBP": return "£"
+        case "INR": return "₹"
+        case "JPY": return "¥"
+        case "CNY": return "¥"
+        case "AUD": return "A$"
+        case "CAD": return "C$"
+        case "CHF": return "CHF"
+        case "SGD": return "S$"
+        case "HKD": return "HK$"
+        case "NZD": return "NZ$"
+        case "SEK": return "kr"
+        case "KRW": return "₩"
+        case "MXN": return "MX$"
+        case "BRL": return "R$"
+        default: return "$"
+        }
+    }
+
+    /// Format a double as currency
+    static func format(_ amount: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        let formatted = formatter.string(from: NSNumber(value: amount)) ?? String(format: "%.2f", amount)
+        return "\(currencySymbol)\(formatted)"
+    }
+}
+
 // MARK: - Widget Display Helpers
 
 /// Helper extensions for formatting widget data
 extension Double {
-    /// Format as currency string
+    /// Format as currency string using user's preferred currency
     var asCurrencyString: String {
-        String(format: "$%.2f", self)
+        WidgetCurrencyFormatter.format(self)
     }
 
     /// Format as percentage string with sign

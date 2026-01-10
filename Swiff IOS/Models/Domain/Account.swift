@@ -85,6 +85,26 @@ public enum AccountType: String, CaseIterable, Codable {
     }
 }
 
+// MARK: - Supabase Conversion
+
+extension Account {
+    /// Convert to Supabase model for sync
+    func toSupabaseModel(userId: UUID) -> SupabaseAccount {
+        SupabaseAccount(
+            id: id,
+            userId: userId,
+            name: name,
+            number: number.isEmpty ? nil : number,
+            type: type.rawValue,
+            isDefault: isDefault,
+            createdAt: createdDate,
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
+    }
+}
+
 // MARK: - Sample Accounts (for testing/preview)
 
 extension Account {

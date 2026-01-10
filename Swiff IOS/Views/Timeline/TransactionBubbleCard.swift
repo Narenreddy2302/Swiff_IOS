@@ -165,9 +165,6 @@ struct TransactionBubbleCard: View {
 
     // Formatting Helpers
     static func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
+        amount.asCurrency
     }
 }

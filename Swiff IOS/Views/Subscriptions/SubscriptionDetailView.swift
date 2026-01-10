@@ -521,7 +521,7 @@ struct SubscriptionDetailView: View {
                         .font(.spotifyLabelSmall)
                         .foregroundColor(.wiseSecondaryText)
 
-                    Text(String(format: "$%.2f", subscription.price))
+                    Text(subscription.price.asCurrency)
                         .font(.spotifyNumberLarge)
                         .foregroundColor(.wisePrimaryText)
                 }
@@ -548,7 +548,7 @@ struct SubscriptionDetailView: View {
                         .font(.spotifyLabelSmall)
                         .foregroundColor(.wiseSecondaryText)
 
-                    Text(String(format: "$%.2f/mo", subscription.monthlyEquivalent))
+                    Text("\(subscription.monthlyEquivalent.asCurrency)/mo")
                         .font(.spotifyNumberMedium)
                         .foregroundColor(.wiseForestGreen)
                 }
@@ -707,7 +707,7 @@ struct SubscriptionDetailView: View {
                         .font(.spotifyLabelSmall)
                         .foregroundColor(.wiseSecondaryText)
 
-                    Text(String(format: "$%.2f", subscription.totalSpent))
+                    Text(subscription.totalSpent.asCurrency)
                         .font(.spotifyNumberMedium)
                         .foregroundColor(.wisePrimaryText)
                 }
@@ -1199,13 +1199,9 @@ struct SubscriptionDetailView: View {
             Spacer()
 
             // Share amount
-            Text(
-                String(
-                    format: "$%.2f", subscription.monthlyEquivalent / Double(sharedPeople.count + 1)
-                )
-            )
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundColor(AmountColors.positive)
+            Text((subscription.monthlyEquivalent / Double(sharedPeople.count + 1)).asCurrency)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(AmountColors.positive)
         }
         .padding(.vertical, 14)
     }
@@ -1443,13 +1439,9 @@ struct SubscriptionDetailView: View {
             Spacer()
 
             // Amount
-            Text(
-                String(
-                    format: "$%.2f", subscription.monthlyEquivalent / Double(sharedPeople.count + 1)
-                )
-            )
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundColor(AmountColors.positive)
+            Text((subscription.monthlyEquivalent / Double(sharedPeople.count + 1)).asCurrency)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundColor(AmountColors.positive)
         }
         .padding(.vertical, 14)
     }

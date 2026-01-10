@@ -202,12 +202,7 @@ struct TransactionBubbleView: View {
     // MARK: - Helpers
 
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+        amount.asCurrency
     }
 }
 
@@ -331,7 +326,7 @@ struct SimpleTransactionBubble: View {
     }
 
     private func formatCurrency(_ amount: Double) -> String {
-        String(format: "$%.2f", amount)
+        amount.asCurrency
     }
 }
 

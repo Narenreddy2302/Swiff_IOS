@@ -390,7 +390,7 @@ class SubscriptionEventService {
                     eventType: .trialConverted,
                     eventDate: trialEnd,
                     title: "Trial converted to paid",
-                    subtitle: "Now paying \(String(format: "$%.2f", subscription.price))",
+                    subtitle: "Now paying \(subscription.price.asCurrency)",
                     amount: subscription.price,
                     isSystemMessage: true
                 ))
@@ -508,9 +508,7 @@ class SubscriptionEventService {
             let eventType: SubscriptionEventType =
                 change.isIncrease ? .priceIncrease : .priceDecrease
             let title = change.isIncrease ? "Price increased" : "Price decreased"
-            let subtitle = String(
-                format: "$%.2f → $%.2f (%@)", change.oldPrice, change.newPrice,
-                change.formattedChangePercentage)
+            let subtitle = "\(change.oldPrice.asCurrency) → \(change.newPrice.asCurrency) (\(change.formattedChangePercentage))"
 
             return SubscriptionEvent(
                 subscriptionId: subscription.id,

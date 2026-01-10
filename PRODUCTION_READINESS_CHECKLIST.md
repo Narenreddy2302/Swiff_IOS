@@ -1,0 +1,347 @@
+# Production Readiness Checklist
+
+## Overview
+This document tracks issues that were addressed before pushing to production. The primary issue was **hardcoded currency symbols (`$` and `USD`)** that should use the user's selected currency via `.asCurrency`.
+
+---
+
+## Status: ✅ COMPLETED
+
+All hardcoded currency issues have been fixed across the codebase. Currency now uses the `.asCurrency` extension which respects the user's selected currency preference.
+
+---
+
+## Fixed Files Summary
+
+### Priority 0 (Critical) - ✅ Fixed
+| File | Instances Fixed |
+|------|-----------------|
+| `Views/Subscriptions/SubscriptionsSheets.swift` | 7 |
+| `Views/Subscriptions/SubscriptionBillingSummaryCard.swift` | 2 |
+| `Views/Conversation/SharedSubscriptionCostCard.swift` | 5 |
+| `Views/People/PersonCard.swift` | 1 |
+| `Views/Groups/SplitBillCard.swift` | 2 |
+| `Views/Groups/SplitBillDetailView.swift` | 3 |
+
+### Priority 1 (High) - ✅ Fixed
+| File | Instances Fixed |
+|------|-----------------|
+| `Views/Charts/CustomPieChartView.swift` | 2 |
+| `Views/Charts/CategoryPieChart.swift` | 1 |
+| `Views/Charts/PriceHistoryChartView.swift` | 7 |
+| `Views/Analytics/AnalyticsView.swift` | 3 |
+| `Views/Analytics/AnalyticsComponents.swift` | 9 |
+| `Views/Analytics/CategoryBreakdownChart.swift` | 2 |
+| `Views/Analytics/SubscriptionComparisonChart.swift` | 2 |
+| `Views/Subscriptions/FeedSubscriptionRow.swift` | 3 |
+| `Views/Subscriptions/SubscriptionCard.swift` | 1 |
+| `Views/Subscriptions/SubscriptionGridCardView.swift` | 1 |
+| `Views/Subscriptions/TrialStatusSection.swift` | 2 |
+| `Views/Conversation/SubscriptionStatusBanner.swift` | 3 |
+
+### Priority 2 (Medium) - ✅ Fixed
+| File | Instances Fixed |
+|------|-----------------|
+| `Models/Domain/PriceChange.swift` | 1 |
+| `Models/Domain/SubscriptionEvent.swift` | 1 |
+| `Models/Domain/Transaction.swift` | 1 |
+| `Views/Sheets/UsageTrackingSheet.swift` | 4 |
+| `Views/People/ContactRowView.swift` | 1 |
+| `Views/Components/PriceChangeBadge.swift` | 2 |
+| `Views/Conversation/SubscriptionTimelineHeader.swift` | 3 |
+| `Views/Groups/Step5ConfigureView.swift` | 10 |
+| `Views/Groups/Step6ReviewView.swift` | 1 |
+
+### Priority 3 (Lower) - ✅ Fixed
+| File | Instances Fixed |
+|------|-----------------|
+| `Views/Search/SearchView.swift` | 2 |
+| `Views/Components/ParticipantBubble.swift` | 1 |
+| `Views/Sheets/PriceChangeConfirmationSheet.swift` | 3 |
+| `Views/Notifications/ReminderSettingsSheet.swift` | 1 |
+| `Views/Transactions/TransactionDetailView.swift` | 1 |
+| `Views/People/PersonSelectionChip.swift` | 1 |
+| `Views/Conversation/CompactGroupHeader.swift` | 1 |
+| `Services/SpotlightIndexingService.swift` | 2 |
+| `Services/SubscriptionEventService.swift` | 2 |
+| `Views/Timeline/TransactionBubbleView.swift` | 2 |
+| `Views/Timeline/TransactionDetailsCard.swift` | 1 |
+| `Views/Timeline/ChatTimelineComponents.swift` | 2 |
+| `Views/Components/InitialsListRow.swift` | 6 (preview) |
+| `Views/Components/ListRowFactory.swift` | 2 |
+| `Views/Components/UnifiedListRow.swift` | 1 |
+| `Views/Components/StatisticsHeaderView.swift` | 1 |
+| `Views/Components/ProfileStatisticsGrid.swift` | 1 |
+| `Views/Components/CategoryContributionList.swift` | 1 |
+| `Views/Timeline/ExpandedDueBubbleContent.swift` | 1 |
+| `Views/Timeline/StatusBannerView.swift` | 1 |
+| `Views/Timeline/SubscriptionAlertBanner.swift` | 1 |
+| `Views/Timeline/TransactionBubbleCard.swift` | 1 |
+| `Views/Conversation/QuickActionButton.swift` | 1 |
+| `Views/Conversation/SystemEventRow.swift` | 1 |
+| `Views/Conversation/Base/BalanceText.swift` | 1 |
+| `Views/Components/ConversationTransactionHelper.swift` | 1 |
+| `Views/Transactions/FeedHeader.swift` | 1 |
+| `Views/Sheets/BulkActionsSheet.swift` | 1 |
+| `Views/Notifications/SendReminderSheet.swift` | 2 |
+| `Services/AnalyticsService.swift` | 1 |
+
+---
+
+## Other Fixes Made This Session
+
+| File | Issue | Status |
+|------|-------|--------|
+| `Views/Subscriptions/SubscriptionsView.swift` | Mock shared subscriptions data | ✅ Fixed |
+| `Views/Subscriptions/SubscriptionDetailView.swift` | Hardcoded currency (5 instances) | ✅ Fixed |
+| `Views/Subscriptions/EditSubscriptionSheet.swift` | Hardcoded currency (5 instances) | ✅ Fixed |
+| `Views/Subscriptions/SubscriptionsComponents.swift` | Hardcoded currency (8 instances) | ✅ Fixed |
+| `Views/Subscriptions/SubscriptionsComponents.swift` | Fake trend data | ✅ Fixed |
+| `Views/Subscriptions/ShareSubscriptionSheet.swift` | Hardcoded currency (4 instances) | ✅ Fixed |
+| `Views/Subscriptions/SubscriptionsView.swift` | Missing pull-to-refresh on Shared tab | ✅ Fixed |
+| `Services/DataManager.swift` | SharedSubscription missing Supabase sync | ✅ Fixed |
+| `Models/Domain/Subscription.swift` | SharedSubscription missing toSupabaseModel | ✅ Fixed |
+| `Views/Settings/AnalyticsInsightsPage.swift` | Hardcoded USD currency | ✅ Fixed |
+
+---
+
+## Edit Sheets Review - ✅ COMPLETED
+
+All Edit Sheets have been reviewed for production readiness:
+
+| Sheet | Status | Notes |
+|-------|--------|-------|
+| `Views/People/EditPersonSheet.swift` | ✅ Ready | Uses callback pattern, form validation, avatar editing |
+| `Views/People/AddGroupSheet.swift` (edit mode) | ✅ Ready | Supports both add/edit via `editingGroup` param |
+| `Views/Transactions/EditTransactionSheet.swift` | ✅ Ready | Full transaction editing, proper error handling |
+
+### Additional Currency Fixes (Edit Sheets Session)
+
+| File | Instances Fixed |
+|------|-----------------|
+| `Views/Transactions/EditTransactionSheet.swift` | 1 |
+| `Views/Search/AdvancedFilterSheet.swift` | 2 |
+| `Views/Groups/Step5ConfigureView.swift` | 1 |
+| `Views/Groups/Step1DetailsView.swift` | 1 |
+| `Views/Analytics/AnalyticsView.swift` | 1 |
+
+---
+
+## Supabase Sync Review - ✅ COMPLETED
+
+All entity types now have proper Supabase sync for CRUD operations:
+
+| Entity | Add | Update | Delete | Notes |
+|--------|-----|--------|--------|-------|
+| Person | ✅ | ✅ | ✅ | Full sync with Spotlight indexing |
+| Group | ✅ | ✅ | ✅ | Including group members sync |
+| Subscription | ✅ | ✅ | ✅ | Full sync with Spotlight indexing |
+| SharedSubscription | ✅ | ✅ | ✅ | Added in previous session |
+| Transaction | ✅ | ✅ | ✅ | Full sync with Spotlight indexing |
+| GroupExpense | ✅ | ✅ | N/A | Synced via group updates |
+| SplitBill | ✅ | ✅ | ✅ | **Fixed this session** |
+| SplitParticipant | ✅ | ✅ | N/A | **Fixed this session** - synced with split bills |
+| PriceChange | ✅ | N/A | N/A | **Fixed this session** |
+
+### Fixes Made This Session
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `Models/Domain/SplitBill.swift` | Missing `toSupabaseModel` | Added conversion methods for SplitBill and SplitParticipant |
+| `Models/Domain/PriceChange.swift` | Missing `toSupabaseModel` | Added conversion method |
+| `Services/DataManager.swift` | SplitBill CRUD missing sync | Added Supabase sync to add/update/delete/markAsPaid |
+| `Services/DataManager.swift` | PriceChange missing sync | Added Supabase sync to addPriceChange |
+
+### Bi-directional Sync Infrastructure (Full Coverage)
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `Models/SwiftData/PriceChangeModel.swift` | Missing sync metadata | Added syncVersion, deletedAt, pendingSync, lastSyncedAt |
+| `Models/SwiftData/SubscriptionModel.swift` | SharedSubscriptionModel missing sync metadata | Added sync metadata fields |
+| `Models/SwiftData/GroupModel.swift` | GroupExpenseModel missing sync metadata | Added sync metadata fields |
+| `Services/SyncService.swift` | Missing sync methods | Added syncPriceChanges, syncSharedSubscriptions, syncGroupExpenses |
+| `Services/SyncService.swift` | Missing model extensions | Added `from(remote:)` for PriceChangeModel, SharedSubscriptionModel, GroupExpenseModel |
+| `Services/SyncService.swift` | performFullSync incomplete | Updated to sync all 12 tables |
+
+---
+
+## Contact Flow Review - ✅ COMPLETED
+
+The add contact flow has been reviewed and fixed for production readiness:
+
+### Entry Points
+| Location | Sheet Used | Notes |
+|----------|-----------|-------|
+| QuickActions | AddPersonSheet | Manual entry only |
+| AddGroupSheet | AddPersonSheet | Manual entry when adding group members |
+| PeopleView > Contacts | ContactsListView | View-only, navigates to ContactConversationView |
+
+### Person Supabase Sync Improvements
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `Models/Supabase/SupabaseModels.swift` | Missing personSource field | Added `personSource` to SupabasePerson |
+| `Models/Domain/Person.swift` | Missing personSource in toSupabaseModel | Added personSource.rawValue to conversion |
+| `Services/SyncService.swift` | PersonModel.from(remote:) missing personSource | Added personSource decoding from remote |
+| `Services/SyncService.swift` | updatePersonModel incomplete | Added contactId, relationshipType, personNotes, personSourceRaw |
+| `Services/PersistenceService.swift` | updatePerson missing fields | Added avatar, contactId, preferredPaymentMethod, notificationPreferences, relationshipType, notes, personSource |
+| `Services/PersistenceService.swift` | savePerson missing fields | Added contactPhoto avatar case and all additional fields for updates |
+
+### Flow Summary
+1. **AddPersonSheet** → User enters name/email/phone → DataManager.addPerson() → SwiftData + Supabase sync
+2. **AddPersonFromContactsSheet** → Import from iOS contacts → DataManager.importContact() → DataManager.addPerson()
+3. **Bi-directional sync** → SyncService.syncPersons() pulls from Supabase and creates/updates PersonModel
+
+---
+
+## Transaction Flow Review - ✅ COMPLETED
+
+All pages are properly interlinked for transactions with real-time updates and database sync.
+
+### Data Flow Architecture
+```
+Transaction Created (any sheet)
+    ↓
+DataManager.addTransaction()
+    ↓
+├── PersistenceService.saveTransaction() → SwiftData (local)
+├── indexTransactionInSpotlight() → iOS Spotlight
+├── notifyChange(.transactionAdded) → dataRevision++
+└── SyncService.queueInsert() → Supabase (remote)
+```
+
+### Views with Real-Time Transaction Updates
+
+| View | Update Mechanism | Notes |
+|------|------------------|-------|
+| HomeView > RecentActivitySection | @EnvironmentObject + dataRevision | Shows latest 5 transactions |
+| HomeView > FinancialOverviewGrid | onChange(dataRevision) | Animates income/expense totals |
+| RecentActivityView (Feed) | @EnvironmentObject | Full transaction list with filters |
+| AnalyticsView | @EnvironmentObject | Transaction-based analytics |
+| PersonDetailView | observeEntityWithRelated() | Person's linked transactions |
+| BalanceDetailView | @EnvironmentObject | Balance with transactions |
+| SearchView | @EnvironmentObject | Transaction search results |
+
+### Notification System
+- **DataManager.notifyChange()** - Batches notifications (~16ms frame)
+- **dataChangeSubject** - PassthroughSubject for targeted updates
+- **dataRevision** - Increments on any data change for view refresh
+- **DataRefreshModifiers** - observeEntity(), observeEntities(), refreshOnDataChange()
+
+### Supabase Sync for Transactions
+| Operation | Method | Status |
+|-----------|--------|--------|
+| Add | queueInsert + syncPendingChanges | ✅ Complete |
+| Update | queueUpdate + syncPendingChanges | ✅ Complete |
+| Delete | queueDelete + syncPendingChanges | ✅ Complete |
+| Pull (sync) | syncTransactions + TransactionModel.from(remote:) | ✅ Complete |
+
+### Balance Updates
+- **Split Bills** - Update person.balance via updateBalancesForSplitBill()
+- **Simple Dues** - Update person.balance via createSimpleDue()
+- **Regular Transactions** - Don't affect person.balance (by design)
+
+---
+
+## Conversation Views Review - ✅ COMPLETED
+
+All conversation views have been reviewed for consistency and production readiness.
+
+### Conversation View Architecture
+
+| View | Type | Data Source | Status |
+|------|------|-------------|--------|
+| PersonDetailView | Production | DataManager + observeEntityWithRelated() | ✅ Ready |
+| ContactConversationView | Production | DataManager + real data | ✅ Ready |
+| GroupDetailView | Production | DataManager + real data | ✅ Ready |
+| PersonConversationView | Prototype | Mock data (preview only) | ✅ Acceptable |
+
+### Headers Reviewed
+
+| Component | Currency Formatting | Status |
+|-----------|---------------------|--------|
+| PersonConversationHeader | BalanceText + .asCurrency | ✅ Ready |
+| ContactConversationHeader | BalanceText + .asCurrency | ✅ Ready |
+| GroupConversationHeader | BalanceText + .asCurrency | ✅ Ready |
+| SubscriptionConversationHeader | .asCurrency | ✅ Fixed this session |
+| CompactGroupHeader | ConversationBalance + .asCurrency | ✅ Ready |
+
+### Shared Components Reviewed
+
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| ConversationTransactionCard | Transaction cards in timeline | ✅ Ready (uses .asCurrency) |
+| ConversationInputBar | Message input + transaction button | ✅ Ready |
+| QuickActionButton | Quick payment/request actions | ✅ Ready |
+| BalanceText | Standardized balance display | ✅ Ready (uses .asCurrency) |
+| SharedSubscriptionCostCard | Subscription cost display | ✅ Ready (uses .asCurrency) |
+| SettlementStatusBadge | Settlement status indicators | ✅ Ready |
+
+### Fixes Made This Session
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `Views/Conversation/SubscriptionConversationHeader.swift` | Hardcoded "$" in priceText | Changed to use .asCurrency |
+
+### Notes
+- **PersonConversationView** contains mock data but is only used in its own #Preview block - not used in production navigation
+- All production conversation views properly fetch data from DataManager
+- Currency formatting is consistent across all production components via `.asCurrency` extension
+
+---
+
+## Final Production Fixes - ✅ COMPLETED
+
+### Currency Fixes (Final Session)
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `Views/Transactions/TransactionRowView.swift` | Hardcoded +$/- | Use CurrencyFormatter |
+| `Views/Transactions/TransactionDetailSheet.swift` | Hardcoded $ (3 places) | Use .asCurrency |
+| `Views/People/PersonCard.swift` | Hardcoded +$/-$/$ | Use CurrencyFormatter |
+| `Views/Notifications/ReminderSettingsSheet.swift` | Hardcoded $ | Use .asCurrency |
+| `Views/Search/AdvancedSearchFilterSheet.swift` | Hardcoded "USD" | Use UserSettings.selectedCurrency |
+
+### Widget Currency Support
+
+| File | Fix |
+|------|-----|
+| `SwiffWidgets/WidgetModels.swift` | Added WidgetCurrencyFormatter to read currency from App Groups |
+| `SwiffWidgets/WidgetDataService.swift` | Updated formatted properties to use .asCurrencyString |
+| `SwiffWidgets/UpcomingRenewalsWidget.swift` | Use .asCurrencyString for totals |
+| `Swiff IOS/Services/UserSettings.swift` | Save selectedCurrency to App Groups for widget access |
+
+### DataManager Supabase Sync Fixes
+
+| Method | Issue | Fix |
+|--------|-------|-----|
+| `addAccount()` | Missing Supabase sync | Added queueInsert |
+| `updateAccount()` | Missing Supabase sync | Added queueUpdate |
+| `deleteAccount()` | Missing Supabase sync | Added queueDelete |
+| `addPriceChange()` | Missing notifyChange | Added notifyChange(.subscriptionUpdated) |
+| `createSimpleDue()` | Missing Supabase sync | Added queueInsert for split bills |
+| `bulkDeleteTransactions()` | Missing notify/sync | Added notifyChange + queueDelete |
+| `bulkUpdateCategory()` | Missing notify/sync | Added notifyChange + queueUpdate |
+| `bulkAddTags()` | Missing notify/sync | Added notifyChange + queueUpdate |
+| `updatePersonInternal()` | Missing Supabase sync | Added queueUpdate |
+| `updateSubscriptionInternal()` | Missing Supabase sync | Added queueUpdate |
+| `updateTransactionInternal()` | Missing Supabase sync | Added queueUpdate |
+| `updateGroupInternal()` | Missing Supabase sync | Added queueUpdate |
+
+### Model Updates
+
+| File | Fix |
+|------|-----|
+| `Models/Domain/Account.swift` | Added toSupabaseModel conversion method |
+
+---
+
+## Note on CurrencyFormatter.swift
+
+The `Utilities/CurrencyFormatter.swift` file contains `$` and `USD` strings, but these are **intentionally part of the switch statement** that handles different currencies based on user selection. This file is the central utility that provides the `.asCurrency` extension and properly reads `UserSettings.shared.selectedCurrency` to format currencies correctly.
+
+---
+
+## Total Fixes: 115+ instances across 60+ files
+
+All currency formatting now respects the user's selected currency preference through the `.asCurrency` extension. All CRUD operations properly sync with Supabase backend.

@@ -48,18 +48,12 @@ struct SendReminderSheet: View {
     }
 
     var balanceText: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        let amountStr = formatter.string(from: NSNumber(value: abs(person.balance))) ?? "$0.00"
+        let amountStr = abs(person.balance).asCurrency
         return person.balance > 0 ? "Owes you \(amountStr)" : "You owe \(amountStr)"
     }
 
     var defaultMessage: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        let amountStr = formatter.string(from: NSNumber(value: abs(person.balance))) ?? "$0.00"
+        let amountStr = abs(person.balance).asCurrency
 
         if person.balance > 0 {
             return "Hi \(person.name)! Just a friendly reminder about your outstanding balance of \(amountStr). Let me know when you'd like to settle up. Thanks!"

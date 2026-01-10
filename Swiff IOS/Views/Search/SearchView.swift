@@ -429,7 +429,7 @@ struct SearchView: View {
                 type: .person,
                 title: person.name,
                 subtitle: person.email,
-                metadata: String(format: "$%.2f", person.balance),
+                metadata: person.balance.asCurrency,
                 icon: "person.circle.fill",
                 color: "#007AFF",
                 matchScore: score
@@ -455,7 +455,7 @@ struct SearchView: View {
                 type: .subscription,
                 title: subscription.name,
                 subtitle: subscription.category.rawValue,
-                metadata: String(format: "$%.2f/%@", subscription.price, subscription.billingCycle.shortName),
+                metadata: "\(subscription.price.asCurrency)/\(subscription.billingCycle.shortName)",
                 icon: subscription.icon,
                 color: subscription.color,
                 matchScore: score

@@ -78,7 +78,7 @@ struct QuickActionSheet: View {
             // Header
             HStack {
                 Text("Quick Actions")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(Theme.Fonts.headerLarge)
                     .foregroundColor(Theme.Colors.textPrimary)
 
                 Spacer()
@@ -126,7 +126,7 @@ struct QuickActionSheet: View {
                     icon: "person.fill",
                     title: "Add Person",
                     subtitle: "Add a friend to track balances",
-                    iconColor: Color(red: 1.0, green: 0.592, blue: 0.0),
+                    iconColor: Theme.Colors.brandAccent,
                     showDivider: true
                 ) {
                     showingAddPerson = true

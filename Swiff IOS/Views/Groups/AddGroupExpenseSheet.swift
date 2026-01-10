@@ -82,7 +82,7 @@ struct AddGroupExpenseSheet: View {
                                 .foregroundColor(.wiseSecondaryText)
 
                             HStack {
-                                Text("$")
+                                Text(UserSettings.shared.selectedCurrency.symbol)
                                     .font(.spotifyNumberLarge)
                                     .foregroundColor(.wisePrimaryText)
 
@@ -190,7 +190,7 @@ struct AddGroupExpenseSheet: View {
                             Spacer()
 
                             if amountValue > 0 && !selectedSplitMembers.isEmpty {
-                                Text(String(format: "$%.2f each", amountPerPerson))
+                                Text("\(amountPerPerson.asCurrency) each")
                                     .font(.spotifyLabelLarge)
                                     .foregroundColor(.wiseForestGreen)
                             }
@@ -213,7 +213,7 @@ struct AddGroupExpenseSheet: View {
                                             .foregroundColor(.wisePrimaryText)
 
                                         if amountValue > 0 && selectedSplitMembers.contains(member.id) {
-                                            Text(String(format: "Owes $%.2f", amountPerPerson))
+                                            Text("Owes \(amountPerPerson.asCurrency)")
                                                 .font(.spotifyBodySmall)
                                                 .foregroundColor(.wiseForestGreen)
                                         }
@@ -308,13 +308,9 @@ struct AddGroupExpenseSheet: View {
             notes: notes.trimmingCharacters(in: .whitespaces)
         )
 
-        // Update group with new expense
-        var updatedGroup = group
-        updatedGroup.expenses.append(expense)
-        updatedGroup.totalAmount += expense.amount
-
+        // Use DataManager's addGroupExpense to properly sync with Supabase
         do {
-            try dataManager.updateGroup(updatedGroup)
+            try dataManager.addGroupExpense(expense, toGroup: group.id)
             onExpenseAdded()
             dismiss()
         } catch {

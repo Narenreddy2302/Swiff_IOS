@@ -168,7 +168,7 @@ struct EditTransactionSheet: View {
                                 .foregroundColor(.wiseSecondaryText)
 
                             HStack {
-                                Text("$")
+                                Text(CurrencyFormatter.shared.getCurrencySymbol())
                                     .font(.spotifyNumberLarge)
                                     .foregroundColor(.wisePrimaryText)
 

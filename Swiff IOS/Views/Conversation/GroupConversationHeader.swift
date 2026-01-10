@@ -60,7 +60,7 @@ struct GroupConversationHeader: View {
                         .frame(width: 4, height: 4)
 
                     // Total amount
-                    Text(String(format: "$%.2f total", totalAmount))
+                    Text("\(totalAmount.asCurrency) total")
                         .font(Theme.Fonts.labelLarge)
                         .foregroundColor(.wiseSecondaryText)
                 }

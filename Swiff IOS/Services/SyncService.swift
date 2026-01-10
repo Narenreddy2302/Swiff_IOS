@@ -240,33 +240,43 @@ final class SyncService: ObservableObject {
         }
 
         isSyncing = true
-        syncProgress = .syncing(completed: 0, total: 10) // Approximate
+        syncProgress = .syncing(completed: 0, total: 12) // Updated count
 
         do {
             // Sync each table
             try await syncPersons(modelContext: modelContext)
-            syncProgress = .syncing(completed: 1, total: 10)
+            syncProgress = .syncing(completed: 1, total: 12)
 
             try await syncAccounts(modelContext: modelContext)
-            syncProgress = .syncing(completed: 2, total: 10)
+            syncProgress = .syncing(completed: 2, total: 12)
 
             try await syncGroups(modelContext: modelContext)
-            syncProgress = .syncing(completed: 3, total: 10)
+            syncProgress = .syncing(completed: 3, total: 12)
 
             try await syncGroupMembers(modelContext: modelContext)
-            syncProgress = .syncing(completed: 4, total: 10)
+            syncProgress = .syncing(completed: 4, total: 12)
+
+            try await syncGroupExpenses(modelContext: modelContext)
+            syncProgress = .syncing(completed: 5, total: 12)
 
             try await syncSubscriptions(modelContext: modelContext)
-            syncProgress = .syncing(completed: 5, total: 10)
+            syncProgress = .syncing(completed: 6, total: 12)
+
+            try await syncSharedSubscriptions(modelContext: modelContext)
+            syncProgress = .syncing(completed: 7, total: 12)
+
+            try await syncPriceChanges(modelContext: modelContext)
+            syncProgress = .syncing(completed: 8, total: 12)
 
             try await syncTransactions(modelContext: modelContext)
-            syncProgress = .syncing(completed: 6, total: 10)
+            syncProgress = .syncing(completed: 9, total: 12)
 
             try await syncSplitBills(modelContext: modelContext)
-            syncProgress = .syncing(completed: 7, total: 10)
+            syncProgress = .syncing(completed: 10, total: 12)
 
             // Save context
             try modelContext.save()
+            syncProgress = .syncing(completed: 11, total: 12)
 
             // Update last sync date
             lastSyncDate = Date()
@@ -386,6 +396,10 @@ final class SyncService: ObservableObject {
         model.avatarEmoji = remote.avatarEmoji
         model.avatarInitials = remote.avatarInitials
         model.avatarColorIndex = remote.avatarColorIndex ?? 0
+        model.contactId = remote.contactId
+        model.relationshipType = remote.relationshipType
+        model.personNotes = remote.notes
+        model.personSourceRaw = remote.personSource ?? PersonSource.manual.rawValue
         model.syncVersion = remote.syncVersion
         model.lastModifiedDate = remote.updatedAt
         model.deletedAt = remote.deletedAt
@@ -570,6 +584,103 @@ final class SyncService: ObservableObject {
         }
     }
 
+    private func syncPriceChanges(modelContext: ModelContext) async throws {
+        let remotePriceChanges: [SupabasePriceChange] = try await supabase.fetchUserRecords(
+            from: SupabaseConfig.Tables.priceChanges
+        )
+
+        for remote in remotePriceChanges {
+            let fetchDescriptor = FetchDescriptor<PriceChangeModel>(
+                predicate: #Predicate { $0.id == remote.id }
+            )
+
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                if remote.syncVersion > existing.syncVersion {
+                    existing.oldPrice = NSDecimalNumber(decimal: remote.oldPrice).doubleValue
+                    existing.newPrice = NSDecimalNumber(decimal: remote.newPrice).doubleValue
+                    existing.changeDate = remote.changeDate
+                    existing.reason = remote.reason
+                    existing.detectedAutomatically = remote.detectedAutomatically
+                    existing.syncVersion = remote.syncVersion
+                    existing.pendingSync = false
+                }
+            } else if remote.deletedAt == nil {
+                let newPriceChange = PriceChangeModel.from(remote: remote)
+                modelContext.insert(newPriceChange)
+            }
+        }
+    }
+
+    private func syncSharedSubscriptions(modelContext: ModelContext) async throws {
+        let remoteSharedSubs: [SupabaseSharedSubscription] = try await supabase.fetchUserRecords(
+            from: SupabaseConfig.Tables.sharedSubscriptions
+        )
+
+        for remote in remoteSharedSubs {
+            let fetchDescriptor = FetchDescriptor<SharedSubscriptionModel>(
+                predicate: #Predicate { $0.id == remote.id }
+            )
+
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                if remote.syncVersion > existing.syncVersion {
+                    existing.subscriptionID = remote.subscriptionId
+                    existing.sharedByID = remote.sharedByUserId
+                    if let individualCost = remote.individualCost {
+                        existing.individualCost = NSDecimalNumber(decimal: individualCost).doubleValue
+                    }
+                    existing.isAccepted = remote.isAccepted
+                    existing.costSplitRaw = remote.costSplitType
+                    existing.notes = remote.notes ?? ""
+                    existing.syncVersion = remote.syncVersion
+                    existing.pendingSync = false
+                }
+            } else if remote.deletedAt == nil {
+                let newSharedSub = SharedSubscriptionModel.from(remote: remote)
+                modelContext.insert(newSharedSub)
+            }
+        }
+    }
+
+    private func syncGroupExpenses(modelContext: ModelContext) async throws {
+        let remoteExpenses: [SupabaseGroupExpense] = try await supabase.fetchUserRecords(
+            from: SupabaseConfig.Tables.groupExpenses
+        )
+
+        for remote in remoteExpenses {
+            let fetchDescriptor = FetchDescriptor<GroupExpenseModel>(
+                predicate: #Predicate { $0.id == remote.id }
+            )
+
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                if remote.syncVersion > existing.syncVersion {
+                    existing.title = remote.title
+                    existing.amount = NSDecimalNumber(decimal: remote.amount).doubleValue
+                    // Use paidByPersonId first, then paidByUserId
+                    if let paidBy = remote.paidByPersonId ?? remote.paidByUserId {
+                        existing.paidByID = paidBy
+                    }
+                    existing.splitBetweenIDs = remote.splitBetweenPersonIds
+                    existing.categoryRaw = remote.category
+                    existing.isSettled = remote.isSettled
+                    existing.date = remote.date
+                    existing.notes = remote.notes ?? ""
+                    existing.receiptPath = remote.receiptPath
+                    existing.syncVersion = remote.syncVersion
+                    existing.pendingSync = false
+                }
+            } else if remote.deletedAt == nil {
+                let newExpense = GroupExpenseModel.from(remote: remote)
+                modelContext.insert(newExpense)
+            }
+        }
+    }
+
     // MARK: - Realtime Subscriptions
 
     /// Start listening to realtime changes
@@ -607,12 +718,226 @@ final class SyncService: ObservableObject {
     }
 
     private func handleRealtimeMessage(_ message: RealtimeMessage, modelContext: ModelContext) async {
-        // Handle incoming realtime changes
-        // This would decode the message and apply changes to local SwiftData
-        print("Realtime update on \(message.table): \(message.eventType)")
+        print("📡 Realtime update on \(message.table): \(message.eventType)")
 
-        // Trigger an incremental sync for the affected table
-        // In production, you'd decode the payload directly
+        // Handle the realtime change based on table and event type
+        do {
+            switch message.table {
+            case SupabaseConfig.Tables.transactions:
+                try await handleTransactionChange(message, modelContext: modelContext)
+            case SupabaseConfig.Tables.subscriptions:
+                try await handleSubscriptionChange(message, modelContext: modelContext)
+            case SupabaseConfig.Tables.persons:
+                try await handlePersonChange(message, modelContext: modelContext)
+            case SupabaseConfig.Tables.groups:
+                try await handleGroupChange(message, modelContext: modelContext)
+            default:
+                print("⚠️ Unknown table in realtime message: \(message.table)")
+            }
+
+            // Notify DataManager to reload data after applying changes
+            await MainActor.run {
+                DataManager.shared.loadAllData()
+            }
+        } catch {
+            print("❌ Failed to handle realtime message: \(error)")
+        }
+    }
+
+    // MARK: - Realtime Change Handlers
+
+    private func handleTransactionChange(_ message: RealtimeMessage, modelContext: ModelContext) async throws {
+        guard let newRecord = message.newRecord else {
+            if message.isDelete, let oldRecord = message.oldRecord,
+               let idString = oldRecord["id"] as? String,
+               let id = UUID(uuidString: idString) {
+                // Handle delete
+                let fetchDescriptor = FetchDescriptor<TransactionModel>(
+                    predicate: #Predicate { $0.id == id }
+                )
+                if let existing = try modelContext.fetch(fetchDescriptor).first {
+                    modelContext.delete(existing)
+                    try modelContext.save()
+                    print("🗑️ Transaction deleted via realtime: \(id)")
+                }
+            }
+            return
+        }
+
+        // Convert dictionary to JSON data, then decode
+        let jsonData = try JSONSerialization.data(withJSONObject: newRecord)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let remote = try decoder.decode(SupabaseTransaction.self, from: jsonData)
+
+        // Apply the change
+        await applyTransactionChange(remote, modelContext: modelContext)
+        try modelContext.save()
+        print("✅ Transaction synced via realtime: \(remote.title)")
+    }
+
+    private func handleSubscriptionChange(_ message: RealtimeMessage, modelContext: ModelContext) async throws {
+        guard let newRecord = message.newRecord else {
+            if message.isDelete, let oldRecord = message.oldRecord,
+               let idString = oldRecord["id"] as? String,
+               let id = UUID(uuidString: idString) {
+                // Handle delete
+                let fetchDescriptor = FetchDescriptor<SubscriptionModel>(
+                    predicate: #Predicate { $0.id == id }
+                )
+                if let existing = try modelContext.fetch(fetchDescriptor).first {
+                    modelContext.delete(existing)
+                    try modelContext.save()
+                    print("🗑️ Subscription deleted via realtime: \(id)")
+                }
+            }
+            return
+        }
+
+        let jsonData = try JSONSerialization.data(withJSONObject: newRecord)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let remote = try decoder.decode(SupabaseSubscription.self, from: jsonData)
+
+        await applySubscriptionChange(remote, modelContext: modelContext)
+        try modelContext.save()
+        print("✅ Subscription synced via realtime: \(remote.name)")
+    }
+
+    private func handlePersonChange(_ message: RealtimeMessage, modelContext: ModelContext) async throws {
+        guard let newRecord = message.newRecord else {
+            if message.isDelete, let oldRecord = message.oldRecord,
+               let idString = oldRecord["id"] as? String,
+               let id = UUID(uuidString: idString) {
+                // Handle delete
+                let fetchDescriptor = FetchDescriptor<PersonModel>(
+                    predicate: #Predicate { $0.id == id }
+                )
+                if let existing = try modelContext.fetch(fetchDescriptor).first {
+                    modelContext.delete(existing)
+                    try modelContext.save()
+                    print("🗑️ Person deleted via realtime: \(id)")
+                }
+            }
+            return
+        }
+
+        let jsonData = try JSONSerialization.data(withJSONObject: newRecord)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let remote = try decoder.decode(SupabasePerson.self, from: jsonData)
+
+        await applyPersonChange(remote, modelContext: modelContext)
+        try modelContext.save()
+        print("✅ Person synced via realtime: \(remote.name)")
+    }
+
+    private func handleGroupChange(_ message: RealtimeMessage, modelContext: ModelContext) async throws {
+        guard let newRecord = message.newRecord else {
+            if message.isDelete, let oldRecord = message.oldRecord,
+               let idString = oldRecord["id"] as? String,
+               let id = UUID(uuidString: idString) {
+                // Handle delete
+                let fetchDescriptor = FetchDescriptor<GroupModel>(
+                    predicate: #Predicate { $0.id == id }
+                )
+                if let existing = try modelContext.fetch(fetchDescriptor).first {
+                    modelContext.delete(existing)
+                    try modelContext.save()
+                    print("🗑️ Group deleted via realtime: \(id)")
+                }
+            }
+            return
+        }
+
+        let jsonData = try JSONSerialization.data(withJSONObject: newRecord)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let remote = try decoder.decode(SupabaseGroup.self, from: jsonData)
+
+        await applyGroupChange(remote, modelContext: modelContext)
+        try modelContext.save()
+        print("✅ Group synced via realtime: \(remote.name)")
+    }
+
+    // MARK: - Apply Change Helpers
+
+    private func applySubscriptionChange(_ remote: SupabaseSubscription, modelContext: ModelContext) async {
+        let fetchDescriptor = FetchDescriptor<SubscriptionModel>(
+            predicate: #Predicate { $0.id == remote.id }
+        )
+
+        do {
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                // Update existing if remote is newer
+                if remote.syncVersion > existing.syncVersion {
+                    existing.name = remote.name
+                    existing.price = NSDecimalNumber(decimal: remote.price).doubleValue
+                    existing.billingCycle = remote.billingCycle
+                    existing.category = remote.category
+                    existing.isActive = remote.isActive
+                    existing.syncVersion = remote.syncVersion
+                }
+            } else if remote.deletedAt == nil {
+                // Insert new
+                let newSubscription = SubscriptionModel.from(remote: remote)
+                modelContext.insert(newSubscription)
+            }
+        } catch {
+            print("Failed to apply subscription change: \(error)")
+        }
+    }
+
+    private func applyPersonChange(_ remote: SupabasePerson, modelContext: ModelContext) async {
+        let fetchDescriptor = FetchDescriptor<PersonModel>(
+            predicate: #Predicate { $0.id == remote.id }
+        )
+
+        do {
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                if remote.syncVersion > existing.syncVersion {
+                    existing.name = remote.name
+                    existing.email = remote.email ?? ""
+                    existing.phone = remote.phone ?? ""
+                    existing.balance = NSDecimalNumber(decimal: remote.balance).doubleValue
+                    existing.syncVersion = remote.syncVersion
+                }
+            } else if remote.deletedAt == nil {
+                let newPerson = PersonModel.from(remote: remote)
+                modelContext.insert(newPerson)
+            }
+        } catch {
+            print("Failed to apply person change: \(error)")
+        }
+    }
+
+    private func applyGroupChange(_ remote: SupabaseGroup, modelContext: ModelContext) async {
+        let fetchDescriptor = FetchDescriptor<GroupModel>(
+            predicate: #Predicate { $0.id == remote.id }
+        )
+
+        do {
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                if remote.syncVersion > existing.syncVersion {
+                    existing.name = remote.name
+                    existing.groupDescription = remote.description ?? ""
+                    existing.emoji = remote.emoji ?? "👥"
+                    existing.totalAmount = NSDecimalNumber(decimal: remote.totalAmount).doubleValue
+                    existing.syncVersion = remote.syncVersion
+                }
+            } else if remote.deletedAt == nil {
+                let newGroup = GroupModel.from(remote: remote)
+                modelContext.insert(newGroup)
+            }
+        } catch {
+            print("Failed to apply group change: \(error)")
+        }
     }
 
     // MARK: - Persistence
@@ -767,6 +1092,9 @@ extension PersonModel {
             notifPrefs = NotificationPreferences()
         }
 
+        // Decode person source
+        let personSource = remote.personSource.flatMap { PersonSource(rawValue: $0) } ?? .manual
+
         let model = PersonModel(
             id: remote.id,
             name: remote.name,
@@ -780,7 +1108,8 @@ extension PersonModel {
             preferredPaymentMethod: remote.preferredPaymentMethod.flatMap { PaymentMethod(rawValue: $0) },
             notificationPreferences: notifPrefs,
             relationshipType: remote.relationshipType,
-            notes: remote.notes
+            notes: remote.notes,
+            personSource: personSource
         )
         model.syncVersion = remote.syncVersion
         model.deletedAt = remote.deletedAt
@@ -925,6 +1254,87 @@ extension SplitBillModel {
         splitBill.createdDate = remote.createdAt
 
         let model = SplitBillModel(from: splitBill)
+        model.syncVersion = remote.syncVersion
+        model.deletedAt = remote.deletedAt
+        model.pendingSync = false
+        return model
+    }
+}
+
+extension PriceChangeModel {
+    /// Create from Supabase remote model
+    static func from(remote: SupabasePriceChange) -> PriceChangeModel {
+        let model = PriceChangeModel(
+            id: remote.id,
+            subscriptionId: remote.subscriptionId,
+            oldPrice: NSDecimalNumber(decimal: remote.oldPrice).doubleValue,
+            newPrice: NSDecimalNumber(decimal: remote.newPrice).doubleValue,
+            changeDate: remote.changeDate,
+            reason: remote.reason,
+            detectedAutomatically: remote.detectedAutomatically
+        )
+        model.syncVersion = remote.syncVersion
+        model.deletedAt = remote.deletedAt
+        model.pendingSync = false
+        return model
+    }
+}
+
+extension SharedSubscriptionModel {
+    /// Create from Supabase remote model
+    static func from(remote: SupabaseSharedSubscription) -> SharedSubscriptionModel {
+        // Parse cost split type
+        let costSplit = CostSplitType(rawValue: remote.costSplitType) ?? .equal
+
+        // Build sharedWithIDs from remote
+        var sharedWithIDs: [UUID] = []
+        if let personId = remote.sharedWithPersonId {
+            sharedWithIDs.append(personId)
+        }
+        if let userId = remote.sharedWithUserId {
+            sharedWithIDs.append(userId)
+        }
+
+        let model = SharedSubscriptionModel(
+            id: remote.id,
+            subscriptionID: remote.subscriptionId,
+            sharedByID: remote.sharedByUserId,
+            sharedWithIDs: sharedWithIDs,
+            costSplit: costSplit
+        )
+        if let individualCost = remote.individualCost {
+            model.individualCost = NSDecimalNumber(decimal: individualCost).doubleValue
+        }
+        model.isAccepted = remote.isAccepted
+        model.notes = remote.notes ?? ""
+        model.createdDate = remote.createdAt
+        model.syncVersion = remote.syncVersion
+        model.deletedAt = remote.deletedAt
+        model.pendingSync = false
+        return model
+    }
+}
+
+extension GroupExpenseModel {
+    /// Create from Supabase remote model
+    static func from(remote: SupabaseGroupExpense) -> GroupExpenseModel {
+        let category = TransactionCategory(rawValue: remote.category) ?? .other
+
+        // Use paidByPersonId first, then paidByUserId
+        let paidByID = remote.paidByPersonId ?? remote.paidByUserId ?? UUID()
+
+        let model = GroupExpenseModel(
+            id: remote.id,
+            title: remote.title,
+            amount: NSDecimalNumber(decimal: remote.amount).doubleValue,
+            paidByID: paidByID,
+            splitBetweenIDs: remote.splitBetweenPersonIds,
+            category: category,
+            date: remote.date,
+            notes: remote.notes ?? "",
+            receiptPath: remote.receiptPath,
+            isSettled: remote.isSettled
+        )
         model.syncVersion = remote.syncVersion
         model.deletedAt = remote.deletedAt
         model.pendingSync = false

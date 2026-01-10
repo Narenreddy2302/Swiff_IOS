@@ -68,6 +68,26 @@ struct SplitParticipant: Identifiable, Codable, Equatable, Sendable {
         self.percentage = percentage
         self.shares = shares
     }
+
+    // MARK: - Supabase Conversion
+
+    func toSupabaseModel(splitBillId: UUID) -> SupabaseSplitParticipant {
+        SupabaseSplitParticipant(
+            id: id,
+            splitBillId: splitBillId,
+            personId: personId,
+            participantUserId: nil,
+            amount: Decimal(amount),
+            hasPaid: hasPaid,
+            paymentDate: paymentDate,
+            percentage: percentage.map { Decimal($0) },
+            shares: shares,
+            createdAt: Date(),
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
+    }
 }
 
 // MARK: - Split Bill Model
@@ -137,5 +157,32 @@ struct SplitBill: Identifiable, Codable, Sendable {
         self.date = date
         self.createdDate = Date()
         self.groupId = groupId
+    }
+
+    // MARK: - Supabase Conversion
+
+    func toSupabaseModel(userId: UUID) -> SupabaseSplitBill {
+        SupabaseSplitBill(
+            id: id,
+            userId: userId,
+            title: title,
+            totalAmount: Decimal(totalAmount),
+            paidByPersonId: paidById,
+            paidByUserId: nil,
+            splitType: splitType.rawValue,
+            notes: notes.isEmpty ? nil : notes,
+            category: category.rawValue,
+            date: date,
+            groupId: groupId,
+            createdAt: createdDate,
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
+    }
+
+    /// Convert all participants to Supabase models
+    func participantsToSupabaseModels() -> [SupabaseSplitParticipant] {
+        participants.map { $0.toSupabaseModel(splitBillId: id) }
     }
 }

@@ -156,4 +156,61 @@ public struct Person: Identifiable, Codable {
 
         return "\(title) • \(timeText)"
     }
+
+    // MARK: - Supabase Conversion
+
+    /// Converts this domain model to a Supabase-compatible model for API upload
+    /// - Parameter userId: The authenticated user's ID from Supabase
+    /// - Returns: SupabasePerson ready for API insertion/update
+    public func toSupabaseModel(userId: UUID) -> SupabasePerson {
+        // Convert avatar type to Supabase format
+        var avatarTypeStr: String?
+        var avatarEmoji: String?
+        var avatarInitials: String?
+        var avatarColorIdx: Int?
+
+        switch avatarType {
+        case .emoji(let emoji):
+            avatarTypeStr = "emoji"
+            avatarEmoji = emoji
+        case .initials(let initials, let colorIndex):
+            avatarTypeStr = "initials"
+            avatarInitials = initials
+            avatarColorIdx = colorIndex
+        case .photo:
+            avatarTypeStr = "photo"
+        case .contactPhoto:
+            avatarTypeStr = "contact_photo"
+        }
+
+        // Convert notification preferences
+        let notifPrefsData = NotificationPreferencesData(
+            enableReminders: notificationPreferences.enableReminders,
+            reminderFrequency: notificationPreferences.reminderFrequency.days,
+            preferredContactMethod: notificationPreferences.preferredContactMethod.rawValue
+        )
+
+        return SupabasePerson(
+            id: self.id,
+            userId: userId,
+            name: self.name,
+            email: self.email.isEmpty ? nil : self.email,
+            phone: self.phone.isEmpty ? nil : self.phone,
+            balance: Decimal(self.balance),
+            avatarType: avatarTypeStr,
+            avatarEmoji: avatarEmoji,
+            avatarInitials: avatarInitials,
+            avatarColorIndex: avatarColorIdx,
+            contactId: self.contactId,
+            preferredPaymentMethod: self.preferredPaymentMethod?.rawValue,
+            notificationPreferences: notifPrefsData,
+            relationshipType: self.relationshipType,
+            notes: self.notes,
+            personSource: self.personSource.rawValue,
+            createdAt: self.createdDate,
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
+    }
 }

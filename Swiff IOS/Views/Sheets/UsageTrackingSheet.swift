@@ -124,7 +124,7 @@ struct UsageTrackingSheet: View {
                         .font(.spotifyHeadingMedium)
                         .foregroundColor(.wisePrimaryText)
 
-                    Text(String(format: "$%.2f/%@", subscription.price, subscription.billingCycle.displayShort))
+                    Text("\(subscription.price.asCurrency)/\(subscription.billingCycle.displayShort)")
                         .font(.spotifyCaptionMedium)
                         .foregroundColor(.wiseSecondaryText)
                 }
@@ -257,7 +257,7 @@ struct UsageTrackingSheet: View {
 
                         Spacer()
 
-                        Text(String(format: "$%.2f", cost))
+                        Text(cost.asCurrency)
                             .font(.spotifyBodyMedium)
                             .fontWeight(.semibold)
                             .foregroundColor(cost < 1.0 ? .wiseBrightGreen : .wisePrimaryText)
@@ -341,14 +341,14 @@ struct UsageTrackingSheet: View {
     private var usageInsightDescription: String {
         switch usageRating {
         case .excellent:
-            return "You're using \(subscription.name) frequently. At \(costPerUse.map { String(format: "$%.2f", $0) } ?? "N/A") per use, this subscription is providing good value."
+            return "You're using \(subscription.name) frequently. At \(costPerUse.map { $0.asCurrency } ?? "N/A") per use, this subscription is providing good value."
         case .good:
             return "You're using \(subscription.name) regularly. Consider if you could use it more to maximize value."
         case .low:
             return "Your usage is low. You might want to evaluate if this subscription is worth keeping."
         case .inactive:
             if let days = daysSinceLastUsed {
-                return "You haven't used \(subscription.name) in \(days) days. Consider cancelling to save \(String(format: "$%.2f", subscription.monthlyEquivalent))/month."
+                return "You haven't used \(subscription.name) in \(days) days. Consider cancelling to save \(subscription.monthlyEquivalent.asCurrency)/month."
             }
             return "Consider whether you still need this subscription."
         case .unused:

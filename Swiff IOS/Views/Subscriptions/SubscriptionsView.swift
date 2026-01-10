@@ -70,13 +70,7 @@ struct SubscriptionsView: View {
     }
 
     var filteredSharedSubscriptions: [SharedSubscription] {
-        // Use mock data if no real shared subscriptions exist (for UI testing)
-        var result: [SharedSubscription]
-        if dataManager.sharedSubscriptions.isEmpty {
-            result = mockSharedSubscriptions
-        } else {
-            result = dataManager.sharedSubscriptions
-        }
+        var result = dataManager.sharedSubscriptions
 
         // 1. Search Filter
         if !searchText.isEmpty {
@@ -109,137 +103,6 @@ struct SubscriptionsView: View {
         result.sort { $0.createdDate > $1.createdDate }
 
         return result
-    }
-
-    // MARK: - Mock Data for UI Testing
-    private var mockSharedSubscriptions: [SharedSubscription] {
-        let mockPersonIds = [UUID(), UUID(), UUID(), UUID(), UUID()]
-
-        var netflix = SharedSubscription(
-            subscriptionId: UUID(),
-            sharedBy: mockPersonIds[0],
-            sharedWith: Array(mockPersonIds[1...3]),
-            costSplit: .equal
-        )
-        netflix.individualCost = 5.49
-        netflix.isAccepted = true
-        netflix.notes = "Netflix Premium"
-        netflix.balance = 0
-        netflix.balanceStatus = .settled
-        netflix.billingCycle = .monthly
-        netflix.nextBillingDate =
-            Calendar.current.date(byAdding: .day, value: 15, to: Date()) ?? Date()
-        netflix.members = [
-            SharedMember(name: "You"),
-            SharedMember(name: "Mom"),
-            SharedMember(name: "Dad"),
-            SharedMember(name: "Sis"),
-        ]
-
-        var spotify = SharedSubscription(
-            subscriptionId: UUID(),
-            sharedBy: mockPersonIds[1],
-            sharedWith: Array(mockPersonIds[0...4]),
-            costSplit: .equal
-        )
-        spotify.individualCost = 2.99
-        spotify.isAccepted = true
-        spotify.notes = "Spotify Family"
-        spotify.balance = -3.40
-        spotify.balanceStatus = .youOwe
-        spotify.billingCycle = .monthly
-        spotify.nextBillingDate =
-            Calendar.current.date(byAdding: .day, value: 5, to: Date()) ?? Date()
-        spotify.members = [
-            SharedMember(name: "Mike"),
-            SharedMember(name: "You"),
-            SharedMember(name: "Sarah"),
-            SharedMember(name: "Alex"),
-            SharedMember(name: "Tom"),
-        ]
-
-        var disney = SharedSubscription(
-            subscriptionId: UUID(),
-            sharedBy: mockPersonIds[2],
-            sharedWith: [mockPersonIds[0], mockPersonIds[1]],
-            costSplit: .equal
-        )
-        disney.individualCost = 4.66
-        disney.isAccepted = true
-        disney.notes = "Disney+"
-        disney.balance = 4.66
-        disney.balanceStatus = .owesYou
-        disney.billingCycle = .monthly
-        disney.nextBillingDate =
-            Calendar.current.date(byAdding: .day, value: 20, to: Date()) ?? Date()
-        disney.members = [
-            SharedMember(name: "You"),
-            SharedMember(name: "James"),
-            SharedMember(name: "Emma"),
-        ]
-
-        var youtube = SharedSubscription(
-            subscriptionId: UUID(),
-            sharedBy: mockPersonIds[0],
-            sharedWith: Array(mockPersonIds[1...4]),
-            costSplit: .equal
-        )
-        youtube.individualCost = 4.59
-        youtube.isAccepted = true
-        youtube.notes = "YouTube Premium"
-        youtube.balance = 0
-        youtube.balanceStatus = .settled
-        youtube.billingCycle = .monthly
-        youtube.nextBillingDate =
-            Calendar.current.date(byAdding: .day, value: 22, to: Date()) ?? Date()
-        youtube.members = [
-            SharedMember(name: "You"),
-            SharedMember(name: "Mom"),
-            SharedMember(name: "Dad"),
-            SharedMember(name: "Sis"),
-        ]
-
-        var icloud = SharedSubscription(
-            subscriptionId: UUID(),
-            sharedBy: mockPersonIds[3],
-            sharedWith: [mockPersonIds[0], mockPersonIds[1]],
-            costSplit: .equal
-        )
-        icloud.individualCost = 0.99
-        icloud.isAccepted = true
-        icloud.notes = "iCloud 200GB"
-        icloud.balance = 0.99
-        icloud.balanceStatus = .owesYou
-        icloud.billingCycle = .monthly
-        icloud.nextBillingDate =
-            Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
-        icloud.members = [
-            SharedMember(name: "You"),
-            SharedMember(name: "Lisa"),
-            SharedMember(name: "David"),
-        ]
-
-        var hbo = SharedSubscription(
-            subscriptionId: UUID(),
-            sharedBy: mockPersonIds[4],
-            sharedWith: Array(mockPersonIds[0...2]),
-            costSplit: .equal
-        )
-        hbo.individualCost = 3.99
-        hbo.isAccepted = true
-        hbo.notes = "HBO Max"
-        hbo.balance = -3.99
-        hbo.balanceStatus = .youOwe
-        hbo.billingCycle = .monthly
-        hbo.nextBillingDate = Calendar.current.date(byAdding: .day, value: 12, to: Date()) ?? Date()
-        hbo.members = [
-            SharedMember(name: "You"),
-            SharedMember(name: "Lisa"),
-            SharedMember(name: "David"),
-            SharedMember(name: "Kevin"),
-        ]
-
-        return [netflix, spotify, disney, youtube, icloud, hbo]
     }
 
     // Calculation properties for header
@@ -362,12 +225,8 @@ struct SubscriptionsView: View {
                             .transition(.move(edge: .leading))
                         }
                     } else {
-                        // Shared tab - check if we have any base data (real or mock)
-                        let hasBaseData =
-                            !dataManager.sharedSubscriptions.isEmpty
-                            || !mockSharedSubscriptions.isEmpty
-
-                        if !hasBaseData && !dataManager.isLoading {
+                        // Shared tab
+                        if dataManager.sharedSubscriptions.isEmpty && !dataManager.isLoading {
                             // No shared subscriptions at all - still show stats
                             ScrollView {
                                 VStack(spacing: 20) {
@@ -381,6 +240,11 @@ struct SubscriptionsView: View {
                                     EmptySharedSubscriptionsView()
                                 }
                                 .padding(.bottom, 100)
+                            }
+                            .refreshable {
+                                HapticManager.shared.pullToRefresh()
+                                dataManager.loadAllData()
+                                ToastManager.shared.showSuccess("Refreshed")
                             }
                         } else if filteredSharedSubscriptions.isEmpty && selectedCategory != nil {
                             // Category filter has no matches
@@ -406,6 +270,11 @@ struct SubscriptionsView: View {
                                 }
                                 .padding(.bottom, 100)
                             }
+                            .refreshable {
+                                HapticManager.shared.pullToRefresh()
+                                dataManager.loadAllData()
+                                ToastManager.shared.showSuccess("Refreshed")
+                            }
                             .transition(.move(edge: .trailing))
                         } else {
                             ScrollView {
@@ -430,6 +299,11 @@ struct SubscriptionsView: View {
                                     )
                                 }
                                 .padding(.bottom, 100)
+                            }
+                            .refreshable {
+                                HapticManager.shared.pullToRefresh()
+                                dataManager.loadAllData()
+                                ToastManager.shared.showSuccess("Refreshed")
                             }
                             .transition(.move(edge: .trailing))
                         }

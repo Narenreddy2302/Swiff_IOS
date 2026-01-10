@@ -229,7 +229,7 @@ struct AdvancedFilterSheet: View {
                         .foregroundColor(.wiseSecondaryText)
 
                     HStack {
-                        Text("$")
+                        Text(CurrencyFormatter.shared.getCurrencySymbol())
                             .font(.spotifyBodyLarge)
                             .foregroundColor(.wisePrimaryText)
 
@@ -255,7 +255,7 @@ struct AdvancedFilterSheet: View {
                         .foregroundColor(.wiseSecondaryText)
 
                     HStack {
-                        Text("$")
+                        Text(CurrencyFormatter.shared.getCurrencySymbol())
                             .font(.spotifyBodyLarge)
                             .foregroundColor(.wisePrimaryText)
 

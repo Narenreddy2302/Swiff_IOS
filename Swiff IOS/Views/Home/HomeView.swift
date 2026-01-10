@@ -11,11 +11,8 @@ import SwiftUI
 // MARK: - Home View
 struct HomeView: View {
     @Binding var selectedTab: Int
-    @State private var showingSettings = false
     @State private var showingProfile = false
-    @State private var showingSearch = false
     @State private var showingQuickActions = false
-    @State private var showingAddSplitBill = false
 
     var body: some View {
         NavigationStack {
@@ -28,9 +25,7 @@ struct HomeView: View {
                     VStack(spacing: 0) {
                         // Top Header with Profile and Actions
                         TopHeaderSection(
-                            showingSettings: $showingSettings,
                             showingProfile: $showingProfile,
-                            showingSearch: $showingSearch,
                             showingQuickActions: $showingQuickActions
                         )
 
@@ -53,14 +48,8 @@ struct HomeView: View {
                 .navigationBarHidden(true)
             }
         }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView()
-        }
         .sheet(isPresented: $showingProfile) {
             ProfileView()
-        }
-        .sheet(isPresented: $showingSearch) {
-            SearchView()
         }
         .sheet(isPresented: $showingQuickActions) {
             QuickActionSheet()
@@ -70,9 +59,7 @@ struct HomeView: View {
 
 // MARK: - Top Header Section
 struct TopHeaderSection: View {
-    @Binding var showingSettings: Bool
     @Binding var showingProfile: Bool
-    @Binding var showingSearch: Bool
     @Binding var showingQuickActions: Bool
 
     @StateObject private var profileManager = UserProfileManager.shared

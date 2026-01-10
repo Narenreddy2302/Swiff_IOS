@@ -915,10 +915,7 @@ class AnalyticsService: ObservableObject {
     }
 
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+        amount.asCurrency
     }
 }
 

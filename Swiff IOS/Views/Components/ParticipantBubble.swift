@@ -50,7 +50,7 @@ struct ParticipantBubble: View {
 
             // Amount (if showing)
             if showAmount {
-                Text(String(format: "$%.2f", participant.amount))
+                Text(participant.amount.asCurrency)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(participant.hasPaid ? .wiseSecondaryText : .wiseWarning)
             }

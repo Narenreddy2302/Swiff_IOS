@@ -15,6 +15,12 @@ class UserSettings: ObservableObject {
 
     private let defaults = UserDefaults.standard
 
+    // App Group storage for sharing settings with widgets
+    private static let appGroupIdentifier = "group.com.yourcompany.swiff"
+    private lazy var appGroupDefaults: UserDefaults? = {
+        UserDefaults(suiteName: Self.appGroupIdentifier)
+    }()
+
     // Keys for UserDefaults
     private enum Keys {
         static let notificationsEnabled = "notificationsEnabled"
@@ -93,6 +99,8 @@ class UserSettings: ObservableObject {
     @Published var selectedCurrency: String {
         didSet {
             defaults.set(selectedCurrency, forKey: Keys.selectedCurrency)
+            // Also save to App Group for widget access
+            appGroupDefaults?.set(selectedCurrency, forKey: Keys.selectedCurrency)
         }
     }
 

@@ -278,6 +278,18 @@ final class SharedSubscriptionModel {
     var createdDate: Date
     var notes: String
 
+    // Supabase sync fields - for compatibility
+    var subscriptionId: UUID { subscriptionID }
+    var ownerUserId: UUID { sharedByID }
+    var totalCost: Double { individualCost * Double(sharedWithIDs.count + 1) }
+    var yourShare: Double { individualCost }
+
+    // Supabase sync metadata
+    var syncVersion: Int = 1
+    var deletedAt: Date?
+    var pendingSync: Bool = false
+    var lastSyncedAt: Date?
+
     // Relationships
     @Relationship(deleteRule: .nullify)
     var subscription: SubscriptionModel?

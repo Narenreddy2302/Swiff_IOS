@@ -135,13 +135,9 @@ struct ProfileStatisticsGrid: View {
         onTap(statType)
     }
 
-    /// Formats currency with USD symbol
+    /// Formats currency with user's selected currency
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0"
+        amount.asCurrency
     }
 
     /// Formats numbers with thousands separator

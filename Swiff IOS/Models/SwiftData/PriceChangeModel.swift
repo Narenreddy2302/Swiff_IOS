@@ -19,6 +19,12 @@ final class PriceChangeModel {
     var reason: String?
     var detectedAutomatically: Bool
 
+    // Supabase sync metadata
+    var syncVersion: Int = 1
+    var deletedAt: Date?
+    var pendingSync: Bool = false
+    var lastSyncedAt: Date?
+
     init(id: UUID = UUID(), subscriptionId: UUID, oldPrice: Double, newPrice: Double, changeDate: Date = Date(), reason: String? = nil, detectedAutomatically: Bool = false) {
         self.id = id
         self.subscriptionId = subscriptionId

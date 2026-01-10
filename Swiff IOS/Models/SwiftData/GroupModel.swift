@@ -105,6 +105,15 @@ final class GroupExpenseModel {
     var receiptPath: String?
     var isSettled: Bool
 
+    // Supabase sync field aliases
+    var paidById: UUID { paidByID }
+
+    // Supabase sync metadata
+    var syncVersion: Int = 1
+    var deletedAt: Date?
+    var pendingSync: Bool = false
+    var lastSyncedAt: Date?
+
     // Relationships
     @Relationship(deleteRule: .nullify)
     var group: GroupModel?

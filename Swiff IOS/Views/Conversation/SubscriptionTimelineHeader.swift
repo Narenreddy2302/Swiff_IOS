@@ -50,7 +50,7 @@ struct SubscriptionTimelineHeader: View {
                     .foregroundColor(.wisePrimaryText)
                     .multilineTextAlignment(.center)
 
-                Text(String(format: "$%.2f/%@", subscription.price, subscription.billingCycle.displayShort))
+                Text("\(subscription.price.asCurrency)/\(subscription.billingCycle.displayShort)")
                     .font(Theme.Fonts.bodyMedium)
                     .foregroundColor(.wiseSecondaryText)
 
@@ -65,7 +65,7 @@ struct SubscriptionTimelineHeader: View {
                             .font(.spotifyLabelSmall)
                             .foregroundColor(.wiseSecondaryText)
 
-                        Text(String(format: "$%.2f/person", subscription.costPerPerson))
+                        Text("\(subscription.costPerPerson.asCurrency)/person")
                             .font(.spotifyLabelSmall)
                             .foregroundColor(.wiseBrightGreen)
                     }
@@ -140,7 +140,7 @@ struct SubscriptionTimelineHeader: View {
                 overlap: 8
             )
 
-            Text(String(format: "$%.2f per person", subscription.costPerPerson))
+            Text("\(subscription.costPerPerson.asCurrency) per person")
                 .font(Theme.Fonts.labelSmall)
                 .foregroundColor(.wiseBrightGreen)
         }

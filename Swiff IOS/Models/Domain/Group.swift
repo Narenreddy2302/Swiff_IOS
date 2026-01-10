@@ -78,6 +78,50 @@ struct Group: Identifiable, Codable {
             return "\(years) \(years == 1 ? "year" : "years") ago"
         }
     }
+
+    // MARK: - Supabase Conversion
+
+    /// Converts this domain model to a Supabase-compatible model for API upload
+    /// - Parameter userId: The authenticated user's ID from Supabase
+    /// - Returns: SupabaseGroup ready for API insertion/update
+    /// - Note: Group members and expenses are synced separately via their own tables
+    func toSupabaseModel(userId: UUID) -> SupabaseGroup {
+        return SupabaseGroup(
+            id: self.id,
+            userId: userId,
+            name: self.name,
+            description: self.description.isEmpty ? nil : self.description,
+            emoji: self.emoji,
+            totalAmount: Decimal(self.totalAmount),
+            createdAt: self.createdDate,
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
+    }
+
+    /// Converts group members to Supabase-compatible group member records
+    /// - Parameter groupId: The group's ID
+    /// - Returns: Array of SupabaseGroupMember ready for API insertion
+    func membersToSupabaseModels() -> [SupabaseGroupMember] {
+        return members.map { personId in
+            SupabaseGroupMember(
+                id: UUID(),
+                groupId: self.id,
+                personId: personId,
+                memberUserId: nil,
+                isAdmin: false,
+                joinedAt: self.createdDate,
+                invitationStatus: "accepted",
+                invitedAt: nil,
+                respondedAt: nil,
+                createdAt: Date(),
+                updatedAt: Date(),
+                deletedAt: nil,
+                syncVersion: 1
+            )
+        }
+    }
 }
 
 // MARK: - Group Expense Model
@@ -112,6 +156,33 @@ struct GroupExpense: Identifiable, Codable {
 
     var amountPerPerson: Double {
         splitBetween.isEmpty ? 0 : amount / Double(splitBetween.count)
+    }
+
+    // MARK: - Supabase Conversion
+
+    /// Converts this group expense to a Supabase-compatible model
+    /// - Parameter groupId: The group's ID this expense belongs to
+    /// - Returns: SupabaseGroupExpense ready for API insertion/update
+    func toSupabaseModel(groupId: UUID) -> SupabaseGroupExpense {
+        return SupabaseGroupExpense(
+            id: self.id,
+            groupId: groupId,
+            title: self.title,
+            amount: Decimal(self.amount),
+            paidByPersonId: self.paidBy,
+            paidByUserId: nil,
+            splitBetweenPersonIds: self.splitBetween,
+            splitBetweenUserIds: [],
+            category: self.category.rawValue,
+            date: self.date,
+            notes: self.notes.isEmpty ? nil : self.notes,
+            receiptPath: self.receipt,
+            isSettled: self.isSettled,
+            createdAt: self.date,
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
     }
 }
 

@@ -54,12 +54,7 @@ struct BalanceText: View {
     }
 
     private func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: amount)) ?? "$\(String(format: "%.2f", amount))"
+        amount.asCurrency
     }
 }
 
