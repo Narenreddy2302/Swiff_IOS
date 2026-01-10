@@ -449,7 +449,7 @@ struct AddTransactionSheet: View {
         switch splitType {
         case .equally:
             let amount = calculateEqualAmount()
-            Text(String(format: "$%.2f", amount))
+            Text(amount.asCurrency)
                 .font(.spotifyBodyMedium)
                 .foregroundColor(.wisePrimaryText)
 
@@ -490,7 +490,7 @@ struct AddTransactionSheet: View {
 
         case .exactAmounts, .adjustments:
             HStack(spacing: 4) {
-                Text("$")
+                Text(UserSettings.shared.selectedCurrency.symbol)
                     .font(.spotifyBodyMedium)
                     .foregroundColor(.wisePrimaryText)
 
@@ -620,7 +620,7 @@ struct AddTransactionSheet: View {
             } else {
                 return (
                     false,
-                    "Amounts must add up to $\(String(format: "%.2f", amount)) (currently $\(String(format: "%.2f", total)))"
+                    "Amounts must add up to \(amount.asCurrency) (currently \(total.asCurrency))"
                 )
             }
 
