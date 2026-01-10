@@ -998,6 +998,20 @@ public class DataManager: ObservableObject {
             updatedGroup.totalAmount += expense.amount
             groups[index] = updatedGroup
             print("✅ Expense added to group: \(expense.title)")
+
+            // Notify views of the change
+            notifyChange(.groupUpdated(groupID))
+
+            // Queue for Supabase sync
+            if SupabaseService.shared.currentUser != nil {
+                let supabaseModel = expense.toSupabaseModel(groupId: groupID)
+                SyncService.shared.queueInsert(
+                    table: SupabaseConfig.Tables.groupExpenses,
+                    record: supabaseModel,
+                    id: expense.id
+                )
+                Task { await SyncService.shared.syncPendingChanges() }
+            }
         }
     }
 
@@ -1014,6 +1028,18 @@ public class DataManager: ObservableObject {
                 // Notify views of the change
                 notifyChange(.groupUpdated(groupID))
                 print("✅ Expense settled")
+
+                // Queue for Supabase sync
+                if SupabaseService.shared.currentUser != nil {
+                    let settledExpense = updatedGroup.expenses[expenseIndex]
+                    let supabaseModel = settledExpense.toSupabaseModel(groupId: groupID)
+                    SyncService.shared.queueUpdate(
+                        table: SupabaseConfig.Tables.groupExpenses,
+                        record: supabaseModel,
+                        id: id
+                    )
+                    Task { await SyncService.shared.syncPendingChanges() }
+                }
             }
         }
     }
@@ -1032,6 +1058,17 @@ public class DataManager: ObservableObject {
                 // Notify views of the change
                 notifyChange(.groupUpdated(groupID))
                 print("✅ Group expense updated: \(expense.title)")
+
+                // Queue for Supabase sync
+                if SupabaseService.shared.currentUser != nil {
+                    let supabaseModel = expense.toSupabaseModel(groupId: groupID)
+                    SyncService.shared.queueUpdate(
+                        table: SupabaseConfig.Tables.groupExpenses,
+                        record: supabaseModel,
+                        id: expense.id
+                    )
+                    Task { await SyncService.shared.syncPendingChanges() }
+                }
             }
         }
     }

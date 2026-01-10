@@ -157,6 +157,33 @@ struct GroupExpense: Identifiable, Codable {
     var amountPerPerson: Double {
         splitBetween.isEmpty ? 0 : amount / Double(splitBetween.count)
     }
+
+    // MARK: - Supabase Conversion
+
+    /// Converts this group expense to a Supabase-compatible model
+    /// - Parameter groupId: The group's ID this expense belongs to
+    /// - Returns: SupabaseGroupExpense ready for API insertion/update
+    func toSupabaseModel(groupId: UUID) -> SupabaseGroupExpense {
+        return SupabaseGroupExpense(
+            id: self.id,
+            groupId: groupId,
+            title: self.title,
+            amount: Decimal(self.amount),
+            paidByPersonId: self.paidBy,
+            paidByUserId: nil,
+            splitBetweenPersonIds: self.splitBetween,
+            splitBetweenUserIds: [],
+            category: self.category.rawValue,
+            date: self.date,
+            notes: self.notes.isEmpty ? nil : self.notes,
+            receiptPath: self.receipt,
+            isSettled: self.isSettled,
+            createdAt: self.date,
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
+    }
 }
 
 // MARK: - Bill Split Model
