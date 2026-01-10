@@ -194,6 +194,55 @@ The add contact flow has been reviewed and fixed for production readiness:
 
 ---
 
+## Transaction Flow Review - ✅ COMPLETED
+
+All pages are properly interlinked for transactions with real-time updates and database sync.
+
+### Data Flow Architecture
+```
+Transaction Created (any sheet)
+    ↓
+DataManager.addTransaction()
+    ↓
+├── PersistenceService.saveTransaction() → SwiftData (local)
+├── indexTransactionInSpotlight() → iOS Spotlight
+├── notifyChange(.transactionAdded) → dataRevision++
+└── SyncService.queueInsert() → Supabase (remote)
+```
+
+### Views with Real-Time Transaction Updates
+
+| View | Update Mechanism | Notes |
+|------|------------------|-------|
+| HomeView > RecentActivitySection | @EnvironmentObject + dataRevision | Shows latest 5 transactions |
+| HomeView > FinancialOverviewGrid | onChange(dataRevision) | Animates income/expense totals |
+| RecentActivityView (Feed) | @EnvironmentObject | Full transaction list with filters |
+| AnalyticsView | @EnvironmentObject | Transaction-based analytics |
+| PersonDetailView | observeEntityWithRelated() | Person's linked transactions |
+| BalanceDetailView | @EnvironmentObject | Balance with transactions |
+| SearchView | @EnvironmentObject | Transaction search results |
+
+### Notification System
+- **DataManager.notifyChange()** - Batches notifications (~16ms frame)
+- **dataChangeSubject** - PassthroughSubject for targeted updates
+- **dataRevision** - Increments on any data change for view refresh
+- **DataRefreshModifiers** - observeEntity(), observeEntities(), refreshOnDataChange()
+
+### Supabase Sync for Transactions
+| Operation | Method | Status |
+|-----------|--------|--------|
+| Add | queueInsert + syncPendingChanges | ✅ Complete |
+| Update | queueUpdate + syncPendingChanges | ✅ Complete |
+| Delete | queueDelete + syncPendingChanges | ✅ Complete |
+| Pull (sync) | syncTransactions + TransactionModel.from(remote:) | ✅ Complete |
+
+### Balance Updates
+- **Split Bills** - Update person.balance via updateBalancesForSplitBill()
+- **Simple Dues** - Update person.balance via createSimpleDue()
+- **Regular Transactions** - Don't affect person.balance (by design)
+
+---
+
 ## Note on CurrencyFormatter.swift
 
 The `Utilities/CurrencyFormatter.swift` file contains `$` and `USD` strings, but these are **intentionally part of the switch statement** that handles different currencies based on user selection. This file is the central utility that provides the `.asCurrency` extension and properly reads `UserSettings.shared.selectedCurrency` to format currencies correctly.
