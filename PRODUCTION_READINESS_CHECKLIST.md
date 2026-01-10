@@ -127,6 +127,33 @@ All Edit Sheets have been reviewed for production readiness:
 
 ---
 
+## Supabase Sync Review - ✅ COMPLETED
+
+All entity types now have proper Supabase sync for CRUD operations:
+
+| Entity | Add | Update | Delete | Notes |
+|--------|-----|--------|--------|-------|
+| Person | ✅ | ✅ | ✅ | Full sync with Spotlight indexing |
+| Group | ✅ | ✅ | ✅ | Including group members sync |
+| Subscription | ✅ | ✅ | ✅ | Full sync with Spotlight indexing |
+| SharedSubscription | ✅ | ✅ | ✅ | Added in previous session |
+| Transaction | ✅ | ✅ | ✅ | Full sync with Spotlight indexing |
+| GroupExpense | ✅ | ✅ | N/A | Synced via group updates |
+| SplitBill | ✅ | ✅ | ✅ | **Fixed this session** |
+| SplitParticipant | ✅ | ✅ | N/A | **Fixed this session** - synced with split bills |
+| PriceChange | ✅ | N/A | N/A | **Fixed this session** |
+
+### Fixes Made This Session
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `Models/Domain/SplitBill.swift` | Missing `toSupabaseModel` | Added conversion methods for SplitBill and SplitParticipant |
+| `Models/Domain/PriceChange.swift` | Missing `toSupabaseModel` | Added conversion method |
+| `Services/DataManager.swift` | SplitBill CRUD missing sync | Added Supabase sync to add/update/delete/markAsPaid |
+| `Services/DataManager.swift` | PriceChange missing sync | Added Supabase sync to addPriceChange |
+
+---
+
 ## Note on CurrencyFormatter.swift
 
 The `Utilities/CurrencyFormatter.swift` file contains `$` and `USD` strings, but these are **intentionally part of the switch statement** that handles different currencies based on user selection. This file is the central utility that provides the `.asCurrency` extension and properly reads `UserSettings.shared.selectedCurrency` to format currencies correctly.

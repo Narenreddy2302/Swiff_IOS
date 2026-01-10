@@ -770,6 +770,17 @@ public class DataManager: ObservableObject {
     public func addPriceChange(_ priceChange: PriceChange) throws {
         try persistenceService.savePriceChange(priceChange)
         print("✅ Price change recorded: $\(priceChange.oldPrice) → $\(priceChange.newPrice)")
+
+        // Queue for Supabase sync
+        if SupabaseService.shared.currentUser != nil {
+            let supabaseModel = priceChange.toSupabaseModel()
+            SyncService.shared.queueInsert(
+                table: SupabaseConfig.Tables.priceChanges,
+                record: supabaseModel,
+                id: priceChange.id
+            )
+            Task { await SyncService.shared.syncPendingChanges() }
+        }
     }
 
     public func getPriceHistory(for subscriptionId: UUID) -> [PriceChange] {
@@ -1117,6 +1128,25 @@ public class DataManager: ObservableObject {
 
         // Notify views of the change
         notifyChange(.splitBillAdded(splitBill.id))
+
+        // Queue for Supabase sync
+        if let userId = SupabaseService.shared.currentUser?.id {
+            let supabaseModel = splitBill.toSupabaseModel(userId: userId)
+            SyncService.shared.queueInsert(
+                table: SupabaseConfig.Tables.splitBills,
+                record: supabaseModel,
+                id: splitBill.id
+            )
+            // Also sync participants
+            for participantModel in splitBill.participantsToSupabaseModels() {
+                SyncService.shared.queueInsert(
+                    table: SupabaseConfig.Tables.splitParticipants,
+                    record: participantModel,
+                    id: participantModel.id
+                )
+            }
+            Task { await SyncService.shared.syncPendingChanges() }
+        }
     }
 
     func updateSplitBill(_ splitBill: SplitBill) throws {
@@ -1127,6 +1157,25 @@ public class DataManager: ObservableObject {
 
             // Notify views of the change
             notifyChange(.splitBillUpdated(splitBill.id))
+
+            // Queue for Supabase sync
+            if let userId = SupabaseService.shared.currentUser?.id {
+                let supabaseModel = splitBill.toSupabaseModel(userId: userId)
+                SyncService.shared.queueUpdate(
+                    table: SupabaseConfig.Tables.splitBills,
+                    record: supabaseModel,
+                    id: splitBill.id
+                )
+                // Also update participants
+                for participantModel in splitBill.participantsToSupabaseModels() {
+                    SyncService.shared.queueUpdate(
+                        table: SupabaseConfig.Tables.splitParticipants,
+                        record: participantModel,
+                        id: participantModel.id
+                    )
+                }
+                Task { await SyncService.shared.syncPendingChanges() }
+            }
         }
     }
 
@@ -1137,6 +1186,15 @@ public class DataManager: ObservableObject {
 
         // Notify views of the change
         notifyChange(.splitBillDeleted(id))
+
+        // Queue for Supabase sync
+        if SupabaseService.shared.currentUser != nil {
+            SyncService.shared.queueDelete(
+                table: SupabaseConfig.Tables.splitBills,
+                id: id
+            )
+            Task { await SyncService.shared.syncPendingChanges() }
+        }
     }
 
     public func markParticipantAsPaid(splitBillId: UUID, participantId: UUID) throws {
@@ -1156,6 +1214,18 @@ public class DataManager: ObservableObject {
             // Notify views of the change
             notifyChange(.splitBillUpdated(splitBillId))
             print("✅ Participant marked as paid")
+
+            // Queue for Supabase sync
+            if SupabaseService.shared.currentUser != nil {
+                let participant = updatedSplitBill.participants[participantIndex]
+                let participantModel = participant.toSupabaseModel(splitBillId: splitBillId)
+                SyncService.shared.queueUpdate(
+                    table: SupabaseConfig.Tables.splitParticipants,
+                    record: participantModel,
+                    id: participantId
+                )
+                Task { await SyncService.shared.syncPendingChanges() }
+            }
         }
     }
 

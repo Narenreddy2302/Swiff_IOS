@@ -54,4 +54,22 @@ public struct PriceChange: Identifiable, Codable {
         let sign = isIncrease ? "+" : ""
         return String(format: "%@%.1f%%", sign, changePercentage)
     }
+
+    // MARK: - Supabase Conversion
+
+    func toSupabaseModel() -> SupabasePriceChange {
+        SupabasePriceChange(
+            id: id,
+            subscriptionId: subscriptionId,
+            oldPrice: Decimal(oldPrice),
+            newPrice: Decimal(newPrice),
+            changeDate: changeDate,
+            reason: reason,
+            detectedAutomatically: detectedAutomatically,
+            createdAt: changeDate,
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
+    }
 }
