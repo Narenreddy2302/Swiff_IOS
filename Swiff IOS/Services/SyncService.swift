@@ -396,6 +396,10 @@ final class SyncService: ObservableObject {
         model.avatarEmoji = remote.avatarEmoji
         model.avatarInitials = remote.avatarInitials
         model.avatarColorIndex = remote.avatarColorIndex ?? 0
+        model.contactId = remote.contactId
+        model.relationshipType = remote.relationshipType
+        model.personNotes = remote.notes
+        model.personSourceRaw = remote.personSource ?? PersonSource.manual.rawValue
         model.syncVersion = remote.syncVersion
         model.lastModifiedDate = remote.updatedAt
         model.deletedAt = remote.deletedAt
@@ -1088,6 +1092,9 @@ extension PersonModel {
             notifPrefs = NotificationPreferences()
         }
 
+        // Decode person source
+        let personSource = remote.personSource.flatMap { PersonSource(rawValue: $0) } ?? .manual
+
         let model = PersonModel(
             id: remote.id,
             name: remote.name,
@@ -1101,7 +1108,8 @@ extension PersonModel {
             preferredPaymentMethod: remote.preferredPaymentMethod.flatMap { PaymentMethod(rawValue: $0) },
             notificationPreferences: notifPrefs,
             relationshipType: remote.relationshipType,
-            notes: remote.notes
+            notes: remote.notes,
+            personSource: personSource
         )
         model.syncVersion = remote.syncVersion
         model.deletedAt = remote.deletedAt

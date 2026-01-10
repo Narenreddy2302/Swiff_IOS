@@ -165,6 +165,35 @@ All entity types now have proper Supabase sync for CRUD operations:
 
 ---
 
+## Contact Flow Review - ✅ COMPLETED
+
+The add contact flow has been reviewed and fixed for production readiness:
+
+### Entry Points
+| Location | Sheet Used | Notes |
+|----------|-----------|-------|
+| QuickActions | AddPersonSheet | Manual entry only |
+| AddGroupSheet | AddPersonSheet | Manual entry when adding group members |
+| PeopleView > Contacts | ContactsListView | View-only, navigates to ContactConversationView |
+
+### Person Supabase Sync Improvements
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `Models/Supabase/SupabaseModels.swift` | Missing personSource field | Added `personSource` to SupabasePerson |
+| `Models/Domain/Person.swift` | Missing personSource in toSupabaseModel | Added personSource.rawValue to conversion |
+| `Services/SyncService.swift` | PersonModel.from(remote:) missing personSource | Added personSource decoding from remote |
+| `Services/SyncService.swift` | updatePersonModel incomplete | Added contactId, relationshipType, personNotes, personSourceRaw |
+| `Services/PersistenceService.swift` | updatePerson missing fields | Added avatar, contactId, preferredPaymentMethod, notificationPreferences, relationshipType, notes, personSource |
+| `Services/PersistenceService.swift` | savePerson missing fields | Added contactPhoto avatar case and all additional fields for updates |
+
+### Flow Summary
+1. **AddPersonSheet** → User enters name/email/phone → DataManager.addPerson() → SwiftData + Supabase sync
+2. **AddPersonFromContactsSheet** → Import from iOS contacts → DataManager.importContact() → DataManager.addPerson()
+3. **Bi-directional sync** → SyncService.syncPersons() pulls from Supabase and creates/updates PersonModel
+
+---
+
 ## Note on CurrencyFormatter.swift
 
 The `Utilities/CurrencyFormatter.swift` file contains `$` and `USD` strings, but these are **intentionally part of the switch statement** that handles different currencies based on user selection. This file is the central utility that provides the `.asCurrency` extension and properly reads `UserSettings.shared.selectedCurrency` to format currencies correctly.

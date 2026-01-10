@@ -220,12 +220,12 @@ public class PersistenceService {
             let existing = try modelContext.fetch(descriptor).first
 
             if let existingPerson = existing {
-                // Update existing person
+                // Update existing person - basic fields
                 existingPerson.name = person.name
                 existingPerson.email = person.email
                 existingPerson.phone = person.phone
                 existingPerson.balance = person.balance
-                existingPerson.lastModifiedDate = Date()  // Update modification timestamp
+                existingPerson.lastModifiedDate = Date()
 
                 // Update avatar
                 switch person.avatarType {
@@ -245,6 +245,23 @@ public class PersistenceService {
                     existingPerson.avatarEmoji = nil
                     existingPerson.avatarInitials = initials
                     existingPerson.avatarColorIndex = colorIndex
+                case .contactPhoto:
+                    existingPerson.avatarTypeRaw = "contact_photo"
+                    existingPerson.avatarData = nil
+                    existingPerson.avatarEmoji = nil
+                    existingPerson.avatarInitials = nil
+                }
+
+                // Update additional fields
+                existingPerson.contactId = person.contactId
+                existingPerson.preferredPaymentMethodRaw = person.preferredPaymentMethod?.rawValue
+                existingPerson.relationshipType = person.relationshipType
+                existingPerson.personNotes = person.notes
+                existingPerson.personSourceRaw = person.personSource.rawValue
+
+                // Update notification preferences
+                if let encoded = try? JSONEncoder().encode(person.notificationPreferences) {
+                    existingPerson.notificationPreferencesData = encoded
                 }
             } else {
                 // Create new person
@@ -296,10 +313,49 @@ public class PersistenceService {
                 throw PersistenceError.entityNotFound(id: person.id)
             }
 
+            // Update basic fields
             existingPerson.name = person.name
             existingPerson.email = person.email
             existingPerson.phone = person.phone
             existingPerson.balance = person.balance
+            existingPerson.lastModifiedDate = Date()
+
+            // Update avatar
+            switch person.avatarType {
+            case .photo(let data):
+                existingPerson.avatarTypeRaw = "photo"
+                existingPerson.avatarData = data
+                existingPerson.avatarEmoji = nil
+                existingPerson.avatarInitials = nil
+            case .emoji(let emoji):
+                existingPerson.avatarTypeRaw = "emoji"
+                existingPerson.avatarData = nil
+                existingPerson.avatarEmoji = emoji
+                existingPerson.avatarInitials = nil
+            case .initials(let initials, let colorIndex):
+                existingPerson.avatarTypeRaw = "initials"
+                existingPerson.avatarData = nil
+                existingPerson.avatarEmoji = nil
+                existingPerson.avatarInitials = initials
+                existingPerson.avatarColorIndex = colorIndex
+            case .contactPhoto:
+                existingPerson.avatarTypeRaw = "contact_photo"
+                existingPerson.avatarData = nil
+                existingPerson.avatarEmoji = nil
+                existingPerson.avatarInitials = nil
+            }
+
+            // Update additional fields
+            existingPerson.contactId = person.contactId
+            existingPerson.preferredPaymentMethodRaw = person.preferredPaymentMethod?.rawValue
+            existingPerson.relationshipType = person.relationshipType
+            existingPerson.personNotes = person.notes
+            existingPerson.personSourceRaw = person.personSource.rawValue
+
+            // Update notification preferences
+            if let encoded = try? JSONEncoder().encode(person.notificationPreferences) {
+                existingPerson.notificationPreferencesData = encoded
+            }
 
             try saveContext()
         } catch let error as PersistenceError {

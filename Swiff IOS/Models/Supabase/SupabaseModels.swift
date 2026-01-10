@@ -36,6 +36,7 @@ struct SupabasePerson: SupabaseSyncable {
     var notificationPreferences: NotificationPreferencesData?
     var relationshipType: String?
     var notes: String?
+    var personSource: String?  // "manual", "contact", or "app_user"
     let createdAt: Date
     var updatedAt: Date
     var deletedAt: Date?
@@ -54,6 +55,7 @@ struct SupabasePerson: SupabaseSyncable {
         case notificationPreferences = "notification_preferences"
         case relationshipType = "relationship_type"
         case notes
+        case personSource = "person_source"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case deletedAt = "deleted_at"

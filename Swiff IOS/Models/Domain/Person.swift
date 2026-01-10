@@ -206,6 +206,7 @@ public struct Person: Identifiable, Codable {
             notificationPreferences: notifPrefsData,
             relationshipType: self.relationshipType,
             notes: self.notes,
+            personSource: self.personSource.rawValue,
             createdAt: self.createdDate,
             updatedAt: Date(),
             deletedAt: nil,
