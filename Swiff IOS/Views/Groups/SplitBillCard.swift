@@ -63,7 +63,7 @@ struct SplitBillCard: View {
 
                     Spacer()
 
-                    Text(String(format: "$%.2f", splitBill.totalAmount))
+                    Text(splitBill.totalAmount.asCurrency)
                         .font(.spotifyNumberMedium)
                         .foregroundColor(.wisePrimaryText)
                 }
@@ -124,7 +124,7 @@ struct SplitBillCard: View {
                         Spacer()
 
                         if splitBill.totalPending > 0 {
-                            Text(String(format: "$%.2f pending", splitBill.totalPending))
+                            Text("\(splitBill.totalPending.asCurrency) pending")
                                 .font(.spotifyLabelMedium)
                                 .foregroundColor(.wiseWarning)
                         }

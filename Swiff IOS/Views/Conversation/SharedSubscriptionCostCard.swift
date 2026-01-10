@@ -67,7 +67,7 @@ struct SharedSubscriptionCostCard: View {
                     .font(Theme.Fonts.labelSmall)
                     .foregroundColor(.wiseSecondaryText)
 
-                Text(String(format: "$%.2f", totalCost))
+                Text(totalCost.asCurrency)
                     .font(Theme.Fonts.numberLarge)
                     .foregroundColor(.wisePrimaryText)
 
@@ -91,7 +91,7 @@ struct SharedSubscriptionCostCard: View {
                     .font(Theme.Fonts.labelSmall)
                     .foregroundColor(.wiseSecondaryText)
 
-                Text(String(format: "$%.2f", costPerPerson))
+                Text(costPerPerson.asCurrency)
                     .font(Theme.Fonts.numberLarge)
                     .foregroundColor(.wiseForestGreen)
 
@@ -131,7 +131,7 @@ struct SharedSubscriptionCostCard: View {
             Spacer()
 
             // Share amount
-            Text(String(format: "$%.2f", costPerPerson))
+            Text(costPerPerson.asCurrency)
                 .font(Theme.Fonts.headerSmall)
                 .foregroundColor(AmountColors.positive)
         }
@@ -165,13 +165,13 @@ struct SharedSubscriptionCostCard: View {
             Spacer()
 
             // Share amount
-            Text(String(format: "$%.2f", costPerPerson))
+            Text(costPerPerson.asCurrency)
                 .font(Theme.Fonts.headerSmall)
                 .foregroundColor(AmountColors.positive)
         }
         .padding(.vertical, 12)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(person.name), share: \(String(format: "$%.2f", costPerPerson))")
+        .accessibilityLabel("\(person.name), share: \(costPerPerson.asCurrency)")
     }
 }
 

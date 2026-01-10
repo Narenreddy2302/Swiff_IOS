@@ -29,7 +29,7 @@ struct PersonCard: View {
     }
 
     private var balanceText: String {
-        String(format: "$%.2f", abs(person.balance))
+        abs(person.balance).asCurrency
     }
 
     private var balanceColor: Color {

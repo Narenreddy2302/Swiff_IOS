@@ -51,14 +51,14 @@ struct SubscriptionInsightsSheet: View {
                         ) {
                             InsightStatCard(
                                 title: "Monthly Spend",
-                                value: String(format: "$%.2f", totalMonthlySpend),
+                                value: totalMonthlySpend.asCurrency,
                                 icon: "calendar.circle.fill",
                                 color: .wiseBrightGreen
                             )
 
                             InsightStatCard(
                                 title: "Annual Spend",
-                                value: String(format: "$%.0f", totalAnnualSpend),
+                                value: totalAnnualSpend.asCurrency,
                                 icon: "calendar.badge.plus",
                                 color: .wiseBlue
                             )
@@ -72,7 +72,7 @@ struct SubscriptionInsightsSheet: View {
 
                             InsightStatCard(
                                 title: "Average Cost",
-                                value: String(format: "$%.2f", averageSubscriptionCost),
+                                value: averageSubscriptionCost.asCurrency,
                                 icon: "chart.bar.fill",
                                 color: .wiseError
                             )
@@ -128,7 +128,7 @@ struct SubscriptionInsightsSheet: View {
                                 Spacer()
 
                                 VStack(alignment: .trailing) {
-                                    Text(String(format: "$%.2f", mostExpensive.monthlyEquivalent))
+                                    Text(mostExpensive.monthlyEquivalent.asCurrency)
                                         .font(.spotifyNumberMedium)
                                         .foregroundColor(.wiseError)
 
@@ -229,7 +229,7 @@ struct CategoryBreakdownRow: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(String(format: "$%.2f", amount))
+                Text(amount.asCurrency)
                     .font(.spotifyNumberSmall)
                     .foregroundColor(.wisePrimaryText)
 
@@ -349,7 +349,7 @@ struct RenewalDateSection: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(String(format: "$%.2f", totalAmount))
+                    Text(totalAmount.asCurrency)
                         .font(.spotifyNumberMedium)
                         .foregroundColor(isWithinWeek ? .wiseError : .wisePrimaryText)
 
@@ -415,7 +415,7 @@ struct RenewalSubscriptionRow: View {
 
             Spacer()
 
-            Text(String(format: "$%.2f", subscription.price))
+            Text(subscription.price.asCurrency)
                 .font(.spotifyNumberMedium)
                 .foregroundColor(.wisePrimaryText)
         }

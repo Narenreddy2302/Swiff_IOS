@@ -199,7 +199,7 @@ struct SubscriptionBillingSummaryCard: View {
                 .foregroundColor(.wiseSecondaryText)
                 .textCase(.uppercase)
 
-            Text(String(format: "$%.2f", subscription.monthlyEquivalent))
+            Text(subscription.monthlyEquivalent.asCurrency)
                 .font(.spotifyNumberLarge)
                 .foregroundColor(.wiseForestGreen)
 
@@ -224,7 +224,7 @@ struct SubscriptionBillingSummaryCard: View {
                 .foregroundColor(.wiseSecondaryText)
                 .textCase(.uppercase)
 
-            Text(String(format: "$%.2f", subscription.totalSpent))
+            Text(subscription.totalSpent.asCurrency)
                 .font(.spotifyNumberMedium)
                 .foregroundColor(.wisePrimaryText)
 
