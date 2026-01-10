@@ -169,7 +169,7 @@ public class SpotlightIndexingService {
 
         // Subscription-specific metadata
         let billingCycleName: String = subscription.billingCycle.shortName
-        let priceText = String(format: "$%.2f per %@", subscription.price, billingCycleName)
+        let priceText = "\(subscription.price.asCurrency) per \(billingCycleName)"
         attributeSet.contentDescription = "\(subscription.description) • \(priceText)"
 
         // Status
@@ -225,8 +225,7 @@ public class SpotlightIndexingService {
         attributeSet.contentDescription = transaction.subtitle
 
         // Transaction-specific metadata
-        let amountText = String(
-            format: "%@$%.2f", transaction.isExpense ? "-" : "+", abs(transaction.amount))
+        let amountText = "\(transaction.isExpense ? "-" : "+")\(abs(transaction.amount).asCurrency)"
         attributeSet.contentDescription =
             "\(transaction.subtitle) • \(amountText) • \(transaction.category.rawValue)"
 

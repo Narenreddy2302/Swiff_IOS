@@ -38,7 +38,7 @@ struct TransactionDetailsCard: View {
     }
 
     private func formatCurrency(_ amount: Double) -> String {
-        String(format: "$%.2f", amount)
+        amount.asCurrency
     }
 }
 
