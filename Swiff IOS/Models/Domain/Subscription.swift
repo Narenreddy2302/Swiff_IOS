@@ -298,4 +298,29 @@ struct SharedSubscription: Identifiable, Codable {
         self.nextBillingDate = Date()
         self.members = []
     }
+
+    // MARK: - Supabase Conversion
+
+    /// Converts this domain model to a Supabase-compatible model for API upload
+    /// - Parameter userId: The authenticated user's ID from Supabase
+    /// - Returns: SupabaseSharedSubscription ready for API insertion/update
+    func toSupabaseModel(userId: UUID) -> SupabaseSharedSubscription {
+        return SupabaseSharedSubscription(
+            id: self.id,
+            subscriptionId: self.subscriptionId,
+            sharedByUserId: userId,
+            sharedWithPersonId: self.sharedWith.first,  // First person in the share list
+            sharedWithUserId: nil,  // Set if sharing with another Supabase user
+            costSplitType: self.costSplit.rawValue,
+            individualCost: Decimal(self.individualCost),
+            percentage: nil,  // Calculate if needed based on costSplit type
+            isAccepted: self.isAccepted,
+            invitationStatus: self.isAccepted ? "accepted" : "pending",
+            notes: self.notes.isEmpty ? nil : self.notes,
+            createdAt: self.createdDate,
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
+    }
 }

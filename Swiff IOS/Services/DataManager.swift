@@ -603,6 +603,17 @@ public class DataManager: ObservableObject {
         print("Shared subscription added: \(sharedSubscription.notes)")
 
         notifyChange(.sharedSubscriptionAdded(sharedSubscription.id))
+
+        // Queue for Supabase sync
+        if let userId = SupabaseService.shared.currentUser?.id {
+            let supabaseModel = sharedSubscription.toSupabaseModel(userId: userId)
+            SyncService.shared.queueInsert(
+                table: SupabaseConfig.Tables.sharedSubscriptions,
+                record: supabaseModel,
+                id: sharedSubscription.id
+            )
+            Task { await SyncService.shared.syncPendingChanges() }
+        }
     }
 
     /// Update an existing shared subscription
@@ -613,6 +624,17 @@ public class DataManager: ObservableObject {
             print("Shared subscription updated: \(sharedSubscription.notes)")
 
             notifyChange(.sharedSubscriptionUpdated(sharedSubscription.id))
+
+            // Queue for Supabase sync
+            if let userId = SupabaseService.shared.currentUser?.id {
+                let supabaseModel = sharedSubscription.toSupabaseModel(userId: userId)
+                SyncService.shared.queueUpdate(
+                    table: SupabaseConfig.Tables.sharedSubscriptions,
+                    record: supabaseModel,
+                    id: sharedSubscription.id
+                )
+                Task { await SyncService.shared.syncPendingChanges() }
+            }
         }
     }
 
@@ -623,6 +645,15 @@ public class DataManager: ObservableObject {
         print("Shared subscription deleted")
 
         notifyChange(.sharedSubscriptionDeleted(id))
+
+        // Queue for Supabase sync
+        if SupabaseService.shared.currentUser != nil {
+            SyncService.shared.queueDelete(
+                table: SupabaseConfig.Tables.sharedSubscriptions,
+                id: id
+            )
+            Task { await SyncService.shared.syncPendingChanges() }
+        }
     }
 
     /// Get shared subscriptions for a specific person (where they are sharedBy or in sharedWith)
