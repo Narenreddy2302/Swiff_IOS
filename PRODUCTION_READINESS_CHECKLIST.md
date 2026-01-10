@@ -290,12 +290,58 @@ All conversation views have been reviewed for consistency and production readine
 
 ---
 
+## Final Production Fixes - ✅ COMPLETED
+
+### Currency Fixes (Final Session)
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `Views/Transactions/TransactionRowView.swift` | Hardcoded +$/- | Use CurrencyFormatter |
+| `Views/Transactions/TransactionDetailSheet.swift` | Hardcoded $ (3 places) | Use .asCurrency |
+| `Views/People/PersonCard.swift` | Hardcoded +$/-$/$ | Use CurrencyFormatter |
+| `Views/Notifications/ReminderSettingsSheet.swift` | Hardcoded $ | Use .asCurrency |
+| `Views/Search/AdvancedSearchFilterSheet.swift` | Hardcoded "USD" | Use UserSettings.selectedCurrency |
+
+### Widget Currency Support
+
+| File | Fix |
+|------|-----|
+| `SwiffWidgets/WidgetModels.swift` | Added WidgetCurrencyFormatter to read currency from App Groups |
+| `SwiffWidgets/WidgetDataService.swift` | Updated formatted properties to use .asCurrencyString |
+| `SwiffWidgets/UpcomingRenewalsWidget.swift` | Use .asCurrencyString for totals |
+| `Swiff IOS/Services/UserSettings.swift` | Save selectedCurrency to App Groups for widget access |
+
+### DataManager Supabase Sync Fixes
+
+| Method | Issue | Fix |
+|--------|-------|-----|
+| `addAccount()` | Missing Supabase sync | Added queueInsert |
+| `updateAccount()` | Missing Supabase sync | Added queueUpdate |
+| `deleteAccount()` | Missing Supabase sync | Added queueDelete |
+| `addPriceChange()` | Missing notifyChange | Added notifyChange(.subscriptionUpdated) |
+| `createSimpleDue()` | Missing Supabase sync | Added queueInsert for split bills |
+| `bulkDeleteTransactions()` | Missing notify/sync | Added notifyChange + queueDelete |
+| `bulkUpdateCategory()` | Missing notify/sync | Added notifyChange + queueUpdate |
+| `bulkAddTags()` | Missing notify/sync | Added notifyChange + queueUpdate |
+| `updatePersonInternal()` | Missing Supabase sync | Added queueUpdate |
+| `updateSubscriptionInternal()` | Missing Supabase sync | Added queueUpdate |
+| `updateTransactionInternal()` | Missing Supabase sync | Added queueUpdate |
+| `updateGroupInternal()` | Missing Supabase sync | Added queueUpdate |
+
+### Model Updates
+
+| File | Fix |
+|------|-----|
+| `Models/Domain/Account.swift` | Added toSupabaseModel conversion method |
+
+---
+
 ## Note on CurrencyFormatter.swift
 
 The `Utilities/CurrencyFormatter.swift` file contains `$` and `USD` strings, but these are **intentionally part of the switch statement** that handles different currencies based on user selection. This file is the central utility that provides the `.asCurrency` extension and properly reads `UserSettings.shared.selectedCurrency` to format currencies correctly.
 
 ---
 
-## Total Fixes: 100+ instances across 50+ files
+## Total Fixes: 115+ instances across 60+ files
 
-All currency formatting now respects the user's selected currency preference through the `.asCurrency` extension.
+All currency formatting now respects the user's selected currency preference through the `.asCurrency` extension. All CRUD operations properly sync with Supabase backend.
