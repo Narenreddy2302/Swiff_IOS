@@ -399,20 +399,12 @@ extension ListRowFactory {
 
     /// Format currency amount
     static func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+        amount.asCurrency
     }
 
     /// Format amount with sign (for transactions and balances)
     static func formatAmount(_ amount: Double, isExpense: Bool) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 2
-        let formatted = formatter.string(from: NSNumber(value: abs(amount))) ?? "$0.00"
+        let formatted = abs(amount).asCurrency
         return isExpense ? "-\(formatted)" : "+\(formatted)"
     }
 }

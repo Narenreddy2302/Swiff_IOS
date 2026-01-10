@@ -178,10 +178,7 @@ struct StatisticsHeaderView: View {
     }
 
     private func formatCurrency(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter.string(from: NSNumber(value: abs(value))) ?? "$0.00"
+        abs(value).asCurrency
     }
 }
 
