@@ -113,32 +113,12 @@ struct PeopleStatCard: View {
     }
 }
 
-// MARK: - Balance Summary Card (Redesigned with 2x2 Grid - Matching Home Screen)
+// MARK: - Balance Summary Card (Redesigned with 1x2 Grid)
 struct BalanceSummaryCard: View {
     let totalOwedToYou: Double
     let totalYouOwe: Double
     let netBalance: Double
     let numberOfPeople: Int
-
-    // Calculate trends (placeholder - in production, compare with previous period)
-    // Returns: percentage change, isUp (direction), isGood (financially positive)
-    private func calculateTrend(for type: String) -> (percentage: Double, isUp: Bool, isGood: Bool) {
-        switch type {
-        case "balance":
-            // Net balance UP = good
-            return netBalance >= 0 ? (5.2, true, true) : (2.1, false, false)
-        case "people":
-            return (0.0, true, true)  // Neutral for count
-        case "owed":
-            // Money owed TO you UP = good (you're getting more back)
-            return (3.5, true, true)
-        case "owing":
-            // Money YOU owe UP = bad (you owe more)
-            return (1.8, true, false)
-        default:
-            return (0, true, true)
-        }
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -154,8 +134,7 @@ struct BalanceSummaryCard: View {
                     icon: "arrow.down.circle.fill",
                     iconColor: .wiseBrightGreen,
                     title: "OWED TO YOU",
-                    amount: formatCurrency(totalOwedToYou),
-                    trend: calculateTrend(for: "owed")
+                    amount: totalOwedToYou.asCurrency
                 )
 
                 // You Owe Card
@@ -163,15 +142,10 @@ struct BalanceSummaryCard: View {
                     icon: "arrow.up.circle.fill",
                     iconColor: .wiseError,
                     title: "YOU OWE",
-                    amount: formatCurrency(totalYouOwe),
-                    trend: calculateTrend(for: "owing")
+                    amount: totalYouOwe.asCurrency
                 )
             }
         }
-    }
-
-    private func formatCurrency(_ amount: Double) -> String {
-        amount.asCurrency
     }
 }
 

@@ -146,13 +146,13 @@ struct FinancialCard: View {
     }
 }
 
-// MARK: - Enhanced Financial Card (with trends - used by other views)
+// MARK: - Enhanced Financial Card (used by other views)
 struct EnhancedFinancialCard: View {
     let icon: String
     let iconColor: Color
     let title: String
     let amount: String
-    let trend: (percentage: Double, isUp: Bool, isGood: Bool)
+    var trend: (percentage: Double, isUp: Bool, isGood: Bool)? = nil
 
     var body: some View {
         SwiffCard {
