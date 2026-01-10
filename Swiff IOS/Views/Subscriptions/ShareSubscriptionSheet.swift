@@ -96,7 +96,7 @@ struct ShareSubscriptionSheet: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(Theme.Colors.textPrimary)
 
-                Text(String(format: "$%.2f/%@", subscription.price, subscription.billingCycle.displayShort))
+                Text("\(subscription.price.asCurrency)/\(subscription.billingCycle.displayShort)")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(Theme.Colors.textSecondary)
             }
@@ -204,7 +204,7 @@ struct ShareSubscriptionSheet: View {
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(Theme.Colors.textSecondary)
                     } else {
-                        Text(String(format: "$%.2f/mo", individualCost))
+                        Text("\(individualCost.asCurrency)/mo")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(Theme.Colors.brandPrimary)
                     }
@@ -233,7 +233,7 @@ struct ShareSubscriptionSheet: View {
                     Image(systemName: "arrow.down.circle.fill")
                         .foregroundColor(Theme.Colors.brandPrimary)
 
-                    Text("You save \(String(format: "$%.2f", savings))/month by sharing")
+                    Text("You save \(savings.asCurrency)/month by sharing")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(Theme.Colors.brandPrimary)
                 }
@@ -261,7 +261,7 @@ struct ShareSubscriptionSheet: View {
                     .font(.system(size: 24, weight: .bold))
                     .foregroundColor(Theme.Colors.textPrimary)
 
-                Text("Splitting $\(String(format: "%.2f", subscription.monthlyEquivalent))/mo with \(selectedPeople.count) \(selectedPeople.count == 1 ? "person" : "people")")
+                Text("Splitting \(subscription.monthlyEquivalent.asCurrency)/mo with \(selectedPeople.count) \(selectedPeople.count == 1 ? "person" : "people")")
                     .font(.system(size: 16))
                     .foregroundColor(Theme.Colors.textSecondary)
             }
