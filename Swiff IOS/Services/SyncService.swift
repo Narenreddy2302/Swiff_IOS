@@ -240,33 +240,43 @@ final class SyncService: ObservableObject {
         }
 
         isSyncing = true
-        syncProgress = .syncing(completed: 0, total: 10) // Approximate
+        syncProgress = .syncing(completed: 0, total: 12) // Updated count
 
         do {
             // Sync each table
             try await syncPersons(modelContext: modelContext)
-            syncProgress = .syncing(completed: 1, total: 10)
+            syncProgress = .syncing(completed: 1, total: 12)
 
             try await syncAccounts(modelContext: modelContext)
-            syncProgress = .syncing(completed: 2, total: 10)
+            syncProgress = .syncing(completed: 2, total: 12)
 
             try await syncGroups(modelContext: modelContext)
-            syncProgress = .syncing(completed: 3, total: 10)
+            syncProgress = .syncing(completed: 3, total: 12)
 
             try await syncGroupMembers(modelContext: modelContext)
-            syncProgress = .syncing(completed: 4, total: 10)
+            syncProgress = .syncing(completed: 4, total: 12)
+
+            try await syncGroupExpenses(modelContext: modelContext)
+            syncProgress = .syncing(completed: 5, total: 12)
 
             try await syncSubscriptions(modelContext: modelContext)
-            syncProgress = .syncing(completed: 5, total: 10)
+            syncProgress = .syncing(completed: 6, total: 12)
+
+            try await syncSharedSubscriptions(modelContext: modelContext)
+            syncProgress = .syncing(completed: 7, total: 12)
+
+            try await syncPriceChanges(modelContext: modelContext)
+            syncProgress = .syncing(completed: 8, total: 12)
 
             try await syncTransactions(modelContext: modelContext)
-            syncProgress = .syncing(completed: 6, total: 10)
+            syncProgress = .syncing(completed: 9, total: 12)
 
             try await syncSplitBills(modelContext: modelContext)
-            syncProgress = .syncing(completed: 7, total: 10)
+            syncProgress = .syncing(completed: 10, total: 12)
 
             // Save context
             try modelContext.save()
+            syncProgress = .syncing(completed: 11, total: 12)
 
             // Update last sync date
             lastSyncDate = Date()
@@ -566,6 +576,103 @@ final class SyncService: ObservableObject {
             } else if remote.deletedAt == nil {
                 let newSplitBill = SplitBillModel.from(remote: remote)
                 modelContext.insert(newSplitBill)
+            }
+        }
+    }
+
+    private func syncPriceChanges(modelContext: ModelContext) async throws {
+        let remotePriceChanges: [SupabasePriceChange] = try await supabase.fetchUserRecords(
+            from: SupabaseConfig.Tables.priceChanges
+        )
+
+        for remote in remotePriceChanges {
+            let fetchDescriptor = FetchDescriptor<PriceChangeModel>(
+                predicate: #Predicate { $0.id == remote.id }
+            )
+
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                if remote.syncVersion > existing.syncVersion {
+                    existing.oldPrice = NSDecimalNumber(decimal: remote.oldPrice).doubleValue
+                    existing.newPrice = NSDecimalNumber(decimal: remote.newPrice).doubleValue
+                    existing.changeDate = remote.changeDate
+                    existing.reason = remote.reason
+                    existing.detectedAutomatically = remote.detectedAutomatically
+                    existing.syncVersion = remote.syncVersion
+                    existing.pendingSync = false
+                }
+            } else if remote.deletedAt == nil {
+                let newPriceChange = PriceChangeModel.from(remote: remote)
+                modelContext.insert(newPriceChange)
+            }
+        }
+    }
+
+    private func syncSharedSubscriptions(modelContext: ModelContext) async throws {
+        let remoteSharedSubs: [SupabaseSharedSubscription] = try await supabase.fetchUserRecords(
+            from: SupabaseConfig.Tables.sharedSubscriptions
+        )
+
+        for remote in remoteSharedSubs {
+            let fetchDescriptor = FetchDescriptor<SharedSubscriptionModel>(
+                predicate: #Predicate { $0.id == remote.id }
+            )
+
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                if remote.syncVersion > existing.syncVersion {
+                    existing.subscriptionID = remote.subscriptionId
+                    existing.sharedByID = remote.sharedByUserId
+                    if let individualCost = remote.individualCost {
+                        existing.individualCost = NSDecimalNumber(decimal: individualCost).doubleValue
+                    }
+                    existing.isAccepted = remote.isAccepted
+                    existing.costSplitRaw = remote.costSplitType
+                    existing.notes = remote.notes ?? ""
+                    existing.syncVersion = remote.syncVersion
+                    existing.pendingSync = false
+                }
+            } else if remote.deletedAt == nil {
+                let newSharedSub = SharedSubscriptionModel.from(remote: remote)
+                modelContext.insert(newSharedSub)
+            }
+        }
+    }
+
+    private func syncGroupExpenses(modelContext: ModelContext) async throws {
+        let remoteExpenses: [SupabaseGroupExpense] = try await supabase.fetchUserRecords(
+            from: SupabaseConfig.Tables.groupExpenses
+        )
+
+        for remote in remoteExpenses {
+            let fetchDescriptor = FetchDescriptor<GroupExpenseModel>(
+                predicate: #Predicate { $0.id == remote.id }
+            )
+
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                if remote.syncVersion > existing.syncVersion {
+                    existing.title = remote.title
+                    existing.amount = NSDecimalNumber(decimal: remote.amount).doubleValue
+                    // Use paidByPersonId first, then paidByUserId
+                    if let paidBy = remote.paidByPersonId ?? remote.paidByUserId {
+                        existing.paidByID = paidBy
+                    }
+                    existing.splitBetweenIDs = remote.splitBetweenPersonIds
+                    existing.categoryRaw = remote.category
+                    existing.isSettled = remote.isSettled
+                    existing.date = remote.date
+                    existing.notes = remote.notes ?? ""
+                    existing.receiptPath = remote.receiptPath
+                    existing.syncVersion = remote.syncVersion
+                    existing.pendingSync = false
+                }
+            } else if remote.deletedAt == nil {
+                let newExpense = GroupExpenseModel.from(remote: remote)
+                modelContext.insert(newExpense)
             }
         }
     }
@@ -1139,6 +1246,87 @@ extension SplitBillModel {
         splitBill.createdDate = remote.createdAt
 
         let model = SplitBillModel(from: splitBill)
+        model.syncVersion = remote.syncVersion
+        model.deletedAt = remote.deletedAt
+        model.pendingSync = false
+        return model
+    }
+}
+
+extension PriceChangeModel {
+    /// Create from Supabase remote model
+    static func from(remote: SupabasePriceChange) -> PriceChangeModel {
+        let model = PriceChangeModel(
+            id: remote.id,
+            subscriptionId: remote.subscriptionId,
+            oldPrice: NSDecimalNumber(decimal: remote.oldPrice).doubleValue,
+            newPrice: NSDecimalNumber(decimal: remote.newPrice).doubleValue,
+            changeDate: remote.changeDate,
+            reason: remote.reason,
+            detectedAutomatically: remote.detectedAutomatically
+        )
+        model.syncVersion = remote.syncVersion
+        model.deletedAt = remote.deletedAt
+        model.pendingSync = false
+        return model
+    }
+}
+
+extension SharedSubscriptionModel {
+    /// Create from Supabase remote model
+    static func from(remote: SupabaseSharedSubscription) -> SharedSubscriptionModel {
+        // Parse cost split type
+        let costSplit = CostSplitType(rawValue: remote.costSplitType) ?? .equal
+
+        // Build sharedWithIDs from remote
+        var sharedWithIDs: [UUID] = []
+        if let personId = remote.sharedWithPersonId {
+            sharedWithIDs.append(personId)
+        }
+        if let userId = remote.sharedWithUserId {
+            sharedWithIDs.append(userId)
+        }
+
+        let model = SharedSubscriptionModel(
+            id: remote.id,
+            subscriptionID: remote.subscriptionId,
+            sharedByID: remote.sharedByUserId,
+            sharedWithIDs: sharedWithIDs,
+            costSplit: costSplit
+        )
+        if let individualCost = remote.individualCost {
+            model.individualCost = NSDecimalNumber(decimal: individualCost).doubleValue
+        }
+        model.isAccepted = remote.isAccepted
+        model.notes = remote.notes ?? ""
+        model.createdDate = remote.createdAt
+        model.syncVersion = remote.syncVersion
+        model.deletedAt = remote.deletedAt
+        model.pendingSync = false
+        return model
+    }
+}
+
+extension GroupExpenseModel {
+    /// Create from Supabase remote model
+    static func from(remote: SupabaseGroupExpense) -> GroupExpenseModel {
+        let category = TransactionCategory(rawValue: remote.category) ?? .other
+
+        // Use paidByPersonId first, then paidByUserId
+        let paidByID = remote.paidByPersonId ?? remote.paidByUserId ?? UUID()
+
+        let model = GroupExpenseModel(
+            id: remote.id,
+            title: remote.title,
+            amount: NSDecimalNumber(decimal: remote.amount).doubleValue,
+            paidByID: paidByID,
+            splitBetweenIDs: remote.splitBetweenPersonIds,
+            category: category,
+            date: remote.date,
+            notes: remote.notes ?? "",
+            receiptPath: remote.receiptPath,
+            isSettled: remote.isSettled
+        )
         model.syncVersion = remote.syncVersion
         model.deletedAt = remote.deletedAt
         model.pendingSync = false

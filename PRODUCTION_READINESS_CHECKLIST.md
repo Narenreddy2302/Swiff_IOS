@@ -152,6 +152,17 @@ All entity types now have proper Supabase sync for CRUD operations:
 | `Services/DataManager.swift` | SplitBill CRUD missing sync | Added Supabase sync to add/update/delete/markAsPaid |
 | `Services/DataManager.swift` | PriceChange missing sync | Added Supabase sync to addPriceChange |
 
+### Bi-directional Sync Infrastructure (Full Coverage)
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `Models/SwiftData/PriceChangeModel.swift` | Missing sync metadata | Added syncVersion, deletedAt, pendingSync, lastSyncedAt |
+| `Models/SwiftData/SubscriptionModel.swift` | SharedSubscriptionModel missing sync metadata | Added sync metadata fields |
+| `Models/SwiftData/GroupModel.swift` | GroupExpenseModel missing sync metadata | Added sync metadata fields |
+| `Services/SyncService.swift` | Missing sync methods | Added syncPriceChanges, syncSharedSubscriptions, syncGroupExpenses |
+| `Services/SyncService.swift` | Missing model extensions | Added `from(remote:)` for PriceChangeModel, SharedSubscriptionModel, GroupExpenseModel |
+| `Services/SyncService.swift` | performFullSync incomplete | Updated to sync all 12 tables |
+
 ---
 
 ## Note on CurrencyFormatter.swift
