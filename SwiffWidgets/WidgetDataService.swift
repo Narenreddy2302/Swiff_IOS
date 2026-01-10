@@ -43,7 +43,7 @@ struct WidgetSubscription: Codable, Identifiable {
     }
 
     var formattedPrice: String {
-        return String(format: "$%.2f", price)
+        return price.asCurrencyString
     }
 }
 
@@ -71,7 +71,7 @@ struct WidgetMonthlySpending: Codable {
     }
 
     var formattedCurrentMonth: String {
-        return String(format: "$%.2f", currentMonth)
+        return currentMonth.asCurrencyString
     }
 
     var formattedPercentageChange: String {
@@ -91,7 +91,7 @@ struct WidgetMonthlySpending: Codable {
         let percentage: Double
 
         var formattedAmount: String {
-            return String(format: "$%.2f", amount)
+            return amount.asCurrencyString
         }
 
         var formattedPercentage: String {

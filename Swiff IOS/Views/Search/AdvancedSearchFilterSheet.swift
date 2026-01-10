@@ -211,7 +211,7 @@ struct AdvancedSearchFilterSheet: View {
                     TextField("0.00", value: Binding(
                         get: { tempFilters.minAmount ?? 0 },
                         set: { tempFilters.minAmount = $0 > 0 ? $0 : nil }
-                    ), format: .currency(code: "USD"))
+                    ), format: .currency(code: UserSettings.shared.selectedCurrency))
                     .keyboardType(.decimalPad)
                     .textFieldStyle(.roundedBorder)
                 }
@@ -225,7 +225,7 @@ struct AdvancedSearchFilterSheet: View {
                     TextField("0.00", value: Binding(
                         get: { tempFilters.maxAmount ?? 0 },
                         set: { tempFilters.maxAmount = $0 > 0 ? $0 : nil }
-                    ), format: .currency(code: "USD"))
+                    ), format: .currency(code: UserSettings.shared.selectedCurrency))
                     .keyboardType(.decimalPad)
                     .textFieldStyle(.roundedBorder)
                 }

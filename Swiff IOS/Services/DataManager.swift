@@ -724,6 +724,17 @@ public class DataManager: ObservableObject {
 
         // Notify views of the change
         notifyChange(.accountAdded(account.id))
+
+        // Queue for Supabase sync
+        if let userId = SupabaseService.shared.currentUser?.id {
+            let supabaseModel = account.toSupabaseModel(userId: userId)
+            SyncService.shared.queueInsert(
+                table: SupabaseConfig.Tables.accounts,
+                record: supabaseModel,
+                id: account.id
+            )
+            Task { await SyncService.shared.syncPendingChanges() }
+        }
     }
 
     /// Update an existing account
@@ -735,6 +746,17 @@ public class DataManager: ObservableObject {
 
             // Notify views of the change
             notifyChange(.accountUpdated(account.id))
+
+            // Queue for Supabase sync
+            if let userId = SupabaseService.shared.currentUser?.id {
+                let supabaseModel = account.toSupabaseModel(userId: userId)
+                SyncService.shared.queueUpdate(
+                    table: SupabaseConfig.Tables.accounts,
+                    record: supabaseModel,
+                    id: account.id
+                )
+                Task { await SyncService.shared.syncPendingChanges() }
+            }
         }
     }
 
@@ -746,6 +768,15 @@ public class DataManager: ObservableObject {
 
         // Notify views of the change
         notifyChange(.accountDeleted(id))
+
+        // Queue for Supabase sync
+        if SupabaseService.shared.currentUser != nil {
+            SyncService.shared.queueDelete(
+                table: SupabaseConfig.Tables.accounts,
+                id: id
+            )
+            Task { await SyncService.shared.syncPendingChanges() }
+        }
     }
 
     /// Get the default account
@@ -769,7 +800,10 @@ public class DataManager: ObservableObject {
 
     public func addPriceChange(_ priceChange: PriceChange) throws {
         try persistenceService.savePriceChange(priceChange)
-        print("✅ Price change recorded: $\(priceChange.oldPrice) → $\(priceChange.newPrice)")
+        print("✅ Price change recorded: \(priceChange.oldPrice.asCurrency) → \(priceChange.newPrice.asCurrency)")
+
+        // Notify views that the subscription has been updated (price changed)
+        notifyChange(.subscriptionUpdated(priceChange.subscriptionId))
 
         // Queue for Supabase sync
         if SupabaseService.shared.currentUser != nil {
@@ -965,13 +999,29 @@ public class DataManager: ObservableObject {
     public func bulkDeleteTransactions(ids: [UUID]) throws {
         guard !ids.isEmpty else { return }
 
-        // Delete from persistence
+        // Delete from persistence and queue for Supabase sync
         for id in ids {
             try persistenceService.deleteTransaction(id: id)
+
+            // Queue for Supabase sync
+            if SupabaseService.shared.currentUser != nil {
+                SyncService.shared.queueDelete(
+                    table: SupabaseConfig.Tables.transactions,
+                    id: id
+                )
+            }
+
+            // Notify views
+            notifyChange(.transactionDeleted(id))
         }
 
         // Remove from local array
         transactions.removeAll { ids.contains($0.id) }
+
+        // Sync pending changes
+        if SupabaseService.shared.currentUser != nil {
+            Task { await SyncService.shared.syncPendingChanges() }
+        }
 
         print("✅ Bulk delete complete: \(ids.count) transaction(s) deleted")
     }
@@ -979,6 +1029,8 @@ public class DataManager: ObservableObject {
     /// Bulk update category for multiple transactions
     func bulkUpdateCategory(transactionIds: [UUID], category: TransactionCategory) throws {
         guard !transactionIds.isEmpty else { return }
+
+        let userId = SupabaseService.shared.currentUser?.id
 
         // Update each transaction
         for id in transactionIds {
@@ -991,7 +1043,25 @@ public class DataManager: ObservableObject {
 
                 // Update in local array
                 transactions[index] = updatedTransaction
+
+                // Notify views
+                notifyChange(.transactionUpdated(id))
+
+                // Queue for Supabase sync
+                if let userId = userId {
+                    let supabaseModel = updatedTransaction.toSupabaseModel(userId: userId)
+                    SyncService.shared.queueUpdate(
+                        table: SupabaseConfig.Tables.transactions,
+                        record: supabaseModel,
+                        id: id
+                    )
+                }
             }
+        }
+
+        // Sync pending changes
+        if userId != nil {
+            Task { await SyncService.shared.syncPendingChanges() }
         }
 
         print(
@@ -1002,6 +1072,8 @@ public class DataManager: ObservableObject {
     /// Bulk add tags to multiple transactions
     public func bulkAddTags(transactionIds: [UUID], tags: [String]) throws {
         guard !transactionIds.isEmpty, !tags.isEmpty else { return }
+
+        let userId = SupabaseService.shared.currentUser?.id
 
         // Update each transaction
         for id in transactionIds {
@@ -1020,7 +1092,25 @@ public class DataManager: ObservableObject {
 
                 // Update in local array
                 transactions[index] = updatedTransaction
+
+                // Notify views
+                notifyChange(.transactionUpdated(id))
+
+                // Queue for Supabase sync
+                if let userId = userId {
+                    let supabaseModel = updatedTransaction.toSupabaseModel(userId: userId)
+                    SyncService.shared.queueUpdate(
+                        table: SupabaseConfig.Tables.transactions,
+                        record: supabaseModel,
+                        id: id
+                    )
+                }
             }
+        }
+
+        // Sync pending changes
+        if userId != nil {
+            Task { await SyncService.shared.syncPendingChanges() }
         }
 
         print(
@@ -1357,7 +1447,18 @@ public class DataManager: ObservableObject {
         splitBills.append(splitBill)
         notifyChange(.splitBillAdded(splitBill.id))
 
-        print("✅ Due created: \(description) - $\(amount) (\(theyOweMe ? "they owe me" : "I owe them"))")
+        // 10. Queue for Supabase sync
+        if let userId = SupabaseService.shared.currentUser?.id {
+            let supabaseModel = splitBill.toSupabaseModel(userId: userId)
+            SyncService.shared.queueInsert(
+                table: SupabaseConfig.Tables.splitBills,
+                record: supabaseModel,
+                id: splitBill.id
+            )
+            Task { await SyncService.shared.syncPendingChanges() }
+        }
+
+        print("✅ Due created: \(description) - \(amount.asCurrency) (\(theyOweMe ? "they owe me" : "I owe them"))")
 
         return splitBill
     }
@@ -1814,12 +1915,34 @@ public class DataManager: ObservableObject {
         if let index = people.firstIndex(where: { $0.id == person.id }) {
             people[index] = person
         }
+
+        // Queue for Supabase sync
+        if let userId = SupabaseService.shared.currentUser?.id {
+            let supabaseModel = person.toSupabaseModel(userId: userId)
+            SyncService.shared.queueUpdate(
+                table: SupabaseConfig.Tables.persons,
+                record: supabaseModel,
+                id: person.id
+            )
+            await SyncService.shared.syncPendingChanges()
+        }
     }
 
     private func updateSubscriptionInternal(_ subscription: Subscription) async throws {
         try persistenceService.updateSubscription(subscription)
         if let index = subscriptions.firstIndex(where: { $0.id == subscription.id }) {
             subscriptions[index] = subscription
+        }
+
+        // Queue for Supabase sync
+        if let userId = SupabaseService.shared.currentUser?.id {
+            let supabaseModel = subscription.toSupabaseModel(userId: userId)
+            SyncService.shared.queueUpdate(
+                table: SupabaseConfig.Tables.subscriptions,
+                record: supabaseModel,
+                id: subscription.id
+            )
+            await SyncService.shared.syncPendingChanges()
         }
     }
 
@@ -1829,12 +1952,34 @@ public class DataManager: ObservableObject {
             transactions[index] = transaction
             transactions.sort { $0.date > $1.date }
         }
+
+        // Queue for Supabase sync
+        if let userId = SupabaseService.shared.currentUser?.id {
+            let supabaseModel = transaction.toSupabaseModel(userId: userId)
+            SyncService.shared.queueUpdate(
+                table: SupabaseConfig.Tables.transactions,
+                record: supabaseModel,
+                id: transaction.id
+            )
+            await SyncService.shared.syncPendingChanges()
+        }
     }
 
     private func updateGroupInternal(_ group: Group) async throws {
         try persistenceService.updateGroup(group)
         if let index = groups.firstIndex(where: { $0.id == group.id }) {
             groups[index] = group
+        }
+
+        // Queue for Supabase sync
+        if let userId = SupabaseService.shared.currentUser?.id {
+            let supabaseModel = group.toSupabaseModel(userId: userId)
+            SyncService.shared.queueUpdate(
+                table: SupabaseConfig.Tables.groups,
+                record: supabaseModel,
+                id: group.id
+            )
+            await SyncService.shared.syncPendingChanges()
         }
     }
 

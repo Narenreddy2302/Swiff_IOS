@@ -163,18 +163,15 @@ struct FeedPersonRow: View {
 
     private var formattedBalance: String {
         let absBalance = abs(person.balance)
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        let formatted = formatter.string(from: NSNumber(value: absBalance)) ?? String(format: "%.2f", absBalance)
+        let currencySymbol = CurrencyFormatter.shared.getCurrencySymbol()
+        let formatted = absBalance.asCurrency.replacingOccurrences(of: currencySymbol, with: "").trimmingCharacters(in: .whitespaces)
 
         if person.balance > 0 {
-            return "+$\(formatted)"
+            return "+\(currencySymbol)\(formatted)"
         } else if person.balance < 0 {
-            return "-$\(formatted)"
+            return "-\(currencySymbol)\(formatted)"
         } else {
-            return "$\(formatted)"
+            return "\(currencySymbol)\(formatted)"
         }
     }
 

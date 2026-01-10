@@ -153,7 +153,7 @@ struct MediumUpcomingRenewalsView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.secondary)
 
-                Text(String(format: "$%.2f", totalAmount))
+                Text(totalAmount.asCurrencyString)
                     .font(.system(size: 28, weight: .bold))
 
                 Text("\(upcomingSubscriptions.count) upcoming")
@@ -227,7 +227,7 @@ struct LargeUpcomingRenewalsView: View {
                     Text("Upcoming Renewals")
                         .font(.system(size: 16, weight: .semibold))
 
-                    Text("Total: \(String(format: "$%.2f", totalMonthly))")
+                    Text("Total: \(totalMonthly.asCurrencyString)")
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
                 }

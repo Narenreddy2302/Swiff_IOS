@@ -88,13 +88,11 @@ struct FeedTransactionRow: View {
     }
 
     private var formattedAmount: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        let formatted = formatter.string(from: NSNumber(value: abs(transaction.amount))) ?? String(format: "%.2f", abs(transaction.amount))
-        let prefix = transaction.isExpense ? "-$" : "+$"
-        return "\(prefix)\(formatted)"
+        let amount = abs(transaction.amount)
+        let currencySymbol = CurrencyFormatter.shared.getCurrencySymbol()
+        let formatted = amount.asCurrency.replacingOccurrences(of: currencySymbol, with: "")
+        let prefix = transaction.isExpense ? "-\(currencySymbol)" : "+\(currencySymbol)"
+        return "\(prefix)\(formatted.trimmingCharacters(in: .whitespaces))"
     }
 
     private var amountColor: Color {

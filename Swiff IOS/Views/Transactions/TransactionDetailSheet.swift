@@ -109,13 +109,11 @@ struct TransactionDetailSheet: View {
     }
 
     private var formattedAmount: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        let formatted = formatter.string(from: NSNumber(value: abs(transaction.amount))) ?? String(format: "%.2f", abs(transaction.amount))
-        let prefix = transaction.isExpense ? "-$" : "+$"
-        return "\(prefix)\(formatted)"
+        let amount = abs(transaction.amount)
+        let currencySymbol = CurrencyFormatter.shared.getCurrencySymbol()
+        let formatted = amount.asCurrency.replacingOccurrences(of: currencySymbol, with: "")
+        let prefix = transaction.isExpense ? "-\(currencySymbol)" : "+\(currencySymbol)"
+        return "\(prefix)\(formatted.trimmingCharacters(in: .whitespaces))"
     }
 
     // MARK: - Body
@@ -427,7 +425,7 @@ private struct SheetInfoCard: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(Theme.Colors.textTertiary)
 
-                Text("$\(String(format: "%.2f", abs(transaction.amount)))")
+                Text(abs(transaction.amount).asCurrency)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(Theme.Colors.textSecondary)
             }
@@ -478,7 +476,7 @@ private struct SheetInfoCard: View {
                 if splitBill != nil {
                     InfoRow(label: "Created By", value: "You")
                     InfoRow(label: "Split Type", value: "You Paid")
-                    InfoRow(label: "Your Share", value: "$\(String(format: "%.2f", abs(transaction.amount)))")
+                    InfoRow(label: "Your Share", value: abs(transaction.amount).asCurrency)
                 }
 
             case .subscription:
