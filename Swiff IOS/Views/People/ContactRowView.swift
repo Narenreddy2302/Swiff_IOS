@@ -95,7 +95,7 @@ struct ContactRowView: View {
 
     private func balanceAmountView(balance: Double) -> some View {
         let isPositive = balance > 0
-        let formattedAmount = String(format: "$%.2f", abs(balance))
+        let formattedAmount = abs(balance).asCurrency
         let color = isPositive ? Theme.Colors.amountPositive : Theme.Colors.amountNegative
         let label = isPositive ? "owes you" : "you owe"
 

@@ -167,7 +167,7 @@ public struct SubscriptionEvent: Identifiable, Codable {
     public var formattedAmount: String? {
         guard let amount = amount else { return nil }
         let sign = eventType == .billingCharged ? "-" : (amount > 0 ? "+" : "")
-        return String(format: "%@ $%.2f", sign, abs(amount))
+        return "\(sign) \(abs(amount).asCurrency)"
     }
 
     public var amountColor: Color {

@@ -121,8 +121,8 @@ struct PriceChangeRow: View {
     }
 
     private var descriptionText: String {
-        let oldPriceStr = String(format: "$%.2f", priceChange.oldPrice)
-        let newPriceStr = String(format: "$%.2f", priceChange.newPrice)
+        let oldPriceStr = priceChange.oldPrice.asCurrency
+        let newPriceStr = priceChange.newPrice.asCurrency
         return "\(oldPriceStr) → \(newPriceStr)"
     }
 

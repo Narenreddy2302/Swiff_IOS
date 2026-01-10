@@ -46,8 +46,8 @@ public struct PriceChange: Identifiable, Codable {
     }
 
     public var formattedChangeAmount: String {
-        let sign = isIncrease ? "+" : ""
-        return String(format: "%@$%.2f", sign, abs(changeAmount))
+        let sign = isIncrease ? "+" : "-"
+        return "\(sign)\(abs(changeAmount).asCurrency)"
     }
 
     public var formattedChangePercentage: String {

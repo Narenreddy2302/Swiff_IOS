@@ -88,10 +88,7 @@ struct Transaction: Identifiable, Codable {
     }
 
     var formattedAmount: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter.string(from: NSNumber(value: abs(amount))) ?? "$0.00"
+        return abs(amount).asCurrency
     }
 
     var amountWithSign: String {

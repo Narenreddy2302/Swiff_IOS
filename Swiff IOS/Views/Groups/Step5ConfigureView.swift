@@ -97,7 +97,7 @@ struct Step5ConfigureView: View {
 
                     Spacer()
 
-                    Text(String(format: "$%.2f", SplitCalculationService.equalAmountPerPerson(totalAmount: totalAmount, participantCount: participantIds.count)))
+                    Text(SplitCalculationService.equalAmountPerPerson(totalAmount: totalAmount, participantCount: participantIds.count).asCurrency)
                         .font(.spotifyBodyLarge)
                         .fontWeight(.semibold)
                         .foregroundColor(.wiseBrightGreen)
@@ -110,7 +110,7 @@ struct Step5ConfigureView: View {
             // Summary card
             summaryCard(
                 label: "Per Person",
-                value: String(format: "$%.2f", SplitCalculationService.equalAmountPerPerson(totalAmount: totalAmount, participantCount: participantIds.count)),
+                value: SplitCalculationService.equalAmountPerPerson(totalAmount: totalAmount, participantCount: participantIds.count).asCurrency,
                 isValid: true
             )
         }
@@ -150,7 +150,7 @@ struct Step5ConfigureView: View {
 
             summaryCard(
                 label: "Total",
-                value: String(format: "$%.2f / $%.2f", total, totalAmount),
+                value: "\(total.asCurrency) / \(totalAmount.asCurrency)",
                 isValid: isValid
             )
 
@@ -182,7 +182,7 @@ struct Step5ConfigureView: View {
                         Spacer()
 
                         let percentage = participantPercentages[person.id] ?? 0
-                        Text(String(format: "$%.2f", SplitCalculationService.roundToCents(totalAmount * (percentage / 100))))
+                        Text(SplitCalculationService.roundToCents(totalAmount * (percentage / 100)).asCurrency)
                             .font(.spotifyBodyMedium)
                             .foregroundColor(.wiseBrightGreen)
                     }
@@ -231,7 +231,7 @@ struct Step5ConfigureView: View {
                 Image(systemName: "info.circle.fill")
                     .font(.system(size: 14))
                     .foregroundColor(.wiseInfo)
-                Text("Each share is worth \(String(format: "$%.2f", amountPerShare))")
+                Text("Each share is worth \(amountPerShare.asCurrency)")
                     .font(.spotifyCaptionMedium)
                     .foregroundColor(.wiseSecondaryText)
             }
@@ -257,7 +257,7 @@ struct Step5ConfigureView: View {
 
                         let shares = participantShares[person.id] ?? 1
                         let amount = totalShares > 0 ? SplitCalculationService.roundToCents(totalAmount * Double(shares) / Double(totalShares)) : 0
-                        Text(String(format: "$%.2f", amount))
+                        Text(amount.asCurrency)
                             .font(.spotifyBodyMedium)
                             .foregroundColor(.wiseBrightGreen)
                     }
@@ -333,7 +333,7 @@ struct Step5ConfigureView: View {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 14))
                     .foregroundColor(.wiseInfo)
-                Text("Equal split is \(String(format: "$%.2f", equalAmount)) per person. Adjust as needed.")
+                Text("Equal split is \(equalAmount.asCurrency) per person. Adjust as needed.")
                     .font(.spotifyCaptionMedium)
                     .foregroundColor(.wiseSecondaryText)
             }
@@ -361,7 +361,7 @@ struct Step5ConfigureView: View {
                                 .foregroundColor(.wisePrimaryText)
 
                             if hasAdjustment {
-                                Text(difference > 0 ? "+\(String(format: "$%.2f", difference))" : "\(String(format: "$%.2f", difference))")
+                                Text(difference > 0 ? "+\(difference.asCurrency)" : "\(difference.asCurrency)")
                                     .font(.spotifyCaptionSmall)
                                     .foregroundColor(difference > 0 ? .wiseError : .wiseSuccess)
                             }
@@ -399,7 +399,7 @@ struct Step5ConfigureView: View {
 
             summaryCard(
                 label: "Total",
-                value: String(format: "$%.2f / $%.2f", total, totalAmount),
+                value: "\(total.asCurrency) / \(totalAmount.asCurrency)",
                 isValid: isValid
             )
 
@@ -468,7 +468,7 @@ struct Step5ConfigureView: View {
         HStack(spacing: 6) {
             Image(systemName: amount > 0 ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
                 .font(.system(size: 12))
-            Text(amount > 0 ? "\(String(format: "$%.2f", amount)) remaining" : "\(String(format: "$%.2f", abs(amount))) over")
+            Text(amount > 0 ? "\(amount.asCurrency) remaining" : "\(abs(amount).asCurrency) over")
                 .font(.spotifyCaptionMedium)
         }
         .foregroundColor(amount > 0 ? .wiseWarning : .wiseError)
