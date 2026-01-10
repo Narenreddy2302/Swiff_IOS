@@ -17,12 +17,7 @@ struct ConversationTransactionHelper {
     
     /// Format amount as currency string
     static func formatCurrency(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: amount)) ?? "$\(amount)"
+        amount.asCurrency
     }
     
     // MARK: - Person-to-Person Transaction

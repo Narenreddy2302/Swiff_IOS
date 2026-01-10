@@ -128,10 +128,7 @@ struct BulkActionsSheet: View {
 
     private var totalAmountString: String {
         let total = selectedTransactions.reduce(0) { $0 + $1.amount }
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return "Total: \(formatter.string(from: NSNumber(value: abs(total))) ?? "$0.00")"
+        return "Total: \(abs(total).asCurrency)"
     }
 
     // MARK: - Actions

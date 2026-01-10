@@ -83,12 +83,7 @@ struct FeedHeader: View {
     }
 
     private var spendingSummary: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = "USD"
-        formatter.maximumFractionDigits = 2
-        let formatted = formatter.string(from: NSNumber(value: monthlySpending)) ?? "$0.00"
-        return "\(formatted) spent this month"
+        "\(monthlySpending.asCurrency) spent this month"
     }
 }
 
