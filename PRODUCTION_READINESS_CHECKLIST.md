@@ -243,6 +243,53 @@ DataManager.addTransaction()
 
 ---
 
+## Conversation Views Review - ✅ COMPLETED
+
+All conversation views have been reviewed for consistency and production readiness.
+
+### Conversation View Architecture
+
+| View | Type | Data Source | Status |
+|------|------|-------------|--------|
+| PersonDetailView | Production | DataManager + observeEntityWithRelated() | ✅ Ready |
+| ContactConversationView | Production | DataManager + real data | ✅ Ready |
+| GroupDetailView | Production | DataManager + real data | ✅ Ready |
+| PersonConversationView | Prototype | Mock data (preview only) | ✅ Acceptable |
+
+### Headers Reviewed
+
+| Component | Currency Formatting | Status |
+|-----------|---------------------|--------|
+| PersonConversationHeader | BalanceText + .asCurrency | ✅ Ready |
+| ContactConversationHeader | BalanceText + .asCurrency | ✅ Ready |
+| GroupConversationHeader | BalanceText + .asCurrency | ✅ Ready |
+| SubscriptionConversationHeader | .asCurrency | ✅ Fixed this session |
+| CompactGroupHeader | ConversationBalance + .asCurrency | ✅ Ready |
+
+### Shared Components Reviewed
+
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| ConversationTransactionCard | Transaction cards in timeline | ✅ Ready (uses .asCurrency) |
+| ConversationInputBar | Message input + transaction button | ✅ Ready |
+| QuickActionButton | Quick payment/request actions | ✅ Ready |
+| BalanceText | Standardized balance display | ✅ Ready (uses .asCurrency) |
+| SharedSubscriptionCostCard | Subscription cost display | ✅ Ready (uses .asCurrency) |
+| SettlementStatusBadge | Settlement status indicators | ✅ Ready |
+
+### Fixes Made This Session
+
+| File | Issue | Fix |
+|------|-------|-----|
+| `Views/Conversation/SubscriptionConversationHeader.swift` | Hardcoded "$" in priceText | Changed to use .asCurrency |
+
+### Notes
+- **PersonConversationView** contains mock data but is only used in its own #Preview block - not used in production navigation
+- All production conversation views properly fetch data from DataManager
+- Currency formatting is consistent across all production components via `.asCurrency` extension
+
+---
+
 ## Note on CurrencyFormatter.swift
 
 The `Utilities/CurrencyFormatter.swift` file contains `$` and `USD` strings, but these are **intentionally part of the switch statement** that handles different currencies based on user selection. This file is the central utility that provides the `.asCurrency` extension and properly reads `UserSettings.shared.selectedCurrency` to format currencies correctly.

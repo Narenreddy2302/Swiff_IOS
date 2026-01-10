@@ -79,7 +79,7 @@ struct SubscriptionConversationHeader: View {
     // MARK: - Computed Properties
 
     private var priceText: String {
-        "$\(String(format: "%.2f", subscription.price))/\(subscription.billingCycle.displayShort)"
+        "\(subscription.price.asCurrency)/\(subscription.billingCycle.displayShort)"
     }
 }
 
