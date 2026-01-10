@@ -21,7 +21,7 @@ struct AddTransactionSheet: View {
     @State private var selectedCategory: TransactionCategory = .food
     @State private var transactionType: TransactionType = .expense
     @State private var notes = ""
-    @State private var selectedCurrency: Currency = .USD
+    @State private var selectedCurrency: Currency = UserSettings.shared.selectedCurrency
 
     // Split transaction fields
     @State private var selectedPayer: Person?
@@ -77,11 +77,14 @@ struct AddTransactionSheet: View {
             return false
         }
 
-        // Split validation - require at least one participant
-        guard !selectedParticipants.isEmpty else { return false }
+        // Payer validation - required for all transactions
+        guard selectedPayer != nil else { return false }
 
-        if let validation = validateSplitConfiguration() {
-            guard validation.isValid else { return false }
+        // Split validation - only validate if participants are selected
+        if !selectedParticipants.isEmpty {
+            if let validation = validateSplitConfiguration() {
+                guard validation.isValid else { return false }
+            }
         }
 
         return true
@@ -367,7 +370,7 @@ struct AddTransactionSheet: View {
 
     private var splitWithSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            FormSectionHeader(title: "Split With", isRequired: true)
+            FormSectionHeader(title: "Split With (Optional)", isRequired: false)
 
             VStack(spacing: 12) {
                 // Add Participants Button
@@ -553,7 +556,7 @@ struct AddTransactionSheet: View {
             focusedField = nil  // Dismiss keyboard first
             addTransaction()
         }) {
-            Text("Create Split")
+            Text("Add Transaction")
                 .font(.spotifyBodyLarge)
                 .fontWeight(.semibold)
                 .foregroundColor(isFormValid ? .wisePrimaryButtonText : .wiseSecondaryText)
@@ -690,58 +693,61 @@ struct AddTransactionSheet: View {
 
         var splitBillId: UUID? = nil
 
-        // Create split bill - this is always a split transaction now
-        let payerId = payer.id
-        let participants = selectedParticipants.map { personId -> SplitParticipant in
-            let participantAmount = calculateAmount(for: personId)
-            return SplitParticipant(
-                personId: personId,
-                amount: participantAmount,
-                hasPaid: personId == payerId,
-                percentage: participantPercentages[personId],
-                shares: participantShares[personId]
+        // Only create split bill if participants are selected
+        if !selectedParticipants.isEmpty {
+            let payerId = payer.id
+            let participants = selectedParticipants.map { personId -> SplitParticipant in
+                let participantAmount = calculateAmount(for: personId)
+                return SplitParticipant(
+                    personId: personId,
+                    amount: participantAmount,
+                    hasPaid: personId == payerId,
+                    percentage: participantPercentages[personId],
+                    shares: participantShares[personId]
+                )
+            }
+
+            let splitBill = SplitBill(
+                title: title.trimmingCharacters(in: .whitespaces),
+                totalAmount: abs(amount),
+                paidById: payerId,
+                splitType: splitType,
+                participants: participants,
+                notes: notes,
+                category: selectedCategory,
+                date: Date()
             )
-        }
 
-        let splitBill = SplitBill(
-            title: title.trimmingCharacters(in: .whitespaces),
-            totalAmount: abs(amount),
-            paidById: payerId,
-            splitType: splitType,
-            participants: participants,
-            notes: notes,
-            category: selectedCategory,
-            date: Date()
-        )
+            do {
+                try dataManager.addSplitBill(splitBill)
+                splitBillId = splitBill.id
 
-        do {
-            try dataManager.addSplitBill(splitBill)
-            splitBillId = splitBill.id
-
-            // Update balances for payer
-            for participant in participants where participant.personId != payer.id {
-                if var person = dataManager.people.first(where: { $0.id == participant.personId }) {
-                    person.balance -= participant.amount
-                    try dataManager.updatePerson(person)
+                // Update balances for participants
+                for participant in participants where participant.personId != payer.id {
+                    if var person = dataManager.people.first(where: { $0.id == participant.personId }) {
+                        person.balance -= participant.amount
+                        try dataManager.updatePerson(person)
+                    }
                 }
-            }
 
-            if var payerPerson = dataManager.people.first(where: { $0.id == payer.id }) {
-                let totalOwed =
-                    participants
-                    .filter { $0.personId != payer.id }
-                    .reduce(0) { $0 + $1.amount }
-                payerPerson.balance += totalOwed
-                try dataManager.updatePerson(payerPerson)
+                if var payerPerson = dataManager.people.first(where: { $0.id == payer.id }) {
+                    let totalOwed =
+                        participants
+                        .filter { $0.personId != payer.id }
+                        .reduce(0) { $0 + $1.amount }
+                    payerPerson.balance += totalOwed
+                    try dataManager.updatePerson(payerPerson)
+                }
+            } catch {
+                print("Error creating split bill: \(error)")
+                return
             }
-        } catch {
-            print("Error creating split bill: \(error)")
-            return
         }
 
+        let subtitle = selectedParticipants.isEmpty ? transactionType.rawValue : "Split Transaction"
         let newTransaction = Transaction(
             title: title.trimmingCharacters(in: .whitespaces),
-            subtitle: "Split Transaction",
+            subtitle: subtitle,
             amount: finalAmount,
             category: selectedCategory,
             date: Date(),
