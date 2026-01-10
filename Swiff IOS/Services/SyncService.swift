@@ -607,12 +607,226 @@ final class SyncService: ObservableObject {
     }
 
     private func handleRealtimeMessage(_ message: RealtimeMessage, modelContext: ModelContext) async {
-        // Handle incoming realtime changes
-        // This would decode the message and apply changes to local SwiftData
-        print("Realtime update on \(message.table): \(message.eventType)")
+        print("📡 Realtime update on \(message.table): \(message.eventType)")
 
-        // Trigger an incremental sync for the affected table
-        // In production, you'd decode the payload directly
+        // Handle the realtime change based on table and event type
+        do {
+            switch message.table {
+            case SupabaseConfig.Tables.transactions:
+                try await handleTransactionChange(message, modelContext: modelContext)
+            case SupabaseConfig.Tables.subscriptions:
+                try await handleSubscriptionChange(message, modelContext: modelContext)
+            case SupabaseConfig.Tables.persons:
+                try await handlePersonChange(message, modelContext: modelContext)
+            case SupabaseConfig.Tables.groups:
+                try await handleGroupChange(message, modelContext: modelContext)
+            default:
+                print("⚠️ Unknown table in realtime message: \(message.table)")
+            }
+
+            // Notify DataManager to reload data after applying changes
+            await MainActor.run {
+                DataManager.shared.loadAllData()
+            }
+        } catch {
+            print("❌ Failed to handle realtime message: \(error)")
+        }
+    }
+
+    // MARK: - Realtime Change Handlers
+
+    private func handleTransactionChange(_ message: RealtimeMessage, modelContext: ModelContext) async throws {
+        guard let newRecord = message.newRecord else {
+            if message.isDelete, let oldRecord = message.oldRecord,
+               let idString = oldRecord["id"] as? String,
+               let id = UUID(uuidString: idString) {
+                // Handle delete
+                let fetchDescriptor = FetchDescriptor<TransactionModel>(
+                    predicate: #Predicate { $0.id == id }
+                )
+                if let existing = try modelContext.fetch(fetchDescriptor).first {
+                    modelContext.delete(existing)
+                    try modelContext.save()
+                    print("🗑️ Transaction deleted via realtime: \(id)")
+                }
+            }
+            return
+        }
+
+        // Convert dictionary to JSON data, then decode
+        let jsonData = try JSONSerialization.data(withJSONObject: newRecord)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let remote = try decoder.decode(SupabaseTransaction.self, from: jsonData)
+
+        // Apply the change
+        await applyTransactionChange(remote, modelContext: modelContext)
+        try modelContext.save()
+        print("✅ Transaction synced via realtime: \(remote.title)")
+    }
+
+    private func handleSubscriptionChange(_ message: RealtimeMessage, modelContext: ModelContext) async throws {
+        guard let newRecord = message.newRecord else {
+            if message.isDelete, let oldRecord = message.oldRecord,
+               let idString = oldRecord["id"] as? String,
+               let id = UUID(uuidString: idString) {
+                // Handle delete
+                let fetchDescriptor = FetchDescriptor<SubscriptionModel>(
+                    predicate: #Predicate { $0.id == id }
+                )
+                if let existing = try modelContext.fetch(fetchDescriptor).first {
+                    modelContext.delete(existing)
+                    try modelContext.save()
+                    print("🗑️ Subscription deleted via realtime: \(id)")
+                }
+            }
+            return
+        }
+
+        let jsonData = try JSONSerialization.data(withJSONObject: newRecord)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let remote = try decoder.decode(SupabaseSubscription.self, from: jsonData)
+
+        await applySubscriptionChange(remote, modelContext: modelContext)
+        try modelContext.save()
+        print("✅ Subscription synced via realtime: \(remote.name)")
+    }
+
+    private func handlePersonChange(_ message: RealtimeMessage, modelContext: ModelContext) async throws {
+        guard let newRecord = message.newRecord else {
+            if message.isDelete, let oldRecord = message.oldRecord,
+               let idString = oldRecord["id"] as? String,
+               let id = UUID(uuidString: idString) {
+                // Handle delete
+                let fetchDescriptor = FetchDescriptor<PersonModel>(
+                    predicate: #Predicate { $0.id == id }
+                )
+                if let existing = try modelContext.fetch(fetchDescriptor).first {
+                    modelContext.delete(existing)
+                    try modelContext.save()
+                    print("🗑️ Person deleted via realtime: \(id)")
+                }
+            }
+            return
+        }
+
+        let jsonData = try JSONSerialization.data(withJSONObject: newRecord)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let remote = try decoder.decode(SupabasePerson.self, from: jsonData)
+
+        await applyPersonChange(remote, modelContext: modelContext)
+        try modelContext.save()
+        print("✅ Person synced via realtime: \(remote.name)")
+    }
+
+    private func handleGroupChange(_ message: RealtimeMessage, modelContext: ModelContext) async throws {
+        guard let newRecord = message.newRecord else {
+            if message.isDelete, let oldRecord = message.oldRecord,
+               let idString = oldRecord["id"] as? String,
+               let id = UUID(uuidString: idString) {
+                // Handle delete
+                let fetchDescriptor = FetchDescriptor<GroupModel>(
+                    predicate: #Predicate { $0.id == id }
+                )
+                if let existing = try modelContext.fetch(fetchDescriptor).first {
+                    modelContext.delete(existing)
+                    try modelContext.save()
+                    print("🗑️ Group deleted via realtime: \(id)")
+                }
+            }
+            return
+        }
+
+        let jsonData = try JSONSerialization.data(withJSONObject: newRecord)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let remote = try decoder.decode(SupabaseGroup.self, from: jsonData)
+
+        await applyGroupChange(remote, modelContext: modelContext)
+        try modelContext.save()
+        print("✅ Group synced via realtime: \(remote.name)")
+    }
+
+    // MARK: - Apply Change Helpers
+
+    private func applySubscriptionChange(_ remote: SupabaseSubscription, modelContext: ModelContext) async {
+        let fetchDescriptor = FetchDescriptor<SubscriptionModel>(
+            predicate: #Predicate { $0.id == remote.id }
+        )
+
+        do {
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                // Update existing if remote is newer
+                if remote.syncVersion > existing.syncVersion {
+                    existing.name = remote.name
+                    existing.price = NSDecimalNumber(decimal: remote.price).doubleValue
+                    existing.billingCycle = remote.billingCycle
+                    existing.category = remote.category
+                    existing.isActive = remote.isActive
+                    existing.syncVersion = remote.syncVersion
+                }
+            } else if remote.deletedAt == nil {
+                // Insert new
+                let newSubscription = SubscriptionModel.from(remote: remote)
+                modelContext.insert(newSubscription)
+            }
+        } catch {
+            print("Failed to apply subscription change: \(error)")
+        }
+    }
+
+    private func applyPersonChange(_ remote: SupabasePerson, modelContext: ModelContext) async {
+        let fetchDescriptor = FetchDescriptor<PersonModel>(
+            predicate: #Predicate { $0.id == remote.id }
+        )
+
+        do {
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                if remote.syncVersion > existing.syncVersion {
+                    existing.name = remote.name
+                    existing.email = remote.email ?? ""
+                    existing.phone = remote.phone ?? ""
+                    existing.balance = NSDecimalNumber(decimal: remote.balance).doubleValue
+                    existing.syncVersion = remote.syncVersion
+                }
+            } else if remote.deletedAt == nil {
+                let newPerson = PersonModel.from(remote: remote)
+                modelContext.insert(newPerson)
+            }
+        } catch {
+            print("Failed to apply person change: \(error)")
+        }
+    }
+
+    private func applyGroupChange(_ remote: SupabaseGroup, modelContext: ModelContext) async {
+        let fetchDescriptor = FetchDescriptor<GroupModel>(
+            predicate: #Predicate { $0.id == remote.id }
+        )
+
+        do {
+            let existing = try modelContext.fetch(fetchDescriptor).first
+
+            if let existing = existing {
+                if remote.syncVersion > existing.syncVersion {
+                    existing.name = remote.name
+                    existing.groupDescription = remote.description ?? ""
+                    existing.emoji = remote.emoji ?? "👥"
+                    existing.totalAmount = NSDecimalNumber(decimal: remote.totalAmount).doubleValue
+                    existing.syncVersion = remote.syncVersion
+                }
+            } else if remote.deletedAt == nil {
+                let newGroup = GroupModel.from(remote: remote)
+                modelContext.insert(newGroup)
+            }
+        } catch {
+            print("Failed to apply group change: \(error)")
+        }
     }
 
     // MARK: - Persistence
