@@ -113,7 +113,7 @@ struct PriceChangeConfirmationSheet: View {
                         .font(.spotifyLabelSmall)
                         .foregroundColor(.wiseSecondaryText)
 
-                    Text(String(format: "$%.2f", oldPrice))
+                    Text(oldPrice.asCurrency)
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(.wiseSecondaryText)
                         .strikethrough()
@@ -136,7 +136,7 @@ struct PriceChangeConfirmationSheet: View {
                         .font(.spotifyLabelSmall)
                         .foregroundColor(.wiseSecondaryText)
 
-                    Text(String(format: "$%.2f", newPrice))
+                    Text(newPrice.asCurrency)
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(isIncrease ? .wiseError : .wiseBrightGreen)
                 }
@@ -156,11 +156,7 @@ struct PriceChangeConfirmationSheet: View {
             HStack(spacing: 8) {
                 Image(systemName: isIncrease ? "arrow.up" : "arrow.down")
                     .font(.system(size: 14))
-                Text(String(format: "%@$%.2f (%@%.1f%%)",
-                           isIncrease ? "+" : "",
-                           abs(changeAmount),
-                           isIncrease ? "+" : "",
-                           changePercentage))
+                Text("\(isIncrease ? "+" : "")\(abs(changeAmount).asCurrency) (\(isIncrease ? "+" : "")\(String(format: "%.1f", changePercentage))%)")
                     .font(.spotifyBodyMedium)
                     .fontWeight(.semibold)
             }

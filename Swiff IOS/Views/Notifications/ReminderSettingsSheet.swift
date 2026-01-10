@@ -159,7 +159,7 @@ struct ReminderSettingsSheet: View {
 
             Spacer()
 
-            Text(String(format: "$%.2f", subscription.price))
+            Text(subscription.price.asCurrency)
                 .font(.spotifyNumberMedium)
                 .foregroundColor(.wisePrimaryText)
         }

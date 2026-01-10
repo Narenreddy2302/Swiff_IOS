@@ -76,9 +76,8 @@ struct ConversationBalance {
     }
     
     var formattedBalance: String {
-        let absAmount = abs(amount)
-        let formattedAmount = String(format: "$%.2f", absAmount)
-        
+        let formattedAmount = abs(amount).asCurrency
+
         switch type {
         case .youOwe:
             return "You owe \(formattedAmount)"

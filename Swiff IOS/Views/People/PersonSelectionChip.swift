@@ -35,7 +35,7 @@ struct PersonSelectionChip: View {
                     .foregroundColor(.wisePrimaryText)
 
                 if let amount = amount {
-                    Text(String(format: "$%.2f", amount))
+                    Text(amount.asCurrency)
                         .font(.spotifyCaptionMedium)
                         .foregroundColor(.wiseSecondaryText)
                 }
