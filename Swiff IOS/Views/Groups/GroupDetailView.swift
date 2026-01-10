@@ -276,9 +276,7 @@ struct GroupDetailView: View {
                                 Button(action: {
                                     settleExpense(expense)
                                 }) {
-                                    Text(
-                                        "Settle share: \(String(format: "$%.2f", expense.amountPerPerson))"
-                                    )
+                                    Text("Settle share: \(expense.amountPerPerson.asCurrency)")
                                     .font(.caption)
                                     .fontWeight(.bold)
                                     .padding(.horizontal, 12)
@@ -436,7 +434,7 @@ struct GroupDetailView: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text(String(format: "$%.2f", memberStats.amount))
+                Text(memberStats.amount.asCurrency)
                     .font(.spotifyBodyMedium)
                     .fontWeight(.semibold)
                     .foregroundColor(memberStats.color)
@@ -556,7 +554,7 @@ struct GroupDetailView: View {
                 StatisticsCardComponent(
                     icon: "dollarsign.circle.fill",
                     title: "Total Spending",
-                    value: String(format: "$%.2f", totalGroupExpenses),
+                    value: totalGroupExpenses.asCurrency,
                     iconColor: .wiseForestGreen,
                     showIcon: true
                 )
@@ -564,9 +562,7 @@ struct GroupDetailView: View {
                 StatisticsCardComponent(
                     icon: "chart.pie.fill",
                     title: "Per Person",
-                    value: String(
-                        format: "$%.2f",
-                        members.isEmpty ? 0 : totalGroupExpenses / Double(members.count)),
+                    value: (members.isEmpty ? 0 : totalGroupExpenses / Double(members.count)).asCurrency,
                     iconColor: .wiseBlue,
                     showIcon: true
                 )
@@ -668,7 +664,7 @@ struct GroupDetailView: View {
         UnifiedListRow(
             title: member.name,
             subtitle: memberStats.subtitle,
-            value: String(format: "$%.2f", memberStats.amount),
+            value: memberStats.amount.asCurrency,
             valueColor: memberStats.color,
             valueLabel: memberStats.label
         ) {
@@ -689,12 +685,12 @@ struct GroupDetailView: View {
 
         if netBalance > 0 {
             return (
-                "Paid \(String(format: "$%.2f", totalPaid))", netBalance, .wiseBrightGreen,
+                "Paid \(totalPaid.asCurrency)", netBalance, .wiseBrightGreen,
                 "owed to them"
             )
         } else if netBalance < 0 {
             return (
-                "Owes \(String(format: "$%.2f", abs(netBalance)))", abs(netBalance), .wiseError,
+                "Owes \(abs(netBalance).asCurrency)", abs(netBalance), .wiseError,
                 "they owe"
             )
         } else {
@@ -885,7 +881,7 @@ struct GroupDetailView: View {
                         .foregroundColor(.wisePrimaryText)
 
                     if pendingSplitBillAmount > 0 {
-                        Text(String(format: "$%.2f pending", pendingSplitBillAmount))
+                        Text("\(pendingSplitBillAmount.asCurrency) pending")
                             .font(.spotifyCaptionSmall)
                             .foregroundColor(.wiseSecondaryText)
                     }
@@ -949,8 +945,7 @@ struct GroupDetailView: View {
                     activityRowItem(
                         icon: "chart.bar.fill",
                         title: "Largest Expense",
-                        subtitle:
-                            "\(String(format: "$%.2f", largestExpense.amount)) - \(largestExpense.title)",
+                        subtitle: "\(largestExpense.amount.asCurrency) - \(largestExpense.title)",
                         color: .wiseForestGreen
                     )
                 }
@@ -1097,12 +1092,7 @@ struct GroupDetailView: View {
 
     /// Format currency amount for display
     private func formatCurrencyAmount(_ amount: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: amount)) ?? "$0.00"
+        amount.asCurrency
     }
 
     private func settleExpense(_ expense: GroupExpense) {
@@ -1153,13 +1143,6 @@ struct GroupDetailView: View {
 enum GroupConversationTab: String, ConversationTabProtocol, CaseIterable {
     case activity = "Activity"
     case balances = "Balances"
-    case members = "Members"
-}
-
-// DEPRECATED: Old tab enum - kept for reference
-enum DetailTab: String, CaseIterable {
-    case overview = "Overview"
-    case expenses = "Expenses"
     case members = "Members"
 }
 
@@ -1214,7 +1197,7 @@ struct ExpenseRowView: View {
 
             // Amount and Time
             VStack(alignment: .trailing, spacing: 3) {
-                Text("-\(String(format: "$%.2f", expense.amount))")
+                Text("-\(expense.amount.asCurrency)")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(AmountColors.negative)
 
@@ -1611,7 +1594,7 @@ struct ExportGroupSheet: View {
             let payer = members.first { $0.id == expense.paidBy }?.name ?? "Unknown"
             text += "Date: \(expense.date.formatted(date: .abbreviated, time: .omitted))\n"
             text += "Title: \(expense.title)\n"
-            text += "Amount: $\(String(format: "%.2f", expense.amount))\n"
+            text += "Amount: \(expense.amount.asCurrency)\n"
             text += "Paid by: \(payer)\n"
             text += "Status: \(expense.isSettled ? "Settled" : "Pending")\n"
             if !expense.notes.isEmpty {
@@ -1631,12 +1614,11 @@ struct ExportGroupSheet: View {
         var summary = "GROUP SUMMARY: \(group.name)\n"
         summary += "=================================\n\n"
         summary += "Total Expenses: \(expenses.count)\n"
-        summary += "Total Amount: $\(String(format: "%.2f", total))\n"
+        summary += "Total Amount: \(total.asCurrency)\n"
         summary += "Settled: \(settled)\n"
         summary += "Pending: \(pending)\n"
         summary += "Members: \(members.count)\n"
-        summary +=
-            "Average per person: $\(String(format: "%.2f", members.isEmpty ? 0 : total / Double(members.count)))\n"
+        summary += "Average per person: \((members.isEmpty ? 0 : total / Double(members.count)).asCurrency)\n"
 
         return summary
     }

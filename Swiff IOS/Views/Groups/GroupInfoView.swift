@@ -213,7 +213,7 @@ struct GroupInfoView: View {
                 StatisticsCardComponent(
                     icon: "dollarsign.circle.fill",
                     title: "Total Spending",
-                    value: String(format: "$%.2f", totalGroupExpenses),
+                    value: totalGroupExpenses.asCurrency,
                     iconColor: .wiseForestGreen,
                     showIcon: true
                 )
@@ -221,9 +221,7 @@ struct GroupInfoView: View {
                 StatisticsCardComponent(
                     icon: "chart.pie.fill",
                     title: "Per Person",
-                    value: String(
-                        format: "$%.2f",
-                        members.isEmpty ? 0 : totalGroupExpenses / Double(members.count)),
+                    value: (members.isEmpty ? 0 : totalGroupExpenses / Double(members.count)).asCurrency,
                     iconColor: .wiseBlue,
                     showIcon: true
                 )
@@ -333,7 +331,7 @@ struct GroupInfoView: View {
         UnifiedListRow(
             title: member.name,
             subtitle: memberStats.subtitle,
-            value: String(format: "$%.2f", memberStats.amount),
+            value: memberStats.amount.asCurrency,
             valueColor: memberStats.color,
             valueLabel: memberStats.label
         ) {
@@ -408,12 +406,12 @@ struct GroupInfoView: View {
 
         if netBalance > 0 {
             return (
-                "Paid \(String(format: "$%.2f", totalPaid))", netBalance, .wiseBrightGreen,
+                "Paid \(totalPaid.asCurrency)", netBalance, .wiseBrightGreen,
                 "owed to them"
             )
         } else if netBalance < 0 {
             return (
-                "Owes \(String(format: "$%.2f", abs(netBalance)))", abs(netBalance), .wiseError,
+                "Owes \(abs(netBalance).asCurrency)", abs(netBalance), .wiseError,
                 "they owe"
             )
         } else {
