@@ -241,6 +241,11 @@ struct SubscriptionsView: View {
                                 }
                                 .padding(.bottom, 100)
                             }
+                            .refreshable {
+                                HapticManager.shared.pullToRefresh()
+                                dataManager.loadAllData()
+                                ToastManager.shared.showSuccess("Refreshed")
+                            }
                         } else if filteredSharedSubscriptions.isEmpty && selectedCategory != nil {
                             // Category filter has no matches
                             ScrollView {
@@ -264,6 +269,11 @@ struct SubscriptionsView: View {
                                     )
                                 }
                                 .padding(.bottom, 100)
+                            }
+                            .refreshable {
+                                HapticManager.shared.pullToRefresh()
+                                dataManager.loadAllData()
+                                ToastManager.shared.showSuccess("Refreshed")
                             }
                             .transition(.move(edge: .trailing))
                         } else {
@@ -289,6 +299,11 @@ struct SubscriptionsView: View {
                                     )
                                 }
                                 .padding(.bottom, 100)
+                            }
+                            .refreshable {
+                                HapticManager.shared.pullToRefresh()
+                                dataManager.loadAllData()
+                                ToastManager.shared.showSuccess("Refreshed")
                             }
                             .transition(.move(edge: .trailing))
                         }
