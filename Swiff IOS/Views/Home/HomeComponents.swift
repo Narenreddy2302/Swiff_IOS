@@ -8,6 +8,17 @@
 
 import SwiftUI
 
+// MARK: - Currency Formatting Helper
+private func formatCurrencyCompact(_ amount: Double, showDecimals: Bool = false) -> String {
+    let currencyCode = UserSettings.shared.selectedCurrency
+    let formatter = NumberFormatter()
+    formatter.numberStyle = .currency
+    formatter.currencyCode = currencyCode
+    formatter.minimumFractionDigits = showDecimals ? 2 : 0
+    formatter.maximumFractionDigits = showDecimals ? 2 : 0
+    return formatter.string(from: NSNumber(value: amount)) ?? "\(currencyCode) \(Int(amount))"
+}
+
 // MARK: - Financial Overview Grid
 struct FinancialOverviewGrid: View {
     @Binding var selectedTab: Int
@@ -44,7 +55,7 @@ struct FinancialOverviewGrid: View {
                     icon: "dollarsign.circle.fill",
                     iconColor: Theme.Colors.brandPrimary,
                     title: "BALANCE",
-                    amount: String(format: "$%.0f", animatedBalance)
+                    amount: formatCurrencyCompact(animatedBalance)
                 )
             }
             .buttonStyle(PlainButtonStyle())
@@ -58,7 +69,7 @@ struct FinancialOverviewGrid: View {
                     icon: "creditcard.circle.fill",
                     iconColor: Theme.Colors.brandSecondary,
                     title: "SUBSCRIPTIONS",
-                    amount: String(format: "$%.0f/mo", animatedSubscriptions)
+                    amount: "\(formatCurrencyCompact(animatedSubscriptions))/mo"
                 )
             }
             .buttonStyle(PlainButtonStyle())
@@ -68,7 +79,7 @@ struct FinancialOverviewGrid: View {
                 icon: "arrow.up.circle.fill",
                 iconColor: Theme.Colors.brandPrimary,
                 title: "INCOME",
-                amount: String(format: "$%.0f", animatedIncome)
+                amount: formatCurrencyCompact(animatedIncome)
             )
 
             // Expenses Card
@@ -76,7 +87,7 @@ struct FinancialOverviewGrid: View {
                 icon: "arrow.down.circle.fill",
                 iconColor: Theme.Colors.statusError,
                 title: "EXPENSES",
-                amount: String(format: "$%.0f", animatedExpenses)
+                amount: formatCurrencyCompact(animatedExpenses)
             )
         }
         .onAppear {
@@ -99,6 +110,7 @@ struct FinancialOverviewGrid: View {
         }
         .sheet(isPresented: $showingBalanceDetail) {
             BalanceDetailView()
+                .environmentObject(dataManager)
         }
     }
 }

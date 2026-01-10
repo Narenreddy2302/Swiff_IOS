@@ -78,7 +78,7 @@ struct QuickActionSheet: View {
             // Header
             HStack {
                 Text("Quick Actions")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(Theme.Fonts.headerLarge)
                     .foregroundColor(Theme.Colors.textPrimary)
 
                 Spacer()
