@@ -190,6 +190,58 @@ struct Subscription: Identifiable, Codable {
             return "Active Trial"
         }
     }
+
+    // MARK: - Supabase Conversion
+
+    /// Converts this domain model to a Supabase-compatible model for API upload
+    /// - Parameter userId: The authenticated user's ID from Supabase
+    /// - Returns: SupabaseSubscription ready for API insertion/update
+    func toSupabaseModel(userId: UUID) -> SupabaseSubscription {
+        return SupabaseSubscription(
+            id: self.id,
+            userId: userId,
+            name: self.name,
+            description: self.description.isEmpty ? nil : self.description,
+            price: Decimal(self.price),
+            billingCycle: self.billingCycle.rawValue,
+            category: self.category.rawValue,
+            icon: self.icon,
+            color: self.color,
+            nextBillingDate: self.nextBillingDate,
+            isActive: self.isActive,
+            isShared: self.isShared,
+            paymentMethod: self.paymentMethod.rawValue,
+            lastBillingDate: self.lastBillingDate,
+            totalSpent: Decimal(self.totalSpent),
+            notes: self.notes.isEmpty ? nil : self.notes,
+            website: self.website,
+            cancellationDate: self.cancellationDate,
+            isFreeTrial: self.isFreeTrial,
+            trialStartDate: self.trialStartDate,
+            trialEndDate: self.trialEndDate,
+            trialDuration: self.trialDuration,
+            willConvertToPaid: self.willConvertToPaid,
+            priceAfterTrial: self.priceAfterTrial != nil ? Decimal(self.priceAfterTrial!) : nil,
+            enableRenewalReminder: self.enableRenewalReminder,
+            reminderDaysBefore: self.reminderDaysBefore,
+            reminderTime: self.reminderTime,
+            lastReminderSent: self.lastReminderSent,
+            lastUsedDate: self.lastUsedDate,
+            usageCount: self.usageCount,
+            lastPriceChange: self.lastPriceChange,
+            autoRenew: self.autoRenew,
+            cancellationDeadline: self.cancellationDeadline,
+            cancellationInstructions: self.cancellationInstructions,
+            cancellationDifficulty: self.cancellationDifficulty?.rawValue,
+            alternativeSuggestions: self.alternativeSuggestions.isEmpty ? nil : self.alternativeSuggestions,
+            retentionOffers: nil,  // Complex type - handle separately if needed
+            documents: nil,  // Complex type - handle separately if needed
+            createdAt: self.createdDate,
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
+    }
 }
 
 // MARK: - Shared Member Model

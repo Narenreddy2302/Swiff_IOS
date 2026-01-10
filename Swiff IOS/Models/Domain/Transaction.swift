@@ -163,4 +163,39 @@ struct Transaction: Identifiable, Codable {
     var displayName: String {
         merchant ?? title
     }
+
+    // MARK: - Supabase Conversion
+
+    /// Converts this domain model to a Supabase-compatible model for API upload
+    /// - Parameter userId: The authenticated user's ID from Supabase
+    /// - Returns: SupabaseTransaction ready for API insertion/update
+    func toSupabaseModel(userId: UUID) -> SupabaseTransaction {
+        return SupabaseTransaction(
+            id: self.id,
+            userId: userId,
+            title: self.title,
+            subtitle: self.subtitle.isEmpty ? nil : self.subtitle,
+            amount: Decimal(self.amount),
+            category: self.category.rawValue,
+            date: self.date,
+            transactionType: self.transactionType?.rawValue,
+            isRecurring: self.isRecurring,
+            isRecurringCharge: self.isRecurringCharge,
+            tags: self.tags,
+            merchant: self.merchant,
+            merchantCategory: self.merchantCategory,
+            paymentStatus: self.paymentStatus.rawValue,
+            linkedSubscriptionId: self.linkedSubscriptionId,
+            splitBillId: self.splitBillId,
+            relatedPersonId: nil,  // Set by caller if needed
+            paymentMethod: self.paymentMethod?.rawValue,
+            accountId: nil,  // Set by caller if needed
+            location: self.location,
+            notes: self.notes.isEmpty ? nil : self.notes,
+            createdAt: Date(),
+            updatedAt: Date(),
+            deletedAt: nil,
+            syncVersion: 1
+        )
+    }
 }
