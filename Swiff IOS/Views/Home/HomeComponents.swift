@@ -28,25 +28,6 @@ struct FinancialOverviewGrid: View {
         return peopleBalance + netIncome
     }
 
-    // Simple trend calculation (mock data - in production, you'd compare with last month)
-    // Returns: percentage change, isUp (direction), isGood (financially positive)
-    func calculateTrend(for type: String) -> (percentage: Double, isUp: Bool, isGood: Bool) {
-        // For demo purposes, using fixed trend values
-        // In production, you would calculate actual change from previous month
-        switch type {
-        case "balance":
-            return (5.2, true, true)     // Balance UP = good (green)
-        case "subscriptions":
-            return (2.1, false, true)    // Subscriptions DOWN = good (green, saves money)
-        case "income":
-            return (8.5, true, true)     // Income UP = good (green)
-        case "expenses":
-            return (3.4, true, false)    // Expenses UP = bad (red)
-        default:
-            return (0, true, true)
-        }
-    }
-
     var body: some View {
         LazyVGrid(
             columns: [
@@ -59,47 +40,43 @@ struct FinancialOverviewGrid: View {
                 HapticManager.shared.light()
                 showingBalanceDetail = true
             }) {
-                EnhancedFinancialCard(
+                FinancialCard(
                     icon: "dollarsign.circle.fill",
                     iconColor: Theme.Colors.brandPrimary,
                     title: "BALANCE",
-                    amount: String(format: "$%.0f", animatedBalance),
-                    trend: calculateTrend(for: "balance")
+                    amount: String(format: "$%.0f", animatedBalance)
                 )
             }
             .buttonStyle(PlainButtonStyle())
 
-            // Subscriptions Card (replaced Difference)
+            // Subscriptions Card
             Button(action: {
                 HapticManager.shared.light()
                 selectedTab = 3  // Switch to Subscriptions tab
             }) {
-                EnhancedFinancialCard(
+                FinancialCard(
                     icon: "creditcard.circle.fill",
                     iconColor: Theme.Colors.brandSecondary,
                     title: "SUBSCRIPTIONS",
-                    amount: String(format: "$%.0f/mo", animatedSubscriptions),
-                    trend: calculateTrend(for: "subscriptions")
+                    amount: String(format: "$%.0f/mo", animatedSubscriptions)
                 )
             }
             .buttonStyle(PlainButtonStyle())
 
             // Income Card
-            EnhancedFinancialCard(
+            FinancialCard(
                 icon: "arrow.up.circle.fill",
                 iconColor: Theme.Colors.brandPrimary,
                 title: "INCOME",
-                amount: String(format: "$%.0f", animatedIncome),
-                trend: calculateTrend(for: "income")
+                amount: String(format: "$%.0f", animatedIncome)
             )
 
             // Expenses Card
-            EnhancedFinancialCard(
+            FinancialCard(
                 icon: "arrow.down.circle.fill",
                 iconColor: Theme.Colors.statusError,
                 title: "EXPENSES",
-                amount: String(format: "$%.0f", animatedExpenses),
-                trend: calculateTrend(for: "expenses")
+                amount: String(format: "$%.0f", animatedExpenses)
             )
         }
         .onAppear {
@@ -157,18 +134,13 @@ struct FinancialCard: View {
     }
 }
 
-// MARK: - Enhanced Financial Card (with trends)
+// MARK: - Enhanced Financial Card (with trends - used by other views)
 struct EnhancedFinancialCard: View {
     let icon: String
     let iconColor: Color
     let title: String
     let amount: String
     let trend: (percentage: Double, isUp: Bool, isGood: Bool)
-
-    /// Color based on whether the trend is financially good or bad
-    private var trendColor: Color {
-        trend.isGood ? Theme.Colors.brandPrimary : Theme.Colors.statusError
-    }
 
     var body: some View {
         SwiffCard {
@@ -191,39 +163,5 @@ struct EnhancedFinancialCard: View {
                     .foregroundColor(Theme.Colors.textPrimary)
             }
         }
-    }
-}
-
-// MARK: - Subscriptions Card
-struct SubscriptionsCard: View {
-    @Binding var selectedTab: Int
-    @EnvironmentObject var dataManager: DataManager
-
-    var body: some View {
-        Button(action: {
-            selectedTab = 3  // Switch to Subscriptions tab
-        }) {
-            SwiffCard {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "creditcard.circle.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(Theme.Colors.brandSecondary)
-
-                        Spacer()
-                    }
-
-                    Text("SUBSCRIPTIONS")
-                        .font(Theme.Fonts.captionSmall)
-                        .foregroundColor(Theme.Colors.textSecondary)
-                        .textCase(.uppercase)
-
-                    Text(String(format: "$%.0f/mo", dataManager.calculateTotalMonthlyCost()))
-                        .font(Theme.Fonts.numberLarge)
-                        .foregroundColor(Theme.Colors.textPrimary)
-                }
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
     }
 }

@@ -15,7 +15,6 @@ struct HomeView: View {
     @State private var showingProfile = false
     @State private var showingSearch = false
     @State private var showingQuickActions = false
-    @State private var showingAddSplitBill = false
 
     var body: some View {
         NavigationStack {
