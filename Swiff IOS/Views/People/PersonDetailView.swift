@@ -50,10 +50,7 @@ struct PersonDetailView: View {
         guard let person = person else { return [] }
 
         // Get transaction-based items
-        var items = personTransactions.map { PersonTimelineItem.transaction($0, person) }
-
-        // Add MockData timeline items for this person (for demo/testing)
-        items.append(contentsOf: MockData.timelineItems(for: person.id, personName: person.name))
+        let items = personTransactions.map { PersonTimelineItem.transaction($0, person) }
 
         let grouped = Dictionary(grouping: items) { item in
             Calendar.current.startOfDay(for: item.timestamp)
