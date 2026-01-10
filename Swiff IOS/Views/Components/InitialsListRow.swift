@@ -424,7 +424,7 @@ struct AlignedDivider: View {
             description: "Owes you",
             initials: InitialsGenerator.generate(from: MockData.personOwedMoney.name),
             avatarColor: InitialsAvatarColors.color(for: MockData.personOwedMoney.name),
-            amount: String(format: "$%.2f", MockData.personOwedMoney.balance),
+            amount: MockData.personOwedMoney.balance.asCurrency,
             amountColor: AmountColors.positive,
             timeText: "No activity"
         )
@@ -436,7 +436,7 @@ struct AlignedDivider: View {
             description: "You owe",
             initials: InitialsGenerator.generate(from: MockData.personOwingMoney.name),
             avatarColor: InitialsAvatarColors.color(for: MockData.personOwingMoney.name),
-            amount: String(format: "$%.2f", abs(MockData.personOwingMoney.balance)),
+            amount: abs(MockData.personOwingMoney.balance).asCurrency,
             amountColor: AmountColors.negative,
             timeText: "No activity"
         )
@@ -448,7 +448,7 @@ struct AlignedDivider: View {
             description: "Settled",
             initials: InitialsGenerator.generate(from: MockData.personSettled.name),
             avatarColor: InitialsAvatarColors.color(for: MockData.personSettled.name),
-            amount: String(format: "$%.2f", MockData.personSettled.balance),
+            amount: MockData.personSettled.balance.asCurrency,
             amountColor: .wisePrimaryText,
             timeText: "No activity"
         )
@@ -463,7 +463,7 @@ struct AlignedDivider: View {
             description: MockData.activeSubscription.billingCycle.displayName,
             initials: InitialsGenerator.generate(from: MockData.activeSubscription.name),
             avatarColor: MockData.activeSubscription.category.pastelAvatarColor,
-            amount: String(format: "$%.2f", MockData.activeSubscription.price),
+            amount: MockData.activeSubscription.price.asCurrency,
             amountColor: .wisePrimaryText,
             timeText: MockData.activeSubscription.nextBillingDate.shortCardDate
         )
@@ -475,7 +475,7 @@ struct AlignedDivider: View {
             description: MockData.subscriptionDueToday.billingCycle.displayName,
             initials: InitialsGenerator.generate(from: MockData.subscriptionDueToday.name),
             avatarColor: MockData.subscriptionDueToday.category.pastelAvatarColor,
-            amount: String(format: "$%.2f", MockData.subscriptionDueToday.price),
+            amount: MockData.subscriptionDueToday.price.asCurrency,
             amountColor: .wisePrimaryText,
             timeText: MockData.subscriptionDueToday.nextBillingDate.shortCardDate
         )
@@ -487,7 +487,7 @@ struct AlignedDivider: View {
             description: MockData.yearlySubscription.billingCycle.displayName,
             initials: InitialsGenerator.generate(from: MockData.yearlySubscription.name),
             avatarColor: MockData.yearlySubscription.category.pastelAvatarColor,
-            amount: String(format: "$%.2f", MockData.yearlySubscription.price),
+            amount: MockData.yearlySubscription.price.asCurrency,
             amountColor: .wisePrimaryText,
             timeText: MockData.yearlySubscription.nextBillingDate.shortCardDate
         )

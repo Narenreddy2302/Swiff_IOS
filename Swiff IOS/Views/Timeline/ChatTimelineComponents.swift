@@ -46,10 +46,7 @@ struct TransactionBubbleContent: View {
     }
     
     private func formatCurrency(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter.string(from: NSNumber(value: value)) ?? String(format: "$%.2f", value)
+        value.asCurrency
     }
 }
 
@@ -83,10 +80,7 @@ struct PaymentBubbleContent: View {
     }
     
     private func formatCurrency(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencySymbol = "$"
-        return formatter.string(from: NSNumber(value: value)) ?? String(format: "$%.2f", value)
+        value.asCurrency
     }
 }
 
