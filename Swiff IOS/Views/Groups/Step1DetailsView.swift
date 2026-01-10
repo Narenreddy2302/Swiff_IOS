@@ -52,7 +52,7 @@ struct Step1DetailsView: View {
                         .foregroundColor(.wiseSecondaryText)
 
                     HStack(spacing: 8) {
-                        Text("$")
+                        Text(CurrencyFormatter.shared.getCurrencySymbol())
                             .font(.spotifyNumberLarge)
                             .foregroundColor(.wisePrimaryText)
 

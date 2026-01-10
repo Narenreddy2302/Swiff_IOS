@@ -227,7 +227,7 @@ struct AnalyticsView: View {
                     } else {
                         // Placeholder to maintain layout
                         HStack(alignment: .firstTextBaseline, spacing: 2) {
-                            Text("$")
+                            Text(CurrencyFormatter.shared.getCurrencySymbol())
                                 .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.wisePrimaryText)
                             Text("0")

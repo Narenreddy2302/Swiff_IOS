@@ -105,6 +105,28 @@ All hardcoded currency issues have been fixed across the codebase. Currency now 
 
 ---
 
+## Edit Sheets Review - ✅ COMPLETED
+
+All Edit Sheets have been reviewed for production readiness:
+
+| Sheet | Status | Notes |
+|-------|--------|-------|
+| `Views/People/EditPersonSheet.swift` | ✅ Ready | Uses callback pattern, form validation, avatar editing |
+| `Views/People/AddGroupSheet.swift` (edit mode) | ✅ Ready | Supports both add/edit via `editingGroup` param |
+| `Views/Transactions/EditTransactionSheet.swift` | ✅ Ready | Full transaction editing, proper error handling |
+
+### Additional Currency Fixes (Edit Sheets Session)
+
+| File | Instances Fixed |
+|------|-----------------|
+| `Views/Transactions/EditTransactionSheet.swift` | 1 |
+| `Views/Search/AdvancedFilterSheet.swift` | 2 |
+| `Views/Groups/Step5ConfigureView.swift` | 1 |
+| `Views/Groups/Step1DetailsView.swift` | 1 |
+| `Views/Analytics/AnalyticsView.swift` | 1 |
+
+---
+
 ## Note on CurrencyFormatter.swift
 
 The `Utilities/CurrencyFormatter.swift` file contains `$` and `USD` strings, but these are **intentionally part of the switch statement** that handles different currencies based on user selection. This file is the central utility that provides the `.asCurrency` extension and properly reads `UserSettings.shared.selectedCurrency` to format currencies correctly.

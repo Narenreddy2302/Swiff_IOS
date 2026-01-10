@@ -478,7 +478,7 @@ struct Step5ConfigureView: View {
     /// Amount input field with consistent styling
     private func amountInputField(for personId: UUID, binding: Binding<[UUID: Double]>) -> some View {
         HStack {
-            Text("$")
+            Text(CurrencyFormatter.shared.getCurrencySymbol())
                 .font(.spotifyBodyLarge)
                 .foregroundColor(.wisePrimaryText)
 
