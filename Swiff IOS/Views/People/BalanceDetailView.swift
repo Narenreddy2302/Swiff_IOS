@@ -504,15 +504,16 @@ struct BalanceDetailView: View {
     }
 
     private func formatCurrency(_ amount: Double) -> String {
-        String(format: "$%.2f", abs(amount))
+        abs(amount).asCurrency
     }
 
     private func formatCurrencyShort(_ amount: Double) -> String {
         let absAmount = abs(amount)
+        let symbol = CurrencyFormatter.shared.getCurrencySymbol()
         if absAmount >= 1000 {
-            return String(format: "$%.1fk", absAmount / 1000)
+            return String(format: "%@%.1fk", symbol, absAmount / 1000)
         }
-        return String(format: "$%.0f", absAmount)
+        return String(format: "%@%.0f", symbol, absAmount)
     }
 
     // Task 4.6: Quick settle action
@@ -592,7 +593,7 @@ struct BalanceBreakdownRow: View {
 
             Spacer()
 
-            Text(String(format: "$%.2f", amount))
+            Text(amount.asCurrency)
                 .font(.spotifyNumberMedium)
                 .foregroundColor(amount >= 0 ? .wiseBrightGreen : .wiseError)
         }
@@ -632,7 +633,7 @@ struct PersonBalanceRowWithActions: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text(String(format: "$%.2f", abs(balance)))
+                    Text(abs(balance).asCurrency)
                         .font(.spotifyNumberMedium)
                         .foregroundColor(balance > 0 ? .wiseBrightGreen : .wiseError)
 
@@ -662,12 +663,12 @@ struct PersonBalanceRowWithActions: View {
             isPresented: $showingSettleConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Settle \(String(format: "$%.2f", abs(balance))) with \(person.name)", role: .destructive) {
+            Button("Settle \(abs(balance).asCurrency) with \(person.name)", role: .destructive) {
                 onSettle()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will mark the balance as settled and set it to $0.00")
+            Text("This will mark the balance as settled and set it to \(CurrencyFormatter.shared.getCurrencySymbol())0.00")
         }
     }
 }
@@ -707,7 +708,7 @@ struct BalanceExportView: View {
                     ReportInfoRow(
                         icon: "dollarsign.circle.fill",
                         title: "Total Balance",
-                        value: String(format: "$%.2f", totalBalance)
+                        value: totalBalance.asCurrency
                     )
 
                     ReportInfoRow(
@@ -719,7 +720,7 @@ struct BalanceExportView: View {
                     ReportInfoRow(
                         icon: "chart.bar.fill",
                         title: "Net Monthly Income",
-                        value: String(format: "$%.2f", netMonthlyIncome)
+                        value: netMonthlyIncome.asCurrency
                     )
 
                     ReportInfoRow(
@@ -798,15 +799,15 @@ struct BalanceExportView: View {
             reportText += "Generated: \(Date().formatted(date: .long, time: .shortened))\n\n"
             reportText += "═══════════════════════════════════════\n\n"
             reportText += "SUMMARY\n"
-            reportText += "Total Balance: $\(String(format: "%.2f", totalBalance))\n"
-            reportText += "Net Monthly Income: $\(String(format: "%.2f", netMonthlyIncome))\n\n"
+            reportText += "Total Balance: \(totalBalance.asCurrency)\n"
+            reportText += "Net Monthly Income: \(netMonthlyIncome.asCurrency)\n\n"
             reportText += "PEOPLE BALANCES (\(peopleBalances.count) total)\n"
             reportText += "───────────────────────────────────────\n\n"
 
             for (index, item) in peopleBalances.enumerated() {
                 let status = item.balance > 0 ? "owes you" : "you owe"
                 reportText += "\(index + 1). \(item.person.name)\n"
-                reportText += "   \(status) $\(String(format: "%.2f", abs(item.balance)))\n"
+                reportText += "   \(status) \(abs(item.balance).asCurrency)\n"
                 reportText += "   Email: \(item.person.email)\n\n"
             }
 

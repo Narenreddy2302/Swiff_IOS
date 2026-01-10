@@ -83,11 +83,7 @@ struct PeopleStatCard: View {
         if isCount {
             return String(Int(amount))
         } else if isAmount {
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .currency
-            formatter.currencySymbol = "$"
-            formatter.maximumFractionDigits = amount >= 1000 ? 0 : 2
-            return formatter.string(from: NSNumber(value: amount)) ?? "$0"
+            return amount.asCurrency
         }
         return String(format: "%.2f", amount)
     }
@@ -175,7 +171,7 @@ struct BalanceSummaryCard: View {
     }
 
     private func formatCurrency(_ amount: Double) -> String {
-        String(format: "$%.0f", amount)
+        amount.asCurrency
     }
 }
 
@@ -776,12 +772,7 @@ struct FeedGroupRow: View {
     // MARK: - Computed Properties
 
     private var formattedAmount: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        let formatted = formatter.string(from: NSNumber(value: group.totalAmount)) ?? String(format: "%.2f", group.totalAmount)
-        return "$\(formatted)"
+        group.totalAmount.asCurrency
     }
 
     private var statusColor: Color {

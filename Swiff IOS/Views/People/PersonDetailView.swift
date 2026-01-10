@@ -195,12 +195,12 @@ struct PersonDetailView: View {
                                 .font(.system(size: 16))
                                 .padding(.top, 2)
                             
-                            Text("Total: \(String(format: "$%.2f", billTotal))")
+                            Text("Total: \(billTotal.asCurrency)")
                                 .font(.system(size: 14))
                                 .opacity(0.8)
-                            
+
                             if youOwe > 0 {
-                                Text("You owe: \(String(format: "$%.2f", youOwe))")
+                                Text("You owe: \(youOwe.asCurrency)")
                                     .font(.system(size: 16, weight: .bold))
                                     .padding(.top, 2)
                             }
@@ -349,7 +349,7 @@ struct SettleUpSheet: View {
                             .font(.spotifyHeadingMedium)
                             .foregroundColor(.wisePrimaryText)
 
-                            Text(String(format: "$%.2f", totalBalance))
+                            Text(totalBalance.asCurrency)
                                 .font(.system(size: 64, weight: .bold, design: .rounded))
                                 .foregroundColor(person.balance > 0 ? .wiseBrightGreen : .wiseError)
                         } else {
@@ -358,7 +358,7 @@ struct SettleUpSheet: View {
                                 .foregroundColor(.wisePrimaryText)
 
                             HStack {
-                                Text("$")
+                                Text(CurrencyFormatter.shared.getCurrencySymbol())
                                     .font(.system(size: 48, weight: .bold, design: .rounded))
                                     .foregroundColor(.wisePrimaryText)
 
@@ -370,7 +370,7 @@ struct SettleUpSheet: View {
                             }
                             .padding(.horizontal, 16)
 
-                            Text("Total balance: $\(String(format: "%.2f", totalBalance))")
+                            Text("Total balance: \(totalBalance.asCurrency)")
                                 .font(.spotifyBodyMedium)
                                 .foregroundColor(.wiseSecondaryText)
                         }
@@ -385,7 +385,7 @@ struct SettleUpSheet: View {
                                     .font(.spotifyBodyMedium)
                                     .foregroundColor(.wiseSecondaryText)
                                 Spacer()
-                                Text(String(format: "$%.2f", settlementAmount))
+                                Text(settlementAmount.asCurrency)
                                     .font(.spotifyBodyMedium)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.wisePrimaryText)
@@ -396,7 +396,7 @@ struct SettleUpSheet: View {
                                     .font(.spotifyBodyMedium)
                                     .foregroundColor(.wiseSecondaryText)
                                 Spacer()
-                                Text(String(format: "$%.2f", totalBalance - settlementAmount))
+                                Text((totalBalance - settlementAmount).asCurrency)
                                     .font(.spotifyBodyMedium)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.wiseError)
@@ -472,7 +472,7 @@ struct SettleUpSheet: View {
                 title: settlementType == .full
                     ? "Settlement with \(person.name)" : "Partial payment from \(person.name)",
                 subtitle: settlementType == .full
-                    ? "Full settlement" : String(format: "$%.2f partial payment", settlementAmount),
+                    ? "Full settlement" : "\(settlementAmount.asCurrency) partial payment",
                 amount: person.balance > 0 ? -settlementAmount : settlementAmount,
                 category: .transfer,
                 date: Date(),
@@ -540,7 +540,7 @@ struct RecordPaymentSheet: View {
                             .foregroundColor(.wiseSecondaryText)
 
                         HStack {
-                            Text("$")
+                            Text(CurrencyFormatter.shared.getCurrencySymbol())
                                 .font(.spotifyNumberLarge)
                                 .foregroundColor(.wisePrimaryText)
 
