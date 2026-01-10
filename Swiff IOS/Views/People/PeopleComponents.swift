@@ -644,58 +644,6 @@ struct GroupsListView: View {
     }
 }
 
-// MARK: - Group Row View (Unified Design)
-@available(*, deprecated, message: "Use UnifiedListRowV2 with emoji icon instead")
-struct GroupRowView: View {
-    let group: Group
-    let people: [Person]
-
-    private var memberCountText: String {
-        return "\(group.members.count) member\(group.members.count == 1 ? "" : "s")"
-    }
-
-    private var expenseCountText: String {
-        return "\(group.expenses.count) expense\(group.expenses.count == 1 ? "" : "s")"
-    }
-
-    private var displaySubtitle: String {
-        // Format: {memberCount} members • {expenseCount} expenses
-        return "\(memberCountText) • \(expenseCountText)"
-    }
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // Unified Emoji Circle (48x48)
-            UnifiedEmojiCircle(
-                emoji: group.emoji,
-                backgroundColor: .wiseBlue
-            )
-
-            // Text Content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(group.name)
-                    .font(.spotifyBodyLarge)
-                    .foregroundColor(.wisePrimaryText)
-                    .lineLimit(1)
-
-                Text(displaySubtitle)
-                    .font(.spotifyBodySmall)
-                    .foregroundColor(.wiseSecondaryText)
-                    .lineLimit(1)
-            }
-
-            Spacer()
-
-            // Value Area - Single amount, right-aligned
-            Text(formatCurrency(group.totalAmount))
-                .font(.spotifyNumberMedium)
-                .foregroundColor(.wisePrimaryText)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-}
-
 // MARK: - Feed Group Row
 
 /// Group row for People list with 8-color avatar system (matching FeedPersonRow)
