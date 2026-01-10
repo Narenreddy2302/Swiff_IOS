@@ -170,7 +170,7 @@ struct EditSubscriptionSheet: View {
 
                             VStack(alignment: .trailing, spacing: 2) {
                                 if let priceValue = Double(price) {
-                                    Text(String(format: "$%.2f", priceValue))
+                                    Text(priceValue.asCurrency)
                                         .font(.spotifyNumberMedium)
                                         .foregroundColor(.wisePrimaryText)
 
@@ -235,7 +235,7 @@ struct EditSubscriptionSheet: View {
                                 .foregroundColor(.wiseSecondaryText)
 
                             HStack {
-                                Text("$")
+                                Text(UserSettings.shared.selectedCurrency.symbol)
                                     .font(.spotifyNumberLarge)
                                     .foregroundColor(.wisePrimaryText)
 
@@ -585,7 +585,7 @@ struct EditSubscriptionSheet: View {
                                         .foregroundColor(.wiseSecondaryText)
 
                                     HStack {
-                                        Text("$")
+                                        Text(UserSettings.shared.selectedCurrency.symbol)
                                             .font(.spotifyNumberLarge)
                                             .foregroundColor(.wisePrimaryText)
 
@@ -682,7 +682,7 @@ struct EditSubscriptionSheet: View {
                             Text("Original Price")
                                 .font(.spotifyLabelSmall)
                                 .foregroundColor(.wiseSecondaryText)
-                            Text(String(format: "$%.2f", originalPrice))
+                            Text(originalPrice.asCurrency)
                                 .font(.spotifyNumberLarge)
                                 .foregroundColor(.wisePrimaryText)
                         }
@@ -696,7 +696,7 @@ struct EditSubscriptionSheet: View {
                                 .font(.spotifyLabelSmall)
                                 .foregroundColor(.wiseSecondaryText)
                             if let newPrice = Double(price) {
-                                Text(String(format: "$%.2f", newPrice))
+                                Text(newPrice.asCurrency)
                                     .font(.spotifyNumberLarge)
                                     .foregroundColor(
                                         newPrice > originalPrice ? .wiseError : .wiseBrightGreen)
