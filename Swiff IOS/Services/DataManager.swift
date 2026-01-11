@@ -7,6 +7,7 @@
 //  Updated by Agent to remove Cloud dependencies.
 //
 
+import Auth
 import Combine
 import Foundation
 import SwiftData

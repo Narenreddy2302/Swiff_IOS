@@ -111,9 +111,3 @@ struct Step2PayerView: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Step 2 Payer") {
-    Step2PayerView(selectedPayer: .constant(MockData.personOwedMoney))
-        .environmentObject(DataManager.shared)
-}

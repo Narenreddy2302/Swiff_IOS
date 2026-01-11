@@ -534,16 +534,3 @@ struct Step5ConfigureView: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Step 5 Configure") {
-    Step5ConfigureView(
-        splitType: .percentages,
-        totalAmount: 100.0,
-        participantIds: [MockData.personOwedMoney.id, MockData.personOwingMoney.id],
-        participantAmounts: .constant([:]),
-        participantPercentages: .constant([:]),
-        participantShares: .constant([:])
-    )
-    .environmentObject(DataManager.shared)
-}

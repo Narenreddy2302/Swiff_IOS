@@ -162,7 +162,7 @@ public struct Person: Identifiable, Codable {
     /// Converts this domain model to a Supabase-compatible model for API upload
     /// - Parameter userId: The authenticated user's ID from Supabase
     /// - Returns: SupabasePerson ready for API insertion/update
-    public func toSupabaseModel(userId: UUID) -> SupabasePerson {
+    func toSupabaseModel(userId: UUID) -> SupabasePerson {
         // Convert avatar type to Supabase format
         var avatarTypeStr: String?
         var avatarEmoji: String?
@@ -177,16 +177,14 @@ public struct Person: Identifiable, Codable {
             avatarTypeStr = "initials"
             avatarInitials = initials
             avatarColorIdx = colorIndex
-        case .photo:
+        case .photo(_):
             avatarTypeStr = "photo"
-        case .contactPhoto:
-            avatarTypeStr = "contact_photo"
         }
 
         // Convert notification preferences
         let notifPrefsData = NotificationPreferencesData(
             enableReminders: notificationPreferences.enableReminders,
-            reminderFrequency: notificationPreferences.reminderFrequency.days,
+            reminderFrequency: notificationPreferences.reminderFrequency,
             preferredContactMethod: notificationPreferences.preferredContactMethod.rawValue
         )
 

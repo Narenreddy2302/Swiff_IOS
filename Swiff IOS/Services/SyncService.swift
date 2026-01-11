@@ -860,60 +860,7 @@ final class SyncService: ObservableObject {
         print("✅ Group synced via realtime: \(remote.name)")
     }
 
-    // MARK: - Apply Change Helpers
-
-    private func applySubscriptionChange(_ remote: SupabaseSubscription, modelContext: ModelContext) async {
-        let fetchDescriptor = FetchDescriptor<SubscriptionModel>(
-            predicate: #Predicate { $0.id == remote.id }
-        )
-
-        do {
-            let existing = try modelContext.fetch(fetchDescriptor).first
-
-            if let existing = existing {
-                // Update existing if remote is newer
-                if remote.syncVersion > existing.syncVersion {
-                    existing.name = remote.name
-                    existing.price = NSDecimalNumber(decimal: remote.price).doubleValue
-                    existing.billingCycle = remote.billingCycle
-                    existing.category = remote.category
-                    existing.isActive = remote.isActive
-                    existing.syncVersion = remote.syncVersion
-                }
-            } else if remote.deletedAt == nil {
-                // Insert new
-                let newSubscription = SubscriptionModel.from(remote: remote)
-                modelContext.insert(newSubscription)
-            }
-        } catch {
-            print("Failed to apply subscription change: \(error)")
-        }
-    }
-
-    private func applyPersonChange(_ remote: SupabasePerson, modelContext: ModelContext) async {
-        let fetchDescriptor = FetchDescriptor<PersonModel>(
-            predicate: #Predicate { $0.id == remote.id }
-        )
-
-        do {
-            let existing = try modelContext.fetch(fetchDescriptor).first
-
-            if let existing = existing {
-                if remote.syncVersion > existing.syncVersion {
-                    existing.name = remote.name
-                    existing.email = remote.email ?? ""
-                    existing.phone = remote.phone ?? ""
-                    existing.balance = NSDecimalNumber(decimal: remote.balance).doubleValue
-                    existing.syncVersion = remote.syncVersion
-                }
-            } else if remote.deletedAt == nil {
-                let newPerson = PersonModel.from(remote: remote)
-                modelContext.insert(newPerson)
-            }
-        } catch {
-            print("Failed to apply person change: \(error)")
-        }
-    }
+    // MARK: - Realtime Group Change Helper
 
     private func applyGroupChange(_ remote: SupabaseGroup, modelContext: ModelContext) async {
         let fetchDescriptor = FetchDescriptor<GroupModel>(

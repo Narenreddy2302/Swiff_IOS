@@ -299,9 +299,3 @@ struct SendReminderSheet: View {
     }
 }
 
-#Preview("Send Reminder Sheet") {
-    SendReminderSheet(
-        person: MockData.personOwedMoney,
-        onReminderSent: {}
-    )
-}

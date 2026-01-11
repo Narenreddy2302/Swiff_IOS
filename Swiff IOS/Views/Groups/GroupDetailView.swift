@@ -1627,25 +1627,3 @@ struct ExportGroupSheet: View {
 // Note: ShareSheet is defined in SettingsView.swift
 // Note: TransactionCategory.pastelAvatarColor is defined in TransactionCard.swift
 
-// MARK: - Preview
-
-#Preview("Group Detail - With Expenses") {
-    NavigationView {
-        GroupDetailView(groupId: MockData.groupWithExpenses.id)
-            .environmentObject(DataManager.shared)
-    }
-}
-
-#Preview("Group Detail - Empty") {
-    NavigationView {
-        GroupDetailView(groupId: MockData.emptyGroup.id)
-            .environmentObject(DataManager.shared)
-    }
-}
-
-#Preview("Group Detail - Settled") {
-    NavigationView {
-        GroupDetailView(groupId: MockData.settledGroup.id)
-            .environmentObject(DataManager.shared)
-    }
-}

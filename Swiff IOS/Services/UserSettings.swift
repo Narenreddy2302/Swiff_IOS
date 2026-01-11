@@ -72,9 +72,6 @@ class UserSettings: ObservableObject {
         static let autoCategorization = "autoCategorization"
         static let developerOptionsEnabled = "developerOptionsEnabled"
         static let versionTapCount = "versionTapCount"
-
-        // Onboarding keys
-        static let hasSampleData = "hasSampleData"
     }
 
     // Published properties
@@ -309,13 +306,6 @@ class UserSettings: ObservableObject {
         }
     }
 
-    // Onboarding properties
-    @Published var hasSampleData: Bool {
-        didSet {
-            defaults.set(hasSampleData, forKey: Keys.hasSampleData)
-        }
-    }
-
     private init() {
         // Load saved values or use defaults
         self.notificationsEnabled = defaults.object(forKey: Keys.notificationsEnabled) as? Bool ?? true
@@ -367,9 +357,6 @@ class UserSettings: ObservableObject {
         self.autoCategorization = defaults.object(forKey: Keys.autoCategorization) as? Bool ?? true
         self.developerOptionsEnabled = defaults.object(forKey: Keys.developerOptionsEnabled) as? Bool ?? false
         self.versionTapCount = defaults.object(forKey: Keys.versionTapCount) as? Int ?? 0
-
-        // Load onboarding settings
-        self.hasSampleData = defaults.object(forKey: Keys.hasSampleData) as? Bool ?? false
     }
 
     // Reset all settings to defaults
@@ -420,8 +407,5 @@ class UserSettings: ObservableObject {
         autoCategorization = true
         developerOptionsEnabled = false
         versionTapCount = 0
-
-        // Reset onboarding settings
-        hasSampleData = false
     }
 }

@@ -404,12 +404,3 @@ struct DaysBeforeChip: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Reminder Settings Sheet") {
-    ReminderSettingsSheet(
-        subscription: MockData.activeSubscription,
-        onSettingsSaved: {}
-    )
-    .environmentObject(DataManager.shared)
-}

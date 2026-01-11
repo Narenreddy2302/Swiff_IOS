@@ -82,7 +82,7 @@ struct AddGroupExpenseSheet: View {
                                 .foregroundColor(.wiseSecondaryText)
 
                             HStack {
-                                Text(UserSettings.shared.selectedCurrency.symbol)
+                                Text((Currency(rawValue: UserSettings.shared.selectedCurrency) ?? .USD).symbol)
                                     .font(.spotifyNumberLarge)
                                     .foregroundColor(.wisePrimaryText)
 
@@ -319,10 +319,3 @@ struct AddGroupExpenseSheet: View {
     }
 }
 
-#Preview("Add Group Expense Sheet") {
-    AddGroupExpenseSheet(
-        group: MockData.groupWithExpenses,
-        onExpenseAdded: {}
-    )
-    .environmentObject(DataManager.shared)
-}

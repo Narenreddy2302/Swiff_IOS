@@ -786,25 +786,3 @@ struct FlowLayout: Layout {
 
 // Note: Color.init(hex:) is defined in SupportingTypes.swift
 
-// MARK: - Preview
-
-#Preview("Transaction Detail - Income") {
-    NavigationView {
-        TransactionDetailView(transactionId: MockData.incomeTransaction.id)
-            .environmentObject(DataManager.shared)
-    }
-}
-
-#Preview("Transaction Detail - Expense") {
-    NavigationView {
-        TransactionDetailView(transactionId: MockData.expenseTransaction.id)
-            .environmentObject(DataManager.shared)
-    }
-}
-
-#Preview("Transaction Detail - Recurring") {
-    NavigationView {
-        TransactionDetailView(transactionId: MockData.recurringTransaction.id)
-            .environmentObject(DataManager.shared)
-    }
-}

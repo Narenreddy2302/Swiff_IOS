@@ -470,12 +470,3 @@ struct UsageStatItem: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Usage Tracking - Active") {
-    UsageTrackingSheet(
-        subscription: MockData.activeSubscription,
-        onUsageUpdated: {}
-    )
-    .environmentObject(DataManager.shared)
-}

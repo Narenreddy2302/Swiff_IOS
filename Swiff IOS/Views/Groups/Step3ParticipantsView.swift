@@ -213,12 +213,3 @@ struct Step3ParticipantsView: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Step 3 Participants") {
-    Step3ParticipantsView(
-        selectedParticipants: .constant([MockData.personOwedMoney.id]),
-        selectedGroup: .constant(nil)
-    )
-    .environmentObject(DataManager.shared)
-}

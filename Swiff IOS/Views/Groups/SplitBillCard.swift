@@ -207,32 +207,3 @@ struct SplitTypeBadge: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("SplitBillCard - Settled") {
-    SplitBillCard(splitBill: MockData.settledSplitBill)
-        .padding()
-        .background(Color.wiseBackground)
-        .environmentObject(DataManager.shared)
-}
-
-#Preview("SplitBillCard - Pending") {
-    SplitBillCard(splitBill: MockData.pendingSplitBill)
-        .padding()
-        .background(Color.wiseBackground)
-        .environmentObject(DataManager.shared)
-}
-
-#Preview("SplitBillCard - Partially Settled") {
-    SplitBillCard(splitBill: MockData.partiallySplitBill)
-        .padding()
-        .background(Color.wiseBackground)
-        .environmentObject(DataManager.shared)
-}
-
-#Preview("SplitBillCard - Percentage Split") {
-    SplitBillCard(splitBill: MockData.percentageSplitBill)
-        .padding()
-        .background(Color.wiseBackground)
-        .environmentObject(DataManager.shared)
-}

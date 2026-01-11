@@ -22,14 +22,12 @@ struct SetupWizardView: View {
 
     enum ImportOption: String, CaseIterable {
         case startFresh = "Start Fresh"
-        case sampleData = "Sample Data"
         case importCSV = "Import CSV"
         case importBackup = "Import Backup"
 
         var icon: String {
             switch self {
             case .startFresh: return "sparkles"
-            case .sampleData: return "doc.text"
             case .importCSV: return "doc.badge.arrow.up"
             case .importBackup: return "arrow.counterclockwise.circle"
             }
@@ -38,7 +36,6 @@ struct SetupWizardView: View {
         var description: String {
             switch self {
             case .startFresh: return "Start with a clean slate"
-            case .sampleData: return "Explore with pre-filled data"
             case .importCSV: return "Import from CSV file"
             case .importBackup: return "Restore from backup"
             }
@@ -334,9 +331,6 @@ struct SetupWizardView: View {
 
         // Handle import option
         switch importOption {
-        case .sampleData:
-            SampleDataGenerator.shared.generateSampleData()
-            UserSettings.shared.hasSampleData = true
         case .startFresh, .importCSV, .importBackup:
             break  // Handle later
         }
@@ -383,10 +377,3 @@ enum CurrencyCode: String, CaseIterable {
     }
 }
 
-#Preview("Setup Wizard View") {
-    SetupWizardView(
-        currentStep: .constant(0),
-        onComplete: {},
-        onSkip: {}
-    )
-}

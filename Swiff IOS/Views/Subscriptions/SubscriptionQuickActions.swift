@@ -146,18 +146,3 @@ struct SubscriptionQuickActionsSection: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Quick Actions - Active") {
-    VStack {
-        SubscriptionQuickActionsSection(
-            subscription: MockData.activeSubscription,
-            onPauseResume: { print("Pause/Resume") },
-            onRemind: { print("Remind") },
-            onUsage: { print("Usage") },
-            onWebsite: { print("Website") }
-        )
-    }
-    .padding()
-    .background(Color.wiseBackground)
-}

@@ -92,28 +92,3 @@ struct GroupConversationHeader: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("GroupConversationHeader - With Expenses") {
-    GroupConversationHeader(
-        group: MockData.groupWithExpenses,
-        members: [MockData.personOwedMoney, MockData.personOwingMoney, MockData.personSettled]
-    )
-    .background(Color.wiseBackground)
-}
-
-#Preview("GroupConversationHeader - Large Group") {
-    GroupConversationHeader(
-        group: MockData.largeGroup,
-        members: MockData.people
-    )
-    .background(Color.wiseBackground)
-}
-
-#Preview("GroupConversationHeader - Empty Group") {
-    GroupConversationHeader(
-        group: MockData.emptyGroup,
-        members: [MockData.personOwedMoney, MockData.personOwingMoney]
-    )
-    .background(Color.wiseBackground)
-}

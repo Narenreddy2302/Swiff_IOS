@@ -61,35 +61,3 @@ struct PersonSelectionChip: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Person Selection Chips") {
-    let person1 = Person(name: "Alice Johnson", email: "alice@example.com", phone: "+1234567890", avatar: "👩‍💼")
-    let person2 = Person(name: "Bob Smith", email: "bob@example.com", phone: "+1234567891", avatar: "👨‍💻")
-    let person3 = Person(name: "Charlie Brown", email: "charlie@example.com", phone: "+1234567892", avatar: "🧑‍🔧")
-
-    return VStack(spacing: 12) {
-        Text("Person Chips")
-            .font(.spotifyHeadingMedium)
-
-        PersonSelectionChip(
-            person: person1,
-            showRemove: true,
-            onRemove: {}
-        )
-
-        PersonSelectionChip(
-            person: person2,
-            showRemove: true,
-            amount: 33.33,
-            onRemove: {}
-        )
-
-        PersonSelectionChip(
-            person: person3,
-            showRemove: false
-        )
-    }
-    .padding(20)
-    .background(Color.wiseBackground)
-}

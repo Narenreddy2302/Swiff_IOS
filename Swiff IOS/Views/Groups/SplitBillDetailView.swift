@@ -362,25 +362,3 @@ struct SplitBillDetailView: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Split Bill Detail - Settled") {
-    NavigationView {
-        SplitBillDetailView(splitBillId: MockData.settledSplitBill.id)
-            .environmentObject(DataManager.shared)
-    }
-}
-
-#Preview("Split Bill Detail - Pending") {
-    NavigationView {
-        SplitBillDetailView(splitBillId: MockData.pendingSplitBill.id)
-            .environmentObject(DataManager.shared)
-    }
-}
-
-#Preview("Split Bill Detail - Partially Paid") {
-    NavigationView {
-        SplitBillDetailView(splitBillId: MockData.partiallySplitBill.id)
-            .environmentObject(DataManager.shared)
-    }
-}

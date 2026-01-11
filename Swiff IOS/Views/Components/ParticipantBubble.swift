@@ -59,31 +59,3 @@ struct ParticipantBubble: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Participant Bubbles") {
-    let person1 = Person(
-        name: "Alice",
-        email: "alice@example.com",
-        phone: "+1234567890",
-        avatar: "👩‍💼"
-    )
-
-    let person2 = Person(
-        name: "Bob",
-        email: "bob@example.com",
-        phone: "+1234567891",
-        avatar: "👨‍💻"
-    )
-
-    let participant1 = SplitParticipant(personId: person1.id, amount: 30.0, hasPaid: true)
-    let participant2 = SplitParticipant(personId: person2.id, amount: 30.0, hasPaid: false)
-
-    HStack(spacing: 16) {
-        ParticipantBubble(person: person1, participant: participant1)
-        ParticipantBubble(person: person2, participant: participant2)
-        ParticipantBubble(person: person1, participant: participant1, showAmount: false)
-    }
-    .padding()
-    .background(Color.wiseBackground)
-}

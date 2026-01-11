@@ -86,28 +86,3 @@ struct GroupCard: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("GroupCard - With Expenses") {
-    VStack(spacing: 0) {
-        GroupCard(group: MockData.groupWithExpenses)
-        AlignedDivider()
-        GroupCard(group: MockData.settledGroup)
-    }
-    .background(Color.wiseCardBackground)
-    .cornerRadius(12)
-    .padding()
-    .background(Color.wiseBackground)
-}
-
-#Preview("GroupCard - Empty") {
-    GroupCard(group: MockData.emptyGroup)
-        .padding()
-        .background(Color.wiseCardBackground)
-}
-
-#Preview("GroupCard - Large Group") {
-    GroupCard(group: MockData.largeGroup)
-        .padding()
-        .background(Color.wiseCardBackground)
-}

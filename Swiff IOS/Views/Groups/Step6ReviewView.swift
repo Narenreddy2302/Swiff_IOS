@@ -212,20 +212,3 @@ struct Step6ReviewView: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Step 6 Review") {
-    let participant1 = SplitParticipant(personId: MockData.personOwedMoney.id, amount: 30.0)
-    let participant2 = SplitParticipant(personId: MockData.personOwingMoney.id, amount: 30.0)
-
-    return Step6ReviewView(
-        title: MockData.pendingSplitBill.title,
-        totalAmount: MockData.pendingSplitBill.totalAmount,
-        payer: MockData.personOwedMoney,
-        participants: [participant1, participant2],
-        category: .dining,
-        date: Date(),
-        notes: "Great meal with friends!"
-    )
-    .environmentObject(DataManager.shared)
-}

@@ -21,7 +21,7 @@ struct AddTransactionSheet: View {
     @State private var selectedCategory: TransactionCategory = .food
     @State private var transactionType: TransactionType = .expense
     @State private var notes = ""
-    @State private var selectedCurrency: Currency = UserSettings.shared.selectedCurrency
+    @State private var selectedCurrency: Currency = Currency(rawValue: UserSettings.shared.selectedCurrency) ?? .USD
 
     // Split transaction fields
     @State private var selectedPayer: Person?
@@ -493,7 +493,7 @@ struct AddTransactionSheet: View {
 
         case .exactAmounts, .adjustments:
             HStack(spacing: 4) {
-                Text(UserSettings.shared.selectedCurrency.symbol)
+                Text((Currency(rawValue: UserSettings.shared.selectedCurrency) ?? .USD).symbol)
                     .font(.spotifyBodyMedium)
                     .foregroundColor(.wisePrimaryText)
 

@@ -234,7 +234,8 @@ struct CategoryBreakdownChart: View {
     // MARK: - Helper Methods
 
     private func formatAxisAmount(_ amount: Double) -> String {
-        let symbol = UserSettings.shared.selectedCurrency.symbol
+        let currency = Currency(rawValue: UserSettings.shared.selectedCurrency) ?? .USD
+        let symbol = currency.symbol
         if amount >= 1000 {
             return String(format: "%@%.0fk", symbol, amount / 1000)
         } else {

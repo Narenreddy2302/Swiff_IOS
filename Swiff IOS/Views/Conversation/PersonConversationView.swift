@@ -372,17 +372,3 @@ struct CompactPersonHeader: View {
 }
 
 // NOTE: Person.initials is defined in Models/Domain/Person.swift - do not duplicate here
-
-// MARK: - Preview
-
-#Preview("Person Conversation View") {
-    PersonConversationView(
-        person: nil,
-        group: MockData.groupWithExpenses,
-        members: [MockData.personOwedMoney, MockData.personOwingMoney],
-        onBack: {},
-        onInfo: {},
-        onSendMessage: { _ in },
-        onAddTransaction: {}
-    )
-}

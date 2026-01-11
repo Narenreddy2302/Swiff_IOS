@@ -245,11 +245,6 @@ public class PersistenceService {
                     existingPerson.avatarEmoji = nil
                     existingPerson.avatarInitials = initials
                     existingPerson.avatarColorIndex = colorIndex
-                case .contactPhoto:
-                    existingPerson.avatarTypeRaw = "contact_photo"
-                    existingPerson.avatarData = nil
-                    existingPerson.avatarEmoji = nil
-                    existingPerson.avatarInitials = nil
                 }
 
                 // Update additional fields
@@ -338,11 +333,6 @@ public class PersistenceService {
                 existingPerson.avatarEmoji = nil
                 existingPerson.avatarInitials = initials
                 existingPerson.avatarColorIndex = colorIndex
-            case .contactPhoto:
-                existingPerson.avatarTypeRaw = "contact_photo"
-                existingPerson.avatarData = nil
-                existingPerson.avatarEmoji = nil
-                existingPerson.avatarInitials = nil
             }
 
             // Update additional fields

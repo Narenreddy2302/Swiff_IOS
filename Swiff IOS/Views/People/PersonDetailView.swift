@@ -651,25 +651,3 @@ struct RecordPaymentSheet: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Person Detail - Owed Money") {
-    NavigationView {
-        PersonDetailView(personId: MockData.personOwedMoney.id)
-            .environmentObject(DataManager.shared)
-    }
-}
-
-#Preview("Person Detail - Owing Money") {
-    NavigationView {
-        PersonDetailView(personId: MockData.personOwingMoney.id)
-            .environmentObject(DataManager.shared)
-    }
-}
-
-#Preview("Person Detail - Settled") {
-    NavigationView {
-        PersonDetailView(personId: MockData.personSettled.id)
-            .environmentObject(DataManager.shared)
-    }
-}

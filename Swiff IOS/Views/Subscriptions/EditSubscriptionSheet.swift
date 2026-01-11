@@ -235,7 +235,7 @@ struct EditSubscriptionSheet: View {
                                 .foregroundColor(.wiseSecondaryText)
 
                             HStack {
-                                Text(UserSettings.shared.selectedCurrency.symbol)
+                                Text((Currency(rawValue: UserSettings.shared.selectedCurrency) ?? .USD).symbol)
                                     .font(.spotifyNumberLarge)
                                     .foregroundColor(.wisePrimaryText)
 
@@ -585,7 +585,7 @@ struct EditSubscriptionSheet: View {
                                         .foregroundColor(.wiseSecondaryText)
 
                                     HStack {
-                                        Text(UserSettings.shared.selectedCurrency.symbol)
+                                        Text((Currency(rawValue: UserSettings.shared.selectedCurrency) ?? .USD).symbol)
                                             .font(.spotifyNumberLarge)
                                             .foregroundColor(.wisePrimaryText)
 
@@ -867,10 +867,3 @@ struct EditSubscriptionSheet: View {
 
 }
 
-#Preview("Edit Subscription Sheet") {
-    EditSubscriptionSheet(
-        subscription: MockData.activeSubscription,
-        onSubscriptionUpdated: {}
-    )
-    .environmentObject(DataManager.shared)
-}

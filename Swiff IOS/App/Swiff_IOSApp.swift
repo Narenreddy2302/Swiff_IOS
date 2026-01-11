@@ -93,12 +93,8 @@ struct Swiff_IOSApp: App {
                             // Load all persisted data on app launch
                             DataManager.shared.loadAllData()
 
-                            #if DEBUG
-                            // Auto-seed mock data in DEBUG mode if database is empty
-                            Task {
-                                await MockDataProvider.shared.seedIfEmpty()
-                            }
-                            #endif
+                            // Clear any previously seeded mock data (one-time operation)
+                            MockDataCleaner.shared.clearMockDataIfNeeded()
 
                             // FIX 1.1: Use debounced sync to avoid redundant syncs on every app launch
                             Task {

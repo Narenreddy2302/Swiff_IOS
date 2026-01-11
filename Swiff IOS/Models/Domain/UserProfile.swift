@@ -116,11 +116,13 @@ class UserProfileManager: ObservableObject {
     private let profileCacheKey = "UserProfileCache"
 
     private init() {
-        // Initialize with cached profile or default
-        if let cachedProfile = loadCachedProfile() {
+        // Initialize profile with default first (required before calling instance methods)
+        self.profile = UserProfile(name: "User")
+
+        // Then load cached profile if available
+        if let data = userDefaults.data(forKey: profileCacheKey),
+           let cachedProfile = try? JSONDecoder().decode(UserProfile.self, from: data) {
             self.profile = cachedProfile
-        } else {
-            self.profile = UserProfile(name: "User")
         }
 
         // Observe Supabase auth service for profile changes
@@ -189,10 +191,8 @@ class UserProfileManager: ObservableObject {
                 avatarTypeStr = "initials"
                 avatarInitials = initials
                 avatarColorIndex = colorIdx
-            case .photo:
+            case .photo(_):
                 avatarTypeStr = "photo"
-            case .contactPhoto:
-                avatarTypeStr = "contact_photo"
             }
 
             // Save to Supabase

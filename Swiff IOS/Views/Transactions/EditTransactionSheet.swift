@@ -580,10 +580,3 @@ struct TransactionCategoryPickerSheet: View {
     }
 }
 
-#Preview("Edit Transaction Sheet") {
-    EditTransactionSheet(
-        transaction: MockData.expenseTransaction,
-        onTransactionUpdated: {}
-    )
-    .environmentObject(DataManager.shared)
-}

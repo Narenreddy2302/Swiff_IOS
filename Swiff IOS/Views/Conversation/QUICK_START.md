@@ -344,10 +344,7 @@ public struct Theme {
 
 ### Issue: Preview doesn't show
 
-**Solution**: Make sure MockData has:
-- `MockData.groupWithExpenses`
-- `MockData.personOwedMoney`
-- Or replace with your own test data
+**Solution**: Create test data inline in your preview or use DataManager.shared with real data.
 
 ---
 

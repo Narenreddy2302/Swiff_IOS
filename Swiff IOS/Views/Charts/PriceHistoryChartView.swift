@@ -477,9 +477,3 @@ struct StatCard: View {
     }
 }
 
-#Preview("Price History Chart View") {
-    NavigationView {
-        PriceHistoryChartView(subscription: MockData.activeSubscription)
-            .environmentObject(DataManager.shared)
-    }
-}

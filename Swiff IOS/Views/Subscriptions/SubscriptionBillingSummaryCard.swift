@@ -310,13 +310,3 @@ enum SubscriptionStatusType {
     case trial
 }
 
-// MARK: - Preview
-
-#Preview("Active Subscription") {
-    ScrollView {
-        SubscriptionBillingSummaryCard(
-            subscription: MockData.activeSubscription
-        )
-    }
-    .background(Color.wiseBackground)
-}

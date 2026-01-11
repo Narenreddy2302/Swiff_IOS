@@ -1573,28 +1573,6 @@ struct SubscriptionDetailView: View {
     }
 }
 
-// MARK: - Preview
-
-#Preview("Subscription Detail - Active") {
-    NavigationView {
-        SubscriptionDetailView(subscriptionId: MockData.activeSubscription.id)
-            .environmentObject(DataManager.shared)
-    }
-}
-
-#Preview("Subscription Detail - Trial") {
-    NavigationView {
-        SubscriptionDetailView(subscriptionId: MockData.trialSubscription.id)
-            .environmentObject(DataManager.shared)
-    }
-}
-
-#Preview("Subscription Detail - Shared") {
-    NavigationView {
-        SubscriptionDetailView(subscriptionId: MockData.sharedSubscription.id)
-            .environmentObject(DataManager.shared)
-    }
-}
 
 // MARK: - Extensions
 extension SubscriptionEvent: TimelineItemProtocol {
