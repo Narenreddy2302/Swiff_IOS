@@ -82,10 +82,7 @@ extension Theme {
             dark: Color(red: 28/255, green: 28/255, blue: 30/255) // #1C1C1E
         )
 
-        public static let secondaryBackground = Color(
-            light: Color(red: 0.98, green: 0.98, blue: 0.98),
-            dark: Color(red: 44/255, green: 44/255, blue: 46/255) // #2C2C2E
-        )
+        public static let secondaryBackground = Color(uiColor: .secondarySystemBackground)
 
         // MARK: - Text (Adaptive)
         public static let textPrimary = Color(
