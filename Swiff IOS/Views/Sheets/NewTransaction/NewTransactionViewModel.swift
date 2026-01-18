@@ -4,6 +4,7 @@
 //
 //  ViewModel for the 3-step New Transaction flow
 //  Handles all state management, validation, and split calculations
+//  Production-ready with thread safety and comprehensive validation
 //
 
 import SwiftUI
@@ -25,8 +26,8 @@ enum TransactionTypeOption: String, CaseIterable {
 
     var color: Color {
         switch self {
-        case .expense: return .wiseError
-        case .income: return .wiseBrightGreen
+        case .expense: return Theme.Colors.statusError
+        case .income: return Theme.Colors.amountPositive
         }
     }
 }
@@ -39,6 +40,7 @@ struct SplitDetail: Equatable {
     var shares: Int = 1
     var adjustment: Double = 0
 
+    /// Tolerance-based equality for floating point comparisons
     static func == (lhs: SplitDetail, rhs: SplitDetail) -> Bool {
         return abs(lhs.amount - rhs.amount) < 0.001 &&
                abs(lhs.percentage - rhs.percentage) < 0.001 &&
@@ -47,14 +49,18 @@ struct SplitDetail: Equatable {
     }
 }
 
-// MARK: - New Transaction ViewModel
+// MARK: - NewTransactionViewModel
 
+@MainActor
 class NewTransactionViewModel: ObservableObject {
 
-    // MARK: - Sheet State
+    // MARK: - Navigation State
 
-    @Published var currentStep: Int = 1  // 1, 2, or 3
-    @Published var isTransitioning: Bool = false  // Prevents double navigation
+    /// Current step in the 3-step flow (1, 2, or 3)
+    @Published var currentStep: Int = 1
+
+    /// Prevents double-tap navigation issues
+    @Published var isTransitioning: Bool = false
 
     // MARK: - Step 1: Basic Details
 
@@ -65,18 +71,6 @@ class NewTransactionViewModel: ObservableObject {
     @Published var selectedCategory: TransactionCategory = .food
     @Published var transactionDate: Date = Date()
     @Published var showDatePicker: Bool = false
-
-    /// Parsed amount with safety checks
-    var amount: Double {
-        let parsed = Double(amountString) ?? 0
-        // Guard against NaN/Infinity for safe calculations
-        return parsed.isFinite && parsed >= 0 ? parsed : 0
-    }
-
-    /// Formatted amount for display
-    var formattedAmount: String {
-        return amount.asCurrency
-    }
 
     // MARK: - Step 2: Split Options
 
@@ -94,21 +88,28 @@ class NewTransactionViewModel: ObservableObject {
     // MARK: - UI State
 
     @Published var notes: String = ""
-
-    // MARK: - Step 1: Picker States
-
     @Published var showCurrencyPicker: Bool = false
     @Published var showCategoryPicker: Bool = false
-
-    // MARK: - Step 2: Search States
-
     @Published var paidBySearchText: String = ""
     @Published var isPaidBySearchFocused: Bool = false
     @Published var isSplitWithSearchFocused: Bool = false
 
-    // MARK: - Cancellables for Combine
+    // MARK: - Private Properties
 
     private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Computed Properties
+
+    /// Parsed amount with safety checks for NaN and Infinity
+    var amount: Double {
+        let parsed = Double(amountString) ?? 0
+        return parsed.isFinite && parsed >= 0 ? parsed : 0
+    }
+
+    /// Formatted amount for display
+    var formattedAmount: String {
+        return amount.asCurrency
+    }
 
     // MARK: - Initialization
 
@@ -116,8 +117,14 @@ class NewTransactionViewModel: ObservableObject {
         setupObservers()
     }
 
+    deinit {
+        cancellables.removeAll()
+    }
+
+    // MARK: - Setup
+
     private func setupObservers() {
-        // Auto-recalculate splits when amount changes
+        // Auto-recalculate splits when amount changes (debounced)
         $amountString
             .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
             .sink { [weak self] _ in
@@ -133,16 +140,16 @@ class NewTransactionViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    // MARK: - Computed Properties - Validation
+    // MARK: - Validation - Step 1
 
-    /// Step 1: Validate basic details are filled
+    /// Validates that basic transaction details are complete
     var canProceedStep1: Bool {
         let hasValidAmount = amount > 0
         let hasValidName = !transactionName.trimmingCharacters(in: .whitespaces).isEmpty
         return hasValidAmount && hasValidName
     }
 
-    /// Step 1: Detailed validation messages
+    /// Detailed validation error messages for step 1
     var step1ValidationErrors: [String] {
         var errors: [String] = []
         if amount <= 0 {
@@ -154,16 +161,17 @@ class NewTransactionViewModel: ObservableObject {
         return errors
     }
 
-    /// Step 2: Validate split configuration
+    // MARK: - Validation - Step 2
+
+    /// Validates split configuration is complete
     var canProceedStep2: Bool {
         if !isSplit {
-            return true  // Personal transaction, can proceed
+            return true
         }
-        // Split transaction requires payer and at least 2 participants
         return paidByUserId != nil && participantIds.count >= 2
     }
 
-    /// Step 2: Detailed validation messages
+    /// Detailed validation error messages for step 2
     var step2ValidationErrors: [String] {
         var errors: [String] = []
         if isSplit {
@@ -177,7 +185,9 @@ class NewTransactionViewModel: ObservableObject {
         return errors
     }
 
-    /// Step 3: Final submission validation
+    // MARK: - Validation - Final Submission
+
+    /// Final validation check for transaction submission
     var canSubmit: Bool {
         if !isSplit {
             return canProceedStep1
@@ -185,18 +195,16 @@ class NewTransactionViewModel: ObservableObject {
         return canProceedStep1 && canProceedStep2 && isSplitValid
     }
 
-    /// Validate split totals match
+    /// Validates that split amounts/percentages/shares sum correctly
     var isSplitValid: Bool {
-        // Must have participants for any split to be valid
         guard participantIds.count >= 2 else { return false }
         guard amount > 0 else { return false }
 
         switch splitMethod {
         case .equally:
-            return true  // Always valid with 2+ participants
+            return true
 
         case .shares:
-            // Validate that total shares is greater than 0
             let totalShares = participantIds.reduce(0) { sum, id in
                 sum + (splitDetails[id]?.shares ?? 1)
             }
@@ -215,9 +223,11 @@ class NewTransactionViewModel: ObservableObject {
             return abs(total - 100) < 0.1
 
         case .adjustments:
-            return true  // Always valid, adjustments are optional
+            return true
         }
     }
+
+    // MARK: - Computed Properties - Split Status
 
     /// Remaining amount to allocate (for exact amounts mode)
     var remainingAmount: Double {
@@ -242,7 +252,7 @@ class NewTransactionViewModel: ObservableObject {
         }
     }
 
-    /// User-friendly validation message
+    /// User-friendly validation message for current split state
     var validationMessage: String? {
         switch splitMethod {
         case .equally:
@@ -284,7 +294,7 @@ class NewTransactionViewModel: ObservableObject {
 
     // MARK: - Calculated Splits
 
-    /// Returns calculated split details for all participants
+    /// Returns calculated split details for all participants based on current method
     var calculatedSplits: [UUID: SplitDetail] {
         let count = Double(participantIds.count)
         guard count > 0, amount > 0 else { return [:] }
@@ -345,7 +355,7 @@ class NewTransactionViewModel: ObservableObject {
                 let adjustment = splitDetails[id]?.adjustment ?? 0
                 let personAmount = baseAmount + adjustment
                 result[id] = SplitDetail(
-                    amount: max(0, personAmount),  // Prevent negative amounts
+                    amount: max(0, personAmount),
                     percentage: amount > 0 ? (max(0, personAmount) / amount) * 100 : 0,
                     shares: 1,
                     adjustment: adjustment
@@ -354,11 +364,12 @@ class NewTransactionViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Split Detail Setters
+    // MARK: - Split Detail Updates
 
+    /// Updates the exact amount for a participant
     func updateSplitAmount(for personId: UUID, amount newAmount: Double) {
         guard participantIds.contains(personId) else { return }
-        let safeAmount = max(0, newAmount)  // Prevent negative amounts
+        let safeAmount = max(0, newAmount)
 
         if var detail = splitDetails[personId] {
             detail.amount = safeAmount
@@ -369,9 +380,10 @@ class NewTransactionViewModel: ObservableObject {
         objectWillChange.send()
     }
 
+    /// Updates the percentage for a participant
     func updateSplitPercentage(for personId: UUID, percentage: Double) {
         guard participantIds.contains(personId) else { return }
-        let safePercentage = max(0, min(100, percentage))  // Clamp 0-100
+        let safePercentage = max(0, min(100, percentage))
 
         if var detail = splitDetails[personId] {
             detail.percentage = safePercentage
@@ -382,9 +394,10 @@ class NewTransactionViewModel: ObservableObject {
         objectWillChange.send()
     }
 
+    /// Updates the share count for a participant
     func updateSplitShares(for personId: UUID, shares: Int) {
         guard participantIds.contains(personId) else { return }
-        let safeShares = max(1, min(10, shares))  // Clamp 1-10
+        let safeShares = max(1, min(10, shares))
 
         if var detail = splitDetails[personId] {
             detail.shares = safeShares
@@ -395,6 +408,7 @@ class NewTransactionViewModel: ObservableObject {
         objectWillChange.send()
     }
 
+    /// Updates the adjustment amount for a participant
     func updateSplitAdjustment(for personId: UUID, adjustment: Double) {
         guard participantIds.contains(personId) else { return }
 
@@ -407,23 +421,17 @@ class NewTransactionViewModel: ObservableObject {
         objectWillChange.send()
     }
 
-    // MARK: - Recalculation Helpers
+    // MARK: - Recalculation
 
     private func recalculateSplitsForAmountChange() {
         guard isSplit && splitMethod != .equally else { return }
-
-        // For percentage mode, amounts are auto-calculated from percentages
-        // For exact amounts mode, we don't auto-adjust (user controls amounts)
-        // For shares mode, amounts are auto-calculated from shares
         objectWillChange.send()
     }
 
     private func recalculateSplitsForParticipantChange() {
-        // Clean up split details for removed participants
         let validIds = participantIds
         splitDetails = splitDetails.filter { validIds.contains($0.key) }
 
-        // Initialize defaults for new participants
         for personId in participantIds where splitDetails[personId] == nil {
             initializeSplitDefault(for: personId)
         }
@@ -431,20 +439,23 @@ class NewTransactionViewModel: ObservableObject {
 
     // MARK: - Payer Actions
 
+    /// Selects a person as the payer and adds them to participants
     func selectPayer(_ personId: UUID) {
         paidByUserId = personId
-        participantIds.insert(personId)  // Auto-add to participants
+        participantIds.insert(personId)
         paidBySearchText = ""
         isPaidBySearchFocused = false
         HapticManager.shared.selection()
     }
 
+    /// Clears the current payer selection
     func clearPayer() {
         paidByUserId = nil
     }
 
     // MARK: - Group Actions
 
+    /// Selects a group and adds all members as participants
     func selectGroup(_ group: Group) {
         selectedGroup = group
         for memberId in group.members {
@@ -456,13 +467,14 @@ class NewTransactionViewModel: ObservableObject {
         HapticManager.shared.selection()
     }
 
+    /// Clears the group selection (keeps members selected)
     func clearGroup() {
         selectedGroup = nil
-        // Keep members selected, just clear the group badge
     }
 
     // MARK: - Participant Actions
 
+    /// Adds a participant from search results
     func addParticipantFromSearch(_ personId: UUID) {
         participantIds.insert(personId)
         splitWithSearchText = ""
@@ -470,6 +482,7 @@ class NewTransactionViewModel: ObservableObject {
         HapticManager.shared.selection()
     }
 
+    /// Toggles a participant's selection state
     func toggleParticipant(_ personId: UUID) {
         if participantIds.contains(personId) {
             removeParticipant(personId)
@@ -478,11 +491,11 @@ class NewTransactionViewModel: ObservableObject {
         }
     }
 
+    /// Adds a person as a participant
     func addParticipant(_ personId: UUID) {
         participantIds.insert(personId)
         initializeSplitDefault(for: personId)
 
-        // Auto-set as payer if none selected
         if paidByUserId == nil {
             paidByUserId = personId
         }
@@ -490,8 +503,8 @@ class NewTransactionViewModel: ObservableObject {
         HapticManager.shared.selection()
     }
 
+    /// Removes a participant (with minimum count validation for splits)
     func removeParticipant(_ personId: UUID) {
-        // Prevent removing if it would leave less than 2 participants in split mode
         if isSplit && participantIds.count <= 2 {
             HapticManager.shared.warning()
             return
@@ -500,12 +513,10 @@ class NewTransactionViewModel: ObservableObject {
         participantIds.remove(personId)
         splitDetails.removeValue(forKey: personId)
 
-        // Clear payer if we removed the payer
         if paidByUserId == personId {
             paidByUserId = participantIds.first
         }
 
-        // Clear group badge if we're modifying membership
         if selectedGroup != nil {
             selectedGroup = nil
         }
@@ -513,8 +524,9 @@ class NewTransactionViewModel: ObservableObject {
         HapticManager.shared.selection()
     }
 
-    // MARK: - Filtered Search Results
+    // MARK: - Search Filtering
 
+    /// Filters people list for payer search
     func filteredPaidByContacts(from people: [Person]) -> [Person] {
         guard !paidBySearchText.isEmpty else { return people }
 
@@ -526,6 +538,7 @@ class NewTransactionViewModel: ObservableObject {
         }
     }
 
+    /// Filters people list for participant search
     func filteredSplitWithContacts(from people: [Person]) -> [Person] {
         guard !splitWithSearchText.isEmpty else { return people }
 
@@ -537,6 +550,7 @@ class NewTransactionViewModel: ObservableObject {
         }
     }
 
+    /// Filters groups for search
     func filteredSplitWithGroups(from groups: [Group]) -> [Group] {
         guard !splitWithSearchText.isEmpty else { return groups }
 
@@ -548,21 +562,22 @@ class NewTransactionViewModel: ObservableObject {
 
     // MARK: - Split Initialization
 
+    /// Initializes default split values for all participants
     func initializeSplitDefaults() {
         for personId in participantIds {
             initializeSplitDefault(for: personId)
         }
     }
 
+    /// Initializes default split value for a single participant
     func initializeSplitDefault(for personId: UUID) {
-        guard splitDetails[personId] == nil else { return }  // Don't overwrite existing
+        guard splitDetails[personId] == nil else { return }
 
         let count = Double(participantIds.count)
         guard count > 0 else { return }
 
         switch splitMethod {
         case .equally:
-            // No manual input needed for equal split
             break
 
         case .exactAmounts:
@@ -579,8 +594,8 @@ class NewTransactionViewModel: ObservableObject {
         }
     }
 
+    /// Called when split method changes - reinitializes all split details
     func onSplitMethodChanged() {
-        // Clear existing details and reinitialize
         splitDetails.removeAll()
         initializeSplitDefaults()
         HapticManager.shared.selection()
@@ -588,6 +603,7 @@ class NewTransactionViewModel: ObservableObject {
 
     // MARK: - Navigation
 
+    /// Advances to the next step with validation
     func goToNextStep() {
         guard !isTransitioning else { return }
 
@@ -603,7 +619,6 @@ class NewTransactionViewModel: ObservableObject {
                 HapticManager.shared.warning()
                 return
             }
-            // Initialize split defaults when moving to step 3
             if isSplit {
                 initializeSplitDefaults()
             }
@@ -613,7 +628,7 @@ class NewTransactionViewModel: ObservableObject {
         }
 
         isTransitioning = true
-        HapticManager.shared.light()
+        HapticManager.shared.selection()
 
         withAnimation(.smooth(duration: 0.3)) {
             if currentStep < 3 {
@@ -621,34 +636,33 @@ class NewTransactionViewModel: ObservableObject {
             }
         }
 
-        // Reset transition flag after animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
             self?.isTransitioning = false
         }
     }
 
+    /// Returns to the previous step
     func goToPreviousStep() {
         guard !isTransitioning else { return }
         guard currentStep > 1 else { return }
 
         isTransitioning = true
-        HapticManager.shared.light()
+        HapticManager.shared.selection()
 
         withAnimation(.smooth(duration: 0.3)) {
             currentStep -= 1
         }
 
-        // Reset transition flag after animation
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
             self?.isTransitioning = false
         }
     }
 
+    /// Jumps to a specific step (with validation)
     func goToStep(_ step: Int) {
         guard step >= 1 && step <= 3 else { return }
         guard !isTransitioning else { return }
 
-        // Validate that we can skip to this step
         if step > currentStep {
             if step >= 2 && !canProceedStep1 {
                 HapticManager.shared.warning()
@@ -661,7 +675,7 @@ class NewTransactionViewModel: ObservableObject {
         }
 
         isTransitioning = true
-        HapticManager.shared.light()
+        HapticManager.shared.selection()
 
         withAnimation(.smooth(duration: 0.3)) {
             currentStep = step
@@ -674,6 +688,7 @@ class NewTransactionViewModel: ObservableObject {
 
     // MARK: - Reset
 
+    /// Resets all state to initial values
     func reset() {
         // Navigation
         currentStep = 1
@@ -710,7 +725,7 @@ class NewTransactionViewModel: ObservableObject {
 
     // MARK: - Utility Functions
 
-    /// Get display name for a participant (handles "You" case)
+    /// Returns display name for a participant ("You" for self)
     func displayName(for personId: UUID, in people: [Person], selfId: UUID?) -> String {
         guard let person = people.first(where: { $0.id == personId }) else {
             return "Unknown"
@@ -721,17 +736,17 @@ class NewTransactionViewModel: ObservableObject {
         return person.name
     }
 
-    /// Check if a person is the payer
+    /// Checks if a person is the current payer
     func isPayer(_ personId: UUID) -> Bool {
         return personId == paidByUserId
     }
 
-    /// Check if a person is selected as participant
+    /// Checks if a person is a selected participant
     func isParticipant(_ personId: UUID) -> Bool {
         return participantIds.contains(personId)
     }
 
-    /// Get participant count display
+    /// Formatted participant count string
     var participantCountDisplay: String {
         let count = participantIds.count
         return "\(count) \(count == 1 ? "person" : "people")"
