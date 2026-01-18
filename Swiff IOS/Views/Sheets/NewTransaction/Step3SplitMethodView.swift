@@ -2,7 +2,8 @@
 //  Step3SplitMethodView.swift
 //  Swiff IOS
 //
-//  Step 3: Split method selection and per-person configuration (compact layout)
+//  Step 3: Split Details - Method selection and per-person configuration
+//  Redesigned to match reference UI exactly
 //
 
 import SwiftUI
@@ -11,471 +12,467 @@ struct Step3SplitMethodView: View {
     @ObservedObject var viewModel: NewTransactionViewModel
     @EnvironmentObject var dataManager: DataManager
     @FocusState private var focusedParticipant: UUID?
-    @State private var keyboardHeight: CGFloat = 0
 
     // Navigation callbacks
     var onBack: (() -> Void)?
     var onSave: (() -> Void)?
 
-    // MARK: - Layout Constants
-    private enum Layout {
-        static let horizontalPadding: CGFloat = 16
-        static let verticalSpacing: CGFloat = 16
-        static let topPadding: CGFloat = 12
-        static let cardCornerRadius: CGFloat = 12
-        static let rowHorizontalPadding: CGFloat = 12
-        static let rowVerticalPadding: CGFloat = 10
-        static let avatarSize: CGFloat = 36
-        static let inputFieldWidth: CGFloat = 55
-        static let percentageFieldWidth: CGFloat = 45
-        static let adjustmentFieldWidth: CGFloat = 50
-        static let shareButtonSize: CGFloat = 24
-        static let shareDisplayWidth: CGFloat = 30
-        static let minShareValue: Int = 1
-        static let maxShareValue: Int = 10
-        static let dividerLeadingPadding: CGFloat = 52
-        static let keyboardBottomPadding: CGFloat = 60
-        static let totalFontSize: CGFloat = 28
-        static let payerBadgeFontSize: CGFloat = 9
-        static let badgeHorizontalPadding: CGFloat = 5
-        static let badgeVerticalPadding: CGFloat = 2
-        static let badgeCornerRadius: CGFloat = 4
-        static let inputPadding: CGFloat = 6
-        static let inputVerticalPadding: CGFloat = 5
-        static let inputCornerRadius: CGFloat = 6
-        static let buttonIconSize: CGFloat = 10
-        static let arrowIconSize: CGFloat = 10
-        static let bannerVerticalPadding: CGFloat = 8
-    }
+    // Split method tabs
+    private let splitMethods: [(SplitType, String)] = [
+        (.equally, "Equally"),
+        (.exactAmounts, "Exact"),
+        (.percentages, "Percentage"),
+        (.shares, "Shares")
+    ]
 
     var body: some View {
-        VStack(spacing: Theme.Metrics.paddingLarge) {
-            // Summary Header (compact)
-            summaryHeader
-                .id("summaryHeader")
+        VStack(spacing: 0) {
+            // Header with back and step indicator
+            headerSection
 
-            // Split Method Selector
-            SplitMethodSelector(
-                selectedType: $viewModel.splitMethod,
-                onSelect: {
-                    viewModel.onSplitMethodChanged()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Progress dots
+                    progressDots
+
+                    // Split Details title and subtitle
+                    titleSection
+
+                    // Split method tab selector
+                    splitMethodTabs
+
+                    // Balanced status indicator
+                    balancedStatusIndicator
+
+                    // Participants list with split inputs
+                    participantsList
+
+                    // Bottom summary
+                    bottomSummary
+
+                    Spacer(minLength: 100)
                 }
-            )
-
-            // Participants Configuration
-            participantsConfiguration
-                .id("participantsConfig")
-
-            // Owes Summary
-            owesSummary
-
-            // Navigation Buttons
-            navigationButtons
-
-            // Bottom padding for keyboard
-            Spacer(minLength: keyboardHeight > 0 ? keyboardHeight : 60)
-        }
-        .padding(.horizontal, Theme.Metrics.paddingMedium)
-        .padding(.top, Theme.Metrics.paddingMedium)
-        .onReceive(
-            NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
-        ) { notification in
-            if let keyboardFrame = notification.userInfo?[
-                UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
-            {
-                withAnimation(.smooth) {
-                    keyboardHeight = keyboardFrame.height
-                }
+                .padding(.horizontal, 20)
             }
-        }
-        .onReceive(
-            NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)
-        ) { _ in
-            withAnimation(.smooth) {
-                keyboardHeight = 0
+            .safeAreaInset(edge: .bottom) {
+                // Create Transaction button
+                createTransactionButton
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                    .background(
+                        Color(UIColor.systemGroupedBackground)
+                            .ignoresSafeArea()
+                    )
             }
         }
     }
 
-    // MARK: - Summary Header (Compact)
+    // MARK: - Header Section
 
-    private var summaryHeader: some View {
-        HStack(spacing: Theme.Metrics.paddingMedium) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Total")
-                    .font(Theme.Fonts.captionMedium)
+    private var headerSection: some View {
+        HStack {
+            // Back button
+            Button(action: {
+                HapticManager.shared.light()
+                onBack?()
+            }) {
+                Image(systemName: "arrow.left")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(Theme.Colors.textPrimary)
+            }
+
+            Spacer()
+
+            // Title
+            Text("Add Transaction")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(Theme.Colors.textPrimary)
+
+            Spacer()
+
+            // Step indicator
+            Text("STEP 3/3")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(Theme.Colors.brandPrimary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Progress Dots
+
+    private var progressDots: some View {
+        HStack(spacing: 8) {
+            ForEach(1...3, id: \.self) { step in
+                Circle()
+                    .fill(step == 3 ? Theme.Colors.brandPrimary : Color(UIColor.systemGray4))
+                    .frame(width: step == 3 ? 24 : 8, height: 8)
+                    .animation(.snappy, value: step)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Title Section
+
+    private var titleSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Split Details")
+                .font(.system(size: 26, weight: .bold))
+                .foregroundColor(Theme.Colors.textPrimary)
+
+            HStack(spacing: 4) {
+                Text("Specify how the")
+                    .font(.system(size: 15))
                     .foregroundColor(Theme.Colors.textSecondary)
 
                 Text(viewModel.amount.asCurrency)
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(Theme.Colors.textPrimary)
+
+                Text("should be divided.")
+                    .font(.system(size: 15))
+                    .foregroundColor(Theme.Colors.textSecondary)
+            }
+        }
+    }
+
+    // MARK: - Split Method Tabs
+
+    private var splitMethodTabs: some View {
+        HStack(spacing: 0) {
+            ForEach(splitMethods, id: \.0) { method, label in
+                Button(action: {
+                    HapticManager.shared.light()
+                    withAnimation(.smooth) {
+                        viewModel.splitMethod = method
+                        viewModel.onSplitMethodChanged()
+                    }
+                }) {
+                    VStack(spacing: 8) {
+                        Text(label)
+                            .font(.system(size: 15, weight: viewModel.splitMethod == method ? .semibold : .regular))
+                            .foregroundColor(viewModel.splitMethod == method ? Theme.Colors.brandPrimary : Theme.Colors.textSecondary)
+
+                        // Underline indicator
+                        Rectangle()
+                            .fill(viewModel.splitMethod == method ? Theme.Colors.brandPrimary : Color.clear)
+                            .frame(height: 2)
+                    }
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    // MARK: - Balanced Status Indicator
+
+    private var balancedStatusIndicator: some View {
+        HStack {
+            HStack(spacing: 8) {
+                Image(systemName: viewModel.isSplitValid ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(viewModel.isSplitValid ? Theme.Colors.brandPrimary : Theme.Colors.warning)
+
+                Text(viewModel.isSplitValid ? "Balanced (100%)" : "Not Balanced")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(viewModel.isSplitValid ? Theme.Colors.brandPrimary : Theme.Colors.warning)
             }
 
             Spacer()
 
-            Text(methodDescription)
-                .font(Theme.Fonts.captionMedium)
+            Text("Total: \(viewModel.amount.asCurrency)")
+                .font(.system(size: 15))
                 .foregroundColor(Theme.Colors.textSecondary)
-                .multilineTextAlignment(.trailing)
         }
-        .padding(Theme.Metrics.paddingMedium)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .background(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .fill(Theme.Colors.sheetPillBackground)
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "Total amount \(viewModel.amount.asCurrency), \(methodDescription.replacingOccurrences(of: "\n", with: " "))"
+            RoundedRectangle(cornerRadius: 12)
+                .fill(viewModel.isSplitValid ? Theme.Colors.brandPrimary.opacity(0.1) : Theme.Colors.warning.opacity(0.1))
         )
     }
 
-    private var methodDescription: String {
-        let count = viewModel.participantIds.count
-        switch viewModel.splitMethod {
-        case .equally:
-            return "Split equally\namong \(count) people"
-        case .exactAmounts:
-            return "Exact amounts\nper person"
-        case .percentages:
-            return "Percentage\nallocation"
-        case .shares:
-            return "Share-based\ndistribution"
-        case .adjustments:
-            return "Equal base\nwith adjustments"
-        }
-    }
+    // MARK: - Participants List
 
-    // MARK: - Participants Configuration
+    private var participantsList: some View {
+        let sortedParticipantIds = viewModel.participantIds.sorted()
 
-    /// Sorted participant IDs for stable view ordering
-    private var sortedParticipantIds: [UUID] {
-        viewModel.participantIds.sorted()
-    }
-
-    private var participantsConfiguration: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Split breakdown")
-                .font(Theme.Fonts.labelMedium)
-                .foregroundColor(Theme.Colors.textSecondary)
-                .accessibilityAddTraits(.isHeader)
-
-            VStack(spacing: 0) {
-                // Use sorted array for stable ForEach ordering
-                ForEach(sortedParticipantIds, id: \.self) { participantId in
-                    if let person = dataManager.people.first(where: { $0.id == participantId }) {
-                        participantSplitRow(person: person)
-                            .id(participantId)
-
-                        if participantId != sortedParticipantIds.last {
-                            Divider()
-                                .padding(.leading, 52)
+        return VStack(spacing: 12) {
+            ForEach(sortedParticipantIds, id: \.self) { participantId in
+                if let person = dataManager.people.first(where: { $0.id == participantId }) {
+                    ParticipantSplitCard(
+                        person: person,
+                        calculated: viewModel.calculatedSplits[participantId] ?? SplitDetail(),
+                        splitMethod: viewModel.splitMethod,
+                        isFocused: focusedParticipant == participantId,
+                        onAmountChanged: { amount in
+                            viewModel.updateSplitAmount(for: participantId, amount: amount)
+                        },
+                        onPercentageChanged: { percentage in
+                            viewModel.updateSplitPercentage(for: participantId, percentage: percentage)
+                        },
+                        onSharesChanged: { shares in
+                            viewModel.updateSplitShares(for: participantId, shares: shares)
                         }
-                    }
+                    )
                 }
             }
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                    .fill(Theme.Colors.sheetCardBackground)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                    .stroke(Theme.Colors.border, lineWidth: 1)
-            )
         }
     }
 
-    // MARK: - Participant Split Row (Compact)
+    // MARK: - Bottom Summary
 
-    private func participantSplitRow(person: Person) -> some View {
-        let calculated = viewModel.calculatedSplits[person.id] ?? SplitDetail()
-        let isPayer = viewModel.paidByUserId == person.id
+    private var bottomSummary: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("REMAINING")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Theme.Colors.textSecondary)
 
-        return HStack(spacing: Theme.Metrics.paddingSmall) {
+                Text(remainingAmount.asCurrency)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(remainingAmount == 0 ? Theme.Colors.brandPrimary : Theme.Colors.amountNegative)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 4) {
+                Text("TOTAL")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Theme.Colors.textSecondary)
+
+                Text(viewModel.amount.asCurrency)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(Theme.Colors.textPrimary)
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    // MARK: - Create Transaction Button
+
+    private var createTransactionButton: some View {
+        Button {
+            HapticManager.shared.light()
+            onSave?()
+        } label: {
+            HStack(spacing: 8) {
+                Text("Create Transaction")
+                    .font(.system(size: 17, weight: .semibold))
+
+                Image(systemName: "paperplane.fill")
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Theme.Colors.brandPrimary)
+                    .opacity(viewModel.canSubmit ? 1 : 0.5)
+            )
+        }
+        .disabled(!viewModel.canSubmit)
+    }
+
+    // MARK: - Computed Properties
+
+    private var remainingAmount: Double {
+        let allocated = viewModel.calculatedSplits.values.reduce(0) { $0 + $1.amount }
+        return max(0, viewModel.amount - allocated)
+    }
+}
+
+// MARK: - Participant Split Card
+
+struct ParticipantSplitCard: View {
+    let person: Person
+    let calculated: SplitDetail
+    let splitMethod: SplitType
+    let isFocused: Bool
+    let onAmountChanged: (Double) -> Void
+    let onPercentageChanged: (Double) -> Void
+    let onSharesChanged: (Int) -> Void
+
+    @State private var percentageText: String = ""
+
+    var body: some View {
+        HStack(spacing: 14) {
             // Avatar
-            AvatarView(avatarType: person.avatarType, size: .small, style: .solid)
-                .frame(width: 36, height: 36)
+            AvatarView(avatarType: person.avatarType, size: .medium, style: .solid)
+                .frame(width: 52, height: 52)
 
-            // Name and info
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 4) {
-                    Text(person.name)
-                        .font(Theme.Fonts.bodyLarge)
-                        .foregroundColor(Theme.Colors.textPrimary)
-                        .lineLimit(1)
+            // Name and amount
+            VStack(alignment: .leading, spacing: 4) {
+                Text(person.name)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(Theme.Colors.textPrimary)
 
-                    if isPayer {
-                        Text("Paid")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundColor(Theme.Colors.sheetGreenPrimary)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(Theme.Colors.sheetGreenPrimary.opacity(0.15))
-                            .cornerRadius(4)
-                    }
-                }
-
-                Text(String(format: "%.1f%%", calculated.percentage))
-                    .font(Theme.Fonts.captionMedium)
+                Text(calculated.amount.asCurrency)
+                    .font(.system(size: 15))
                     .foregroundColor(Theme.Colors.textSecondary)
             }
 
             Spacer()
 
-            // Amount / Input
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(calculated.amount.asCurrency)
-                    .font(Theme.Fonts.bodyLarge)
-                    .fontWeight(.semibold)
-                    .foregroundColor(Theme.Colors.textPrimary)
-
-                inputControl(for: person)
-            }
+            // Input control based on split method
+            splitInputControl
         }
-        .padding(.horizontal, Theme.Metrics.paddingMedium)
-        .padding(.vertical, 10)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "\(person.name)\(isPayer ? ", paid the bill" : ""), owes \(calculated.amount.asCurrency), \(String(format: "%.1f", calculated.percentage)) percent"
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
         )
-        .accessibilityHint(
-            viewModel.splitMethod == .equally ? "Split equally" : "Double tap to adjust amount")
+        .onAppear {
+            percentageText = String(format: "%.0f", calculated.percentage)
+        }
     }
 
     @ViewBuilder
-    private func inputControl(for person: Person) -> some View {
-        switch viewModel.splitMethod {
+    private var splitInputControl: some View {
+        switch splitMethod {
         case .equally:
-            EmptyView()
-
-        case .exactAmounts:
-            HStack(spacing: 4) {
-                Text(viewModel.selectedCurrency.symbol)
-                    .font(Theme.Fonts.captionMedium)
-                    .foregroundColor(Theme.Colors.textSecondary)
-
-                TextField(
-                    "0.00",
-                    value: Binding(
-                        get: { viewModel.splitDetails[person.id]?.amount ?? 0 },
-                        set: { viewModel.updateSplitAmount(for: person.id, amount: $0) }
-                    ), format: .number
-                )
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .font(Theme.Fonts.captionMedium)
-                .frame(width: 55)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 5)
-                .background(Theme.Colors.border.opacity(0.5))
-                .cornerRadius(6)
-                .focused($focusedParticipant, equals: person.id)
-                .accessibilityLabel("Exact amount for \(person.name)")
-                .accessibilityValue("\(viewModel.splitDetails[person.id]?.amount ?? 0)")
-            }
+            // Just show percentage
+            Text("\(Int(calculated.percentage)) %")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundColor(Theme.Colors.textSecondary)
 
         case .percentages:
+            // Editable percentage input
             HStack(spacing: 4) {
-                TextField(
-                    "0",
-                    value: Binding(
-                        get: { viewModel.splitDetails[person.id]?.percentage ?? 0 },
-                        set: { viewModel.updateSplitPercentage(for: person.id, percentage: $0) }
-                    ), format: .number
-                )
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .font(Theme.Fonts.captionMedium)
-                .frame(width: 45)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 5)
-                .background(Theme.Colors.border.opacity(0.5))
-                .cornerRadius(6)
-                .focused($focusedParticipant, equals: person.id)
-                .accessibilityLabel("Percentage for \(person.name)")
-                .accessibilityValue("\(viewModel.splitDetails[person.id]?.percentage ?? 0) percent")
+                TextField("0", text: $percentageText)
+                    .font(.system(size: 17, weight: .medium))
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 50)
+                    .onChange(of: percentageText) { _, newValue in
+                        if let value = Double(newValue) {
+                            onPercentageChanged(value)
+                        }
+                    }
 
                 Text("%")
-                    .font(Theme.Fonts.captionMedium)
+                    .font(.system(size: 17, weight: .medium))
                     .foregroundColor(Theme.Colors.textSecondary)
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Theme.Colors.brandPrimary.opacity(0.3), lineWidth: 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                    )
+            )
+
+        case .exactAmounts:
+            // Editable amount input
+            HStack(spacing: 4) {
+                Text("$")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(Theme.Colors.textSecondary)
+
+                TextField("0.00", value: .constant(calculated.amount), format: .number)
+                    .font(.system(size: 17, weight: .medium))
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 70)
+                    .onChange(of: calculated.amount) { _, newValue in
+                        onAmountChanged(newValue)
+                    }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Theme.Colors.brandPrimary.opacity(0.3), lineWidth: 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                    )
+            )
 
         case .shares:
-            HStack(spacing: 6) {
+            // Share stepper
+            HStack(spacing: 12) {
                 Button(action: {
                     HapticManager.shared.light()
-                    let current = viewModel.splitDetails[person.id]?.shares ?? 1
+                    let current = calculated.shares
                     if current > 1 {
-                        viewModel.updateSplitShares(for: person.id, shares: current - 1)
+                        onSharesChanged(current - 1)
                     }
                 }) {
                     Image(systemName: "minus")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundColor(Theme.Colors.textPrimary)
-                        .frame(width: 24, height: 24)
-                        .background(Theme.Colors.border.opacity(0.5))
-                        .clipShape(Circle())
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(Color(UIColor.tertiarySystemGroupedBackground)))
                 }
-                .buttonStyle(ScaleButtonStyle())
-                .accessibilityLabel("Decrease shares for \(person.name)")
+                .buttonStyle(.plain)
 
-                Text("\(viewModel.splitDetails[person.id]?.shares ?? 1)x")
-                    .font(Theme.Fonts.bodyLarge)
-                    .fontWeight(.semibold)
+                Text("\(calculated.shares)x")
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(Theme.Colors.textPrimary)
-                    .frame(width: 30)
-                    .accessibilityLabel("\(viewModel.splitDetails[person.id]?.shares ?? 1) shares")
+                    .frame(width: 32)
 
                 Button(action: {
                     HapticManager.shared.light()
-                    let current = viewModel.splitDetails[person.id]?.shares ?? 1
+                    let current = calculated.shares
                     if current < 10 {
-                        viewModel.updateSplitShares(for: person.id, shares: current + 1)
+                        onSharesChanged(current + 1)
                     }
                 }) {
                     Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundColor(Theme.Colors.textPrimary)
-                        .frame(width: 24, height: 24)
-                        .background(Theme.Colors.border.opacity(0.5))
-                        .clipShape(Circle())
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(Color(UIColor.tertiarySystemGroupedBackground)))
                 }
-                .buttonStyle(ScaleButtonStyle())
-                .accessibilityLabel("Increase shares for \(person.name)")
+                .buttonStyle(.plain)
             }
 
         case .adjustments:
+            // Adjustment input
             HStack(spacing: 4) {
                 Text("+/-")
-                    .font(Theme.Fonts.captionMedium)
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(Theme.Colors.textSecondary)
 
-                TextField(
-                    "0",
-                    value: Binding(
-                        get: { viewModel.splitDetails[person.id]?.adjustment ?? 0 },
-                        set: { viewModel.updateSplitAdjustment(for: person.id, adjustment: $0) }
-                    ), format: .number
-                )
-                .keyboardType(.numbersAndPunctuation)
-                .multilineTextAlignment(.trailing)
-                .font(Theme.Fonts.captionMedium)
-                .frame(width: 50)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 5)
-                .background(Theme.Colors.border.opacity(0.5))
-                .cornerRadius(6)
-                .focused($focusedParticipant, equals: person.id)
-                .accessibilityLabel("Adjustment for \(person.name)")
-                .accessibilityValue("\(viewModel.splitDetails[person.id]?.adjustment ?? 0)")
+                TextField("0", value: .constant(calculated.adjustment), format: .number)
+                    .font(.system(size: 17, weight: .medium))
+                    .keyboardType(.numbersAndPunctuation)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 50)
             }
-        }
-    }
-
-    // MARK: - Owes Summary (Reference Style with Blue Background)
-
-    /// Sorted non-payer participants for stable view ordering
-    private var sortedNonPayerParticipants: [UUID] {
-        sortedParticipantIds.filter { $0 != viewModel.paidByUserId }
-    }
-
-    private var owesSummary: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if !sortedNonPayerParticipants.isEmpty {
-                VStack(spacing: 0) {
-                    // Use sorted array for stable ForEach ordering
-                    ForEach(sortedNonPayerParticipants, id: \.self) { participantId in
-                        if let person = dataManager.people.first(where: { $0.id == participantId }),
-                            let payerId = viewModel.paidByUserId,
-                            let payer = dataManager.people.first(where: { $0.id == payerId })
-                        {
-                            let calculated =
-                                viewModel.calculatedSplits[participantId] ?? SplitDetail()
-
-                            // Get first name for compact display
-                            let personFirstName =
-                                person.name.components(separatedBy: " ").first ?? person.name
-                            let payerFirstName =
-                                payer.name.components(separatedBy: " ").first ?? payer.name
-
-                            HStack {
-                                Text("\(personFirstName) owes \(payerFirstName)")
-                                    .font(.system(size: 15))
-                                    .foregroundColor(.secondary)
-
-                                Spacer()
-
-                                Text(calculated.amount.asCurrency)
-                                    .font(.system(size: 17, weight: .semibold))
-                                    .foregroundColor(Theme.Colors.brandPrimary)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .accessibilityElement(children: .combine)
-                            .accessibilityLabel(
-                                "\(person.name) owes \(payer.name) \(calculated.amount.asCurrency)")
-                        }
-                    }
-                }
-                .background(Theme.Colors.brandPrimary.opacity(0.1))
-                .cornerRadius(12)
-            }
-        }
-    }
-
-    // MARK: - Navigation Buttons
-
-    private var navigationButtons: some View {
-        HStack(spacing: 12) {
-            // Back button
-            Button {
-                HapticManager.shared.light()
-                onBack?()
-            } label: {
-                Text("Back")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Theme.Colors.brandPrimary)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 16)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Theme.Colors.brandPrimary.opacity(0.3), lineWidth: 1)
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Theme.Colors.buttonSecondary)
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color(UIColor.tertiarySystemGroupedBackground))
                     )
-            }
-
-            // Save button
-            Button {
-                HapticManager.shared.light()
-                onSave?()
-            } label: {
-                Text("Save")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Theme.Colors.brandPrimary)
-                            .opacity(viewModel.canSubmit ? 1 : 0.5)
-                    )
-            }
-            .disabled(!viewModel.canSubmit)
+            )
         }
     }
-
 }
 
 // MARK: - Preview
 
-#Preview("Step 3 - Split Method") {
+#Preview("Step 3 - Split Details") {
     Step3SplitMethodView(
         viewModel: {
             let vm = NewTransactionViewModel()
             vm.isSplit = true
-            vm.amountString = "120"
+            vm.amountString = "1240"
             return vm
         }()
     )
     .environmentObject(DataManager.shared)
-    .background(Theme.Colors.sheetCardBackground)
+    .background(Color(UIColor.systemGroupedBackground))
 }

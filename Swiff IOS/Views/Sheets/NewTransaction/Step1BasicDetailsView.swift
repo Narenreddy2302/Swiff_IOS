@@ -2,7 +2,7 @@
 //  Step1BasicDetailsView.swift
 //  Swiff IOS
 //
-//  Step 1: Transaction type, amount, description, category
+//  Step 1: Basic Info - Transaction name, amount, currency, category
 //  Redesigned to match reference UI exactly
 //
 
@@ -20,263 +20,183 @@ struct Step1BasicDetailsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            // MARK: Transaction Type Segmented Control
-            transactionTypeSegment
-                .id("typeSegment")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                // Divider below header
+                Divider()
+                    .padding(.horizontal, -20)
 
-            // MARK: Amount Input Section
-            amountInputSection
-                .id("amountSection")
+                // Section title
+                Text("Basic Info")
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundColor(Theme.Colors.textPrimary)
 
-            // MARK: Currency Picker (Expandable)
-            if viewModel.showCurrencyPicker {
-                CurrencyPickerView(
-                    currencies: Currency.allCases,
-                    selectedCurrency: $viewModel.selectedCurrency,
-                    isPresented: $viewModel.showCurrencyPicker
-                )
+                // Transaction Name Field
+                transactionNameField
+
+                // Amount and Currency Row
+                amountCurrencyRow
+
+                // Category Section
+                categorySection
+
+                Spacer(minLength: 100)
             }
-
-            // MARK: Description & Category Fields
-            descriptionCategorySection
-                .id("descSection")
-
-            // MARK: Category Picker (Expandable Grid)
-            if viewModel.showCategoryPicker {
-                CategoryGridPicker(
-                    categories: TransactionCategory.allCases,
-                    selectedCategory: $viewModel.selectedCategory,
-                    isPresented: $viewModel.showCategoryPicker
-                )
-            }
-
-            // MARK: Continue Button
-            continueButton
-
-            // Bottom padding for keyboard
-            Spacer(minLength: keyboardHeight > 0 ? keyboardHeight : 60)
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
-        .onReceive(
-            NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
-        ) { notification in
-            if let keyboardFrame = notification.userInfo?[
-                UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
-            {
-                withAnimation(.smooth) {
-                    keyboardHeight = keyboardFrame.height
-                }
-            }
-        }
-        .onReceive(
-            NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)
-        ) { _ in
-            withAnimation(.smooth) {
-                keyboardHeight = 0
-            }
+        .safeAreaInset(edge: .bottom) {
+            // Next Step Button
+            nextStepButton
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+                .background(
+                    Color(UIColor.systemGroupedBackground)
+                        .ignoresSafeArea()
+                )
         }
     }
 
-    // MARK: - Transaction Type Segmented Control
+    // MARK: - Transaction Name Field
 
-    private var transactionTypeSegment: some View {
-        Picker("Transaction Type", selection: $viewModel.transactionType) {
-            Text("Expense").tag(TransactionTypeOption.expense)
-            Text("Income").tag(TransactionTypeOption.income)
-        }
-        .pickerStyle(.segmented)
-        .onChange(of: viewModel.transactionType) { _, _ in
-            HapticManager.shared.light()
+    private var transactionNameField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Transaction Name")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Theme.Colors.textPrimary)
+
+            TextField("e.g., Dinner at Nobu", text: $viewModel.transactionName)
+                .font(.system(size: 17))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(UIColor.secondarySystemGroupedBackground))
+                )
+                .focused($focusedField, equals: .name)
         }
     }
 
-    // MARK: - Amount Input Section
+    // MARK: - Amount and Currency Row
 
-    private var amountInputSection: some View {
-        HStack(spacing: 12) {
-            // Currency selector button
-            Button {
-                HapticManager.shared.light()
-                withAnimation(.smooth) {
-                    viewModel.showCurrencyPicker.toggle()
-                    viewModel.showCategoryPicker = false
-                    viewModel.showDatePicker = false
-                }
-            } label: {
-                HStack(spacing: 4) {
+    private var amountCurrencyRow: some View {
+        HStack(alignment: .top, spacing: 16) {
+            // Amount Field
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Amount")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Theme.Colors.textPrimary)
+
+                HStack(spacing: 8) {
                     Text(viewModel.selectedCurrency.symbol)
-                        .font(.system(size: 32, weight: .medium))
-                        .foregroundColor(.primary)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
-                }
-            }
-            .buttonStyle(.plain)
+                        .font(.system(size: 17))
+                        .foregroundColor(Theme.Colors.textSecondary)
 
-            // Amount text field
-            TextField("0.00", text: $viewModel.amountString)
-                .font(.system(size: 56, weight: .regular))
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.leading)  // Changed to leading to sit next to currency
-                .focused($focusedField, equals: .amount)
-                .onChange(of: viewModel.amountString) { _, newValue in
-                    // Filter to numbers and single decimal point
-                    var filtered = newValue.filter { $0.isNumber || $0 == "." }
-                    // Handle leading zeros
-                    if filtered.hasPrefix("00") {
-                        filtered = String(filtered.dropFirst())
-                    }
-                    // Ensure 0 before decimal if starting with .
-                    if filtered.hasPrefix(".") {
-                        filtered = "0" + filtered
-                    }
-                    // Ensure single decimal point
-                    let decimalCount = filtered.filter { $0 == "." }.count
-                    if decimalCount > 1 {
-                        if let lastDecimalIndex = filtered.lastIndex(of: ".") {
-                            filtered.remove(at: lastDecimalIndex)
+                    TextField("0.00", text: $viewModel.amountString)
+                        .font(.system(size: 17))
+                        .keyboardType(.decimalPad)
+                        .focused($focusedField, equals: .amount)
+                        .onChange(of: viewModel.amountString) { _, newValue in
+                            var filtered = newValue.filter { $0.isNumber || $0 == "." }
+                            if filtered.hasPrefix("00") {
+                                filtered = String(filtered.dropFirst())
+                            }
+                            if filtered.hasPrefix(".") {
+                                filtered = "0" + filtered
+                            }
+                            let decimalCount = filtered.filter { $0 == "." }.count
+                            if decimalCount > 1 {
+                                if let lastDecimalIndex = filtered.lastIndex(of: ".") {
+                                    filtered.remove(at: lastDecimalIndex)
+                                }
+                            }
+                            if filtered != newValue {
+                                viewModel.amountString = filtered
+                            }
+                        }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(UIColor.secondarySystemGroupedBackground))
+                )
+            }
+            .frame(maxWidth: .infinity)
+
+            // Currency Picker
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Currency")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Theme.Colors.textPrimary)
+
+                Menu {
+                    ForEach(Currency.allCases, id: \.self) { currency in
+                        Button(action: {
+                            HapticManager.shared.light()
+                            viewModel.selectedCurrency = currency
+                        }) {
+                            HStack {
+                                Text(currency.rawValue)
+                                if currency == viewModel.selectedCurrency {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
                         }
                     }
-                    if filtered != newValue {
-                        viewModel.amountString = filtered
+                } label: {
+                    HStack {
+                        Text(viewModel.selectedCurrency.rawValue)
+                            .font(.system(size: 17))
+                            .foregroundColor(Theme.Colors.textPrimary)
+
+                        Spacer()
+
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 14))
+                            .foregroundColor(Theme.Colors.textSecondary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(UIColor.secondarySystemGroupedBackground))
+                    )
+                }
+            }
+            .frame(width: 120)
+        }
+    }
+
+    // MARK: - Category Section
+
+    private var categorySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Category")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Theme.Colors.textPrimary)
+
+            // Horizontal scrollable category chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(TransactionCategory.allCases, id: \.self) { category in
+                        CategoryChip(
+                            category: category,
+                            isSelected: viewModel.selectedCategory == category,
+                            action: {
+                                HapticManager.shared.light()
+                                viewModel.selectedCategory = category
+                            }
+                        )
                     }
                 }
-        }
-        .padding(.vertical, 30)  // Increased vertical padding for "hero" feel
-        .frame(maxWidth: .infinity, alignment: .center)  // Center the entire block
-    }
-
-    // MARK: - Description & Category Section
-
-    private var descriptionCategorySection: some View {
-        VStack(spacing: 0) {
-            // Description input row
-            HStack {
-                Text("Description")
-                    .font(.system(size: 17))
-                Spacer()
-                TextField("What's this for?", text: $viewModel.transactionName)
-                    .font(.system(size: 17))
-                    .multilineTextAlignment(.trailing)
-                    .foregroundColor(.primary)
-                    .focused($focusedField, equals: .name)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-
-            Divider()
-                .padding(.leading, 16)
-
-            // Category selector row
-            Button {
-                HapticManager.shared.light()
-                withAnimation(.smooth) {
-                    viewModel.showCategoryPicker.toggle()
-                    viewModel.showCurrencyPicker = false
-                    viewModel.showDatePicker = false
-                }
-            } label: {
-                HStack {
-                    Text("Category")
-                        .font(.system(size: 17))
-                        .foregroundColor(.primary)
-                    Spacer()
-
-                    // Selected category display
-                    HStack(spacing: 6) {
-                        Image(systemName: viewModel.selectedCategory.icon)
-                            .foregroundColor(viewModel.selectedCategory.color)
-                        Text(viewModel.selectedCategory.rawValue)
-                            .foregroundColor(viewModel.selectedCategory.color)
-                    }
-                    .font(.system(size: 17))
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(UIColor.systemGray3))
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-            .buttonStyle(.plain)
-
-            Divider()
-                .padding(.leading, 16)
-
-            // Date selector row
-            Button {
-                HapticManager.shared.light()
-                withAnimation(.smooth) {
-                    viewModel.showDatePicker.toggle()
-                    viewModel.showCurrencyPicker = false
-                    viewModel.showCategoryPicker = false
-                }
-            } label: {
-                HStack {
-                    Text("Date")
-                        .font(.system(size: 17))
-                        .foregroundColor(.primary)
-                    Spacer()
-
-                    Text(formattedDate)
-                        .font(.system(size: 17))
-                        .foregroundColor(.secondary)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(Color(UIColor.systemGray3))
-                        .rotationEffect(.degrees(viewModel.showDatePicker ? 90 : 0))
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-            .buttonStyle(.plain)
-
-            // Inline date picker (expandable)
-            if viewModel.showDatePicker {
-                Divider()
-                    .padding(.leading, 16)
-
-                DatePicker(
-                    "Transaction Date",
-                    selection: $viewModel.transactionDate,
-                    in: ...Date(),
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.graphical)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .onChange(of: viewModel.transactionDate) { _, _ in
-                    HapticManager.shared.light()
-                }
-            }
-        }
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .cornerRadius(12)
-    }
-
-    // MARK: - Date Formatting
-
-    private var formattedDate: String {
-        let calendar = Calendar.current
-        if calendar.isDateInToday(viewModel.transactionDate) {
-            return "Today"
-        } else if calendar.isDateInYesterday(viewModel.transactionDate) {
-            return "Yesterday"
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            return formatter.string(from: viewModel.transactionDate)
         }
     }
 
-    // MARK: - Continue Button
+    // MARK: - Next Step Button
 
-    private var continueButton: some View {
+    private var nextStepButton: some View {
         Button {
             if viewModel.canProceedStep1 {
                 HapticManager.shared.light()
@@ -285,18 +205,50 @@ struct Step1BasicDetailsView: View {
                 }
             }
         } label: {
-            Text("Continue")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Theme.Colors.brandPrimary)
-                        .opacity(viewModel.canProceedStep1 ? 1 : 0.5)
-                )
+            HStack(spacing: 8) {
+                Text("Next Step")
+                    .font(.system(size: 17, weight: .semibold))
+
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 15, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Theme.Colors.brandPrimary)
+                    .opacity(viewModel.canProceedStep1 ? 1 : 0.5)
+            )
         }
         .disabled(!viewModel.canProceedStep1)
+    }
+}
+
+// MARK: - Category Chip Component
+
+struct CategoryChip: View {
+    let category: TransactionCategory
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: category.icon)
+                    .font(.system(size: 22))
+
+                Text(category.rawValue)
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .foregroundColor(isSelected ? .white : Theme.Colors.textPrimary)
+            .frame(width: 80, height: 80)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(isSelected ? Theme.Colors.brandPrimary : Color(UIColor.secondarySystemGroupedBackground))
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

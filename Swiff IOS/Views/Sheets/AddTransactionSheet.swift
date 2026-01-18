@@ -2,7 +2,7 @@
 //  AddTransactionSheet.swift
 //  Swiff IOS
 //
-//  Refined 3-step transaction creation flow with clean UI and keyboard handling
+//  Redesigned 3-step transaction creation flow matching reference UI
 //
 
 import SwiftUI
@@ -22,16 +22,14 @@ struct AddTransactionSheet: View {
     @FocusState private var isAmountFocused: Bool
     @FocusState private var isNameFocused: Bool
 
-    private let stepTitles = ["Details", "Split", "Breakdown"]
+    private var totalSteps: Int {
+        viewModel.isSplit ? 3 : 2
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Simplified Header with navigation
+            // New header design with step badge
             sheetHeader
-
-            // Compact step progress dots
-            stepProgressDots
-                .padding(.vertical, Theme.Metrics.paddingMedium)
 
             // Step content
             TabView(selection: $viewModel.currentStep) {
@@ -61,20 +59,12 @@ struct AddTransactionSheet: View {
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .animation(.smooth, value: viewModel.currentStep)
-
-            // Validation message for Step 3 (compact)
-            if viewModel.currentStep == 3, let message = viewModel.validationMessage {
-                validationBanner(message: message, isValid: viewModel.isSplitValid)
-                    .padding(.horizontal, Theme.Metrics.paddingMedium)
-                    .padding(.bottom, Theme.Metrics.paddingMedium)
-            }
         }
-        .background(Theme.Colors.sheetCardBackground)
-        .presentationDetents([.medium, .large])
+        .background(Color(UIColor.systemGroupedBackground))
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(Theme.Metrics.cornerRadiusLarge)
         .disabled(isSaving)
-        .presentationBackgroundInteraction(.enabled(upThrough: .medium))
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
@@ -93,175 +83,49 @@ struct AddTransactionSheet: View {
         }
     }
 
-    // MARK: - Simplified Header with Navigation
+    // MARK: - New Header Design
 
     private var sheetHeader: some View {
-        HStack(spacing: Theme.Metrics.headerContentSpacing) {
-            // Cancel / Back button
+        HStack {
+            // Close button
             Button(action: {
                 HapticManager.shared.light()
-                if viewModel.currentStep > 1 {
-                    withAnimation(.smooth) {
-                        viewModel.goToPreviousStep()
-                    }
-                } else {
-                    showingAddTransactionSheet = false
-                    viewModel.reset()
-                }
+                showingAddTransactionSheet = false
+                viewModel.reset()
             }) {
-                HStack(spacing: 4) {
-                    if viewModel.currentStep > 1 {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                    }
-                    Text(viewModel.currentStep > 1 ? "Back" : "Cancel")
-                        .font(Theme.Fonts.bodyLarge)
-                }
-                .foregroundColor(Theme.Colors.textPrimary)
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .frame(width: 32, height: 32)
             }
-            .frame(width: 80, alignment: .leading)
-            .accessibilityLabel(viewModel.currentStep > 1 ? "Go back to previous step" : "Cancel transaction")
-            .accessibilityHint(viewModel.currentStep > 1 ? "Double tap to go back" : "Double tap to cancel")
+            .accessibilityLabel("Close")
 
             Spacer()
 
-            // Center title
-            Text(currentStepTitle)
-                .font(Theme.Fonts.headerMedium)
+            // Title
+            Text("New Transaction")
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(Theme.Colors.textPrimary)
-                .accessibilityAddTraits(.isHeader)
 
             Spacer()
 
-            // Primary action button
-            Button(action: {
-                HapticManager.shared.light()
-                handlePrimaryAction()
-            }) {
-                if isSaving {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: Theme.Colors.brandPrimary))
-                } else {
-                    Text(primaryButtonTitle)
-                        .font(Theme.Fonts.bodyLarge)
-                        .fontWeight(.semibold)
-                        .foregroundColor(canProceed ? Theme.Colors.brandPrimary : Theme.Colors.textSecondary.opacity(0.5))
-                }
-            }
-            .disabled(!canProceed || isSaving)
-            .frame(width: 80, alignment: .trailing)
-            .accessibilityLabel(primaryButtonTitle)
-            .accessibilityHint(canProceed ? "Double tap to \(primaryButtonTitle.lowercased())" : "Complete required fields first")
+            // Step indicator badge
+            Text("STEP \(viewModel.currentStep) OF \(totalSteps)")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Theme.Colors.textSecondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color(UIColor.tertiarySystemFill))
+                )
         }
         .padding(.horizontal, Theme.Metrics.paddingMedium)
         .padding(.top, Theme.Metrics.paddingMedium)
         .padding(.bottom, Theme.Metrics.paddingSmall)
     }
 
-    // MARK: - Step Progress Dots
-
-    private var stepProgressDots: some View {
-        let totalSteps = viewModel.isSplit ? 3 : 2
-
-        return HStack(spacing: 8) {
-            ForEach(1...totalSteps, id: \.self) { step in
-                Circle()
-                    .fill(step <= viewModel.currentStep ? Theme.Colors.brandPrimary : Theme.Colors.border)
-                    .frame(
-                        width: step == viewModel.currentStep ? 8 : 6,
-                        height: step == viewModel.currentStep ? 8 : 6
-                    )
-                    .scaleEffect(step == viewModel.currentStep ? 1.0 : 0.85)
-                    .animation(.snappy, value: viewModel.currentStep)
-                    .accessibilityLabel("Step \(step) of \(totalSteps)")
-                    .accessibilityValue(step < viewModel.currentStep ? "Completed" : (step == viewModel.currentStep ? "Current step" : "Not started"))
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    // MARK: - Validation Banner
-
-    private func validationBanner(message: String, isValid: Bool) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: isValid ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                .font(.system(size: 14))
-            Text(message)
-                .font(Theme.Fonts.captionMedium)
-        }
-        .foregroundColor(isValid ? Theme.Colors.success : Theme.Colors.systemError)
-        .padding(.horizontal, Theme.Metrics.paddingMedium)
-        .padding(.vertical, Theme.Metrics.paddingSmall)
-        .frame(maxWidth: .infinity)
-        .background((isValid ? Theme.Colors.success : Theme.Colors.systemError).opacity(0.1))
-        .cornerRadius(Theme.Metrics.cornerRadiusSmall)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(isValid ? "Validation passed: \(message)" : "Validation warning: \(message)")
-    }
-
-    // MARK: - Computed Properties
-
-    private var currentStepTitle: String {
-        let totalSteps = viewModel.isSplit ? 3 : 2
-        guard viewModel.currentStep >= 1 && viewModel.currentStep <= totalSteps else {
-            return "New Transaction"
-        }
-        return stepTitles[viewModel.currentStep - 1]
-    }
-
-    private var primaryButtonTitle: String {
-        switch viewModel.currentStep {
-        case 1:
-            return "Next"
-        case 2:
-            return viewModel.isSplit ? "Next" : "Save"
-        case 3:
-            return "Save"
-        default:
-            return "Next"
-        }
-    }
-
-    private var canProceed: Bool {
-        switch viewModel.currentStep {
-        case 1:
-            return viewModel.canProceedStep1
-        case 2:
-            if viewModel.isSplit {
-                return viewModel.canProceedStep2
-            } else {
-                return viewModel.canProceedStep1
-            }
-        case 3:
-            return viewModel.canSubmit
-        default:
-            return false
-        }
-    }
-
     // MARK: - Actions
-
-    private func handlePrimaryAction() {
-        switch viewModel.currentStep {
-        case 1:
-            withAnimation(.smooth) {
-                viewModel.goToNextStep()
-            }
-        case 2:
-            if viewModel.isSplit {
-                viewModel.initializeSplitDefaults()
-                withAnimation(.smooth) {
-                    viewModel.goToNextStep()
-                }
-            } else {
-                saveTransaction()
-            }
-        case 3:
-            saveTransaction()
-        default:
-            break
-        }
-    }
 
     private func setupPreselectedParticipant() {
         if let person = preselectedParticipant {
