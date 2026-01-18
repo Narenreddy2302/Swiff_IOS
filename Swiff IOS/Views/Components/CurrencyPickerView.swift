@@ -61,7 +61,7 @@ struct CurrencyPickerView: View {
                 }
             }
         }
-        .background(Color.white)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
         .cornerRadius(12)
         .transition(.opacity.combined(with: .move(edge: .top)))
     }

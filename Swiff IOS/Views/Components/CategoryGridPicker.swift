@@ -43,7 +43,7 @@ struct CategoryGridPicker: View {
                     .padding(.vertical, 14)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white)
+                            .fill(Color(UIColor.secondarySystemGroupedBackground))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(
