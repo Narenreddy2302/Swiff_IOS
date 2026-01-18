@@ -7,7 +7,6 @@ struct PeopleView: View {
     @State private var selectedTab: PeopleTab = .people
     @State private var showSearchBar = false
     @State private var searchText = ""
-    @State private var showingContactsSheet = false
     @State private var showingAddPersonSheet = false
 
     enum PeopleTab: String, CaseIterable {
@@ -39,7 +38,6 @@ struct PeopleView: View {
                             selectedTab: $selectedTab,
                             showSearchBar: $showSearchBar,
                             searchText: $searchText,
-                            showingContactsSheet: $showingContactsSheet,
                             showingAddPersonSheet: $showingAddPersonSheet
                         )
                         .padding(.top, 10)  // Standard top padding after safe area
@@ -76,12 +74,7 @@ struct PeopleView: View {
             }
             .navigationBarHidden(true)
         }
-        .sheet(isPresented: $showingContactsSheet) {
-            ContactsSheetView()
-                .environmentObject(dataManager)
-                .presentationDetents([.large, .medium])
-                .presentationDragIndicator(.visible)
-        }
+
         .sheet(isPresented: $showingAddPersonSheet) {
             AddPersonFromContactsSheet(isPresented: $showingAddPersonSheet)
                 .environmentObject(dataManager)
@@ -94,7 +87,6 @@ struct PeopleHeaderSection: View {
     @Binding var selectedTab: PeopleView.PeopleTab
     @Binding var showSearchBar: Bool
     @Binding var searchText: String
-    @Binding var showingContactsSheet: Bool
     @Binding var showingAddPersonSheet: Bool
 
     private var searchPlaceholder: String {
@@ -128,27 +120,13 @@ struct PeopleHeaderSection: View {
                     }) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 20))
-                            .foregroundColor(showSearchBar ? .wiseBrightGreen : .wisePrimaryText)
+                            .foregroundColor(showSearchBar ? Theme.Colors.brandPrimary : Theme.Colors.textPrimary)
                     }
 
                     // Add Person Button (WhatsApp Style)
-                    Button(action: {
-                        HapticManager.shared.light()
+                    HeaderActionButton(icon: "plus.circle.fill", color: Theme.Colors.brandPrimary) {
+                        HapticManager.shared.impact(.medium)
                         showingAddPersonSheet = true
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 20))
-                            .foregroundColor(.wisePrimaryText)
-                    }
-
-                    // Contacts button (icon only) - opens bottom sheet popup
-                    Button(action: {
-                        HapticManager.shared.light()
-                        showingContactsSheet = true
-                    }) {
-                        Image(systemName: "person.crop.circle")
-                            .font(.system(size: 20))
-                            .foregroundColor(.wisePrimaryText)
                     }
                 }
             }
@@ -227,26 +205,4 @@ struct PeopleHeaderSection: View {
     }
 }
 
-// MARK: - Contacts Sheet View (Bottom Sheet Popup)
-struct ContactsSheetView: View {
-    @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject var dataManager: DataManager
-    @State private var searchText = ""
 
-    var body: some View {
-        NavigationStack {
-            ContactsListView(searchText: $searchText)
-                .navigationTitle("Contacts")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") {
-                            dismiss()
-                        }
-                        .font(.spotifyLabelMedium)
-                        .foregroundColor(Theme.Colors.brandPrimary)
-                    }
-                }
-        }
-    }
-}

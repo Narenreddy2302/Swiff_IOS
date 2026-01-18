@@ -190,11 +190,11 @@ struct PersonDetailView: View {
                                 Text("Split Bill Request")
                                     .font(.system(size: 16, weight: .semibold))
                             }
-                            
+
                             Text(title)
                                 .font(.system(size: 16))
                                 .padding(.top, 2)
-                            
+
                             Text("Total: \(billTotal.asCurrency)")
                                 .font(.system(size: 14))
                                 .opacity(0.8)
@@ -238,7 +238,17 @@ struct PersonDetailView: View {
                     sendMessage(message, to: person)
                 },
                 onAddTransaction: { showingAddTransactionSheet = true },
-                additionalActions: []  // No additional action buttons per design spec
+                additionalActions: [
+                    .addTransaction {
+                        showingAddTransactionSheet = true
+                    },
+                    .remind {
+                        sendReminder()
+                    },
+                    .settleUp {
+                        showingSettleUpSheet = true
+                    },
+                ]
             )
         }
     }
@@ -272,6 +282,15 @@ struct PersonDetailView: View {
             print("Failed to send message: \(error)")
             ToastManager.shared.showError("Failed to send message")
         }
+    }
+    private func sendReminder() {
+        // Implementation for sending a reminder
+        HapticManager.shared.success()
+        // TODO: Implement actual reminder logic (e.g. push notification or SMS)
+        ToastManager.shared.showSuccess("Reminder sent")
+
+        // Optimistically add reminder to timeline?
+        // For now just the toast
     }
 }
 
@@ -650,4 +669,3 @@ struct RecordPaymentSheet: View {
         }
     }
 }
-

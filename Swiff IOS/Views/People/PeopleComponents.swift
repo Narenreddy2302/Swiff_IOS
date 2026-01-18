@@ -494,118 +494,115 @@ struct GroupsListView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Filter Pills
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(GroupFilter.allCases, id: \.self) { filter in
-                        GroupFilterPill(
-                            filter: filter,
-                            isSelected: selectedFilter == filter,
-                            action: {
-                                HapticManager.shared.selection()
-                                withAnimation {
-                                    selectedFilter = filter
+        ScrollView {
+            VStack(spacing: 0) {
+                // Stats cards - ALWAYS shown at top
+                PeopleQuickStatsView(people: people)
+
+                // Filter Pills
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(GroupFilter.allCases, id: \.self) { filter in
+                            GroupFilterPill(
+                                filter: filter,
+                                isSelected: selectedFilter == filter,
+                                action: {
+                                    HapticManager.shared.selection()
+                                    withAnimation {
+                                        selectedFilter = filter
+                                    }
                                 }
-                            }
-                        )
-                    }
-                }
-                .padding(.horizontal, 16)
-            }
-            .padding(.bottom, 12)
-
-            // Groups List - Single ScrollView with stats always visible
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Stats cards - ALWAYS shown at top
-                    PeopleQuickStatsView(people: people)
-
-                    if dataManager.isLoading && groups.isEmpty {
-                        // Loading State
-                        SkeletonListView(rowCount: 5, rowType: .group)
-                    } else if filteredGroups.isEmpty {
-                        // Empty State
-                        VStack(spacing: 24) {
-                            Spacer()
-                                .frame(height: 40)
-
-                            // Icon - Properly sized and centered
-                            ZStack {
-                                // Background circle for visual weight
-                                Circle()
-                                    .fill(Color.wiseSecondaryText.opacity(0.08))
-                                    .frame(width: 120, height: 120)
-
-                                Image(systemName: "person.3")
-                                    .font(.system(size: 56, weight: .light))
-                                    .foregroundColor(.wiseSecondaryText.opacity(0.5))
-                            }
-
-                            // Text Content - Professional spacing and sizing
-                            VStack(spacing: 12) {
-                                Text("No Groups Yet")
-                                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                                    .foregroundColor(.wisePrimaryText)
-
-                                Text("Create your first group to track\nshared expenses")
-                                    .font(.system(size: 15, weight: .regular))
-                                    .foregroundColor(.wiseSecondaryText)
-                                    .multilineTextAlignment(.center)
-                                    .lineSpacing(4)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .padding(.horizontal, 48)
-
-                            Spacer()
-                                .frame(height: 40)
-                        }
-                        .frame(maxWidth: .infinity)
-                    } else {
-                        ForEach(Array(filteredGroups.enumerated()), id: \.element.id) {
-                            index, group in
-                            NavigationLink(destination: GroupDetailView(groupId: group.id)) {
-                                FeedGroupRow(group: group)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .padding(.horizontal, 16)
-                            .contextMenu {
-                                Button {
-                                    editingGroup = group
-                                    showingEditSheet = true
-                                } label: {
-                                    Label("Edit", systemImage: "pencil")
-                                }
-
-                                Divider()
-
-                                Button(role: .destructive) {
-                                    groupToDelete = group
-                                    showingDeleteAlert = true
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-
-                            // Divider (aligned with text, matching feed style)
-                            if index < filteredGroups.count - 1 {
-                                FeedRowDivider()
-                            }
+                            )
                         }
                     }
-
-                    // Bottom padding for tab bar
-                    Color.clear.frame(height: 100)
+                    .padding(.horizontal, 16)
                 }
-                .padding(.bottom, 20)
+                .padding(.bottom, 12)
+
+                if dataManager.isLoading && groups.isEmpty {
+                    // Loading State
+                    SkeletonListView(rowCount: 5, rowType: .group)
+                } else if filteredGroups.isEmpty {
+                    // Empty State
+                    VStack(spacing: 24) {
+                        Spacer()
+                            .frame(height: 40)
+
+                        // Icon - Properly sized and centered
+                        ZStack {
+                            // Background circle for visual weight
+                            Circle()
+                                .fill(Color.wiseSecondaryText.opacity(0.08))
+                                .frame(width: 120, height: 120)
+
+                            Image(systemName: "person.3")
+                                .font(.system(size: 56, weight: .light))
+                                .foregroundColor(.wiseSecondaryText.opacity(0.5))
+                        }
+
+                        // Text Content - Professional spacing and sizing
+                        VStack(spacing: 12) {
+                            Text("No Groups Yet")
+                                .font(.system(size: 22, weight: .bold, design: .rounded))
+                                .foregroundColor(.wisePrimaryText)
+
+                            Text("Create your first group to track\nshared expenses")
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundColor(.wiseSecondaryText)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(4)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(.horizontal, 48)
+
+                        Spacer()
+                            .frame(height: 40)
+                    }
+                    .frame(maxWidth: .infinity)
+                } else {
+                    ForEach(Array(filteredGroups.enumerated()), id: \.element.id) {
+                        index, group in
+                        NavigationLink(destination: GroupDetailView(groupId: group.id)) {
+                            FeedGroupRow(group: group)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.horizontal, 16)
+                        .contextMenu {
+                            Button {
+                                editingGroup = group
+                                showingEditSheet = true
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+
+                            Divider()
+
+                            Button(role: .destructive) {
+                                groupToDelete = group
+                                showingDeleteAlert = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+
+                        // Divider (aligned with text, matching feed style)
+                        if index < filteredGroups.count - 1 {
+                            FeedRowDivider()
+                        }
+                    }
+                }
+
+                // Bottom padding for tab bar
+                Color.clear.frame(height: 100)
             }
-            .background(Theme.Colors.background)
-            .scrollDismissesKeyboard(.interactively)
-            .refreshable {
-                HapticManager.shared.pullToRefresh()
-                dataManager.loadAllData()
-                ToastManager.shared.showSuccess("Refreshed")
-            }
+            .padding(.bottom, 20)
+        }
+        .background(Theme.Colors.background)
+        .scrollDismissesKeyboard(.interactively)
+        .refreshable {
+            HapticManager.shared.pullToRefresh()
+            dataManager.loadAllData()
+            ToastManager.shared.showSuccess("Refreshed")
         }
         .sheet(isPresented: $showingEditSheet) {
             if let group = editingGroup {

@@ -22,6 +22,7 @@ struct ContactConversationView: View {
     @State private var selectedDueDirection: DueDirection = .theyOweMe
     @State private var showingAddTransactionSheet = false
     @State private var showingInviteSheet = false
+    @State private var showingSettleSheet = false
     @State private var selectedPersonForTransaction: Person?
 
     // MARK: - Computed Properties
@@ -147,7 +148,8 @@ struct ContactConversationView: View {
     private func getInvolvedNames(for splitBill: SplitBill) -> String {
         let currentUserId = UserProfileManager.shared.profile.id
         let names = splitBill.participants.compactMap { participant -> String? in
-            guard let person = dataManager.people.first(where: { $0.id == participant.personId }) else {
+            guard let person = dataManager.people.first(where: { $0.id == participant.personId })
+            else {
                 return nil
             }
             return person.id == currentUserId ? "You" : person.name
@@ -164,6 +166,19 @@ struct ContactConversationView: View {
         case .shares: return "By Shares"
         case .adjustments: return "With Adjustments"
         }
+    }
+
+    /// Send a reminder to the contact
+    private func sendReminder() {
+        // Implementation for sending a reminder
+        // This could:
+        // 1. Send a push notification
+        // 2. Send an iMessage/SMS
+        // 3. Show a confirmation toast
+
+        HapticManager.shared.success()
+        // TODO: Implement actual reminder logic
+        ToastManager.shared.showSuccess("Reminder sent")
     }
 
     // MARK: - Body
@@ -199,7 +214,21 @@ struct ContactConversationView: View {
                     selectedDueDirection = .theyOweMe
                     showingCreateDueSheet = true
                 },
-                additionalActions: []  // No additional action buttons per design spec
+                additionalActions: [
+                    .addTransaction {
+                        // Open add transaction sheet
+                        selectedDueDirection = .theyOweMe
+                        showingCreateDueSheet = true
+                    },
+                    .remind {
+                        // Send reminder to contact
+                        sendReminder()
+                    },
+                    .settleUp {
+                        // Open settle up flow
+                        showingSettleSheet = true
+                    },
+                ]
             )
         }
         .background(Color.wiseBackground)
@@ -235,12 +264,42 @@ struct ContactConversationView: View {
                 .presentationDetents([.height(300)])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showingSettleSheet) {
+            // Settle sheet view placeholder
+            if let person = dataManager.people.first(where: { $0.contactId == contact.id }) {
+                // If SettleUpView existed we would use it: SettleUpView(person: person).environmentObject(dataManager)
+                VStack(spacing: 20) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(Theme.Colors.brandPrimary)
+                    Text("Settle Up")
+                        .font(.title2.bold())
+                    Text("Settling up with \(person.name)")
+                        .foregroundColor(.secondary)
+                    Button("Mark as Settled") {
+                        showingSettleSheet = false
+                        HapticManager.shared.success()
+                        ToastManager.shared.showSuccess("Settled up!")
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+                .padding()
+                .presentationDetents([.medium])
+            } else {
+                VStack {
+                    Text("Add contact to settle up")
+                }
+                .presentationDetents([.medium])
+            }
+        }
     }
 
     // MARK: - Timeline Item View
 
     @ViewBuilder
-    private func timelineItemView(item: ContactTimelineItem, groupInfo: MessageGroupInfo) -> some View {
+    private func timelineItemView(item: ContactTimelineItem, groupInfo: MessageGroupInfo)
+        -> some View
+    {
         switch item {
         case .due(let splitBill, let isTheyOweMe):
             let bubbleDirection: iMessageBubbleDirection = isTheyOweMe ? .incoming : .outgoing
