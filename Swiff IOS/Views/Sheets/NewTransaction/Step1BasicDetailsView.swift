@@ -3,7 +3,7 @@
 //  Swiff IOS
 //
 //  Step 1: Basic Info - Transaction name, amount, currency, category
-//  Redesigned to match reference UI exactly with proper theme consistency
+//  Enhanced with robust validation, keyboard management, and smooth interactions
 //
 
 import SwiftUI
@@ -14,45 +14,67 @@ struct Step1BasicDetailsView: View {
     @FocusState private var focusedField: Field?
 
     private enum Field: Hashable {
-        case amount
         case name
+        case amount
     }
 
+    // Track if user has attempted to proceed (for showing validation)
+    @State private var hasAttemptedProceed: Bool = false
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Metrics.paddingLarge) {
-                // Divider below header
-                Divider()
-                    .padding(.horizontal, -20)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Metrics.paddingLarge) {
+                    // Divider below header
+                    Divider()
+                        .padding(.horizontal, -20)
 
-                // Section title
-                Text("Basic Info")
-                    .font(.spotifyDisplayMedium)
-                    .foregroundColor(.wisePrimaryText)
+                    // Section title
+                    Text("Basic Info")
+                        .font(.spotifyDisplayMedium)
+                        .foregroundColor(.wisePrimaryText)
 
-                // Transaction Name Field
-                transactionNameField
+                    // Transaction Name Field
+                    transactionNameField
+                        .id("nameField")
 
-                // Amount and Currency Row
-                amountCurrencyRow
+                    // Amount and Currency Row
+                    amountCurrencyRow
+                        .id("amountField")
 
-                // Category Section
-                categorySection
+                    // Category Section
+                    categorySection
 
-                Spacer(minLength: 100)
-            }
-            .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
-            .padding(.top, Theme.Metrics.paddingSmall)
-        }
-        .safeAreaInset(edge: .bottom) {
-            // Next Step Button
-            nextStepButton
+                    Spacer(minLength: 120)
+                }
                 .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
-                .padding(.bottom, Theme.Metrics.paddingMedium + 4)
-                .background(
-                    Color.wiseGroupedBackground
-                        .ignoresSafeArea()
-                )
+                .padding(.top, Theme.Metrics.paddingSmall)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom) {
+                // Next Step Button with validation
+                nextStepButton
+                    .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
+                    .padding(.bottom, Theme.Metrics.paddingMedium + 4)
+                    .background(
+                        Color.wiseGroupedBackground
+                            .ignoresSafeArea()
+                    )
+            }
+            .onChange(of: focusedField) { _, newValue in
+                // Scroll to focused field
+                withAnimation(.smooth) {
+                    if newValue == .name {
+                        proxy.scrollTo("nameField", anchor: .top)
+                    } else if newValue == .amount {
+                        proxy.scrollTo("amountField", anchor: .center)
+                    }
+                }
+            }
+        }
+        .onTapGesture {
+            // Dismiss keyboard on tap outside
+            dismissKeyboard()
         }
     }
 
@@ -74,9 +96,19 @@ struct Step1BasicDetailsView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                        .stroke(Color.wiseBorder, lineWidth: 1)
+                        .stroke(borderColor(for: .name), lineWidth: borderWidth(for: .name))
                 )
                 .focused($focusedField, equals: .name)
+                .submitLabel(.next)
+                .onSubmit {
+                    // Move to amount field on submit
+                    focusedField = .amount
+                }
+
+            // Validation message
+            if hasAttemptedProceed && viewModel.transactionName.trimmingCharacters(in: .whitespaces).isEmpty {
+                validationMessage("Enter a transaction name")
+            }
         }
     }
 
@@ -100,22 +132,7 @@ struct Step1BasicDetailsView: View {
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .amount)
                         .onChange(of: viewModel.amountString) { _, newValue in
-                            var filtered = newValue.filter { $0.isNumber || $0 == "." }
-                            if filtered.hasPrefix("00") {
-                                filtered = String(filtered.dropFirst())
-                            }
-                            if filtered.hasPrefix(".") {
-                                filtered = "0" + filtered
-                            }
-                            let decimalCount = filtered.filter { $0 == "." }.count
-                            if decimalCount > 1 {
-                                if let lastDecimalIndex = filtered.lastIndex(of: ".") {
-                                    filtered.remove(at: lastDecimalIndex)
-                                }
-                            }
-                            if filtered != newValue {
-                                viewModel.amountString = filtered
-                            }
+                            filterAmountInput(newValue)
                         }
                 }
                 .padding(.horizontal, Theme.Metrics.paddingMedium)
@@ -126,8 +143,13 @@ struct Step1BasicDetailsView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                        .stroke(Color.wiseBorder, lineWidth: 1)
+                        .stroke(borderColor(for: .amount), lineWidth: borderWidth(for: .amount))
                 )
+
+                // Validation message
+                if hasAttemptedProceed && viewModel.amount <= 0 {
+                    validationMessage("Enter an amount greater than 0")
+                }
             }
             .frame(maxWidth: .infinity)
 
@@ -140,11 +162,11 @@ struct Step1BasicDetailsView: View {
                 Menu {
                     ForEach(Currency.allCases, id: \.self) { currency in
                         Button(action: {
-                            HapticManager.shared.light()
+                            HapticManager.shared.selection()
                             viewModel.selectedCurrency = currency
                         }) {
                             HStack {
-                                Text(currency.rawValue)
+                                Text("\(currency.flag) \(currency.rawValue)")
                                 if currency == viewModel.selectedCurrency {
                                     Image(systemName: "checkmark")
                                 }
@@ -195,12 +217,17 @@ struct Step1BasicDetailsView: View {
                             category: category,
                             isSelected: viewModel.selectedCategory == category,
                             action: {
-                                HapticManager.shared.light()
-                                viewModel.selectedCategory = category
+                                HapticManager.shared.selection()
+                                withAnimation(.smooth(duration: 0.2)) {
+                                    viewModel.selectedCategory = category
+                                }
+                                // Dismiss keyboard when selecting category
+                                dismissKeyboard()
                             }
                         )
                     }
                 }
+                .padding(.vertical, 2)  // Prevent shadow clipping
             }
         }
     }
@@ -208,33 +235,140 @@ struct Step1BasicDetailsView: View {
     // MARK: - Next Step Button
 
     private var nextStepButton: some View {
-        Button {
-            if viewModel.canProceedStep1 {
-                HapticManager.shared.light()
-                withAnimation(.smooth) {
+        VStack(spacing: Theme.Metrics.paddingSmall) {
+            Button {
+                dismissKeyboard()
+
+                if viewModel.canProceedStep1 {
                     viewModel.goToNextStep()
+                } else {
+                    // Show validation errors
+                    withAnimation(.smooth) {
+                        hasAttemptedProceed = true
+                    }
+                    HapticManager.shared.warning()
+                }
+            } label: {
+                HStack(spacing: Theme.Metrics.paddingSmall) {
+                    Text("Next Step")
+                        .font(.spotifyBodyLarge)
+                        .fontWeight(.semibold)
+
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background(
+                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
+                        .fill(Color.wiseForestGreen)
+                        .opacity(viewModel.canProceedStep1 ? 1 : 0.5)
+                )
+            }
+            .cardShadow()
+        }
+    }
+
+    // MARK: - Helper Views
+
+    private func validationMessage(_ message: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.system(size: 12))
+
+            Text(message)
+                .font(.spotifyLabelSmall)
+        }
+        .foregroundColor(.wiseError)
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    // MARK: - Helper Functions
+
+    private func borderColor(for field: Field) -> Color {
+        if focusedField == field {
+            return Color.wiseForestGreen
+        }
+
+        // Show error border if validation failed
+        if hasAttemptedProceed {
+            switch field {
+            case .name:
+                if viewModel.transactionName.trimmingCharacters(in: .whitespaces).isEmpty {
+                    return Color.wiseError
+                }
+            case .amount:
+                if viewModel.amount <= 0 {
+                    return Color.wiseError
                 }
             }
-        } label: {
-            HStack(spacing: Theme.Metrics.paddingSmall) {
-                Text("Next Step")
-                    .font(.spotifyBodyLarge)
-                    .fontWeight(.semibold)
-
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 15, weight: .semibold))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 18)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
-                    .fill(Color.wiseForestGreen)
-                    .opacity(viewModel.canProceedStep1 ? 1 : 0.5)
-            )
         }
-        .disabled(!viewModel.canProceedStep1)
-        .cardShadow()
+
+        return Color.wiseBorder
+    }
+
+    private func borderWidth(for field: Field) -> CGFloat {
+        if focusedField == field {
+            return 2
+        }
+
+        // Thicker border for error state
+        if hasAttemptedProceed {
+            switch field {
+            case .name:
+                if viewModel.transactionName.trimmingCharacters(in: .whitespaces).isEmpty {
+                    return 2
+                }
+            case .amount:
+                if viewModel.amount <= 0 {
+                    return 2
+                }
+            }
+        }
+
+        return 1
+    }
+
+    private func filterAmountInput(_ newValue: String) {
+        var filtered = newValue.filter { $0.isNumber || $0 == "." }
+
+        // Prevent leading zeros (except for "0.")
+        if filtered.hasPrefix("00") {
+            filtered = String(filtered.dropFirst())
+        }
+
+        // Add leading zero for decimal starting with "."
+        if filtered.hasPrefix(".") {
+            filtered = "0" + filtered
+        }
+
+        // Prevent multiple decimals
+        let decimalCount = filtered.filter { $0 == "." }.count
+        if decimalCount > 1 {
+            if let lastDecimalIndex = filtered.lastIndex(of: ".") {
+                filtered.remove(at: lastDecimalIndex)
+            }
+        }
+
+        // Limit decimal places to 2
+        if let decimalIndex = filtered.firstIndex(of: ".") {
+            let decimalPart = filtered[filtered.index(after: decimalIndex)...]
+            if decimalPart.count > 2 {
+                let endIndex = filtered.index(decimalIndex, offsetBy: 3)
+                filtered = String(filtered[..<endIndex])
+            }
+        }
+
+        // Only update if changed
+        if filtered != newValue {
+            viewModel.amountString = filtered
+        }
+    }
+
+    private func dismissKeyboard() {
+        focusedField = nil
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 
@@ -245,6 +379,8 @@ struct CategoryChip: View {
     let isSelected: Bool
     let action: () -> Void
 
+    @State private var isPressed: Bool = false
+
     var body: some View {
         Button(action: action) {
             VStack(spacing: Theme.Metrics.paddingSmall) {
@@ -253,6 +389,8 @@ struct CategoryChip: View {
 
                 Text(category.rawValue)
                     .font(.spotifyLabelMedium)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             .foregroundColor(isSelected ? .white : .wisePrimaryText)
             .frame(width: 80, height: 80)
@@ -264,9 +402,23 @@ struct CategoryChip: View {
                 RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
                     .stroke(isSelected ? Color.clear : Color.wiseBorder, lineWidth: 1)
             )
+            .scaleEffect(isPressed ? 0.95 : 1.0)
         }
         .buttonStyle(.plain)
         .cardShadow()
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+                        isPressed = true
+                    }
+                }
+                .onEnded { _ in
+                    withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
+                        isPressed = false
+                    }
+                }
+        )
     }
 }
 
