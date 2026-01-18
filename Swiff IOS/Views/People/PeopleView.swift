@@ -8,6 +8,7 @@ struct PeopleView: View {
     @State private var showSearchBar = false
     @State private var searchText = ""
     @State private var showingContactsSheet = false
+    @State private var showingAddPersonSheet = false
 
     enum PeopleTab: String, CaseIterable {
         case people = "People"
@@ -38,7 +39,8 @@ struct PeopleView: View {
                             selectedTab: $selectedTab,
                             showSearchBar: $showSearchBar,
                             searchText: $searchText,
-                            showingContactsSheet: $showingContactsSheet
+                            showingContactsSheet: $showingContactsSheet,
+                            showingAddPersonSheet: $showingAddPersonSheet
                         )
                         .padding(.top, 10)  // Standard top padding after safe area
 
@@ -80,6 +82,10 @@ struct PeopleView: View {
                 .presentationDetents([.large, .medium])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showingAddPersonSheet) {
+            AddPersonFromContactsSheet(isPresented: $showingAddPersonSheet)
+                .environmentObject(dataManager)
+        }
     }
 }
 
@@ -89,6 +95,7 @@ struct PeopleHeaderSection: View {
     @Binding var showSearchBar: Bool
     @Binding var searchText: String
     @Binding var showingContactsSheet: Bool
+    @Binding var showingAddPersonSheet: Bool
 
     private var searchPlaceholder: String {
         switch selectedTab {
@@ -124,6 +131,16 @@ struct PeopleHeaderSection: View {
                             .foregroundColor(showSearchBar ? .wiseBrightGreen : .wisePrimaryText)
                     }
 
+                    // Add Person Button (WhatsApp Style)
+                    Button(action: {
+                        HapticManager.shared.light()
+                        showingAddPersonSheet = true
+                    }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20))
+                            .foregroundColor(.wisePrimaryText)
+                    }
+
                     // Contacts button (icon only) - opens bottom sheet popup
                     Button(action: {
                         HapticManager.shared.light()
@@ -139,7 +156,8 @@ struct PeopleHeaderSection: View {
 
             // Tabs (Pill Buttons) - People and Groups only, Contacts moved to header icon
             HStack(spacing: 12) {
-                ForEach([PeopleView.PeopleTab.people, PeopleView.PeopleTab.groups], id: \.self) { tab in
+                ForEach([PeopleView.PeopleTab.people, PeopleView.PeopleTab.groups], id: \.self) {
+                    tab in
                     Button(action: {
                         HapticManager.shared.selection()
                         withAnimation(.easeInOut(duration: 0.2)) {
