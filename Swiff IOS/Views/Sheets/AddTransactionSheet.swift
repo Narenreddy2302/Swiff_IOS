@@ -110,7 +110,7 @@ struct AddTransactionSheet: View {
             .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall)
-                    .fill(Theme.Colors.border.opacity(0.5))
+                    .fill(Theme.Colors.border.opacity(Theme.Opacity.border))
             )
             .accessibilityLabel("Step \(viewModel.currentStep) of \(totalSteps)")
     }
@@ -180,7 +180,8 @@ struct AddTransactionSheet: View {
             return
         }
 
-        let finalAmount = viewModel.transactionType == .expense
+        let finalAmount =
+            viewModel.transactionType == .expense
             ? -abs(viewModel.amount)
             : abs(viewModel.amount)
 
@@ -236,7 +237,8 @@ struct AddTransactionSheet: View {
 
         // Pre-validate: Check all participants exist and calculate balance changes
         for participant in participants where participant.personId != payerId {
-            guard let person = dataManager.people.first(where: { $0.id == participant.personId }) else {
+            guard let person = dataManager.people.first(where: { $0.id == participant.personId })
+            else {
                 throw TransactionSaveError.participantNotFound
             }
             balanceChanges.append((person: person, change: -participant.amount))
@@ -247,7 +249,8 @@ struct AddTransactionSheet: View {
             throw TransactionSaveError.payerNotFound
         }
 
-        let totalOwed = participants
+        let totalOwed =
+            participants
             .filter { $0.personId != payerId }
             .reduce(0) { $0 + $1.amount }
         balanceChanges.append((person: payerPerson, change: totalOwed))

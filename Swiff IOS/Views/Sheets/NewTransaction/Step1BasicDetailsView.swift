@@ -197,13 +197,13 @@ struct Step1BasicDetailsView: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                        .stroke(Theme.Colors.border, lineWidth: 1)
+                        .stroke(Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
                 )
             }
             .accessibilityLabel("Currency: \(viewModel.selectedCurrency.rawValue)")
             .accessibilityHint("Double tap to change currency")
         }
-        .frame(width: 120)
+        .frame(width: Theme.Metrics.currencyPickerWidth)
     }
 
     private var categorySection: some View {
@@ -213,7 +213,7 @@ struct Step1BasicDetailsView: View {
                 .foregroundColor(Theme.Colors.textPrimary)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
+                HStack(spacing: Theme.Metrics.paddingSmall) {
                     ForEach(TransactionCategory.allCases, id: \.self) { category in
                         CategoryChip(
                             category: category,
@@ -254,9 +254,10 @@ struct Step1BasicDetailsView: View {
                 .background(
                     RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
                         .fill(Theme.Colors.brandPrimary)
-                        .opacity(viewModel.canProceedStep1 ? 1 : 0.5)
+                        .opacity(viewModel.canProceedStep1 ? 1 : Theme.Opacity.disabled)
                 )
             }
+            .disabled(!viewModel.canProceedStep1)
             .buttonStyle(ScaleButtonStyle())
             .accessibilityLabel("Next step")
             .accessibilityHint(viewModel.canProceedStep1 ? "Proceed to split options" : "Fill in required fields first")
@@ -266,7 +267,7 @@ struct Step1BasicDetailsView: View {
     // MARK: - Helper Views
 
     private func validationMessage(_ message: String) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Theme.Metrics.spacingTiny) {
             Image(systemName: "exclamationmark.circle.fill")
                 .font(.system(size: 12))
 
@@ -330,14 +331,14 @@ struct Step1BasicDetailsView: View {
 
     private func borderWidth(for field: Field) -> CGFloat {
         if focusedField == field {
-            return 2
+            return Theme.Border.widthFocused
         }
 
         if hasAttemptedProceed {
             switch field {
             case .name:
                 if viewModel.transactionName.trimmingCharacters(in: .whitespaces).isEmpty {
-                    return 2
+                    return Theme.Border.widthFocused
                 }
             case .amount:
                 if viewModel.amount <= 0 {
@@ -346,7 +347,7 @@ struct Step1BasicDetailsView: View {
             }
         }
 
-        return 1
+        return Theme.Border.widthDefault
     }
 
     private func filterAmountInput(_ newValue: String) {
@@ -421,14 +422,14 @@ struct CategoryChip: View {
                     .minimumScaleFactor(0.8)
             }
             .foregroundColor(isSelected ? Theme.Colors.textOnPrimary : Theme.Colors.textPrimary)
-            .frame(width: 80, height: 80)
+            .frame(width: Theme.Metrics.categoryChipSize, height: Theme.Metrics.categoryChipSize)
             .background(
                 RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
                     .fill(isSelected ? Theme.Colors.brandPrimary : Theme.Colors.cardBackground)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                    .stroke(isSelected ? Color.clear : Theme.Colors.border, lineWidth: 1)
+                    .stroke(isSelected ? Color.clear : Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
             )
             .scaleEffect(isPressed ? 0.95 : 1.0)
         }

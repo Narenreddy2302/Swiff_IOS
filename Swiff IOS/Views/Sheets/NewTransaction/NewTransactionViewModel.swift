@@ -7,9 +7,9 @@
 //  Production-ready with thread safety and comprehensive validation
 //
 
-import SwiftUI
-import Foundation
 import Combine
+import Foundation
+import SwiftUI
 
 // MARK: - Transaction Type Option
 
@@ -42,10 +42,8 @@ struct SplitDetail: Equatable {
 
     /// Tolerance-based equality for floating point comparisons
     static func == (lhs: SplitDetail, rhs: SplitDetail) -> Bool {
-        return abs(lhs.amount - rhs.amount) < 0.001 &&
-               abs(lhs.percentage - rhs.percentage) < 0.001 &&
-               lhs.shares == rhs.shares &&
-               abs(lhs.adjustment - rhs.adjustment) < 0.001
+        return abs(lhs.amount - rhs.amount) < 0.001 && abs(lhs.percentage - rhs.percentage) < 0.001
+            && lhs.shares == rhs.shares && abs(lhs.adjustment - rhs.adjustment) < 0.001
     }
 }
 
@@ -62,11 +60,15 @@ class NewTransactionViewModel: ObservableObject {
     /// Prevents double-tap navigation issues
     @Published var isTransitioning: Bool = false
 
+    /// Loading state for network/async operations
+    @Published var isLoading: Bool = false
+
     // MARK: - Step 1: Basic Details
 
     @Published var transactionType: TransactionTypeOption = .expense
     @Published var amountString: String = ""
-    @Published var selectedCurrency: Currency = Currency(rawValue: UserSettings.shared.selectedCurrency) ?? .USD
+    @Published var selectedCurrency: Currency =
+        Currency(rawValue: UserSettings.shared.selectedCurrency) ?? .USD
     @Published var transactionName: String = ""
     @Published var selectedCategory: TransactionCategory = .food
     @Published var transactionDate: Date = Date()
@@ -256,7 +258,8 @@ class NewTransactionViewModel: ObservableObject {
     var validationMessage: String? {
         switch splitMethod {
         case .equally:
-            let perPerson = participantIds.count > 0 ? amount / Double(participantIds.count) : 0
+            let count = Double(participantIds.count)
+            let perPerson = count > 0 ? amount / count : 0
             return "Split equally: \(perPerson.asCurrency) each"
 
         case .exactAmounts:
@@ -267,7 +270,8 @@ class NewTransactionViewModel: ObservableObject {
                 return "Amounts match total"
             } else {
                 let remaining = amount - total
-                return remaining > 0 ? "\(remaining.asCurrency) remaining" : "\(abs(remaining).asCurrency) over"
+                return remaining > 0
+                    ? "\(remaining.asCurrency) remaining" : "\(abs(remaining).asCurrency) over"
             }
 
         case .percentages:
@@ -301,8 +305,8 @@ class NewTransactionViewModel: ObservableObject {
 
         switch splitMethod {
         case .equally:
-            let perPersonAmount = amount / count
-            let perPersonPercentage = 100.0 / count
+            let perPersonAmount = count > 0 ? amount / count : 0
+            let perPersonPercentage = count > 0 ? 100.0 / count : 0
             return participantIds.reduce(into: [:]) { result, id in
                 result[id] = SplitDetail(
                     amount: perPersonAmount,
@@ -349,7 +353,7 @@ class NewTransactionViewModel: ObservableObject {
             let totalAdjustments = participantIds.reduce(0.0) { sum, id in
                 sum + (splitDetails[id]?.adjustment ?? 0)
             }
-            let baseAmount = (amount - totalAdjustments) / count
+            let baseAmount = count > 0 ? (amount - totalAdjustments) / count : 0
 
             return participantIds.reduce(into: [:]) { result, id in
                 let adjustment = splitDetails[id]?.adjustment ?? 0
@@ -532,9 +536,8 @@ class NewTransactionViewModel: ObservableObject {
 
         let search = paidBySearchText.lowercased()
         return people.filter { person in
-            person.name.lowercased().contains(search) ||
-            person.email.lowercased().contains(search) ||
-            person.phone.contains(search)
+            person.name.lowercased().contains(search) || person.email.lowercased().contains(search)
+                || person.phone.contains(search)
         }
     }
 
@@ -544,9 +547,8 @@ class NewTransactionViewModel: ObservableObject {
 
         let search = splitWithSearchText.lowercased()
         return people.filter { person in
-            person.name.lowercased().contains(search) ||
-            person.email.lowercased().contains(search) ||
-            person.phone.contains(search)
+            person.name.lowercased().contains(search) || person.email.lowercased().contains(search)
+                || person.phone.contains(search)
         }
     }
 
@@ -581,10 +583,10 @@ class NewTransactionViewModel: ObservableObject {
             break
 
         case .exactAmounts:
-            splitDetails[personId] = SplitDetail(amount: amount / count)
+            splitDetails[personId] = SplitDetail(amount: count > 0 ? amount / count : 0)
 
         case .percentages:
-            splitDetails[personId] = SplitDetail(percentage: 100.0 / count)
+            splitDetails[personId] = SplitDetail(percentage: count > 0 ? 100.0 / count : 0)
 
         case .shares:
             splitDetails[personId] = SplitDetail(shares: 1)
@@ -721,6 +723,7 @@ class NewTransactionViewModel: ObservableObject {
 
         // Other
         notes = ""
+        isLoading = false
     }
 
     // MARK: - Utility Functions

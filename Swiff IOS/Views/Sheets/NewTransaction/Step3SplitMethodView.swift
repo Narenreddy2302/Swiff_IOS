@@ -99,11 +99,11 @@ struct Step3SplitMethodView: View {
     }
 
     private var progressDots: some View {
-        HStack(spacing: Theme.Metrics.paddingSmall) {
+        HStack(spacing: Theme.Metrics.spacingTiny) {
             ForEach(1...3, id: \.self) { step in
                 Circle()
                     .fill(step == 3 ? Theme.Colors.brandPrimary : Theme.Colors.border)
-                    .frame(width: step == 3 ? 24 : 8, height: 8)
+                    .frame(width: step == 3 ? Theme.Metrics.progressDotActive : Theme.Metrics.progressDotInactive, height: Theme.Metrics.progressDotInactive)
                     .animation(.snappy, value: step)
             }
         }
@@ -154,7 +154,7 @@ struct Step3SplitMethodView: View {
 
                         Rectangle()
                             .fill(viewModel.splitMethod == method ? Theme.Colors.brandPrimary : Color.clear)
-                            .frame(height: 2)
+                            .frame(height: Theme.Metrics.tabUnderlineHeight)
                     }
                 }
                 .buttonStyle(.plain)
@@ -176,7 +176,7 @@ struct Step3SplitMethodView: View {
 
                 Text(viewModel.isSplitValid ? "Balanced (100%)" : "Not Balanced")
                     .font(Theme.Fonts.labelLarge)
-                    .foregroundColor(viewModel.isSplitValid ? Theme.Colors.brandPrimary : Theme.Colors.warning)
+                    .foregroundColor(viewModel.isSplitValid ? Theme.Colors.brandPrimary : Theme.Colors.statusError)
             }
 
             Spacer()
@@ -189,7 +189,7 @@ struct Step3SplitMethodView: View {
         .padding(.vertical, Theme.Metrics.paddingMedium)
         .background(
             RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .fill(viewModel.isSplitValid ? Theme.Colors.green1 : Theme.Colors.brandAccent.opacity(0.15))
+                .fill(viewModel.isSplitValid ? Theme.Colors.green1 : Theme.Colors.statusError.opacity(Theme.Opacity.faint))
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(viewModel.isSplitValid ? "Split is balanced at 100%" : "Split is not balanced")
@@ -271,7 +271,7 @@ struct Step3SplitMethodView: View {
             .background(
                 RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
                     .fill(Theme.Colors.brandPrimary)
-                    .opacity(viewModel.canSubmit ? 1 : 0.5)
+                    .opacity(viewModel.canSubmit ? 1 : Theme.Opacity.disabled)
             )
         }
         .disabled(!viewModel.canSubmit)
@@ -308,8 +308,12 @@ struct ParticipantSplitCard: View {
 
     var body: some View {
         HStack(spacing: Theme.Metrics.paddingMedium) {
-            AvatarView(avatarType: person.avatarType, size: .medium, style: .solid)
-                .frame(width: 52, height: 52)
+            AvatarBubbleView(
+                person: person,
+                size: Theme.Metrics.avatarBubbleSize,
+                isSelected: false,
+                showRemoveButton: false
+            )
 
             personInfo
 
@@ -325,7 +329,7 @@ struct ParticipantSplitCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .stroke(Theme.Colors.border, lineWidth: 1)
+                .stroke(Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
         )
         .onAppear {
             percentageText = String(format: "%.0f", calculated.percentage)
@@ -347,6 +351,7 @@ struct ParticipantSplitCard: View {
                 .font(Theme.Fonts.bodyMedium)
                 .foregroundColor(Theme.Colors.textSecondary)
         }
+        .padding(.horizontal, Theme.Metrics.spacingTiny)
     }
 
     @ViewBuilder
@@ -384,7 +389,7 @@ struct ParticipantSplitCard: View {
                 .fontWeight(.medium)
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 50)
+                .frame(width: Theme.Metrics.splitInputWidth)
                 .onChange(of: percentageText) { _, newValue in
                     if let value = Double(newValue) {
                         onPercentageChanged(value)
@@ -396,7 +401,7 @@ struct ParticipantSplitCard: View {
                 .fontWeight(.medium)
                 .foregroundColor(Theme.Colors.textSecondary)
         }
-        .inputFieldStyle()
+        .transactionInputFieldStyle()
         .accessibilityLabel("Percentage input")
     }
 
@@ -412,12 +417,12 @@ struct ParticipantSplitCard: View {
                 .fontWeight(.medium)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 70)
+                .frame(width: Theme.Metrics.amountInputWidth)
                 .onChange(of: calculated.amount) { _, newValue in
                     onAmountChanged(newValue)
                 }
         }
-        .inputFieldStyle()
+        .transactionInputFieldStyle()
         .accessibilityLabel("Amount input")
     }
 
@@ -433,7 +438,7 @@ struct ParticipantSplitCard: View {
                 Image(systemName: "minus")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(Theme.Colors.textPrimary)
-                    .frame(width: 28, height: 28)
+                    .frame(width: Theme.Metrics.stepperButtonSize, height: Theme.Metrics.stepperButtonSize)
                     .background(Circle().fill(Theme.Colors.secondaryBackground))
             }
             .buttonStyle(.plain)
@@ -443,7 +448,7 @@ struct ParticipantSplitCard: View {
                 .font(Theme.Fonts.bodyLarge)
                 .fontWeight(.semibold)
                 .foregroundColor(Theme.Colors.textPrimary)
-                .frame(width: 32)
+                .frame(width: Theme.Metrics.sharesDisplayWidth)
                 .accessibilityLabel("\(calculated.shares) shares")
 
             Button(action: {
@@ -456,7 +461,7 @@ struct ParticipantSplitCard: View {
                 Image(systemName: "plus")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(Theme.Colors.textPrimary)
-                    .frame(width: 28, height: 28)
+                    .frame(width: Theme.Metrics.stepperButtonSize, height: Theme.Metrics.stepperButtonSize)
                     .background(Circle().fill(Theme.Colors.secondaryBackground))
             }
             .buttonStyle(.plain)
@@ -476,30 +481,17 @@ struct ParticipantSplitCard: View {
                 .fontWeight(.medium)
                 .keyboardType(.numbersAndPunctuation)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 50)
+                .frame(width: Theme.Metrics.splitInputWidth)
+                .accessibilityLabel("Adjustment amount")
         }
-        .inputFieldStyle()
+        .transactionInputFieldStyle()
         .accessibilityLabel("Adjustment input")
     }
 }
 
 // MARK: - Input Field Style Modifier
 
-private extension View {
-    func inputFieldStyle() -> some View {
-        self
-            .padding(.horizontal, Theme.Metrics.paddingMedium)
-            .padding(.vertical, Theme.Metrics.paddingSmall)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall)
-                    .stroke(Theme.Colors.brandPrimary.opacity(0.3), lineWidth: 1)
-                    .background(
-                        RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall)
-                            .fill(Theme.Colors.secondaryBackground)
-                    )
-            )
-    }
-}
+
 
 // MARK: - Preview
 

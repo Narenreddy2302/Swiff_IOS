@@ -94,11 +94,11 @@ struct Step2SplitOptionsView: View {
     }
 
     private var progressBar: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Theme.Metrics.spacingTiny) {
             ForEach(1...totalSteps, id: \.self) { step in
                 RoundedRectangle(cornerRadius: 2)
                     .fill(step <= 2 ? Theme.Colors.brandPrimary : Theme.Colors.border)
-                    .frame(height: 4)
+                    .frame(height: Theme.Metrics.progressBarHeight)
             }
         }
         .accessibilityLabel("Step 2 of \(totalSteps) completed")
@@ -129,7 +129,7 @@ struct Step2SplitOptionsView: View {
             }) {
                 HStack(spacing: Theme.Metrics.paddingSmall) {
                     Image(systemName: "person.fill")
-                        .font(.system(size: 14))
+                        .font(.system(size: Theme.Metrics.iconSizeSmall))
 
                     Text("Me (Self)")
                         .font(Theme.Fonts.labelLarge)
@@ -148,7 +148,7 @@ struct Step2SplitOptionsView: View {
                 )
                 .overlay(
                     Capsule()
-                        .stroke(isSelfPayer ? Color.clear : Theme.Colors.border, lineWidth: 1)
+                        .stroke(isSelfPayer ? Color.clear : Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
                 )
             }
             .buttonStyle(.plain)
@@ -165,7 +165,7 @@ struct Step2SplitOptionsView: View {
                         .font(Theme.Fonts.labelLarge)
 
                     Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: Theme.Metrics.iconSizeSmall, weight: .medium))
                 }
                 .foregroundColor(Theme.Colors.textPrimary)
                 .padding(.horizontal, Theme.Metrics.paddingMedium)
@@ -176,7 +176,7 @@ struct Step2SplitOptionsView: View {
                 )
                 .overlay(
                     Capsule()
-                        .stroke(Theme.Colors.border, lineWidth: 1)
+                        .stroke(Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
                 )
             }
             .buttonStyle(.plain)
@@ -209,9 +209,11 @@ struct Step2SplitOptionsView: View {
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Theme.Metrics.paddingSmall) {
                 ForEach(selectedPeople) { person in
-                    SelectedPersonBubble(
+                    AvatarBubbleView(
                         person: person,
-                        isSelf: isPersonSelf(person),
+                        size: Theme.Metrics.avatarBubbleSize,
+                        isSelected: false,
+                        showRemoveButton: true,
                         onRemove: {
                             HapticManager.shared.selection()
                             withAnimation(.smooth) {
@@ -235,8 +237,8 @@ struct Step2SplitOptionsView: View {
             VStack(spacing: 6) {
                 ZStack {
                     Circle()
-                        .strokeBorder(Theme.Colors.border, style: StrokeStyle(lineWidth: 1, dash: [4]))
-                        .frame(width: 52, height: 52)
+                        .strokeBorder(Theme.Colors.border, style: StrokeStyle(lineWidth: Theme.Border.widthDefault, dash: [4]))
+                        .frame(width: Theme.Metrics.avatarBubbleSize, height: Theme.Metrics.avatarBubbleSize)
 
                     Image(systemName: "person.badge.plus")
                         .font(.system(size: 18))
@@ -248,43 +250,53 @@ struct Step2SplitOptionsView: View {
         .accessibilityLabel("Add person")
     }
 
+    @ViewBuilder
     private var peopleList: some View {
         let filteredPeople = participantSearchText.isEmpty
             ? dataManager.people
             : dataManager.people.filter { $0.name.localizedCaseInsensitiveContains(participantSearchText) }
 
-        return VStack(spacing: 0) {
-            ForEach(filteredPeople) { person in
-                Button(action: {
-                    HapticManager.shared.selection()
-                    withAnimation(.smooth) {
-                        viewModel.toggleParticipant(person.id)
-                        if viewModel.paidByUserId == nil {
-                            viewModel.selectPayer(person.id)
+        if filteredPeople.isEmpty {
+            EnhancedEmptyState(
+                icon: "person.crop.circle.badge.plus",
+                title: "No Contacts Found",
+                subtitle: "Try searching for a different name"
+            )
+            .padding(.vertical, Theme.Metrics.paddingLarge)
+        } else {
+            VStack(spacing: 0) {
+                ForEach(filteredPeople) { person in
+                    Button(action: {
+                        HapticManager.shared.selection()
+                        withAnimation(.smooth) {
+                            viewModel.toggleParticipant(person.id)
+                            if viewModel.paidByUserId == nil {
+                                viewModel.selectPayer(person.id)
+                            }
                         }
+                    }) {
+                        PersonListRow(
+                            person: person,
+                            isSelected: viewModel.participantIds.contains(person.id)
+                        )
                     }
-                }) {
-                    PersonListRow(
-                        person: person,
-                        isSelected: viewModel.participantIds.contains(person.id)
-                    )
-                }
-                .buttonStyle(.plain)
+                    .buttonStyle(.plain)
 
-                if person.id != filteredPeople.last?.id {
-                    Divider()
-                        .padding(.leading, 72)
+                    if person.id != filteredPeople.last?.id {
+                        Divider()
+                            .padding(.leading, 72)
+                    }
                 }
             }
+            .background(
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                    .fill(Theme.Colors.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                    .stroke(Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
+            )
         }
-        .background(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .fill(Theme.Colors.cardBackground)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .stroke(Theme.Colors.border, lineWidth: 1)
-        )
     }
 
     private var nextButton: some View {
@@ -307,7 +319,7 @@ struct Step2SplitOptionsView: View {
             .background(
                 RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
                     .fill(Theme.Colors.brandPrimary)
-                    .opacity(canProceed ? 1 : 0.5)
+                    .opacity(canProceed ? 1 : Theme.Opacity.disabled)
             )
         }
         .disabled(!canProceed)
@@ -371,57 +383,7 @@ struct Step2SplitOptionsView: View {
     }
 }
 
-// MARK: - SelectedPersonBubble
 
-struct SelectedPersonBubble: View {
-
-    // MARK: - Properties
-
-    let person: Person
-    let isSelf: Bool
-    let onRemove: () -> Void
-
-    // MARK: - Body
-
-    var body: some View {
-        VStack(spacing: 6) {
-            ZStack(alignment: .topTrailing) {
-                AvatarView(avatarType: person.avatarType, size: .medium, style: .solid)
-                    .frame(width: 52, height: 52)
-
-                removeButton
-            }
-
-            Text(displayName)
-                .font(Theme.Fonts.labelSmall)
-                .foregroundColor(Theme.Colors.textPrimary)
-                .lineLimit(1)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(displayName), selected")
-        .accessibilityHint("Double tap to remove")
-    }
-
-    // MARK: - Subviews
-
-    private var removeButton: some View {
-        Button(action: onRemove) {
-            Image(systemName: "xmark")
-                .font(.system(size: 8, weight: .bold))
-                .foregroundColor(Theme.Colors.textOnPrimary)
-                .frame(width: 18, height: 18)
-                .background(Circle().fill(Theme.Colors.textTertiary))
-        }
-        .offset(x: 4, y: -4)
-        .accessibilityLabel("Remove \(displayName)")
-    }
-
-    // MARK: - Computed Properties
-
-    private var displayName: String {
-        isSelf ? "Me" : person.name.components(separatedBy: " ").first ?? person.name
-    }
-}
 
 // MARK: - PersonListRow
 
@@ -456,7 +418,7 @@ struct PersonListRow: View {
     // MARK: - Subviews
 
     private var personInfo: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: Theme.Metrics.spacingTiny) {
             Text(person.name)
                 .font(Theme.Fonts.bodyLarge)
                 .fontWeight(.medium)
@@ -479,13 +441,13 @@ struct PersonListRow: View {
             Circle()
                 .strokeBorder(
                     isSelected ? Theme.Colors.brandPrimary : Theme.Colors.border,
-                    lineWidth: isSelected ? 0 : 2
+                    lineWidth: isSelected ? 0 : Theme.Border.widthSelected
                 )
                 .background(
                     Circle()
                         .fill(isSelected ? Theme.Colors.brandPrimary : Color.clear)
                 )
-                .frame(width: 26, height: 26)
+                .frame(width: Theme.Metrics.selectionIndicatorSize, height: Theme.Metrics.selectionIndicatorSize)
 
             if isSelected {
                 Image(systemName: "checkmark")
