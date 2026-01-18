@@ -20,71 +20,61 @@ struct Step1BasicDetailsView: View {
     }
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(spacing: 20) {
-                    // MARK: Transaction Type Segmented Control
-                    transactionTypeSegment
-                        .id("typeSegment")
+        VStack(spacing: 20) {
+            // MARK: Transaction Type Segmented Control
+            transactionTypeSegment
+                .id("typeSegment")
 
-                    // MARK: Amount Input Section
-                    amountInputSection
-                        .id("amountSection")
+            // MARK: Amount Input Section
+            amountInputSection
+                .id("amountSection")
 
-                    // MARK: Currency Picker (Expandable)
-                    if viewModel.showCurrencyPicker {
-                        CurrencyPickerView(
-                            currencies: Currency.allCases,
-                            selectedCurrency: $viewModel.selectedCurrency,
-                            isPresented: $viewModel.showCurrencyPicker
-                        )
-                    }
-
-                    // MARK: Description & Category Fields
-                    descriptionCategorySection
-                        .id("descSection")
-
-                    // MARK: Category Picker (Expandable Grid)
-                    if viewModel.showCategoryPicker {
-                        CategoryGridPicker(
-                            categories: TransactionCategory.allCases,
-                            selectedCategory: $viewModel.selectedCategory,
-                            isPresented: $viewModel.showCategoryPicker
-                        )
-                    }
-
-                    // MARK: Continue Button
-                    continueButton
-
-                    // Bottom padding for keyboard
-                    Spacer(minLength: keyboardHeight > 0 ? keyboardHeight : 60)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
+            // MARK: Currency Picker (Expandable)
+            if viewModel.showCurrencyPicker {
+                CurrencyPickerView(
+                    currencies: Currency.allCases,
+                    selectedCurrency: $viewModel.selectedCurrency,
+                    isPresented: $viewModel.showCurrencyPicker
+                )
             }
-            .scrollDismissesKeyboard(.interactively)
-            .onChange(of: focusedField) { _, newValue in
-                guard let field = newValue else { return }
+
+            // MARK: Description & Category Fields
+            descriptionCategorySection
+                .id("descSection")
+
+            // MARK: Category Picker (Expandable Grid)
+            if viewModel.showCategoryPicker {
+                CategoryGridPicker(
+                    categories: TransactionCategory.allCases,
+                    selectedCategory: $viewModel.selectedCategory,
+                    isPresented: $viewModel.showCategoryPicker
+                )
+            }
+
+            // MARK: Continue Button
+            continueButton
+
+            // Bottom padding for keyboard
+            Spacer(minLength: keyboardHeight > 0 ? keyboardHeight : 60)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
+        ) { notification in
+            if let keyboardFrame = notification.userInfo?[
+                UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+            {
                 withAnimation(.smooth) {
-                    switch field {
-                    case .amount:
-                        proxy.scrollTo("amountSection", anchor: .center)
-                    case .name:
-                        proxy.scrollTo("descSection", anchor: .center)
-                    }
+                    keyboardHeight = keyboardFrame.height
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
-                if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-                    withAnimation(.smooth) {
-                        keyboardHeight = keyboardFrame.height
-                    }
-                }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-                withAnimation(.smooth) {
-                    keyboardHeight = 0
-                }
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)
+        ) { _ in
+            withAnimation(.smooth) {
+                keyboardHeight = 0
             }
         }
     }
@@ -112,30 +102,26 @@ struct Step1BasicDetailsView: View {
                 withAnimation(.smooth) {
                     viewModel.showCurrencyPicker.toggle()
                     viewModel.showCategoryPicker = false
+                    viewModel.showDatePicker = false
                 }
             } label: {
-                HStack(spacing: 6) {
-                    Text(viewModel.selectedCurrency.flag)
-                        .font(.system(size: 20))
+                HStack(spacing: 4) {
                     Text(viewModel.selectedCurrency.symbol)
-                        .font(.system(size: 24, weight: .semibold))
+                        .font(.system(size: 32, weight: .medium))
                         .foregroundColor(.primary)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundColor(.secondary)
+                        .padding(.top, 4)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color(UIColor.systemGroupedBackground))
-                .cornerRadius(8)
             }
             .buttonStyle(.plain)
 
             // Amount text field
             TextField("0.00", text: $viewModel.amountString)
-                .font(.system(size: 48, weight: .regular))
+                .font(.system(size: 56, weight: .regular))
                 .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
+                .multilineTextAlignment(.leading)  // Changed to leading to sit next to currency
                 .focused($focusedField, equals: .amount)
                 .onChange(of: viewModel.amountString) { _, newValue in
                     // Filter to numbers and single decimal point
@@ -160,9 +146,8 @@ struct Step1BasicDetailsView: View {
                     }
                 }
         }
-        .padding(20)
-        .background(Color.white)
-        .cornerRadius(12)
+        .padding(.vertical, 30)  // Increased vertical padding for "hero" feel
+        .frame(maxWidth: .infinity, alignment: .center)  // Center the entire block
     }
 
     // MARK: - Description & Category Section
@@ -192,6 +177,7 @@ struct Step1BasicDetailsView: View {
                 withAnimation(.smooth) {
                     viewModel.showCategoryPicker.toggle()
                     viewModel.showCurrencyPicker = false
+                    viewModel.showDatePicker = false
                 }
             } label: {
                 HStack {
@@ -217,9 +203,75 @@ struct Step1BasicDetailsView: View {
                 .padding(.vertical, 12)
             }
             .buttonStyle(.plain)
+
+            Divider()
+                .padding(.leading, 16)
+
+            // Date selector row
+            Button {
+                HapticManager.shared.light()
+                withAnimation(.smooth) {
+                    viewModel.showDatePicker.toggle()
+                    viewModel.showCurrencyPicker = false
+                    viewModel.showCategoryPicker = false
+                }
+            } label: {
+                HStack {
+                    Text("Date")
+                        .font(.system(size: 17))
+                        .foregroundColor(.primary)
+                    Spacer()
+
+                    Text(formattedDate)
+                        .font(.system(size: 17))
+                        .foregroundColor(.secondary)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(UIColor.systemGray3))
+                        .rotationEffect(.degrees(viewModel.showDatePicker ? 90 : 0))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+
+            // Inline date picker (expandable)
+            if viewModel.showDatePicker {
+                Divider()
+                    .padding(.leading, 16)
+
+                DatePicker(
+                    "Transaction Date",
+                    selection: $viewModel.transactionDate,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.graphical)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .onChange(of: viewModel.transactionDate) { _, _ in
+                    HapticManager.shared.light()
+                }
+            }
         }
-        .background(Color.white)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
         .cornerRadius(12)
+    }
+
+    // MARK: - Date Formatting
+
+    private var formattedDate: String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(viewModel.transactionDate) {
+            return "Today"
+        } else if calendar.isDateInYesterday(viewModel.transactionDate) {
+            return "Yesterday"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            return formatter.string(from: viewModel.transactionDate)
+        }
     }
 
     // MARK: - Continue Button
@@ -240,7 +292,7 @@ struct Step1BasicDetailsView: View {
                 .padding(.vertical, 16)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.blue)
+                        .fill(Theme.Colors.brandPrimary)
                         .opacity(viewModel.canProceedStep1 ? 1 : 0.5)
                 )
         }

@@ -13,6 +13,10 @@ struct Step3SplitMethodView: View {
     @FocusState private var focusedParticipant: UUID?
     @State private var keyboardHeight: CGFloat = 0
 
+    // Navigation callbacks
+    var onBack: (() -> Void)?
+    var onSave: (() -> Void)?
+
     // MARK: - Layout Constants
     private enum Layout {
         static let horizontalPadding: CGFloat = 16
@@ -45,52 +49,50 @@ struct Step3SplitMethodView: View {
     }
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(spacing: Theme.Metrics.paddingLarge) {
-                    // Summary Header (compact)
-                    summaryHeader
-                        .id("summaryHeader")
+        VStack(spacing: Theme.Metrics.paddingLarge) {
+            // Summary Header (compact)
+            summaryHeader
+                .id("summaryHeader")
 
-                    // Split Method Selector
-                    SplitMethodSelector(
-                        selectedType: $viewModel.splitMethod,
-                        onSelect: {
-                            viewModel.onSplitMethodChanged()
-                        }
-                    )
-
-                    // Participants Configuration
-                    participantsConfiguration
-                        .id("participantsConfig")
-
-                    // Owes Summary
-                    owesSummary
-
-                    // Bottom padding for keyboard
-                    Spacer(minLength: keyboardHeight > 0 ? keyboardHeight : 60)
+            // Split Method Selector
+            SplitMethodSelector(
+                selectedType: $viewModel.splitMethod,
+                onSelect: {
+                    viewModel.onSplitMethodChanged()
                 }
-                .padding(.horizontal, Theme.Metrics.paddingMedium)
-                .padding(.top, Theme.Metrics.paddingMedium)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .onChange(of: focusedParticipant) { _, newValue in
-                guard newValue != nil else { return }
+            )
+
+            // Participants Configuration
+            participantsConfiguration
+                .id("participantsConfig")
+
+            // Owes Summary
+            owesSummary
+
+            // Navigation Buttons
+            navigationButtons
+
+            // Bottom padding for keyboard
+            Spacer(minLength: keyboardHeight > 0 ? keyboardHeight : 60)
+        }
+        .padding(.horizontal, Theme.Metrics.paddingMedium)
+        .padding(.top, Theme.Metrics.paddingMedium)
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
+        ) { notification in
+            if let keyboardFrame = notification.userInfo?[
+                UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+            {
                 withAnimation(.smooth) {
-                    proxy.scrollTo("participantsConfig", anchor: .center)
+                    keyboardHeight = keyboardFrame.height
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
-                if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-                    withAnimation(.smooth) {
-                        keyboardHeight = keyboardFrame.height
-                    }
-                }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-                withAnimation(.smooth) {
-                    keyboardHeight = 0
-                }
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)
+        ) { _ in
+            withAnimation(.smooth) {
+                keyboardHeight = 0
             }
         }
     }
@@ -122,7 +124,9 @@ struct Step3SplitMethodView: View {
                 .fill(Theme.Colors.sheetPillBackground)
         )
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Total amount \(viewModel.amount.asCurrency), \(methodDescription.replacingOccurrences(of: "\n", with: " "))")
+        .accessibilityLabel(
+            "Total amount \(viewModel.amount.asCurrency), \(methodDescription.replacingOccurrences(of: "\n", with: " "))"
+        )
     }
 
     private var methodDescription: String {
@@ -231,8 +235,11 @@ struct Step3SplitMethodView: View {
         .padding(.vertical, 10)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(person.name)\(isPayer ? ", paid the bill" : ""), owes \(calculated.amount.asCurrency), \(String(format: "%.1f", calculated.percentage)) percent")
-        .accessibilityHint(viewModel.splitMethod == .equally ? "Split equally" : "Double tap to adjust amount")
+        .accessibilityLabel(
+            "\(person.name)\(isPayer ? ", paid the bill" : ""), owes \(calculated.amount.asCurrency), \(String(format: "%.1f", calculated.percentage)) percent"
+        )
+        .accessibilityHint(
+            viewModel.splitMethod == .equally ? "Split equally" : "Double tap to adjust amount")
     }
 
     @ViewBuilder
@@ -247,10 +254,13 @@ struct Step3SplitMethodView: View {
                     .font(Theme.Fonts.captionMedium)
                     .foregroundColor(Theme.Colors.textSecondary)
 
-                TextField("0.00", value: Binding(
-                    get: { viewModel.splitDetails[person.id]?.amount ?? 0 },
-                    set: { viewModel.updateSplitAmount(for: person.id, amount: $0) }
-                ), format: .number)
+                TextField(
+                    "0.00",
+                    value: Binding(
+                        get: { viewModel.splitDetails[person.id]?.amount ?? 0 },
+                        set: { viewModel.updateSplitAmount(for: person.id, amount: $0) }
+                    ), format: .number
+                )
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .font(Theme.Fonts.captionMedium)
@@ -266,10 +276,13 @@ struct Step3SplitMethodView: View {
 
         case .percentages:
             HStack(spacing: 4) {
-                TextField("0", value: Binding(
-                    get: { viewModel.splitDetails[person.id]?.percentage ?? 0 },
-                    set: { viewModel.updateSplitPercentage(for: person.id, percentage: $0) }
-                ), format: .number)
+                TextField(
+                    "0",
+                    value: Binding(
+                        get: { viewModel.splitDetails[person.id]?.percentage ?? 0 },
+                        set: { viewModel.updateSplitPercentage(for: person.id, percentage: $0) }
+                    ), format: .number
+                )
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .font(Theme.Fonts.captionMedium)
@@ -337,10 +350,13 @@ struct Step3SplitMethodView: View {
                     .font(Theme.Fonts.captionMedium)
                     .foregroundColor(Theme.Colors.textSecondary)
 
-                TextField("0", value: Binding(
-                    get: { viewModel.splitDetails[person.id]?.adjustment ?? 0 },
-                    set: { viewModel.updateSplitAdjustment(for: person.id, adjustment: $0) }
-                ), format: .number)
+                TextField(
+                    "0",
+                    value: Binding(
+                        get: { viewModel.splitDetails[person.id]?.adjustment ?? 0 },
+                        set: { viewModel.updateSplitAdjustment(for: person.id, adjustment: $0) }
+                    ), format: .number
+                )
                 .keyboardType(.numbersAndPunctuation)
                 .multilineTextAlignment(.trailing)
                 .font(Theme.Fonts.captionMedium)
@@ -370,13 +386,17 @@ struct Step3SplitMethodView: View {
                     // Use sorted array for stable ForEach ordering
                     ForEach(sortedNonPayerParticipants, id: \.self) { participantId in
                         if let person = dataManager.people.first(where: { $0.id == participantId }),
-                           let payerId = viewModel.paidByUserId,
-                           let payer = dataManager.people.first(where: { $0.id == payerId }) {
-                            let calculated = viewModel.calculatedSplits[participantId] ?? SplitDetail()
+                            let payerId = viewModel.paidByUserId,
+                            let payer = dataManager.people.first(where: { $0.id == payerId })
+                        {
+                            let calculated =
+                                viewModel.calculatedSplits[participantId] ?? SplitDetail()
 
                             // Get first name for compact display
-                            let personFirstName = person.name.components(separatedBy: " ").first ?? person.name
-                            let payerFirstName = payer.name.components(separatedBy: " ").first ?? payer.name
+                            let personFirstName =
+                                person.name.components(separatedBy: " ").first ?? person.name
+                            let payerFirstName =
+                                payer.name.components(separatedBy: " ").first ?? payer.name
 
                             HStack {
                                 Text("\(personFirstName) owes \(payerFirstName)")
@@ -387,18 +407,59 @@ struct Step3SplitMethodView: View {
 
                                 Text(calculated.amount.asCurrency)
                                     .font(.system(size: 17, weight: .semibold))
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(Theme.Colors.brandPrimary)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                             .accessibilityElement(children: .combine)
-                            .accessibilityLabel("\(person.name) owes \(payer.name) \(calculated.amount.asCurrency)")
+                            .accessibilityLabel(
+                                "\(person.name) owes \(payer.name) \(calculated.amount.asCurrency)")
                         }
                     }
                 }
-                .background(Color.blue.opacity(0.08))
+                .background(Theme.Colors.brandPrimary.opacity(0.1))
                 .cornerRadius(12)
             }
+        }
+    }
+
+    // MARK: - Navigation Buttons
+
+    private var navigationButtons: some View {
+        HStack(spacing: 12) {
+            // Back button
+            Button {
+                HapticManager.shared.light()
+                onBack?()
+            } label: {
+                Text("Back")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(Theme.Colors.brandPrimary)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Theme.Colors.buttonSecondary)
+                    )
+            }
+
+            // Save button
+            Button {
+                HapticManager.shared.light()
+                onSave?()
+            } label: {
+                Text("Save")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Theme.Colors.brandPrimary)
+                            .opacity(viewModel.canSubmit ? 1 : 0.5)
+                    )
+            }
+            .disabled(!viewModel.canSubmit)
         }
     }
 
@@ -407,12 +468,14 @@ struct Step3SplitMethodView: View {
 // MARK: - Preview
 
 #Preview("Step 3 - Split Method") {
-    Step3SplitMethodView(viewModel: {
-        let vm = NewTransactionViewModel()
-        vm.isSplit = true
-        vm.amountString = "120"
-        return vm
-    }())
+    Step3SplitMethodView(
+        viewModel: {
+            let vm = NewTransactionViewModel()
+            vm.isSplit = true
+            vm.amountString = "120"
+            return vm
+        }()
+    )
     .environmentObject(DataManager.shared)
     .background(Theme.Colors.sheetCardBackground)
 }

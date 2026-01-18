@@ -54,6 +54,8 @@ class NewTransactionViewModel: ObservableObject {
     @Published var selectedCurrency: Currency = Currency(rawValue: UserSettings.shared.selectedCurrency) ?? .USD
     @Published var transactionName: String = ""
     @Published var selectedCategory: TransactionCategory = .food
+    @Published var transactionDate: Date = Date()
+    @Published var showDatePicker: Bool = false
 
     var amount: Double {
         let parsed = Double(amountString) ?? 0
@@ -380,8 +382,10 @@ class NewTransactionViewModel: ObservableObject {
         selectedCurrency = Currency(rawValue: UserSettings.shared.selectedCurrency) ?? .USD
         transactionName = ""
         selectedCategory = .food
+        transactionDate = Date()
         showCurrencyPicker = false
         showCategoryPicker = false
+        showDatePicker = false
         isSplit = false
         paidByUserId = nil
         participantIds.removeAll()

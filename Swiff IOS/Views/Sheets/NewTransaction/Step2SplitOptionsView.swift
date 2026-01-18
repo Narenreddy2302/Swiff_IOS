@@ -14,45 +14,46 @@ struct Step2SplitOptionsView: View {
     @State private var keyboardHeight: CGFloat = 0
 
     var body: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(spacing: 20) {
-                    // MARK: Personal/Split Toggle
-                    splitModeToggle
-                        .id("splitToggle")
+        VStack(spacing: 20) {
+            // MARK: Personal/Split Toggle
+            splitModeToggle
+                .id("splitToggle")
 
-                    // MARK: Split Configuration (only when splitting)
-                    if viewModel.isSplit {
-                        // Paid By Section
-                        paidBySection
-                            .id("paidBySection")
+            // MARK: Split Configuration (only when splitting)
+            if viewModel.isSplit {
+                // Paid By Section
+                paidBySection
+                    .id("paidBySection")
 
-                        // Split With Section
-                        splitWithSection
-                            .id("splitWithSection")
-                    }
-
-                    // MARK: Navigation Buttons
-                    navigationButtons
-
-                    // Bottom padding for keyboard
-                    Spacer(minLength: keyboardHeight > 0 ? keyboardHeight : 60)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
+                // Split With Section
+                splitWithSection
+                    .id("splitWithSection")
             }
-            .scrollDismissesKeyboard(.interactively)
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
-                if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-                    withAnimation(.smooth) {
-                        keyboardHeight = keyboardFrame.height
-                    }
-                }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+
+            // MARK: Navigation Buttons
+            navigationButtons
+
+            // Bottom padding for keyboard
+            Spacer(minLength: keyboardHeight > 0 ? keyboardHeight : 60)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
+        ) { notification in
+            if let keyboardFrame = notification.userInfo?[
+                UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+            {
                 withAnimation(.smooth) {
-                    keyboardHeight = 0
+                    keyboardHeight = keyboardFrame.height
                 }
+            }
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)
+        ) { _ in
+            withAnimation(.smooth) {
+                keyboardHeight = 0
             }
         }
     }
@@ -92,7 +93,7 @@ struct Step2SplitOptionsView: View {
                 }
             }
         }
-        .background(Color.white)
+        .background(Theme.Colors.sheetCardBackground)
         .cornerRadius(12)
     }
 
@@ -131,17 +132,17 @@ struct Step2SplitOptionsView: View {
                 } label: {
                     Text("Change")
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(.blue)
+                        .foregroundColor(Theme.Colors.brandPrimary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .background(Color.blue.opacity(0.1))
+                        .background(Theme.Colors.brandPrimary.opacity(0.1))
                         .cornerRadius(8)
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(Color.white)
+        .background(Theme.Colors.sheetCardBackground)
         .cornerRadius(12)
     }
 
@@ -184,7 +185,7 @@ struct Step2SplitOptionsView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            .background(Color.white)
+            .background(Theme.Colors.sheetCardBackground)
             .cornerRadius(12)
 
             // Cancel button
@@ -195,7 +196,7 @@ struct Step2SplitOptionsView: View {
             } label: {
                 Text("Cancel")
                     .font(.system(size: 17))
-                    .foregroundColor(.blue)
+                    .foregroundColor(Theme.Colors.brandPrimary)
             }
         }
     }
@@ -207,32 +208,119 @@ struct Step2SplitOptionsView: View {
             // Section header with count
             SectionHeaderView(title: "SPLIT WITH (\(viewModel.participantIds.count))")
 
-            // Search bar
-            TransactionSearchBar(
-                placeholder: "Search contacts or groups...",
-                text: $viewModel.splitWithSearchText,
-                onFocus: {
-                    viewModel.isSplitWithSearchFocused = true
-                }
-            )
-
-            // Show search results or participants list
-            if viewModel.isSplitWithSearchFocused && !viewModel.splitWithSearchText.isEmpty {
-                splitWithSearchResults
-            } else {
-                // Selected group badge (if any)
-                if let group = viewModel.selectedGroup {
-                    SelectedGroupBadgeView(group: group) {
-                        HapticManager.shared.light()
-                        withAnimation(.smooth) {
-                            viewModel.clearGroup()
-                        }
+            // Selected group badge (if any)
+            if let group = viewModel.selectedGroup {
+                SelectedGroupBadgeView(group: group) {
+                    HapticManager.shared.light()
+                    withAnimation(.smooth) {
+                        viewModel.clearGroup()
                     }
                 }
-
-                // Participants list
-                participantsListView
             }
+
+            // Selected participants list (only show selected people)
+            if !viewModel.participantIds.isEmpty {
+                selectedParticipantsListView
+            }
+
+            // Add participants button or inline search
+            if viewModel.isSplitWithSearchFocused {
+                addParticipantsSearchView
+            } else {
+                addParticipantsButton
+            }
+        }
+    }
+
+    // MARK: - Selected Participants List (Only selected people)
+
+    private var selectedParticipantsListView: some View {
+        let selectedPeople = dataManager.people.filter { viewModel.participantIds.contains($0.id) }
+
+        return VStack(spacing: 0) {
+            ForEach(Array(selectedPeople.enumerated()), id: \.element.id) { index, person in
+                let isFromGroup = viewModel.selectedGroup?.members.contains(person.id) ?? false
+                let isPayer = viewModel.paidByUserId == person.id
+
+                SelectedParticipantRow(
+                    person: person,
+                    isFromGroup: isFromGroup,
+                    groupName: viewModel.selectedGroup?.name,
+                    isPayer: isPayer,
+                    onRemove: isPayer
+                        ? nil
+                        : {
+                            HapticManager.shared.light()
+                            withAnimation(.smooth) {
+                                viewModel.toggleParticipant(person.id)
+                            }
+                        }
+                )
+
+                if index < selectedPeople.count - 1 {
+                    Divider()
+                        .padding(.leading, 68)
+                }
+            }
+        }
+        .background(Theme.Colors.sheetCardBackground)
+        .cornerRadius(12)
+    }
+
+    // MARK: - Add Participants Button
+
+    private var addParticipantsButton: some View {
+        Button {
+            HapticManager.shared.light()
+            withAnimation(.smooth) {
+                viewModel.isSplitWithSearchFocused = true
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(Theme.Colors.brandPrimary)
+
+                Text("Add Participants")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundColor(Theme.Colors.brandPrimary)
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Theme.Colors.brandPrimary.opacity(0.1))
+            .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Add Participants Search View
+
+    private var addParticipantsSearchView: some View {
+        VStack(spacing: 12) {
+            // Search bar with cancel
+            HStack(spacing: 12) {
+                TransactionSearchBar(
+                    placeholder: "Search contacts or groups...",
+                    text: $viewModel.splitWithSearchText
+                )
+
+                Button {
+                    HapticManager.shared.light()
+                    withAnimation(.smooth) {
+                        viewModel.isSplitWithSearchFocused = false
+                        viewModel.splitWithSearchText = ""
+                    }
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 17))
+                        .foregroundColor(Theme.Colors.brandPrimary)
+                }
+            }
+
+            // Search results
+            splitWithSearchResults
         }
     }
 
@@ -240,6 +328,7 @@ struct Step2SplitOptionsView: View {
         VStack(spacing: 0) {
             let filteredGroups = viewModel.filteredSplitWithGroups(from: dataManager.groups)
             let filteredContacts = viewModel.filteredSplitWithContacts(from: dataManager.people)
+                .filter { !viewModel.participantIds.contains($0.id) }  // Exclude already selected
 
             // Groups section
             if !filteredGroups.isEmpty {
@@ -270,7 +359,7 @@ struct Step2SplitOptionsView: View {
                 }
             }
 
-            // Contacts section
+            // Contacts section (only show contacts not already selected)
             if !filteredContacts.isEmpty {
                 // Section header
                 HStack {
@@ -291,7 +380,7 @@ struct Step2SplitOptionsView: View {
                     } label: {
                         ContactSearchRowView(
                             person: person,
-                            isSelected: viewModel.participantIds.contains(person.id)
+                            isSelected: false
                         )
                     }
                     .buttonStyle(.plain)
@@ -300,44 +389,14 @@ struct Step2SplitOptionsView: View {
 
             // Empty state
             if filteredGroups.isEmpty && filteredContacts.isEmpty {
-                Text("No results found")
+                Text(viewModel.splitWithSearchText.isEmpty ? "Type to search" : "No results found")
                     .font(.system(size: 15))
                     .foregroundColor(.secondary)
                     .padding(.vertical, 24)
                     .frame(maxWidth: .infinity)
             }
         }
-        .background(Color.white)
-        .cornerRadius(12)
-    }
-
-    private var participantsListView: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(dataManager.people.enumerated()), id: \.element.id) { index, person in
-                let isSelected = viewModel.participantIds.contains(person.id)
-                let isFromGroup = viewModel.selectedGroup?.members.contains(person.id) ?? false
-
-                Button {
-                    HapticManager.shared.light()
-                    viewModel.toggleParticipant(person.id)
-                } label: {
-                    ParticipantRowView(
-                        person: person,
-                        isSelected: isSelected,
-                        isFromGroup: isFromGroup,
-                        groupName: viewModel.selectedGroup?.name,
-                        isPayer: viewModel.paidByUserId == person.id
-                    )
-                }
-                .buttonStyle(.plain)
-
-                if index < dataManager.people.count - 1 {
-                    Divider()
-                        .padding(.leading, 68)
-                }
-            }
-        }
-        .background(Color.white)
+        .background(Theme.Colors.sheetCardBackground)
         .cornerRadius(12)
     }
 
@@ -354,12 +413,12 @@ struct Step2SplitOptionsView: View {
             } label: {
                 Text("Back")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(Theme.Colors.brandPrimary)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(UIColor.systemGray6))
+                            .fill(Theme.Colors.buttonSecondary)
                     )
             }
 
@@ -383,7 +442,7 @@ struct Step2SplitOptionsView: View {
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.blue)
+                            .fill(Theme.Colors.brandPrimary)
                             .opacity(viewModel.canProceedStep2 ? 1 : 0.5)
                     )
             }
@@ -425,11 +484,14 @@ struct TransactionSearchBar: View {
                 .foregroundColor(.secondary)
 
             // Text field
-            TextField(placeholder, text: $text, onEditingChanged: { isEditing in
-                if isEditing {
-                    onFocus?()
+            TextField(
+                placeholder, text: $text,
+                onEditingChanged: { isEditing in
+                    if isEditing {
+                        onFocus?()
+                    }
                 }
-            })
+            )
             .font(.system(size: 17))
 
             // Clear button
@@ -497,7 +559,7 @@ struct ContactSearchRowView: View {
             if isSelected {
                 Image(systemName: "checkmark")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(Theme.Colors.brandPrimary)
             }
         }
         .padding(.horizontal, 16)
@@ -518,7 +580,7 @@ struct GroupSearchRowView: View {
             Text(group.emoji)
                 .font(.system(size: 20))
                 .frame(width: 44, height: 44)
-                .background(Color.blue.opacity(0.2))
+                .background(Theme.Colors.brandPrimary.opacity(0.2))
                 .cornerRadius(12)
 
             // Info
@@ -532,10 +594,12 @@ struct GroupSearchRowView: View {
                     people.first { $0.id == memberId }?.name.components(separatedBy: " ").first
                 }.prefix(3).joined(separator: ", ")
 
-                Text("\(group.members.count) members \(memberNames.isEmpty ? "" : "- \(memberNames)")")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                Text(
+                    "\(group.members.count) members \(memberNames.isEmpty ? "" : "- \(memberNames)")"
+                )
+                .font(.system(size: 14))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
             }
 
             Spacer()
@@ -544,7 +608,7 @@ struct GroupSearchRowView: View {
             if isSelected {
                 Image(systemName: "checkmark")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(Theme.Colors.brandPrimary)
             }
         }
         .padding(.horizontal, 16)
@@ -565,25 +629,25 @@ struct SelectedGroupBadgeView: View {
 
             Text(group.name)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.blue)
+                .foregroundColor(Theme.Colors.brandPrimary)
 
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(Theme.Colors.brandPrimary)
                     .frame(width: 20, height: 20)
-                    .background(Color.blue.opacity(0.2))
+                    .background(Theme.Colors.brandPrimary.opacity(0.2))
                     .clipShape(Circle())
             }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .background(Color.blue.opacity(0.1))
+        .background(Theme.Colors.brandPrimary.opacity(0.1))
         .cornerRadius(20)
     }
 }
 
-/// Participant row with checkbox
+/// Participant row with checkbox (legacy - used for search results)
 struct ParticipantRowView: View {
     let person: Person
     let isSelected: Bool
@@ -617,7 +681,7 @@ struct ParticipantRowView: View {
                 if isFromGroup, let groupName = groupName {
                     Text("from \(groupName)")
                         .font(.system(size: 13))
-                        .foregroundColor(.blue)
+                        .foregroundColor(Theme.Colors.brandPrimary)
                 }
             }
 
@@ -625,10 +689,13 @@ struct ParticipantRowView: View {
 
             // Checkbox
             Circle()
-                .strokeBorder(isSelected ? Color.blue : Color(UIColor.systemGray3), lineWidth: 2)
+                .strokeBorder(
+                    isSelected ? Theme.Colors.brandPrimary : Color(UIColor.systemGray3),
+                    lineWidth: 2
+                )
                 .background(
                     Circle()
-                        .fill(isSelected ? Color.blue : Color.clear)
+                        .fill(isSelected ? Theme.Colors.brandPrimary : Color.clear)
                 )
                 .overlay(
                     Image(systemName: "checkmark")
@@ -644,14 +711,75 @@ struct ParticipantRowView: View {
     }
 }
 
+/// Selected participant row with remove button (new design)
+struct SelectedParticipantRow: View {
+    let person: Person
+    let isFromGroup: Bool
+    let groupName: String?
+    let isPayer: Bool
+    let onRemove: (() -> Void)?
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Avatar
+            PersonAvatarView(person: person, size: 40, isSelected: true)
+
+            // Name and group tag
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(person.name)
+                        .font(.system(size: 17))
+                        .foregroundColor(.primary)
+
+                    if isPayer {
+                        Text("Paid")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.green.opacity(0.15))
+                            .cornerRadius(4)
+                    }
+                }
+
+                if isFromGroup, let groupName = groupName {
+                    Text("from \(groupName)")
+                        .font(.system(size: 13))
+                        .foregroundColor(Theme.Colors.brandPrimary)
+                }
+            }
+
+            Spacer()
+
+            // Remove button (only if not payer)
+            if let onRemove = onRemove {
+                Button(action: onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 28, height: 28)
+                        .background(Color(UIColor.systemGray5))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+    }
+}
+
 // MARK: - Preview
 
 #Preview("Step 2 - Split Options") {
-    Step2SplitOptionsView(viewModel: {
-        let vm = NewTransactionViewModel()
-        vm.isSplit = true
-        return vm
-    }())
+    Step2SplitOptionsView(
+        viewModel: {
+            let vm = NewTransactionViewModel()
+            vm.isSplit = true
+            return vm
+        }()
+    )
     .environmentObject(DataManager.shared)
     .background(Color(UIColor.systemGroupedBackground))
 }

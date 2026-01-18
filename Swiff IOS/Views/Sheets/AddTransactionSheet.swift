@@ -44,9 +44,19 @@ struct AddTransactionSheet: View {
                     .tag(2)
 
                 if viewModel.isSplit {
-                    Step3SplitMethodView(viewModel: viewModel)
-                        .environmentObject(dataManager)
-                        .tag(3)
+                    Step3SplitMethodView(
+                        viewModel: viewModel,
+                        onBack: {
+                            withAnimation(.smooth) {
+                                viewModel.goToPreviousStep()
+                            }
+                        },
+                        onSave: {
+                            saveTransaction()
+                        }
+                    )
+                    .environmentObject(dataManager)
+                    .tag(3)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
@@ -329,7 +339,7 @@ struct AddTransactionSheet: View {
                 participants: participants,
                 notes: viewModel.notes,
                 category: viewModel.selectedCategory,
-                date: Date()
+                date: viewModel.transactionDate
             )
 
             do {
@@ -356,7 +366,7 @@ struct AddTransactionSheet: View {
             subtitle: subtitle,
             amount: finalAmount,
             category: viewModel.selectedCategory,
-            date: Date(),
+            date: viewModel.transactionDate,
             isRecurring: false,
             tags: [],
             notes: viewModel.notes,
