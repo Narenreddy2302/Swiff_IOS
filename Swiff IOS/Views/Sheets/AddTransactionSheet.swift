@@ -3,11 +3,17 @@
 //  Swiff IOS
 //
 //  Redesigned 3-step transaction creation flow matching reference UI
+//  Production-ready with full accessibility and design system compliance
 //
 
 import SwiftUI
 
+// MARK: - AddTransactionSheet
+
 struct AddTransactionSheet: View {
+
+    // MARK: - Properties
+
     @Binding var showingAddTransactionSheet: Bool
     let onTransactionAdded: (Transaction) -> Void
     var preselectedParticipant: Person? = nil
@@ -15,52 +21,27 @@ struct AddTransactionSheet: View {
     @EnvironmentObject var dataManager: DataManager
     @StateObject private var viewModel = NewTransactionViewModel()
 
-    // Saving state for feedback
+    /// Saving state for feedback and preventing double-taps
     @State private var isSaving: Bool = false
 
-    // Focus state for keyboard management
+    /// Focus state for keyboard management
     @FocusState private var isAmountFocused: Bool
     @FocusState private var isNameFocused: Bool
+
+    // MARK: - Computed Properties
 
     private var totalSteps: Int {
         viewModel.isSplit ? 3 : 2
     }
 
+    // MARK: - Body
+
     var body: some View {
         VStack(spacing: 0) {
-            // New header design with step badge
             sheetHeader
-
-            // Step content
-            TabView(selection: $viewModel.currentStep) {
-                Step1BasicDetailsView(viewModel: viewModel)
-                    .environmentObject(dataManager)
-                    .tag(1)
-
-                Step2SplitOptionsView(viewModel: viewModel)
-                    .environmentObject(dataManager)
-                    .tag(2)
-
-                if viewModel.isSplit {
-                    Step3SplitMethodView(
-                        viewModel: viewModel,
-                        onBack: {
-                            withAnimation(.smooth) {
-                                viewModel.goToPreviousStep()
-                            }
-                        },
-                        onSave: {
-                            saveTransaction()
-                        }
-                    )
-                    .environmentObject(dataManager)
-                    .tag(3)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .animation(.smooth, value: viewModel.currentStep)
+            stepContent
         }
-        .background(Color.wiseGroupedBackground)
+        .background(Theme.Colors.secondaryBackground)
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(Theme.Metrics.cornerRadiusLarge)
@@ -69,63 +50,103 @@ struct AddTransactionSheet: View {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Done") {
-                    isAmountFocused = false
-                    isNameFocused = false
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    dismissKeyboard()
                 }
-                .font(.spotifyBodyLarge)
+                .font(Theme.Fonts.bodyLarge)
                 .fontWeight(.semibold)
-                .foregroundColor(.wiseForestGreen)
+                .foregroundColor(Theme.Colors.brandPrimary)
             }
         }
         .onAppear {
             setupPreselectedParticipant()
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("New Transaction Sheet")
     }
 
-    // MARK: - New Header Design
+    // MARK: - Subviews
 
+    /// Header with close button, title, and step indicator
     private var sheetHeader: some View {
         HStack {
-            // Close button
-            Button(action: {
-                HapticManager.shared.light()
-                showingAddTransactionSheet = false
-                viewModel.reset()
-            }) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.wiseSecondaryText)
-                    .frame(width: 32, height: 32)
-            }
-            .accessibilityLabel("Close")
-
+            closeButton
             Spacer()
-
-            // Title
-            Text("New Transaction")
-                .font(.spotifyHeadingMedium)
-                .foregroundColor(.wisePrimaryText)
-
+            titleView
             Spacer()
-
-            // Step indicator badge
-            Text("STEP \(viewModel.currentStep) OF \(totalSteps)")
-                .font(.spotifyLabelSmall)
-                .foregroundColor(.wiseSecondaryText)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.wiseBorder.opacity(0.5))
-                )
+            stepIndicator
         }
         .padding(.horizontal, Theme.Metrics.paddingMedium)
         .padding(.top, Theme.Metrics.paddingMedium)
         .padding(.bottom, Theme.Metrics.paddingSmall)
     }
 
-    // MARK: - Actions
+    private var closeButton: some View {
+        Button(action: {
+            HapticManager.shared.selection()
+            showingAddTransactionSheet = false
+            viewModel.reset()
+        }) {
+            Image(systemName: "xmark")
+                .font(.system(size: Theme.Metrics.iconSizeSmall, weight: .medium))
+                .foregroundColor(Theme.Colors.textSecondary)
+                .frame(width: Theme.Metrics.avatarCompact, height: Theme.Metrics.avatarCompact)
+        }
+        .accessibilityLabel("Close")
+        .accessibilityHint("Dismisses the new transaction sheet")
+    }
+
+    private var titleView: some View {
+        Text("New Transaction")
+            .font(Theme.Fonts.headerMedium)
+            .foregroundColor(Theme.Colors.textPrimary)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private var stepIndicator: some View {
+        Text("STEP \(viewModel.currentStep) OF \(totalSteps)")
+            .font(Theme.Fonts.labelSmall)
+            .foregroundColor(Theme.Colors.textSecondary)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall)
+                    .fill(Theme.Colors.border.opacity(0.5))
+            )
+            .accessibilityLabel("Step \(viewModel.currentStep) of \(totalSteps)")
+    }
+
+    /// TabView-based step content with smooth transitions
+    private var stepContent: some View {
+        TabView(selection: $viewModel.currentStep) {
+            Step1BasicDetailsView(viewModel: viewModel)
+                .environmentObject(dataManager)
+                .tag(1)
+
+            Step2SplitOptionsView(viewModel: viewModel)
+                .environmentObject(dataManager)
+                .tag(2)
+
+            if viewModel.isSplit {
+                Step3SplitMethodView(
+                    viewModel: viewModel,
+                    onBack: {
+                        withAnimation(.smooth) {
+                            viewModel.goToPreviousStep()
+                        }
+                    },
+                    onSave: {
+                        saveTransaction()
+                    }
+                )
+                .environmentObject(dataManager)
+                .tag(3)
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
+        .animation(.smooth, value: viewModel.currentStep)
+    }
+
+    // MARK: - Private Methods
 
     private func setupPreselectedParticipant() {
         if let person = preselectedParticipant {
@@ -133,6 +154,17 @@ struct AddTransactionSheet: View {
             viewModel.participantIds.insert(person.id)
             viewModel.initializeSplitDefaults()
         }
+    }
+
+    private func dismissKeyboard() {
+        isAmountFocused = false
+        isNameFocused = false
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil,
+            from: nil,
+            for: nil
+        )
     }
 
     private func saveTransaction() {
@@ -148,78 +180,18 @@ struct AddTransactionSheet: View {
             return
         }
 
-        let finalAmount = viewModel.transactionType == .expense ? -abs(viewModel.amount) : abs(viewModel.amount)
+        let finalAmount = viewModel.transactionType == .expense
+            ? -abs(viewModel.amount)
+            : abs(viewModel.amount)
 
         var splitBillId: UUID? = nil
 
         // Create split bill if splitting
         if viewModel.isSplit, let payerId = viewModel.paidByUserId {
-            // Pre-validate all participants exist before making any changes
-            var balanceChanges: [(person: Person, change: Double)] = []
-
-            // Build participant list with stable ordering
-            let sortedParticipantIds = viewModel.participantIds.sorted()
-            let participants = sortedParticipantIds.map { personId -> SplitParticipant in
-                let calculated = viewModel.calculatedSplits[personId] ?? SplitDetail()
-                return SplitParticipant(
-                    personId: personId,
-                    amount: calculated.amount,
-                    hasPaid: personId == payerId,
-                    percentage: calculated.percentage,
-                    shares: viewModel.splitMethod == .shares ? calculated.shares : nil
-                )
-            }
-
-            // Pre-validate: Check all participants exist and calculate balance changes
-            for participant in participants where participant.personId != payerId {
-                guard let person = dataManager.people.first(where: { $0.id == participant.personId }) else {
-                    HapticManager.shared.error()
-                    ToastManager.shared.showError("Participant not found. Please refresh and try again.")
-                    isSaving = false
-                    return
-                }
-                balanceChanges.append((person: person, change: -participant.amount))
-            }
-
-            // Pre-validate payer exists
-            guard let payerPerson = dataManager.people.first(where: { $0.id == payerId }) else {
-                HapticManager.shared.error()
-                ToastManager.shared.showError("Payer not found. Please refresh and try again.")
-                isSaving = false
-                return
-            }
-
-            let totalOwed = participants
-                .filter { $0.personId != payerId }
-                .reduce(0) { $0 + $1.amount }
-            balanceChanges.append((person: payerPerson, change: totalOwed))
-
-            // Create split bill
-            let splitBill = SplitBill(
-                title: viewModel.transactionName.trimmingCharacters(in: .whitespaces),
-                totalAmount: abs(viewModel.amount),
-                paidById: payerId,
-                splitType: viewModel.splitMethod,
-                participants: participants,
-                notes: viewModel.notes,
-                category: viewModel.selectedCategory,
-                date: viewModel.transactionDate
-            )
-
             do {
-                try dataManager.addSplitBill(splitBill)
-                splitBillId = splitBill.id
-
-                // Apply all balance changes atomically
-                for (person, change) in balanceChanges {
-                    var updatedPerson = person
-                    updatedPerson.balance += change
-                    try dataManager.updatePerson(updatedPerson)
-                }
+                splitBillId = try createSplitBill(payerId: payerId)
             } catch {
-                HapticManager.shared.error()
-                ToastManager.shared.showError("Failed to create split: \(error.localizedDescription)")
-                isSaving = false
+                handleSaveError(error)
                 return
             }
         }
@@ -243,6 +215,96 @@ struct AddTransactionSheet: View {
         showingAddTransactionSheet = false
         viewModel.reset()
         isSaving = false
+    }
+
+    private func createSplitBill(payerId: UUID) throws -> UUID {
+        // Pre-validate all participants exist before making any changes
+        var balanceChanges: [(person: Person, change: Double)] = []
+
+        // Build participant list with stable ordering
+        let sortedParticipantIds = viewModel.participantIds.sorted()
+        let participants = sortedParticipantIds.map { personId -> SplitParticipant in
+            let calculated = viewModel.calculatedSplits[personId] ?? SplitDetail()
+            return SplitParticipant(
+                personId: personId,
+                amount: calculated.amount,
+                hasPaid: personId == payerId,
+                percentage: calculated.percentage,
+                shares: viewModel.splitMethod == .shares ? calculated.shares : nil
+            )
+        }
+
+        // Pre-validate: Check all participants exist and calculate balance changes
+        for participant in participants where participant.personId != payerId {
+            guard let person = dataManager.people.first(where: { $0.id == participant.personId }) else {
+                throw TransactionSaveError.participantNotFound
+            }
+            balanceChanges.append((person: person, change: -participant.amount))
+        }
+
+        // Pre-validate payer exists
+        guard let payerPerson = dataManager.people.first(where: { $0.id == payerId }) else {
+            throw TransactionSaveError.payerNotFound
+        }
+
+        let totalOwed = participants
+            .filter { $0.personId != payerId }
+            .reduce(0) { $0 + $1.amount }
+        balanceChanges.append((person: payerPerson, change: totalOwed))
+
+        // Create split bill
+        let splitBill = SplitBill(
+            title: viewModel.transactionName.trimmingCharacters(in: .whitespaces),
+            totalAmount: abs(viewModel.amount),
+            paidById: payerId,
+            splitType: viewModel.splitMethod,
+            participants: participants,
+            notes: viewModel.notes,
+            category: viewModel.selectedCategory,
+            date: viewModel.transactionDate
+        )
+
+        try dataManager.addSplitBill(splitBill)
+
+        // Apply all balance changes atomically
+        for (person, change) in balanceChanges {
+            var updatedPerson = person
+            updatedPerson.balance += change
+            try dataManager.updatePerson(updatedPerson)
+        }
+
+        return splitBill.id
+    }
+
+    private func handleSaveError(_ error: Error) {
+        HapticManager.shared.error()
+
+        if let saveError = error as? TransactionSaveError {
+            ToastManager.shared.showError(saveError.userMessage)
+        } else {
+            ToastManager.shared.showError("Failed to create split: \(error.localizedDescription)")
+        }
+
+        isSaving = false
+    }
+}
+
+// MARK: - Transaction Save Error
+
+private enum TransactionSaveError: Error {
+    case participantNotFound
+    case payerNotFound
+    case saveFailed(Error)
+
+    var userMessage: String {
+        switch self {
+        case .participantNotFound:
+            return "Participant not found. Please refresh and try again."
+        case .payerNotFound:
+            return "Payer not found. Please refresh and try again."
+        case .saveFailed(let error):
+            return "Failed to save: \(error.localizedDescription)"
+        }
     }
 }
 
