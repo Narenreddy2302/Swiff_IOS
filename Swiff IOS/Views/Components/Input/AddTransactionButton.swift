@@ -89,6 +89,7 @@ struct QuickActionPill: View {
     let title: String
     let icon: String
     let color: Color
+    var isFlexible: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -102,10 +103,13 @@ struct QuickActionPill: View {
 
                 Text(title)
                     .font(.system(size: 13, weight: .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
             .foregroundColor(.white)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
+            .frame(maxWidth: isFlexible ? .infinity : nil)
             .background(color)
             .clipShape(Capsule())
         }

@@ -70,20 +70,21 @@ struct ConversationInputView: View {
 
     // MARK: - Action Buttons Row
 
+    // MARK: - Action Buttons Row
+
     private var actionButtonsRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(additionalActions) { action in
-                    QuickActionPill(
-                        title: action.title,
-                        icon: action.icon,
-                        color: action.color,
-                        action: action.action
-                    )
-                }
+        HStack(spacing: 8) {
+            ForEach(additionalActions) { action in
+                QuickActionPill(
+                    title: action.title,
+                    icon: action.icon,
+                    color: action.color,
+                    isFlexible: true,
+                    action: action.action
+                )
             }
-            .padding(.horizontal, 4)
         }
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Main Input Row
@@ -154,47 +155,73 @@ struct ConversationInputView: View {
 // MARK: - Conversation Input Action
 
 /// Represents an additional action button in the input area
-struct ConversationInputAction: Identifiable {
-    let id = UUID()
-    let title: String
-    let icon: String
-    let color: Color
-    let action: () -> Void
+enum ConversationInputAction: Identifiable {
+    case addTransaction(() -> Void)
+    case remind(() -> Void)
+    case settleUp(() -> Void)
+    case theyOweMe(() -> Void)
+    case iOwe(() -> Void)
+    case splitBill(() -> Void)
+    case settle(() -> Void)
 
-    static func theyOweMe(action: @escaping () -> Void) -> ConversationInputAction {
-        ConversationInputAction(
-            title: "They Owe Me",
-            icon: "arrow.down.circle.fill",
-            color: .wiseBrightGreen,
-            action: action
-        )
+    var id: String {
+        switch self {
+        case .addTransaction: return "addTransaction"
+        case .remind: return "remind"
+        case .settleUp: return "settleUp"
+        case .theyOweMe: return "theyOweMe"
+        case .iOwe: return "iOwe"
+        case .splitBill: return "splitBill"
+        case .settle: return "settle"
+        }
     }
 
-    static func iOwe(action: @escaping () -> Void) -> ConversationInputAction {
-        ConversationInputAction(
-            title: "I Owe",
-            icon: "arrow.up.circle.fill",
-            color: .wiseBlue,
-            action: action
-        )
+    var title: String {
+        switch self {
+        case .addTransaction: return "Add"
+        case .remind: return "Remind"
+        case .settleUp: return "Settle"
+        case .theyOweMe: return "They Owe Me"
+        case .iOwe: return "I Owe"
+        case .splitBill: return "Split Bill"
+        case .settle: return "Settle"
+        }
     }
 
-    static func splitBill(action: @escaping () -> Void) -> ConversationInputAction {
-        ConversationInputAction(
-            title: "Split Bill",
-            icon: "rectangle.split.2x1",
-            color: .wisePurple,
-            action: action
-        )
+    var icon: String {
+        switch self {
+        case .addTransaction: return "plus.circle.fill"
+        case .remind: return "bell.fill"
+        case .settleUp: return "checkmark"
+        case .theyOweMe: return "arrow.down.circle.fill"
+        case .iOwe: return "arrow.up.circle.fill"
+        case .splitBill: return "rectangle.split.2x1"
+        case .settle: return "checkmark.circle.fill"
+        }
     }
 
-    static func settle(action: @escaping () -> Void) -> ConversationInputAction {
-        ConversationInputAction(
-            title: "Settle Up",
-            icon: "checkmark.circle",
-            color: .wiseWarning,
-            action: action
-        )
+    var color: Color {
+        switch self {
+        case .addTransaction: return Theme.Colors.brandPrimary  // Green
+        case .remind: return Color(UIColor.systemGray)  // Dark gray
+        case .settleUp: return Color(UIColor.systemGray)  // Dark gray
+        case .theyOweMe: return .wiseBrightGreen
+        case .iOwe: return .wiseBlue
+        case .splitBill: return .purple
+        case .settle: return .wiseWarning
+        }
+    }
+
+    var action: () -> Void {
+        switch self {
+        case .addTransaction(let action): return action
+        case .remind(let action): return action
+        case .settleUp(let action): return action
+        case .theyOweMe(let action): return action
+        case .iOwe(let action): return action
+        case .splitBill(let action): return action
+        case .settle(let action): return action
+        }
     }
 }
 
@@ -304,7 +331,7 @@ struct SimpleConversationInput: View {
             additionalActions: [
                 .theyOweMe { print("They owe me") },
                 .iOwe { print("I owe") },
-                .splitBill { print("Split bill") }
+                .splitBill { print("Split bill") },
             ]
         )
     }
