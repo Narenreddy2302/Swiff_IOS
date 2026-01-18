@@ -3,7 +3,7 @@
 //  Swiff IOS
 //
 //  Step 3: Split Details - Method selection and per-person configuration
-//  Redesigned to match reference UI exactly
+//  Redesigned to match reference UI with proper theme consistency
 //
 
 import SwiftUI
@@ -31,7 +31,7 @@ struct Step3SplitMethodView: View {
             headerSection
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: Theme.Metrics.paddingMedium + 4) {
                     // Progress dots
                     progressDots
 
@@ -52,15 +52,15 @@ struct Step3SplitMethodView: View {
 
                     Spacer(minLength: 100)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
             }
             .safeAreaInset(edge: .bottom) {
                 // Create Transaction button
                 createTransactionButton
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
+                    .padding(.bottom, Theme.Metrics.paddingMedium + 4)
                     .background(
-                        Color(UIColor.systemGroupedBackground)
+                        Color.wiseGroupedBackground
                             .ignoresSafeArea()
                     )
             }
@@ -78,34 +78,34 @@ struct Step3SplitMethodView: View {
             }) {
                 Image(systemName: "arrow.left")
                     .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .foregroundColor(.wisePrimaryText)
             }
 
             Spacer()
 
             // Title
             Text("Add Transaction")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(Theme.Colors.textPrimary)
+                .font(.spotifyHeadingMedium)
+                .foregroundColor(.wisePrimaryText)
 
             Spacer()
 
             // Step indicator
             Text("STEP 3/3")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(Theme.Colors.brandPrimary)
+                .font(.spotifyLabelMedium)
+                .foregroundColor(.wiseForestGreen)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
+        .padding(.vertical, Theme.Metrics.paddingSmall + 4)
     }
 
     // MARK: - Progress Dots
 
     private var progressDots: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Theme.Metrics.paddingSmall) {
             ForEach(1...3, id: \.self) { step in
                 Circle()
-                    .fill(step == 3 ? Theme.Colors.brandPrimary : Color(UIColor.systemGray4))
+                    .fill(step == 3 ? Color.wiseForestGreen : Color.wiseBorder)
                     .frame(width: step == 3 ? 24 : 8, height: 8)
                     .animation(.snappy, value: step)
             }
@@ -118,21 +118,22 @@ struct Step3SplitMethodView: View {
     private var titleSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Split Details")
-                .font(.system(size: 26, weight: .bold))
-                .foregroundColor(Theme.Colors.textPrimary)
+                .font(.spotifyDisplayMedium)
+                .foregroundColor(.wisePrimaryText)
 
             HStack(spacing: 4) {
                 Text("Specify how the")
-                    .font(.system(size: 15))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wiseSecondaryText)
 
                 Text(viewModel.amount.asCurrency)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .font(.spotifyBodyMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.wisePrimaryText)
 
                 Text("should be divided.")
-                    .font(.system(size: 15))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wiseSecondaryText)
             }
         }
     }
@@ -149,14 +150,14 @@ struct Step3SplitMethodView: View {
                         viewModel.onSplitMethodChanged()
                     }
                 }) {
-                    VStack(spacing: 8) {
+                    VStack(spacing: Theme.Metrics.paddingSmall) {
                         Text(label)
-                            .font(.system(size: 15, weight: viewModel.splitMethod == method ? .semibold : .regular))
-                            .foregroundColor(viewModel.splitMethod == method ? Theme.Colors.brandPrimary : Theme.Colors.textSecondary)
+                            .font(viewModel.splitMethod == method ? .spotifyLabelLarge : .spotifyBodyMedium)
+                            .foregroundColor(viewModel.splitMethod == method ? Color.wiseForestGreen : Color.wiseSecondaryText)
 
                         // Underline indicator
                         Rectangle()
-                            .fill(viewModel.splitMethod == method ? Theme.Colors.brandPrimary : Color.clear)
+                            .fill(viewModel.splitMethod == method ? Color.wiseForestGreen : Color.clear)
                             .frame(height: 2)
                     }
                 }
@@ -170,27 +171,27 @@ struct Step3SplitMethodView: View {
 
     private var balancedStatusIndicator: some View {
         HStack {
-            HStack(spacing: 8) {
+            HStack(spacing: Theme.Metrics.paddingSmall) {
                 Image(systemName: viewModel.isSplitValid ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                     .font(.system(size: 16))
-                    .foregroundColor(viewModel.isSplitValid ? Theme.Colors.brandPrimary : Theme.Colors.warning)
+                    .foregroundColor(viewModel.isSplitValid ? Color.wiseForestGreen : Color.wiseWarning)
 
                 Text(viewModel.isSplitValid ? "Balanced (100%)" : "Not Balanced")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(viewModel.isSplitValid ? Theme.Colors.brandPrimary : Theme.Colors.warning)
+                    .font(.spotifyLabelLarge)
+                    .foregroundColor(viewModel.isSplitValid ? Color.wiseForestGreen : Color.wiseWarning)
             }
 
             Spacer()
 
             Text("Total: \(viewModel.amount.asCurrency)")
-                .font(.system(size: 15))
-                .foregroundColor(Theme.Colors.textSecondary)
+                .font(.spotifyBodyMedium)
+                .foregroundColor(.wiseSecondaryText)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, Theme.Metrics.paddingMedium)
+        .padding(.vertical, Theme.Metrics.paddingMedium - 2)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(viewModel.isSplitValid ? Theme.Colors.brandPrimary.opacity(0.1) : Theme.Colors.warning.opacity(0.1))
+            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                .fill(viewModel.isSplitValid ? Color.wiseGreen1 : Color.wiseOrange.opacity(0.15))
         )
     }
 
@@ -199,7 +200,7 @@ struct Step3SplitMethodView: View {
     private var participantsList: some View {
         let sortedParticipantIds = viewModel.participantIds.sorted()
 
-        return VStack(spacing: 12) {
+        return VStack(spacing: Theme.Metrics.paddingSmall + 4) {
             ForEach(sortedParticipantIds, id: \.self) { participantId in
                 if let person = dataManager.people.first(where: { $0.id == participantId }) {
                     ParticipantSplitCard(
@@ -228,39 +229,42 @@ struct Step3SplitMethodView: View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text("REMAINING")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(.spotifyLabelSmall)
+                    .foregroundColor(.wiseSecondaryText)
 
                 Text(remainingAmount.asCurrency)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(remainingAmount == 0 ? Theme.Colors.brandPrimary : Theme.Colors.amountNegative)
+                    .font(.spotifyNumberMedium)
+                    .fontWeight(.bold)
+                    .foregroundColor(remainingAmount == 0 ? Color.wiseForestGreen : Color.amountNegative)
             }
 
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
                 Text("TOTAL")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(.spotifyLabelSmall)
+                    .foregroundColor(.wiseSecondaryText)
 
                 Text(viewModel.amount.asCurrency)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .font(.spotifyNumberMedium)
+                    .fontWeight(.bold)
+                    .foregroundColor(.wisePrimaryText)
             }
         }
-        .padding(.top, 8)
+        .padding(.top, Theme.Metrics.paddingSmall)
     }
 
     // MARK: - Create Transaction Button
 
     private var createTransactionButton: some View {
         Button {
-            HapticManager.shared.light()
+            HapticManager.shared.success()
             onSave?()
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: Theme.Metrics.paddingSmall) {
                 Text("Create Transaction")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.semibold)
 
                 Image(systemName: "paperplane.fill")
                     .font(.system(size: 15, weight: .semibold))
@@ -269,12 +273,13 @@ struct Step3SplitMethodView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 18)
             .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Theme.Colors.brandPrimary)
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
+                    .fill(Color.wiseForestGreen)
                     .opacity(viewModel.canSubmit ? 1 : 0.5)
             )
         }
         .disabled(!viewModel.canSubmit)
+        .cardShadow()
     }
 
     // MARK: - Computed Properties
@@ -299,7 +304,7 @@ struct ParticipantSplitCard: View {
     @State private var percentageText: String = ""
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: Theme.Metrics.paddingMedium - 2) {
             // Avatar
             AvatarView(avatarType: person.avatarType, size: .medium, style: .solid)
                 .frame(width: 52, height: 52)
@@ -307,12 +312,13 @@ struct ParticipantSplitCard: View {
             // Name and amount
             VStack(alignment: .leading, spacing: 4) {
                 Text(person.name)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.wisePrimaryText)
 
                 Text(calculated.amount.asCurrency)
-                    .font(.system(size: 15))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(.spotifyBodyMedium)
+                    .foregroundColor(.wiseSecondaryText)
             }
 
             Spacer()
@@ -320,12 +326,17 @@ struct ParticipantSplitCard: View {
             // Input control based on split method
             splitInputControl
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, Theme.Metrics.paddingMedium)
+        .padding(.vertical, Theme.Metrics.paddingMedium - 2)
         .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(UIColor.secondarySystemGroupedBackground))
+            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
+                .fill(Color.wiseCardBackground)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
+                .stroke(Color.wiseBorder, lineWidth: 1)
+        )
+        .cardShadow()
         .onAppear {
             percentageText = String(format: "%.0f", calculated.percentage)
         }
@@ -337,14 +348,16 @@ struct ParticipantSplitCard: View {
         case .equally:
             // Just show percentage
             Text("\(Int(calculated.percentage)) %")
-                .font(.system(size: 17, weight: .medium))
-                .foregroundColor(Theme.Colors.textSecondary)
+                .font(.spotifyBodyLarge)
+                .fontWeight(.medium)
+                .foregroundColor(.wiseSecondaryText)
 
         case .percentages:
             // Editable percentage input
             HStack(spacing: 4) {
                 TextField("0", text: $percentageText)
-                    .font(.system(size: 17, weight: .medium))
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.medium)
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 50)
@@ -355,17 +368,18 @@ struct ParticipantSplitCard: View {
                     }
 
                 Text("%")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.medium)
+                    .foregroundColor(.wiseSecondaryText)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, Theme.Metrics.paddingMedium - 2)
+            .padding(.vertical, Theme.Metrics.paddingSmall + 2)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Theme.Colors.brandPrimary.opacity(0.3), lineWidth: 1)
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall + 2)
+                    .stroke(Color.wiseForestGreen.opacity(0.3), lineWidth: 1)
                     .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                        RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall + 2)
+                            .fill(Color.wiseTertiaryBackground)
                     )
             )
 
@@ -373,11 +387,13 @@ struct ParticipantSplitCard: View {
             // Editable amount input
             HStack(spacing: 4) {
                 Text("$")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.medium)
+                    .foregroundColor(.wiseSecondaryText)
 
                 TextField("0.00", value: .constant(calculated.amount), format: .number)
-                    .font(.system(size: 17, weight: .medium))
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.medium)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 70)
@@ -385,20 +401,20 @@ struct ParticipantSplitCard: View {
                         onAmountChanged(newValue)
                     }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, Theme.Metrics.paddingMedium - 2)
+            .padding(.vertical, Theme.Metrics.paddingSmall + 2)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Theme.Colors.brandPrimary.opacity(0.3), lineWidth: 1)
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall + 2)
+                    .stroke(Color.wiseForestGreen.opacity(0.3), lineWidth: 1)
                     .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                        RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall + 2)
+                            .fill(Color.wiseTertiaryBackground)
                     )
             )
 
         case .shares:
             // Share stepper
-            HStack(spacing: 12) {
+            HStack(spacing: Theme.Metrics.paddingSmall + 4) {
                 Button(action: {
                     HapticManager.shared.light()
                     let current = calculated.shares
@@ -408,15 +424,16 @@ struct ParticipantSplitCard: View {
                 }) {
                     Image(systemName: "minus")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Theme.Colors.textPrimary)
+                        .foregroundColor(.wisePrimaryText)
                         .frame(width: 28, height: 28)
-                        .background(Circle().fill(Color(UIColor.tertiarySystemGroupedBackground)))
+                        .background(Circle().fill(Color.wiseTertiaryBackground))
                 }
                 .buttonStyle(.plain)
 
                 Text("\(calculated.shares)x")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.wisePrimaryText)
                     .frame(width: 32)
 
                 Button(action: {
@@ -428,9 +445,9 @@ struct ParticipantSplitCard: View {
                 }) {
                     Image(systemName: "plus")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Theme.Colors.textPrimary)
+                        .foregroundColor(.wisePrimaryText)
                         .frame(width: 28, height: 28)
-                        .background(Circle().fill(Color(UIColor.tertiarySystemGroupedBackground)))
+                        .background(Circle().fill(Color.wiseTertiaryBackground))
                 }
                 .buttonStyle(.plain)
             }
@@ -439,23 +456,25 @@ struct ParticipantSplitCard: View {
             // Adjustment input
             HStack(spacing: 4) {
                 Text("+/-")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .font(.spotifyBodyMedium)
+                    .fontWeight(.medium)
+                    .foregroundColor(.wiseSecondaryText)
 
                 TextField("0", value: .constant(calculated.adjustment), format: .number)
-                    .font(.system(size: 17, weight: .medium))
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.medium)
                     .keyboardType(.numbersAndPunctuation)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 50)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
+            .padding(.horizontal, Theme.Metrics.paddingMedium - 2)
+            .padding(.vertical, Theme.Metrics.paddingSmall + 2)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Theme.Colors.brandPrimary.opacity(0.3), lineWidth: 1)
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall + 2)
+                    .stroke(Color.wiseForestGreen.opacity(0.3), lineWidth: 1)
                     .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                        RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall + 2)
+                            .fill(Color.wiseTertiaryBackground)
                     )
             )
         }
@@ -474,5 +493,5 @@ struct ParticipantSplitCard: View {
         }()
     )
     .environmentObject(DataManager.shared)
-    .background(Color(UIColor.systemGroupedBackground))
+    .background(Color.wiseGroupedBackground)
 }

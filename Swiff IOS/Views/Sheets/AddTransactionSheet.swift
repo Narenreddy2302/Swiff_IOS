@@ -60,7 +60,7 @@ struct AddTransactionSheet: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .animation(.smooth, value: viewModel.currentStep)
         }
-        .background(Color(UIColor.systemGroupedBackground))
+        .background(Color.wiseGroupedBackground)
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(Theme.Metrics.cornerRadiusLarge)
@@ -73,9 +73,9 @@ struct AddTransactionSheet: View {
                     isNameFocused = false
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                 }
-                .font(Theme.Fonts.bodyLarge)
+                .font(.spotifyBodyLarge)
                 .fontWeight(.semibold)
-                .foregroundColor(Theme.Colors.brandPrimary)
+                .foregroundColor(.wiseForestGreen)
             }
         }
         .onAppear {
@@ -95,7 +95,7 @@ struct AddTransactionSheet: View {
             }) {
                 Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .foregroundColor(.wiseSecondaryText)
                     .frame(width: 32, height: 32)
             }
             .accessibilityLabel("Close")
@@ -104,20 +104,20 @@ struct AddTransactionSheet: View {
 
             // Title
             Text("New Transaction")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(Theme.Colors.textPrimary)
+                .font(.spotifyHeadingMedium)
+                .foregroundColor(.wisePrimaryText)
 
             Spacer()
 
             // Step indicator badge
             Text("STEP \(viewModel.currentStep) OF \(totalSteps)")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(Theme.Colors.textSecondary)
+                .font(.spotifyLabelSmall)
+                .foregroundColor(.wiseSecondaryText)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color(UIColor.tertiarySystemFill))
+                        .fill(Color.wiseBorder.opacity(0.5))
                 )
         }
         .padding(.horizontal, Theme.Metrics.paddingMedium)

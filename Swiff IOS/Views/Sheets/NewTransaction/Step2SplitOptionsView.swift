@@ -3,7 +3,7 @@
 //  Swiff IOS
 //
 //  Step 2: People Involved - Who paid and who is included
-//  Redesigned to match reference UI exactly
+//  Redesigned to match reference UI with proper theme consistency
 //
 
 import SwiftUI
@@ -23,7 +23,7 @@ struct Step2SplitOptionsView: View {
             stepHeader
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: Theme.Metrics.paddingLarge) {
                     // Progress bar
                     progressBar
 
@@ -35,15 +35,15 @@ struct Step2SplitOptionsView: View {
 
                     Spacer(minLength: 100)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
             }
             .safeAreaInset(edge: .bottom) {
                 // Next button
                 nextButton
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
+                    .padding(.bottom, Theme.Metrics.paddingMedium + 4)
                     .background(
-                        Color(UIColor.systemGroupedBackground)
+                        Color.wiseGroupedBackground
                             .ignoresSafeArea()
                     )
             }
@@ -53,11 +53,11 @@ struct Step2SplitOptionsView: View {
     // MARK: - Step Header
 
     private var stepHeader: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: Theme.Metrics.paddingSmall + 4) {
             HStack {
                 Text("STEP 2 OF 3")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(Theme.Colors.brandPrimary)
+                    .font(.spotifyLabelMedium)
+                    .foregroundColor(.wiseForestGreen)
 
                 Spacer()
 
@@ -69,20 +69,20 @@ struct Step2SplitOptionsView: View {
                 }) {
                     Image(systemName: "xmark")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.Colors.textSecondary)
+                        .foregroundColor(.wiseSecondaryText)
                 }
             }
 
             HStack {
                 Text("People Involved")
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .font(.spotifyDisplayMedium)
+                    .foregroundColor(.wisePrimaryText)
 
                 Spacer()
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
+        .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
+        .padding(.top, Theme.Metrics.paddingMedium)
     }
 
     // MARK: - Progress Bar
@@ -91,7 +91,7 @@ struct Step2SplitOptionsView: View {
         HStack(spacing: 6) {
             ForEach(1...totalSteps, id: \.self) { step in
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(step <= 2 ? Theme.Colors.brandPrimary : Color(UIColor.systemGray4))
+                    .fill(step <= 2 ? Color.wiseForestGreen : Color.wiseBorder)
                     .frame(height: 4)
             }
         }
@@ -100,52 +100,60 @@ struct Step2SplitOptionsView: View {
     // MARK: - Who Paid Section
 
     private var whoPaidSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall + 4) {
             Text("Who paid?")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(Theme.Colors.textPrimary)
+                .font(.spotifyHeadingSmall)
+                .foregroundColor(.wisePrimaryText)
 
             // Search field
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 16))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .foregroundColor(.wiseSecondaryText)
 
                 TextField("Search payer...", text: $payerSearchText)
-                    .font(.system(size: 17))
+                    .font(.spotifyBodyLarge)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.horizontal, Theme.Metrics.paddingMedium - 2)
+            .padding(.vertical, Theme.Metrics.paddingSmall + 4)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.secondarySystemGroupedBackground))
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                    .fill(Color.wiseCardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                    .stroke(Color.wiseBorder, lineWidth: 1)
             )
 
             // Payer toggle buttons
-            HStack(spacing: 12) {
+            HStack(spacing: Theme.Metrics.paddingSmall + 4) {
                 // Me (Self) button
                 Button(action: {
                     HapticManager.shared.light()
                     selectSelfAsPayer()
                 }) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: Theme.Metrics.paddingSmall) {
                         Image(systemName: "person.fill")
                             .font(.system(size: 14))
 
                         Text("Me (Self)")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.spotifyLabelLarge)
 
                         if isSelfPayer {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 12, weight: .bold))
                         }
                     }
-                    .foregroundColor(isSelfPayer ? .white : Theme.Colors.textPrimary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .foregroundColor(isSelfPayer ? .white : .wisePrimaryText)
+                    .padding(.horizontal, Theme.Metrics.paddingMedium)
+                    .padding(.vertical, Theme.Metrics.paddingSmall + 4)
                     .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(isSelfPayer ? Theme.Colors.brandPrimary : Color(UIColor.secondarySystemGroupedBackground))
+                        Capsule()
+                            .fill(isSelfPayer ? Color.wiseForestGreen : Color.wiseCardBackground)
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(isSelfPayer ? Color.clear : Color.wiseBorder, lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -155,19 +163,23 @@ struct Step2SplitOptionsView: View {
                     HapticManager.shared.light()
                     viewModel.isPaidBySearchFocused = true
                 }) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: Theme.Metrics.paddingSmall) {
                         Text("Someone else")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.spotifyLabelLarge)
 
                         Image(systemName: "plus")
                             .font(.system(size: 14, weight: .medium))
                     }
-                    .foregroundColor(Theme.Colors.textPrimary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .foregroundColor(.wisePrimaryText)
+                    .padding(.horizontal, Theme.Metrics.paddingMedium)
+                    .padding(.vertical, Theme.Metrics.paddingSmall + 4)
                     .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(Color(UIColor.secondarySystemGroupedBackground))
+                        Capsule()
+                            .fill(Color.wiseCardBackground)
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.wiseBorder, lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -180,25 +192,29 @@ struct Step2SplitOptionsView: View {
     // MARK: - Who Is Included Section
 
     private var whoIsIncludedSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall + 4) {
             Text("Who is included?")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(Theme.Colors.textPrimary)
+                .font(.spotifyHeadingSmall)
+                .foregroundColor(.wisePrimaryText)
 
             // Search field
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 16))
-                    .foregroundColor(Theme.Colors.textSecondary)
+                    .foregroundColor(.wiseSecondaryText)
 
                 TextField("Find people to split with...", text: $participantSearchText)
-                    .font(.system(size: 17))
+                    .font(.spotifyBodyLarge)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.horizontal, Theme.Metrics.paddingMedium - 2)
+            .padding(.vertical, Theme.Metrics.paddingSmall + 4)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(UIColor.secondarySystemGroupedBackground))
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                    .fill(Color.wiseCardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                    .stroke(Color.wiseBorder, lineWidth: 1)
             )
 
             // Selected participants horizontal scroll
@@ -215,7 +231,7 @@ struct Step2SplitOptionsView: View {
         let selectedPeople = dataManager.people.filter { viewModel.participantIds.contains($0.id) }
 
         return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: Theme.Metrics.paddingSmall + 4) {
                 ForEach(selectedPeople) { person in
                     SelectedPersonBubble(
                         person: person,
@@ -236,12 +252,12 @@ struct Step2SplitOptionsView: View {
                     VStack(spacing: 6) {
                         ZStack {
                             Circle()
-                                .strokeBorder(Color(UIColor.systemGray4), style: StrokeStyle(lineWidth: 1, dash: [4]))
+                                .strokeBorder(Color.wiseBorder, style: StrokeStyle(lineWidth: 1, dash: [4]))
                                 .frame(width: 52, height: 52)
 
                             Image(systemName: "person.badge.plus")
                                 .font(.system(size: 18))
-                                .foregroundColor(Theme.Colors.textSecondary)
+                                .foregroundColor(.wiseSecondaryText)
                         }
                     }
                 }
@@ -283,9 +299,14 @@ struct Step2SplitOptionsView: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(UIColor.secondarySystemGroupedBackground))
+            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
+                .fill(Color.wiseCardBackground)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
+                .stroke(Color.wiseBorder, lineWidth: 1)
+        )
+        .cardShadow()
     }
 
     // MARK: - Next Button
@@ -301,9 +322,10 @@ struct Step2SplitOptionsView: View {
                 }
             }
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: Theme.Metrics.paddingSmall) {
                 Text("Next: Split Details")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.semibold)
 
                 Image(systemName: "arrow.right")
                     .font(.system(size: 15, weight: .semibold))
@@ -312,12 +334,13 @@ struct Step2SplitOptionsView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 18)
             .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Theme.Colors.brandPrimary)
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
+                    .fill(Color.wiseForestGreen)
                     .opacity(viewModel.participantIds.count >= 2 ? 1 : 0.5)
             )
         }
         .disabled(viewModel.participantIds.count < 2)
+        .cardShadow()
     }
 
     // MARK: - Helper Properties
@@ -361,14 +384,14 @@ struct SelectedPersonBubble: View {
                         .font(.system(size: 8, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 18, height: 18)
-                        .background(Circle().fill(Color(UIColor.systemGray)))
+                        .background(Circle().fill(Color.wiseGray))
                 }
                 .offset(x: 4, y: -4)
             }
 
             Text(isSelf ? "Me" : person.name.components(separatedBy: " ").first ?? person.name)
-                .font(.system(size: 12))
-                .foregroundColor(Theme.Colors.textPrimary)
+                .font(.spotifyLabelSmall)
+                .foregroundColor(.wisePrimaryText)
                 .lineLimit(1)
         }
     }
@@ -381,25 +404,26 @@ struct PersonListRow: View {
     let isSelected: Bool
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: Theme.Metrics.paddingMedium - 2) {
             // Avatar
             AvatarView(avatarType: person.avatarType, size: .medium, style: .solid)
-                .frame(width: 48, height: 48)
+                .frame(width: Theme.Metrics.avatarMedium, height: Theme.Metrics.avatarMedium)
 
             // Name and contact info
             VStack(alignment: .leading, spacing: 3) {
                 Text(person.name)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.medium)
+                    .foregroundColor(.wisePrimaryText)
 
                 if !person.email.isEmpty {
                     Text(person.email)
-                        .font(.system(size: 14))
-                        .foregroundColor(Theme.Colors.textSecondary)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wiseSecondaryText)
                 } else if !person.phone.isEmpty {
                     Text(person.phone)
-                        .font(.system(size: 14))
-                        .foregroundColor(Theme.Colors.textSecondary)
+                        .font(.spotifyBodyMedium)
+                        .foregroundColor(.wiseSecondaryText)
                 }
             }
 
@@ -409,12 +433,12 @@ struct PersonListRow: View {
             ZStack {
                 Circle()
                     .strokeBorder(
-                        isSelected ? Theme.Colors.brandPrimary : Color(UIColor.systemGray4),
+                        isSelected ? Color.wiseForestGreen : Color.wiseBorder,
                         lineWidth: isSelected ? 0 : 2
                     )
                     .background(
                         Circle()
-                            .fill(isSelected ? Theme.Colors.brandPrimary : Color.clear)
+                            .fill(isSelected ? Color.wiseForestGreen : Color.clear)
                     )
                     .frame(width: 26, height: 26)
 
@@ -425,8 +449,8 @@ struct PersonListRow: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, Theme.Metrics.paddingMedium)
+        .padding(.vertical, Theme.Metrics.paddingMedium - 2)
         .contentShape(Rectangle())
     }
 }
@@ -436,5 +460,5 @@ struct PersonListRow: View {
 #Preview("Step 2 - People Involved") {
     Step2SplitOptionsView(viewModel: NewTransactionViewModel())
         .environmentObject(DataManager.shared)
-        .background(Color(UIColor.systemGroupedBackground))
+        .background(Color.wiseGroupedBackground)
 }

@@ -3,7 +3,7 @@
 //  Swiff IOS
 //
 //  Step 1: Basic Info - Transaction name, amount, currency, category
-//  Redesigned to match reference UI exactly
+//  Redesigned to match reference UI exactly with proper theme consistency
 //
 
 import SwiftUI
@@ -12,7 +12,6 @@ struct Step1BasicDetailsView: View {
     @ObservedObject var viewModel: NewTransactionViewModel
     @EnvironmentObject var dataManager: DataManager
     @FocusState private var focusedField: Field?
-    @State private var keyboardHeight: CGFloat = 0
 
     private enum Field: Hashable {
         case amount
@@ -21,15 +20,15 @@ struct Step1BasicDetailsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: Theme.Metrics.paddingLarge) {
                 // Divider below header
                 Divider()
                     .padding(.horizontal, -20)
 
                 // Section title
                 Text("Basic Info")
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .font(.spotifyDisplayMedium)
+                    .foregroundColor(.wisePrimaryText)
 
                 // Transaction Name Field
                 transactionNameField
@@ -42,16 +41,16 @@ struct Step1BasicDetailsView: View {
 
                 Spacer(minLength: 100)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
+            .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
+            .padding(.top, Theme.Metrics.paddingSmall)
         }
         .safeAreaInset(edge: .bottom) {
             // Next Step Button
             nextStepButton
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .padding(.horizontal, Theme.Metrics.paddingMedium + 4)
+                .padding(.bottom, Theme.Metrics.paddingMedium + 4)
                 .background(
-                    Color(UIColor.systemGroupedBackground)
+                    Color.wiseGroupedBackground
                         .ignoresSafeArea()
                 )
         }
@@ -60,18 +59,22 @@ struct Step1BasicDetailsView: View {
     // MARK: - Transaction Name Field
 
     private var transactionNameField: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
             Text("Transaction Name")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Theme.Colors.textPrimary)
+                .font(.spotifyLabelLarge)
+                .foregroundColor(.wisePrimaryText)
 
             TextField("e.g., Dinner at Nobu", text: $viewModel.transactionName)
-                .font(.system(size: 17))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 16)
+                .font(.spotifyBodyLarge)
+                .padding(.horizontal, Theme.Metrics.paddingMedium)
+                .padding(.vertical, Theme.Metrics.paddingMedium)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(UIColor.secondarySystemGroupedBackground))
+                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                        .fill(Color.wiseCardBackground)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                        .stroke(Color.wiseBorder, lineWidth: 1)
                 )
                 .focused($focusedField, equals: .name)
         }
@@ -80,20 +83,20 @@ struct Step1BasicDetailsView: View {
     // MARK: - Amount and Currency Row
 
     private var amountCurrencyRow: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .top, spacing: Theme.Metrics.paddingMedium) {
             // Amount Field
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
                 Text("Amount")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .font(.spotifyLabelLarge)
+                    .foregroundColor(.wisePrimaryText)
 
-                HStack(spacing: 8) {
+                HStack(spacing: Theme.Metrics.paddingSmall) {
                     Text(viewModel.selectedCurrency.symbol)
-                        .font(.system(size: 17))
-                        .foregroundColor(Theme.Colors.textSecondary)
+                        .font(.spotifyBodyLarge)
+                        .foregroundColor(.wiseSecondaryText)
 
                     TextField("0.00", text: $viewModel.amountString)
-                        .font(.system(size: 17))
+                        .font(.spotifyBodyLarge)
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .amount)
                         .onChange(of: viewModel.amountString) { _, newValue in
@@ -115,20 +118,24 @@ struct Step1BasicDetailsView: View {
                             }
                         }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 16)
+                .padding(.horizontal, Theme.Metrics.paddingMedium)
+                .padding(.vertical, Theme.Metrics.paddingMedium)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(UIColor.secondarySystemGroupedBackground))
+                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                        .fill(Color.wiseCardBackground)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                        .stroke(Color.wiseBorder, lineWidth: 1)
                 )
             }
             .frame(maxWidth: .infinity)
 
             // Currency Picker
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
                 Text("Currency")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .font(.spotifyLabelLarge)
+                    .foregroundColor(.wisePrimaryText)
 
                 Menu {
                     ForEach(Currency.allCases, id: \.self) { currency in
@@ -147,20 +154,24 @@ struct Step1BasicDetailsView: View {
                 } label: {
                     HStack {
                         Text(viewModel.selectedCurrency.rawValue)
-                            .font(.system(size: 17))
-                            .foregroundColor(Theme.Colors.textPrimary)
+                            .font(.spotifyBodyLarge)
+                            .foregroundColor(.wisePrimaryText)
 
                         Spacer()
 
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.system(size: 14))
-                            .foregroundColor(Theme.Colors.textSecondary)
+                            .foregroundColor(.wiseSecondaryText)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
+                    .padding(.horizontal, Theme.Metrics.paddingMedium)
+                    .padding(.vertical, Theme.Metrics.paddingMedium)
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(UIColor.secondarySystemGroupedBackground))
+                        RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                            .fill(Color.wiseCardBackground)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                            .stroke(Color.wiseBorder, lineWidth: 1)
                     )
                 }
             }
@@ -171,10 +182,10 @@ struct Step1BasicDetailsView: View {
     // MARK: - Category Section
 
     private var categorySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall + 4) {
             Text("Category")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Theme.Colors.textPrimary)
+                .font(.spotifyLabelLarge)
+                .foregroundColor(.wisePrimaryText)
 
             // Horizontal scrollable category chips
             ScrollView(.horizontal, showsIndicators: false) {
@@ -205,9 +216,10 @@ struct Step1BasicDetailsView: View {
                 }
             }
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: Theme.Metrics.paddingSmall) {
                 Text("Next Step")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.spotifyBodyLarge)
+                    .fontWeight(.semibold)
 
                 Image(systemName: "arrow.right")
                     .font(.system(size: 15, weight: .semibold))
@@ -216,12 +228,13 @@ struct Step1BasicDetailsView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 18)
             .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Theme.Colors.brandPrimary)
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
+                    .fill(Color.wiseForestGreen)
                     .opacity(viewModel.canProceedStep1 ? 1 : 0.5)
             )
         }
         .disabled(!viewModel.canProceedStep1)
+        .cardShadow()
     }
 }
 
@@ -234,21 +247,26 @@ struct CategoryChip: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: Theme.Metrics.paddingSmall) {
                 Image(systemName: category.icon)
                     .font(.system(size: 22))
 
                 Text(category.rawValue)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.spotifyLabelMedium)
             }
-            .foregroundColor(isSelected ? .white : Theme.Colors.textPrimary)
+            .foregroundColor(isSelected ? .white : .wisePrimaryText)
             .frame(width: 80, height: 80)
             .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(isSelected ? Theme.Colors.brandPrimary : Color(UIColor.secondarySystemGroupedBackground))
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
+                    .fill(isSelected ? Color.wiseForestGreen : Color.wiseCardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium + 2)
+                    .stroke(isSelected ? Color.clear : Color.wiseBorder, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
+        .cardShadow()
     }
 }
 
@@ -257,5 +275,5 @@ struct CategoryChip: View {
 #Preview("Step 1 - Basic Details") {
     Step1BasicDetailsView(viewModel: NewTransactionViewModel())
         .environmentObject(DataManager.shared)
-        .background(Color(UIColor.systemGroupedBackground))
+        .background(Color.wiseGroupedBackground)
 }
