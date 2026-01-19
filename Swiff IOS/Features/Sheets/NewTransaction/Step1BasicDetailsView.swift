@@ -186,7 +186,7 @@ struct Step1BasicDetailsView: View {
                     Spacer()
 
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 14))
+                        .font(.system(size: Theme.Metrics.iconSizeSmall - 2, weight: .regular))
                         .foregroundColor(Theme.Colors.textSecondary)
                 }
                 .padding(.horizontal, Theme.Metrics.paddingMedium)
@@ -342,7 +342,7 @@ struct Step1BasicDetailsView: View {
                 }
             case .amount:
                 if viewModel.amount <= 0 {
-                    return 2
+                    return Theme.Border.widthFocused
                 }
             }
         }

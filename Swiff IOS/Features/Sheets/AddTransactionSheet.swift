@@ -37,9 +37,32 @@ struct AddTransactionSheet: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(spacing: 0) {
-            sheetHeader
-            stepContent
+        ZStack {
+            VStack(spacing: 0) {
+                sheetHeader
+                stepContent
+            }
+
+            // Loading overlay during save
+            if isSaving {
+                Color.black.opacity(Theme.Opacity.subtle)
+                    .ignoresSafeArea()
+
+                VStack(spacing: Theme.Metrics.paddingMedium) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: Theme.Colors.textOnPrimary))
+                        .scaleEffect(1.3)
+
+                    Text("Saving...")
+                        .font(Theme.Fonts.bodyMedium)
+                        .foregroundColor(Theme.Colors.textOnPrimary)
+                }
+                .padding(Theme.Metrics.paddingLarge)
+                .background(
+                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                        .fill(Theme.Colors.brandPrimary)
+                )
+            }
         }
         .background(Theme.Colors.secondaryBackground)
         .presentationDetents([.large])
@@ -106,8 +129,8 @@ struct AddTransactionSheet: View {
         Text("STEP \(viewModel.currentStep) OF \(totalSteps)")
             .font(Theme.Fonts.labelSmall)
             .foregroundColor(Theme.Colors.textSecondary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, Theme.Metrics.paddingSmall)
+            .padding(.vertical, Theme.Metrics.spacingTiny + 2)
             .background(
                 RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall)
                     .fill(Theme.Colors.border.opacity(Theme.Opacity.border))
