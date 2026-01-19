@@ -38,8 +38,29 @@ struct Step3SplitMethodView: View {
             headerSection
             scrollContent
         }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    dismissKeyboard()
+                }
+                .font(Theme.Fonts.bodyLarge)
+                .fontWeight(.semibold)
+                .foregroundColor(Theme.Colors.brandPrimary)
+            }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Step 3: Configure split details")
+    }
+
+    private func dismissKeyboard() {
+        focusedParticipant = nil
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil,
+            from: nil,
+            for: nil
+        )
     }
 
     // MARK: - Subviews
@@ -57,6 +78,7 @@ struct Step3SplitMethodView: View {
             }
             .padding(.horizontal, Theme.Metrics.paddingMedium)
         }
+        .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
             createTransactionButton
                 .padding(.horizontal, Theme.Metrics.paddingMedium)
@@ -112,13 +134,13 @@ struct Step3SplitMethodView: View {
     }
 
     private var titleSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.Metrics.spacingTiny + 2) {
             Text("Split Details")
                 .font(Theme.Fonts.displayMedium)
                 .foregroundColor(Theme.Colors.textPrimary)
                 .accessibilityAddTraits(.isHeader)
 
-            HStack(spacing: 4) {
+            HStack(spacing: Theme.Metrics.spacingTiny) {
                 Text("Specify how the")
                     .font(Theme.Fonts.bodyMedium)
                     .foregroundColor(Theme.Colors.textSecondary)
@@ -138,33 +160,54 @@ struct Step3SplitMethodView: View {
     }
 
     private var splitMethodTabs: some View {
-        HStack(spacing: 0) {
-            ForEach(splitMethods, id: \.0) { method, label in
-                Button(action: {
-                    HapticManager.shared.selection()
-                    withAnimation(.smooth) {
-                        viewModel.splitMethod = method
-                        viewModel.onSplitMethodChanged()
-                    }
-                }) {
-                    VStack(spacing: Theme.Metrics.paddingSmall) {
-                        Text(label)
-                            .font(viewModel.splitMethod == method ? Theme.Fonts.labelLarge : Theme.Fonts.bodyMedium)
-                            .foregroundColor(viewModel.splitMethod == method ? Theme.Colors.brandPrimary : Theme.Colors.textSecondary)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Theme.Metrics.paddingSmall) {
+                ForEach(splitMethods, id: \.0) { method, label in
+                    Button(action: {
+                        HapticManager.shared.selection()
+                        withAnimation(.smooth) {
+                            viewModel.splitMethod = method
+                            viewModel.onSplitMethodChanged()
+                        }
+                    }) {
+                        HStack(spacing: Theme.Metrics.spacingTiny) {
+                            Image(systemName: splitMethodIcon(for: method))
+                                .font(.system(size: Theme.Metrics.iconSizeSmall))
 
-                        Rectangle()
-                            .fill(viewModel.splitMethod == method ? Theme.Colors.brandPrimary : Color.clear)
-                            .frame(height: Theme.Metrics.tabUnderlineHeight)
+                            Text(label)
+                                .font(Theme.Fonts.labelMedium)
+                        }
+                        .foregroundColor(viewModel.splitMethod == method ? Theme.Colors.textOnPrimary : Theme.Colors.textPrimary)
+                        .padding(.horizontal, Theme.Metrics.paddingMedium)
+                        .padding(.vertical, Theme.Metrics.paddingSmall)
+                        .background(
+                            Capsule()
+                                .fill(viewModel.splitMethod == method ? Theme.Colors.brandPrimary : Theme.Colors.cardBackground)
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(viewModel.splitMethod == method ? Color.clear : Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
+                        )
                     }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(label) split method")
+                    .accessibilityAddTraits(viewModel.splitMethod == method ? .isSelected : [])
                 }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity)
-                .accessibilityLabel("\(label) split method")
-                .accessibilityAddTraits(viewModel.splitMethod == method ? .isSelected : [])
             }
+            .padding(.horizontal, Theme.Metrics.spacingTiny)
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Split method selection")
+    }
+
+    private func splitMethodIcon(for method: SplitType) -> String {
+        switch method {
+        case .equally: return "equal"
+        case .exactAmounts: return "dollarsign"
+        case .percentages: return "percent"
+        case .shares: return "number"
+        case .adjustments: return "plusminus"
+        }
     }
 
     private var balancedStatusIndicator: some View {
@@ -214,6 +257,9 @@ struct Step3SplitMethodView: View {
                         },
                         onSharesChanged: { shares in
                             viewModel.updateSplitShares(for: participantId, shares: shares)
+                        },
+                        onAdjustmentChanged: { adjustment in
+                            viewModel.updateSplitAdjustment(for: participantId, adjustment: adjustment)
                         }
                     )
                 }
@@ -223,7 +269,7 @@ struct Step3SplitMethodView: View {
 
     private var bottomSummary: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Theme.Metrics.spacingTiny) {
                 Text("REMAINING")
                     .font(Theme.Fonts.labelSmall)
                     .foregroundColor(Theme.Colors.textSecondary)
@@ -231,12 +277,12 @@ struct Step3SplitMethodView: View {
                 Text(remainingAmount.asCurrency)
                     .font(Theme.Fonts.numberMedium)
                     .fontWeight(.bold)
-                    .foregroundColor(remainingAmount == 0 ? Theme.Colors.brandPrimary : Theme.Colors.amountNegative)
+                    .foregroundColor(abs(remainingAmount) < 0.01 ? Theme.Colors.brandPrimary : Theme.Colors.amountNegative)
             }
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 4) {
+            VStack(alignment: .trailing, spacing: Theme.Metrics.spacingTiny) {
                 Text("TOTAL")
                     .font(Theme.Fonts.labelSmall)
                     .foregroundColor(Theme.Colors.textSecondary)
@@ -301,8 +347,12 @@ struct ParticipantSplitCard: View {
     let onAmountChanged: (Double) -> Void
     let onPercentageChanged: (Double) -> Void
     let onSharesChanged: (Int) -> Void
+    let onAdjustmentChanged: (Double) -> Void
 
+    /// Text state for editable input fields
     @State private var percentageText: String = ""
+    @State private var amountText: String = ""
+    @State private var adjustmentText: String = ""
 
     // MARK: - Body
 
@@ -341,7 +391,7 @@ struct ParticipantSplitCard: View {
     // MARK: - Subviews
 
     private var personInfo: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: Theme.Metrics.spacingTiny) {
             Text(person.name)
                 .font(Theme.Fonts.bodyLarge)
                 .fontWeight(.semibold)
@@ -383,7 +433,7 @@ struct ParticipantSplitCard: View {
     }
 
     private var percentageControl: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Theme.Metrics.spacingTiny) {
             TextField("0", text: $percentageText)
                 .font(Theme.Fonts.bodyLarge)
                 .fontWeight(.medium)
@@ -406,20 +456,30 @@ struct ParticipantSplitCard: View {
     }
 
     private var exactAmountControl: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Theme.Metrics.spacingTiny) {
             Text("$")
                 .font(Theme.Fonts.bodyLarge)
                 .fontWeight(.medium)
                 .foregroundColor(Theme.Colors.textSecondary)
 
-            TextField("0.00", value: .constant(calculated.amount), format: .number)
+            TextField("0.00", text: $amountText)
                 .font(Theme.Fonts.bodyLarge)
                 .fontWeight(.medium)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(width: Theme.Metrics.amountInputWidth)
-                .onChange(of: calculated.amount) { _, newValue in
-                    onAmountChanged(newValue)
+                .onChange(of: amountText) { _, newValue in
+                    // Filter to valid decimal input
+                    let filtered = newValue.filter { $0.isNumber || $0 == "." }
+                    if filtered != newValue {
+                        amountText = filtered
+                    }
+                    if let value = Double(filtered) {
+                        onAmountChanged(value)
+                    }
+                }
+                .onAppear {
+                    amountText = String(format: "%.2f", calculated.amount)
                 }
         }
         .transactionInputFieldStyle()
@@ -470,18 +530,31 @@ struct ParticipantSplitCard: View {
     }
 
     private var adjustmentControl: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: Theme.Metrics.spacingTiny) {
             Text("+/-")
                 .font(Theme.Fonts.bodyMedium)
                 .fontWeight(.medium)
                 .foregroundColor(Theme.Colors.textSecondary)
 
-            TextField("0", value: .constant(calculated.adjustment), format: .number)
+            TextField("0", text: $adjustmentText)
                 .font(Theme.Fonts.bodyLarge)
                 .fontWeight(.medium)
                 .keyboardType(.numbersAndPunctuation)
                 .multilineTextAlignment(.trailing)
                 .frame(width: Theme.Metrics.splitInputWidth)
+                .onChange(of: adjustmentText) { _, newValue in
+                    // Filter to valid decimal input (allow negative)
+                    let filtered = newValue.filter { $0.isNumber || $0 == "." || $0 == "-" }
+                    if filtered != newValue {
+                        adjustmentText = filtered
+                    }
+                    if let value = Double(filtered) {
+                        onAdjustmentChanged(value)
+                    }
+                }
+                .onAppear {
+                    adjustmentText = String(format: "%.2f", calculated.adjustment)
+                }
                 .accessibilityLabel("Adjustment amount")
         }
         .transactionInputFieldStyle()

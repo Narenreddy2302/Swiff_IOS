@@ -31,8 +31,31 @@ struct Step2SplitOptionsView: View {
             stepHeader
             scrollContent
         }
+        .onTapGesture {
+            dismissKeyboard()
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    dismissKeyboard()
+                }
+                .font(Theme.Fonts.bodyLarge)
+                .fontWeight(.semibold)
+                .foregroundColor(Theme.Colors.brandPrimary)
+            }
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Step 2: People involved in transaction")
+    }
+
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil,
+            from: nil,
+            for: nil
+        )
     }
 
     // MARK: - Subviews
@@ -47,6 +70,7 @@ struct Step2SplitOptionsView: View {
             }
             .padding(.horizontal, Theme.Metrics.paddingMedium)
         }
+        .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
             nextButton
                 .padding(.horizontal, Theme.Metrics.paddingMedium)
@@ -74,7 +98,7 @@ struct Step2SplitOptionsView: View {
                     }
                 }) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: Theme.Metrics.iconSizeSmall - 2, weight: .medium))
                         .foregroundColor(Theme.Colors.textSecondary)
                 }
                 .accessibilityLabel("Go back")
@@ -234,7 +258,7 @@ struct Step2SplitOptionsView: View {
         Button(action: {
             HapticManager.shared.selection()
         }) {
-            VStack(spacing: 6) {
+            VStack(spacing: Theme.Metrics.spacingTiny + 2) {
                 ZStack {
                     Circle()
                         .strokeBorder(Theme.Colors.border, style: StrokeStyle(lineWidth: Theme.Border.widthDefault, dash: [4]))
@@ -331,7 +355,7 @@ struct Step2SplitOptionsView: View {
     // MARK: - Helper Views
 
     private func searchField(placeholder: String, text: Binding<String>) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: Theme.Metrics.paddingSmall) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: Theme.Metrics.iconSizeSmall))
                 .foregroundColor(Theme.Colors.textSecondary)
@@ -347,7 +371,7 @@ struct Step2SplitOptionsView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .stroke(Theme.Colors.border, lineWidth: 1)
+                .stroke(Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
         )
     }
 
@@ -364,22 +388,25 @@ struct Step2SplitOptionsView: View {
         }
     }
 
+    /// Current user's ID from UserProfileManager
+    private var currentUserId: UUID {
+        UserProfileManager.shared.profile.id
+    }
+
     private var isSelfPayer: Bool {
-        guard let payerId = viewModel.paidByUserId,
-              let payer = dataManager.people.first(where: { $0.id == payerId }) else {
+        guard let payerId = viewModel.paidByUserId else {
+            // No payer selected yet - default to self
             return true
         }
-        return payer.id == dataManager.people.first?.id
+        return payerId == currentUserId
     }
 
     private func selectSelfAsPayer() {
-        if let firstPerson = dataManager.people.first {
-            viewModel.selectPayer(firstPerson.id)
+        viewModel.selectPayer(currentUserId)
+        // Also ensure current user is a participant
+        if !viewModel.participantIds.contains(currentUserId) {
+            viewModel.participantIds.insert(currentUserId)
         }
-    }
-
-    private func isPersonSelf(_ person: Person) -> Bool {
-        return person.id == dataManager.people.first?.id
     }
 }
 
