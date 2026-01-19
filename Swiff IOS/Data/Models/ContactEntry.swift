@@ -111,15 +111,15 @@ struct ContactEntry: Identifiable, Equatable, Hashable, Codable {
 
 extension ContactEntry {
     /// Sort contacts alphabetically by name
-    static func sortByName(_ contacts: [ContactEntry]) -> [ContactEntry] {
+    nonisolated static func sortByName(_ contacts: [ContactEntry]) -> [ContactEntry] {
         contacts.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     /// Sort contacts with app accounts first, then alphabetically
-    static func sortByAccountStatus(_ contacts: [ContactEntry]) -> [ContactEntry] {
+    nonisolated static func sortByAccountStatus(_ contacts: [ContactEntry]) -> [ContactEntry] {
         contacts.sorted { lhs, rhs in
             if lhs.hasAppAccount != rhs.hasAppAccount {
-                return lhs.hasAppAccount // Accounts first
+                return lhs.hasAppAccount  // Accounts first
             }
             return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
@@ -149,9 +149,9 @@ extension Array where Element == ContactEntry {
         guard !query.isEmpty else { return self }
         let lowercased = query.lowercased()
         return filter { contact in
-            contact.name.lowercased().contains(lowercased) ||
-            contact.email?.lowercased().contains(lowercased) == true ||
-            contact.phoneNumbers.contains { $0.contains(lowercased) }
+            contact.name.lowercased().contains(lowercased)
+                || contact.email?.lowercased().contains(lowercased) == true
+                || contact.phoneNumbers.contains { $0.contains(lowercased) }
         }
     }
 }

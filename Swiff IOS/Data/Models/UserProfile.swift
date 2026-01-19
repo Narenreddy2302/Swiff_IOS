@@ -121,7 +121,8 @@ class UserProfileManager: ObservableObject {
 
         // Then load cached profile if available
         if let data = userDefaults.data(forKey: profileCacheKey),
-           let cachedProfile = try? JSONDecoder().decode(UserProfile.self, from: data) {
+            let cachedProfile = try? JSONDecoder().decode(UserProfile.self, from: data)
+        {
             self.profile = cachedProfile
         }
 
@@ -201,6 +202,7 @@ class UserProfileManager: ObservableObject {
                 phone: newProfile.phone.isEmpty ? nil : newProfile.phone,
                 avatarType: avatarTypeStr,
                 avatarEmoji: avatarEmoji,
+                avatarInitials: avatarInitials,
                 avatarColorIndex: avatarColorIndex
             )
 

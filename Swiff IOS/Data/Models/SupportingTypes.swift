@@ -76,12 +76,12 @@ enum AvatarStyle {
 /// Avatar Color Palette - Using new 5-tier green palette
 public struct AvatarColorPalette {
     static let colors: [Color] = [
-        Color(red: 120/255, green: 197/255, blue: 28/255),   // GREEN 3 - Bright lime
-        Color(red: 0.000, green: 0.725, blue: 1.000),        // wiseBlue
-        Color(red: 0.894, green: 0.506, blue: 0.251),        // Orange
-        Color(red: 0.647, green: 0.400, blue: 0.835),        // Purple
-        Color(red: 0.976, green: 0.459, blue: 0.529),        // Pink
-        Color(red: 4/255, green: 63/255, blue: 46/255),      // GREEN 5 - Primary brand
+        Color(red: 120 / 255, green: 197 / 255, blue: 28 / 255),  // GREEN 3 - Bright lime
+        Color(red: 0.000, green: 0.725, blue: 1.000),  // wiseBlue
+        Color(red: 0.894, green: 0.506, blue: 0.251),  // Orange
+        Color(red: 0.647, green: 0.400, blue: 0.835),  // Purple
+        Color(red: 0.976, green: 0.459, blue: 0.529),  // Pink
+        Color(red: 4 / 255, green: 63 / 255, blue: 46 / 255),  // GREEN 5 - Primary brand
     ]
 
     public static func color(for index: Int) -> Color {
@@ -549,42 +549,6 @@ struct SubscriptionDocument: Identifiable, Codable, Equatable {
         self.name = name
         self.data = data
         self.dateAdded = dateAdded
-    }
-}
-
-// MARK: - Person Notification Types (Agent 13)
-
-/// Contact method for notifications to a person
-public enum ContactMethod: String, CaseIterable, Codable, Sendable {
-    case inApp = "In-App"
-    case email = "Email"
-    case sms = "SMS"
-    case whatsapp = "WhatsApp"
-
-    var icon: String {
-        switch self {
-        case .inApp: return "app.badge"
-        case .email: return "envelope.fill"
-        case .sms: return "message.fill"
-        case .whatsapp: return "message.badge.filled.fill"
-        }
-    }
-}
-
-/// Notification preferences for a person
-public struct NotificationPreferences: Codable, Equatable, Sendable {
-    public var enableReminders: Bool
-    public var reminderFrequency: Int  // days between reminders
-    public var preferredContactMethod: ContactMethod
-
-    public init(
-        enableReminders: Bool = true,
-        reminderFrequency: Int = 7,
-        preferredContactMethod: ContactMethod = .inApp
-    ) {
-        self.enableReminders = enableReminders
-        self.reminderFrequency = reminderFrequency
-        self.preferredContactMethod = preferredContactMethod
     }
 }
 

@@ -166,8 +166,8 @@ struct BackupOptions: Sendable {
         self.prettyPrintJSON = prettyPrintJSON
     }
 
-    nonisolated(unsafe) static let all = BackupOptions()
-    nonisolated(unsafe) static let minimal = BackupOptions(
+    static let all = BackupOptions()
+    static let minimal = BackupOptions(
         includePeople: true,
         includeGroups: false,
         includeSubscriptions: false,
@@ -203,7 +203,7 @@ struct RestoreOptions: Sendable {
         self.validateBeforeRestore = validateBeforeRestore
     }
 
-    nonisolated(unsafe) static let `default` = RestoreOptions()
+    static let `default` = RestoreOptions()
 }
 
 // MARK: - Backup Statistics
