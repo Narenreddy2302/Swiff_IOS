@@ -245,45 +245,6 @@ enum ExportFormat {
     }
 }
 
-// MARK: - Analytics Configuration
-
-/// Configuration for error analytics
-struct AnalyticsConfiguration: Sendable {
-    let maxEventsStored: Int
-    let retentionDays: Int
-    let patternDetectionThreshold: Int
-    let enableAutoCleanup: Bool
-    let trackUserIDs: Bool
-    let trackSessionIDs: Bool
-
-    static let `default` = AnalyticsConfiguration(
-        maxEventsStored: 10000,
-        retentionDays: 30,
-        patternDetectionThreshold: 5,
-        enableAutoCleanup: true,
-        trackUserIDs: true,
-        trackSessionIDs: true
-    )
-
-    static let debug = AnalyticsConfiguration(
-        maxEventsStored: 1000,
-        retentionDays: 7,
-        patternDetectionThreshold: 3,
-        enableAutoCleanup: false,
-        trackUserIDs: true,
-        trackSessionIDs: true
-    )
-
-    static let production = AnalyticsConfiguration(
-        maxEventsStored: 50000,
-        retentionDays: 90,
-        patternDetectionThreshold: 10,
-        enableAutoCleanup: true,
-        trackUserIDs: false,
-        trackSessionIDs: false
-    )
-}
-
 // MARK: - Error Analytics Manager
 
 /// Main analytics manager for tracking and analyzing errors

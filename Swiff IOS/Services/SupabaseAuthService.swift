@@ -5,9 +5,9 @@
 //  Authentication service for Supabase email auth
 //
 
+import Combine
 import Foundation
 import Supabase
-import Combine
 
 /// Service for handling Supabase authentication
 @MainActor
@@ -240,6 +240,7 @@ final class SupabaseAuthService: ObservableObject {
         phone: String? = nil,
         avatarType: String? = nil,
         avatarEmoji: String? = nil,
+        avatarInitials: String? = nil,
         avatarColorIndex: Int? = nil
     ) async throws {
         guard let userId = supabase.currentUser?.id else {
@@ -263,6 +264,9 @@ final class SupabaseAuthService: ObservableObject {
             }
             if let avatarEmoji = avatarEmoji {
                 updates["avatar_emoji"] = .string(avatarEmoji)
+            }
+            if let avatarInitials = avatarInitials {
+                updates["avatar_initials"] = .string(avatarInitials)
             }
             if let avatarColorIndex = avatarColorIndex {
                 updates["avatar_color_index"] = .integer(avatarColorIndex)

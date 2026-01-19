@@ -18,11 +18,11 @@ import SwiftUI
 /// - Detail rows with labels and values
 /// - Clean rectangular design with subtle borders
 struct ConversationTransactionCard: View {
-    let headerText: String              // e.g., "You Created the transaction"
-    let title: String                   // e.g., "Payment to Li Wei"
-    let amount: String                  // e.g., "$250.00"
-    let amountLabel: String             // e.g., "You Lent"
-    let amountColor: Color              // Color for amount (green for lent, red for owe)
+    let headerText: String  // e.g., "You Created the transaction"
+    let title: String  // e.g., "Payment to Li Wei"
+    let amount: String  // e.g., "$250.00"
+    let amountLabel: String  // e.g., "You Lent"
+    let amountColor: Color  // Color for amount (green for lent, red for owe)
     let metadata: [ConversationTransactionMetadata]
     var onTap: (() -> Void)?
 
@@ -33,7 +33,7 @@ struct ConversationTransactionCard: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(Color(UIColor.systemGray))
                 .padding(.leading, 16)
-            
+
             // Main card
             VStack(spacing: 0) {
                 // Top section: Title and Amount
@@ -44,27 +44,27 @@ struct ConversationTransactionCard: View {
                         .foregroundColor(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(2)
-                    
+
                     Spacer()
-                    
+
                     // Amount section (right-aligned)
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(amount)
                             .font(.system(size: 17, weight: .bold))
                             .foregroundColor(amountColor)
-                        
+
                         Text(amountLabel)
                             .font(.system(size: 13, weight: .regular))
                             .foregroundColor(amountColor.opacity(0.75))
                     }
                 }
                 .padding(14)
-                
+
                 // Divider
                 Rectangle()
                     .fill(Color(UIColor.separator).opacity(0.5))
                     .frame(height: 0.5)
-                
+
                 // Detail rows
                 VStack(spacing: 0) {
                     ForEach(Array(metadata.enumerated()), id: \.offset) { index, item in
@@ -92,11 +92,11 @@ struct ConversationTransactionCard: View {
 // MARK: - Conversation Transaction Type
 
 enum ConversationTransactionType {
-    case payment        // Direct payment
-    case request        // Money request
-    case split          // Bill split
-    case expense        // Group expense
-    
+    case payment  // Direct payment
+    case request  // Money request
+    case split  // Bill split
+    case expense  // Group expense
+
     var icon: String {
         switch self {
         case .payment: return "arrow.up.circle.fill"
@@ -105,7 +105,7 @@ enum ConversationTransactionType {
         case .expense: return "receipt.fill"
         }
     }
-    
+
     var color: Color {
         switch self {
         case .payment: return .wiseBrightGreen
@@ -136,16 +136,16 @@ struct ConversationTransactionMetadata {
 
 struct ConversationTransactionMetadataRow: View {
     let metadata: ConversationTransactionMetadata
-    
+
     var body: some View {
         HStack(alignment: .top) {
             // Label (left-aligned)
             Text(metadata.label)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.secondary)
-            
+
             Spacer()
-            
+
             // Value (right-aligned)
             HStack(spacing: 6) {
                 if let icon = metadata.icon {
@@ -153,7 +153,7 @@ struct ConversationTransactionMetadataRow: View {
                         .font(.system(size: 12))
                         .foregroundColor(metadata.valueColor ?? .primary)
                 }
-                
+
                 Text(metadata.value)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(metadata.valueColor ?? .primary)
@@ -169,7 +169,7 @@ struct ConversationTransactionMetadataRow: View {
 
 /// Helper to build transaction cards from data
 struct ConversationTransactionCardBuilder {
-    
+
     /// Create a payment card (You lent money to someone)
     static func payment(
         to personName: String,
@@ -182,11 +182,11 @@ struct ConversationTransactionCardBuilder {
         note: String? = nil,
         onTap: (() -> Void)? = nil
     ) -> ConversationTransactionCard {
-        var metadata: [ConversationTransactionMetadata] = [
+        let metadata: [ConversationTransactionMetadata] = [
             ConversationTransactionMetadata(label: "Total Bill", value: totalBill),
             ConversationTransactionMetadata(label: "Paid by", value: paidBy),
             ConversationTransactionMetadata(label: "Split Method", value: splitMethod),
-            ConversationTransactionMetadata(label: "Who are all involved", value: participants)
+            ConversationTransactionMetadata(label: "Who are all involved", value: participants),
         ]
 
         return ConversationTransactionCard(
@@ -215,7 +215,7 @@ struct ConversationTransactionCardBuilder {
             ConversationTransactionMetadata(label: "Total Bill", value: totalBill),
             ConversationTransactionMetadata(label: "Paid by", value: paidBy),
             ConversationTransactionMetadata(label: "Split Method", value: splitMethod),
-            ConversationTransactionMetadata(label: "Who are all involved", value: participants)
+            ConversationTransactionMetadata(label: "Who are all involved", value: participants),
         ]
 
         return ConversationTransactionCard(
@@ -244,7 +244,7 @@ struct ConversationTransactionCardBuilder {
             ConversationTransactionMetadata(label: "Total Bill", value: totalBill),
             ConversationTransactionMetadata(label: "Paid by", value: paidBy),
             ConversationTransactionMetadata(label: "Split Method", value: splitMethod),
-            ConversationTransactionMetadata(label: "Who are all involved", value: participants)
+            ConversationTransactionMetadata(label: "Who are all involved", value: participants),
         ]
 
         return ConversationTransactionCard(
@@ -274,9 +274,9 @@ struct ConversationTransactionCardBuilder {
             ConversationTransactionMetadata(label: "Total Bill", value: totalBill),
             ConversationTransactionMetadata(label: "Paid by", value: paidBy),
             ConversationTransactionMetadata(label: "Split Method", value: splitMethod),
-            ConversationTransactionMetadata(label: "Who are all involved", value: participants)
+            ConversationTransactionMetadata(label: "Who are all involved", value: participants),
         ]
-        
+
         let amountLabel = isUserPayer ? "You Lent" : "You Owe"
         let amountColor: Color = isUserPayer ? .wiseBrightGreen : .wiseOrange
 
@@ -290,7 +290,7 @@ struct ConversationTransactionCardBuilder {
             onTap: onTap
         )
     }
-    
+
     /// Create a group expense card
     static func groupExpense(
         description: String,
@@ -306,7 +306,7 @@ struct ConversationTransactionCardBuilder {
             ConversationTransactionMetadata(label: "Total Bill", value: totalBill),
             ConversationTransactionMetadata(label: "Paid by", value: paidBy),
             ConversationTransactionMetadata(label: "Split Method", value: splitMethod),
-            ConversationTransactionMetadata(label: "Who are all involved", value: participants)
+            ConversationTransactionMetadata(label: "Who are all involved", value: participants),
         ]
 
         return ConversationTransactionCard(
@@ -378,7 +378,7 @@ struct ConversationTransactionCardBuilder {
                 onTap: {}
             )
             .padding(.horizontal, 12)
-            
+
             // Split Card - User owes
             ConversationTransactionCardBuilder.split(
                 description: "Movie Tickets",

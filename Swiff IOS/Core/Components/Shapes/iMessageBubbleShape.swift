@@ -10,7 +10,7 @@ import SwiftUI
 
 // MARK: - Bubble Direction
 
-enum iMessageBubbleDirection: Sendable, Equatable {
+enum iMessageBubbleDirection: Sendable {
     case incoming  // Left-aligned (gray) - other person
     case outgoing  // Right-aligned (blue) - current user
     case center  // Centered (system messages)
@@ -181,7 +181,9 @@ struct iMessageBubbleShape: Shape {
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(Color(UIColor.systemGray5))
-            .clipShape(iMessageBubbleShape(direction: iMessageBubbleDirection.incoming, showTail: true))
+            .clipShape(
+                iMessageBubbleShape(direction: iMessageBubbleDirection.incoming, showTail: true)
+            )
             .frame(maxWidth: .infinity, alignment: .leading)
 
         // Incoming without tail (grouped)
@@ -189,7 +191,9 @@ struct iMessageBubbleShape: Shape {
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(Color(UIColor.systemGray5))
-            .clipShape(iMessageBubbleShape(direction: iMessageBubbleDirection.incoming, showTail: false))
+            .clipShape(
+                iMessageBubbleShape(direction: iMessageBubbleDirection.incoming, showTail: false)
+            )
             .frame(maxWidth: .infinity, alignment: .leading)
 
         // Outgoing with tail
@@ -198,7 +202,9 @@ struct iMessageBubbleShape: Shape {
             .padding(.vertical, 10)
             .foregroundColor(.white)
             .background(Color.wiseBlue)
-            .clipShape(iMessageBubbleShape(direction: iMessageBubbleDirection.outgoing, showTail: true))
+            .clipShape(
+                iMessageBubbleShape(direction: iMessageBubbleDirection.outgoing, showTail: true)
+            )
             .frame(maxWidth: .infinity, alignment: .trailing)
 
         // Outgoing without tail (grouped)
@@ -207,7 +213,9 @@ struct iMessageBubbleShape: Shape {
             .padding(.vertical, 10)
             .foregroundColor(.white)
             .background(Color.wiseBlue)
-            .clipShape(iMessageBubbleShape(direction: iMessageBubbleDirection.outgoing, showTail: false))
+            .clipShape(
+                iMessageBubbleShape(direction: iMessageBubbleDirection.outgoing, showTail: false)
+            )
             .frame(maxWidth: .infinity, alignment: .trailing)
 
         // Center (system message)
@@ -216,7 +224,8 @@ struct iMessageBubbleShape: Shape {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(Color.wiseSecondaryText.opacity(0.1))
-            .clipShape(iMessageBubbleShape(direction: iMessageBubbleDirection.center, showTail: false))
+            .clipShape(
+                iMessageBubbleShape(direction: iMessageBubbleDirection.center, showTail: false))
     }
     .padding()
     .background(Color.wiseBackground)

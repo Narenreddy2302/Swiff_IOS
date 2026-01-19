@@ -6,6 +6,7 @@
 //  Utility for normalizing phone numbers to E.164 format for matching
 //
 
+import CommonCrypto
 import Foundation
 
 struct PhoneNumberNormalizer: Sendable {
@@ -15,7 +16,7 @@ struct PhoneNumberNormalizer: Sendable {
     /// Get default country calling code based on device locale
     static var defaultCountryCode: String {
         guard let regionCode = Locale.current.region?.identifier else {
-            return "+1" // Default to US
+            return "+1"  // Default to US
         }
 
         return countryCallingCodes[regionCode] ?? "+1"
@@ -65,7 +66,8 @@ struct PhoneNumberNormalizer: Sendable {
     /// - Parameter phoneNumbers: Array of raw phone numbers
     /// - Returns: Array of normalized phone numbers (non-empty only)
     static func normalize(_ phoneNumbers: [String]) -> [String] {
-        return phoneNumbers
+        return
+            phoneNumbers
             .map { normalize($0) }
             .filter { !$0.isEmpty }
     }
@@ -82,7 +84,7 @@ struct PhoneNumberNormalizer: Sendable {
     /// Create SHA-256 hash of normalized phone number for privacy-safe server matching
     /// - Parameter phoneNumber: Phone number to hash (will be normalized first)
     /// - Returns: Hex string of SHA-256 hash
-    static func hash(_ phoneNumber: String) -> String {
+    nonisolated static func hash(_ phoneNumber: String) -> String {
         let normalized = normalize(phoneNumber)
         guard !normalized.isEmpty else { return "" }
 
@@ -164,10 +166,6 @@ struct PhoneNumberNormalizer: Sendable {
         "RO": "+40",
         "HU": "+36",
         "UA": "+380",
-        "TR": "+90"
+        "TR": "+90",
     ]
 }
-
-// MARK: - CommonCrypto Bridge
-
-import CommonCrypto

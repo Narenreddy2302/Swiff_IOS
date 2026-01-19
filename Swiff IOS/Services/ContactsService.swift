@@ -45,7 +45,7 @@ class ContactsService: ObservableObject {
 
     /// Keys for thumbnail fetch only (used by lazy loading cache)
     static let thumbnailKeys: [CNKeyDescriptor] = [
-        CNContactThumbnailImageDataKey as CNKeyDescriptor,
+        CNContactThumbnailImageDataKey as CNKeyDescriptor
     ]
 
     // MARK: - Pagination Configuration
@@ -55,7 +55,9 @@ class ContactsService: ObservableObject {
         var batchSize: Int = 100
         var maxContacts: Int = 10000
 
-        nonisolated(unsafe) static let `default` = FetchConfig()
+        nonisolated init() {}
+
+        static let `default` = FetchConfig()
     }
 
     // MARK: - Initialization
@@ -177,7 +179,9 @@ class ContactsService: ObservableObject {
 
     /// FIX 3.1: Fetch contacts in batches using AsyncThrowingStream
     /// This prevents memory spikes for devices with large contact lists
-    func fetchContactsInBatches(config: FetchConfig = .default) -> AsyncThrowingStream<[ContactEntry], Error> {
+    func fetchContactsInBatches(config: FetchConfig = .default) -> AsyncThrowingStream<
+        [ContactEntry], Error
+    > {
         AsyncThrowingStream { continuation in
             Task.detached(priority: .userInitiated) { [keysToFetch, store] in
                 guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else {
@@ -241,7 +245,9 @@ class ContactsService: ObservableObject {
                         // Yield batch when full
                         if currentBatch.count >= config.batchSize {
                             continuation.yield(currentBatch)
-                            print("DEBUG: Yielded batch of \(currentBatch.count) contacts, total: \(totalFetched)")
+                            print(
+                                "DEBUG: Yielded batch of \(currentBatch.count) contacts, total: \(totalFetched)"
+                            )
                             currentBatch = []
                         }
                     }
@@ -249,7 +255,9 @@ class ContactsService: ObservableObject {
                     // Yield remaining contacts
                     if !currentBatch.isEmpty {
                         continuation.yield(currentBatch)
-                        print("DEBUG: Yielded final batch of \(currentBatch.count) contacts, total: \(totalFetched)")
+                        print(
+                            "DEBUG: Yielded final batch of \(currentBatch.count) contacts, total: \(totalFetched)"
+                        )
                     }
 
                     continuation.finish()

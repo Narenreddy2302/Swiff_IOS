@@ -135,7 +135,7 @@ struct ShareSubscriptionSheet: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(dataManager.people) { person in
-                        PersonSelectionRow(
+                        SubscriptionPersonRow(
                             person: person,
                             isSelected: selectedPeople.contains(person.id),
                             onToggle: {
@@ -298,8 +298,8 @@ struct ShareSubscriptionSheet: View {
     }
 }
 
-// MARK: - Person Selection Row
-struct PersonSelectionRow: View {
+// MARK: - Subscription Person Row
+struct SubscriptionPersonRow: View {
     let person: Person
     let isSelected: Bool
     let onToggle: () -> Void
