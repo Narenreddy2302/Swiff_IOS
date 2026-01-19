@@ -28,15 +28,21 @@ struct Step3SplitMethodView: View {
         (.equally, "Equally"),
         (.exactAmounts, "Exact"),
         (.percentages, "Percentage"),
-        (.shares, "Shares")
+        (.shares, "Shares"),
+        (.adjustments, "Adjustments"),
     ]
+
+    // MARK: - Body
 
     // MARK: - Body
 
     var body: some View {
         VStack(spacing: 0) {
-            headerSection
+            // No header here as it's in the container
             scrollContent
+        }
+        .onTapGesture {
+            dismissKeyboard()
         }
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -67,96 +73,48 @@ struct Step3SplitMethodView: View {
 
     private var scrollContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Metrics.paddingMedium) {
-                progressDots
-                titleSection
+            VStack(alignment: .leading, spacing: Theme.Metrics.paddingLarge) {
+
+                // Summary Title
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Total Amount")
+                        .font(Theme.Fonts.labelSmall)
+                        .foregroundColor(Theme.Colors.textSecondary)
+
+                    Text(viewModel.basicDetails.amount.asCurrency)
+                        .font(Theme.Fonts.displayMedium)
+                        .foregroundColor(Theme.Colors.textPrimary)
+                }
+                .padding(.top, Theme.Metrics.paddingMedium)
+
+                // Split Method Tabs
                 splitMethodTabs
+
+                // Balanced Indicator
                 balancedStatusIndicator
+
+                // Participants List
                 participantsList
-                bottomSummary
+
                 Spacer(minLength: 100)
             }
             .padding(.horizontal, Theme.Metrics.paddingMedium)
         }
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
-            createTransactionButton
-                .padding(.horizontal, Theme.Metrics.paddingMedium)
-                .padding(.bottom, Theme.Metrics.paddingMedium)
-                .background(
-                    Theme.Colors.secondaryBackground
-                        .ignoresSafeArea()
-                )
-        }
-    }
+            VStack(spacing: Theme.Metrics.paddingSmall) {
+                // Remaining amount summary above button
+                remainingAmountSummary
 
-    private var headerSection: some View {
-        HStack {
-            Button(action: {
-                HapticManager.shared.selection()
-                onBack?()
-            }) {
-                Image(systemName: "arrow.left")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Theme.Colors.textPrimary)
+                createTransactionButton
             }
-            .accessibilityLabel("Go back")
-
-            Spacer()
-
-            Text("Add Transaction")
-                .font(Theme.Fonts.headerMedium)
-                .foregroundColor(Theme.Colors.textPrimary)
-                .accessibilityAddTraits(.isHeader)
-
-            Spacer()
-
-            Text("STEP 3/3")
-                .font(Theme.Fonts.labelMedium)
-                .foregroundColor(Theme.Colors.brandPrimary)
-                .accessibilityLabel("Step 3 of 3")
+            .padding(.horizontal, Theme.Metrics.paddingMedium)
+            .padding(.bottom, Theme.Metrics.paddingLarge)
+            .background(
+                Theme.Colors.secondaryBackground
+                    .ignoresSafeArea()
+            )
         }
-        .padding(.horizontal, Theme.Metrics.paddingMedium)
-        .padding(.vertical, Theme.Metrics.paddingSmall)
-    }
-
-    private var progressDots: some View {
-        HStack(spacing: Theme.Metrics.spacingTiny) {
-            ForEach(1...3, id: \.self) { step in
-                Circle()
-                    .fill(step == 3 ? Theme.Colors.brandPrimary : Theme.Colors.border)
-                    .frame(width: step == 3 ? Theme.Metrics.progressDotActive : Theme.Metrics.progressDotInactive, height: Theme.Metrics.progressDotInactive)
-                    .animation(.snappy, value: step)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .accessibilityLabel("Step 3 of 3 active")
-    }
-
-    private var titleSection: some View {
-        VStack(alignment: .leading, spacing: Theme.Metrics.spacingTiny + 2) {
-            Text("Split Details")
-                .font(Theme.Fonts.displayMedium)
-                .foregroundColor(Theme.Colors.textPrimary)
-                .accessibilityAddTraits(.isHeader)
-
-            HStack(spacing: Theme.Metrics.spacingTiny) {
-                Text("Specify how the")
-                    .font(Theme.Fonts.bodyMedium)
-                    .foregroundColor(Theme.Colors.textSecondary)
-
-                Text(viewModel.amount.asCurrency)
-                    .font(Theme.Fonts.bodyMedium)
-                    .fontWeight(.semibold)
-                    .foregroundColor(Theme.Colors.textPrimary)
-
-                Text("should be divided.")
-                    .font(Theme.Fonts.bodyMedium)
-                    .foregroundColor(Theme.Colors.textSecondary)
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Split details. Specify how the \(viewModel.amount.asCurrency) should be divided")
     }
 
     private var splitMethodTabs: some View {
@@ -165,101 +123,103 @@ struct Step3SplitMethodView: View {
                 ForEach(splitMethods, id: \.0) { method, label in
                     Button(action: {
                         HapticManager.shared.selection()
-                        withAnimation(.smooth) {
-                            viewModel.splitMethod = method
-                            viewModel.onSplitMethodChanged()
+                        withAnimation(.snappy) {
+                            viewModel.splitMethod.splitMethod = method
+                            viewModel.splitMethod.initializeDefaults(
+                                for: viewModel.splitOptions.participantIds,
+                                totalAmount: viewModel.basicDetails.amount)
                         }
                     }) {
-                        HStack(spacing: Theme.Metrics.spacingTiny) {
+                        HStack(spacing: 6) {
                             Image(systemName: splitMethodIcon(for: method))
                                 .font(.system(size: Theme.Metrics.iconSizeSmall))
-
                             Text(label)
-                                .font(Theme.Fonts.labelMedium)
+                                .font(Theme.Fonts.labelSmall)
                         }
-                        .foregroundColor(viewModel.splitMethod == method ? Theme.Colors.textOnPrimary : Theme.Colors.textPrimary)
                         .padding(.horizontal, Theme.Metrics.paddingMedium)
-                        .padding(.vertical, Theme.Metrics.paddingSmall)
+                        .padding(.vertical, 8)
                         .background(
-                            Capsule()
-                                .fill(viewModel.splitMethod == method ? Theme.Colors.brandPrimary : Theme.Colors.cardBackground)
+                            viewModel.splitMethod.splitMethod == method
+                                ? Theme.Colors.brandPrimary
+                                : Theme.Colors.cardBackground
                         )
+                        .foregroundColor(
+                            viewModel.splitMethod.splitMethod == method
+                                ? Theme.Colors.textOnPrimary
+                                : Theme.Colors.textPrimary
+                        )
+                        .clipShape(Capsule())
                         .overlay(
                             Capsule()
-                                .stroke(viewModel.splitMethod == method ? Color.clear : Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
+                                .stroke(
+                                    Theme.Colors.border,
+                                    lineWidth: viewModel.splitMethod.splitMethod == method ? 0 : 1)
                         )
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(label) split method")
-                    .accessibilityAddTraits(viewModel.splitMethod == method ? .isSelected : [])
                 }
             }
-            .padding(.horizontal, Theme.Metrics.spacingTiny)
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Split method selection")
-    }
-
-    private func splitMethodIcon(for method: SplitType) -> String {
-        switch method {
-        case .equally: return "equal"
-        case .exactAmounts: return "dollarsign"
-        case .percentages: return "percent"
-        case .shares: return "number"
-        case .adjustments: return "plusminus"
+            .padding(.vertical, 2)
         }
     }
 
     private var balancedStatusIndicator: some View {
-        HStack {
-            HStack(spacing: Theme.Metrics.paddingSmall) {
-                Image(systemName: viewModel.isSplitValid ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                    .font(.system(size: Theme.Metrics.iconSizeSmall))
-                    .foregroundColor(viewModel.isSplitValid ? Theme.Colors.brandPrimary : Theme.Colors.warning)
+        let isBalanced = viewModel.splitMethod.isBalanced(
+            amount: viewModel.basicDetails.amount,
+            participantIds: viewModel.splitOptions.participantIds
+        )
 
-                Text(viewModel.isSplitValid ? "Balanced (100%)" : "Not Balanced")
-                    .font(Theme.Fonts.labelLarge)
-                    .foregroundColor(viewModel.isSplitValid ? Theme.Colors.brandPrimary : Theme.Colors.statusError)
-            }
+        return HStack {
+            Image(
+                systemName: isBalanced ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+            )
+            .foregroundColor(isBalanced ? Theme.Colors.success : Theme.Colors.warning)
+
+            Text(isBalanced ? "Split is balanced" : "Split is not balanced")
+                .font(Theme.Fonts.bodyMedium)
+                .foregroundColor(Theme.Colors.textPrimary)
 
             Spacer()
 
-            Text("Total: \(viewModel.amount.asCurrency)")
-                .font(Theme.Fonts.bodyMedium)
-                .foregroundColor(Theme.Colors.textSecondary)
+            if !isBalanced {
+                Text(viewModel.remainingAmount.asCurrency)
+                    .font(Theme.Fonts.numberMedium)
+                    .foregroundColor(Theme.Colors.statusError)
+            }
         }
-        .padding(.horizontal, Theme.Metrics.paddingMedium)
-        .padding(.vertical, Theme.Metrics.paddingMedium)
+        .padding(Theme.Metrics.paddingMedium)
         .background(
             RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .fill(viewModel.isSplitValid ? Theme.Colors.green1 : Theme.Colors.statusError.opacity(Theme.Opacity.faint))
+                .fill(isBalanced ? Theme.Colors.green1 : Theme.Colors.warning.opacity(0.1))
         )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(viewModel.isSplitValid ? "Split is balanced at 100%" : "Split is not balanced")
     }
 
     private var participantsList: some View {
-        let sortedParticipantIds = viewModel.participantIds.sorted()
+        let sortedParticipantIds = viewModel.splitOptions.participantIds.sorted()
+        let calculated = viewModel.calculatedSplits
 
         return VStack(spacing: Theme.Metrics.paddingSmall) {
             ForEach(sortedParticipantIds, id: \.self) { participantId in
                 if let person = dataManager.people.first(where: { $0.id == participantId }) {
                     ParticipantSplitCard(
                         person: person,
-                        calculated: viewModel.calculatedSplits[participantId] ?? SplitDetail(),
-                        splitMethod: viewModel.splitMethod,
-                        isFocused: focusedParticipant == participantId,
+                        calculated: calculated[participantId] ?? SplitDetail(),
+                        splitMethod: viewModel.splitMethod.splitMethod,
+                        isPayer: viewModel.splitOptions.paidByUserId == participantId,
                         onAmountChanged: { amount in
-                            viewModel.updateSplitAmount(for: participantId, amount: amount)
+                            viewModel.splitMethod.updateSplitAmount(
+                                for: participantId, amount: amount)
                         },
                         onPercentageChanged: { percentage in
-                            viewModel.updateSplitPercentage(for: participantId, percentage: percentage)
+                            viewModel.splitMethod.updateSplitPercentage(
+                                for: participantId, percentage: percentage)
                         },
                         onSharesChanged: { shares in
-                            viewModel.updateSplitShares(for: participantId, shares: shares)
+                            viewModel.splitMethod.updateSplitShares(
+                                for: participantId, shares: shares)
                         },
                         onAdjustmentChanged: { adjustment in
-                            viewModel.updateSplitAdjustment(for: participantId, adjustment: adjustment)
+                            viewModel.splitMethod.updateSplitAdjustment(
+                                for: participantId, adjustment: adjustment)
                         }
                     )
                 }
@@ -267,35 +227,21 @@ struct Step3SplitMethodView: View {
         }
     }
 
-    private var bottomSummary: some View {
+    private var remainingAmountSummary: some View {
         HStack {
-            VStack(alignment: .leading, spacing: Theme.Metrics.spacingTiny) {
-                Text("REMAINING")
-                    .font(Theme.Fonts.labelSmall)
-                    .foregroundColor(Theme.Colors.textSecondary)
-
-                Text(remainingAmount.asCurrency)
-                    .font(Theme.Fonts.numberMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(abs(remainingAmount) < 0.01 ? Theme.Colors.brandPrimary : Theme.Colors.amountNegative)
-            }
-
+            Text("Remaining")
+                .font(Theme.Fonts.labelSmall)
+                .foregroundColor(Theme.Colors.textSecondary)
             Spacer()
-
-            VStack(alignment: .trailing, spacing: Theme.Metrics.spacingTiny) {
-                Text("TOTAL")
-                    .font(Theme.Fonts.labelSmall)
-                    .foregroundColor(Theme.Colors.textSecondary)
-
-                Text(viewModel.amount.asCurrency)
-                    .font(Theme.Fonts.numberMedium)
-                    .fontWeight(.bold)
-                    .foregroundColor(Theme.Colors.textPrimary)
-            }
+            Text(viewModel.remainingAmount.asCurrency)
+                .font(Theme.Fonts.numberMedium)
+                .fontWeight(.bold)
+                .foregroundColor(
+                    abs(viewModel.remainingAmount) < 0.01
+                        ? Theme.Colors.success
+                        : Theme.Colors.statusError
+                )
         }
-        .padding(.top, Theme.Metrics.paddingSmall)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Remaining: \(remainingAmount.asCurrency). Total: \(viewModel.amount.asCurrency)")
     }
 
     private var createTransactionButton: some View {
@@ -322,15 +268,16 @@ struct Step3SplitMethodView: View {
         }
         .disabled(!viewModel.canSubmit)
         .buttonStyle(ScaleButtonStyle())
-        .accessibilityLabel("Create transaction")
-        .accessibilityHint(viewModel.canSubmit ? "Double tap to save transaction" : "Split must be balanced first")
     }
 
-    // MARK: - Computed Properties
-
-    private var remainingAmount: Double {
-        let allocated = viewModel.calculatedSplits.values.reduce(0) { $0 + $1.amount }
-        return max(0, viewModel.amount - allocated)
+    private func splitMethodIcon(for method: SplitType) -> String {
+        switch method {
+        case .equally: return "equal"
+        case .exactAmounts: return "dollarsign"
+        case .percentages: return "percent"
+        case .shares: return "number"
+        case .adjustments: return "plusminus"
+        }
     }
 }
 
@@ -343,13 +290,13 @@ struct ParticipantSplitCard: View {
     let person: Person
     let calculated: SplitDetail
     let splitMethod: SplitType
-    let isFocused: Bool
+    let isPayer: Bool
     let onAmountChanged: (Double) -> Void
     let onPercentageChanged: (Double) -> Void
     let onSharesChanged: (Int) -> Void
     let onAdjustmentChanged: (Double) -> Void
 
-    /// Text state for editable input fields
+    // Local state for inputs
     @State private var percentageText: String = ""
     @State private var amountText: String = ""
     @State private var adjustmentText: String = ""
@@ -358,44 +305,77 @@ struct ParticipantSplitCard: View {
 
     var body: some View {
         HStack(spacing: Theme.Metrics.paddingMedium) {
-            AvatarBubbleView(
-                person: person,
-                size: Theme.Metrics.avatarBubbleSize,
-                isSelected: false,
-                showRemoveButton: false
-            )
+            AvatarView(avatarType: person.avatarType, size: .small, style: .solid)
+                .frame(width: Theme.Metrics.avatarStandard, height: Theme.Metrics.avatarStandard)
 
-            personInfo
+            VStack(alignment: .leading, spacing: 2) {
+                Text(person.name)
+                    .font(Theme.Fonts.bodyMedium)
+                    .foregroundColor(Theme.Colors.textPrimary)
+
+                if splitMethod != .exactAmounts {
+                    Text(calculated.amount.asCurrency)
+                        .font(Theme.Fonts.labelSmall)
+                        .foregroundColor(Theme.Colors.textSecondary)
+                }
+            }
 
             Spacer()
 
             splitInputControl
         }
         .padding(.horizontal, Theme.Metrics.paddingMedium)
-        .padding(.vertical, Theme.Metrics.paddingMedium)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .fill(Theme.Colors.cardBackground)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .stroke(Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
-        )
-        .onAppear {
-            percentageText = String(format: "%.0f", calculated.percentage)
+        .padding(.vertical, 12)
+        .background(Theme.Colors.cardBackground)
+        .cornerRadius(Theme.Metrics.cornerRadiusMedium)
+        .onChange(of: calculated) { _, newCalculated in
+            syncLocalState(from: newCalculated)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(person.name), \(calculated.amount.asCurrency), \(Int(calculated.percentage)) percent")
+        .onAppear {
+            syncLocalState(from: calculated)
+        }
+    }
+
+    private func syncLocalState(from detail: SplitDetail) {
+        // Only update if the parsed value is significantly different to avoid fighting the user typing
+        // For Amount
+        if let current = Double(amountText), abs(current - detail.amount) > 0.01 {
+            amountText = String(format: "%.2f", detail.amount)
+        } else if amountText.isEmpty {
+            amountText = String(format: "%.2f", detail.amount)
+        }
+
+        // For Percentage
+        if let current = Double(percentageText), abs(current - detail.percentage) > 0.1 {
+            percentageText = String(format: "%.1f", detail.percentage)
+        } else if percentageText.isEmpty {
+            percentageText = String(format: "%.1f", detail.percentage)
+        }
+
+        // For Adjustment
+        if let current = Double(adjustmentText), abs(current - detail.adjustment) > 0.01 {
+            adjustmentText = String(format: "%.2f", detail.adjustment)
+        } else if adjustmentText.isEmpty && detail.adjustment != 0 {
+            adjustmentText = String(format: "%.2f", detail.adjustment)
+        }
     }
 
     // MARK: - Subviews
 
     private var personInfo: some View {
         VStack(alignment: .leading, spacing: Theme.Metrics.spacingTiny) {
-            Text(person.name)
-                .font(Theme.Fonts.bodyLarge)
-                .fontWeight(.semibold)
-                .foregroundColor(Theme.Colors.textPrimary)
+            HStack(spacing: 4) {
+                Text(person.name)
+                    .font(Theme.Fonts.bodyLarge)
+                    .fontWeight(.semibold)
+                    .foregroundColor(Theme.Colors.textPrimary)
+
+                if isPayer {
+                    Image(systemName: "creditcard.fill")
+                        .font(.caption2)
+                        .foregroundColor(Theme.Colors.textSecondary)
+                }
+            }
 
             Text(calculated.amount.asCurrency)
                 .font(Theme.Fonts.bodyMedium)
@@ -437,11 +417,15 @@ struct ParticipantSplitCard: View {
             TextField("0", text: $percentageText)
                 .font(Theme.Fonts.bodyLarge)
                 .fontWeight(.medium)
-                .keyboardType(.numberPad)
+                .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(width: Theme.Metrics.splitInputWidth)
                 .onChange(of: percentageText) { _, newValue in
-                    if let value = Double(newValue) {
+                    let filtered = newValue.filter { $0.isNumber || $0 == "." }
+                    if filtered != newValue {
+                        percentageText = filtered
+                    }
+                    if let value = Double(filtered) {
                         onPercentageChanged(value)
                     }
                 }
@@ -451,8 +435,9 @@ struct ParticipantSplitCard: View {
                 .fontWeight(.medium)
                 .foregroundColor(Theme.Colors.textSecondary)
         }
-        .transactionInputFieldStyle()
-        .accessibilityLabel("Percentage input")
+        .padding(8)
+        .background(Theme.Colors.secondaryBackground)
+        .cornerRadius(8)
     }
 
     private var exactAmountControl: some View {
@@ -469,7 +454,6 @@ struct ParticipantSplitCard: View {
                 .multilineTextAlignment(.trailing)
                 .frame(width: Theme.Metrics.amountInputWidth)
                 .onChange(of: amountText) { _, newValue in
-                    // Filter to valid decimal input
                     let filtered = newValue.filter { $0.isNumber || $0 == "." }
                     if filtered != newValue {
                         amountText = filtered
@@ -478,12 +462,10 @@ struct ParticipantSplitCard: View {
                         onAmountChanged(value)
                     }
                 }
-                .onAppear {
-                    amountText = String(format: "%.2f", calculated.amount)
-                }
         }
-        .transactionInputFieldStyle()
-        .accessibilityLabel("Amount input")
+        .padding(8)
+        .background(Theme.Colors.secondaryBackground)
+        .cornerRadius(8)
     }
 
     private var sharesControl: some View {
@@ -498,7 +480,10 @@ struct ParticipantSplitCard: View {
                 Image(systemName: "minus")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(Theme.Colors.textPrimary)
-                    .frame(width: Theme.Metrics.stepperButtonSize, height: Theme.Metrics.stepperButtonSize)
+                    .frame(
+                        width: Theme.Metrics.stepperButtonSize,
+                        height: Theme.Metrics.stepperButtonSize
+                    )
                     .background(Circle().fill(Theme.Colors.secondaryBackground))
             }
             .buttonStyle(.plain)
@@ -521,7 +506,10 @@ struct ParticipantSplitCard: View {
                 Image(systemName: "plus")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(Theme.Colors.textPrimary)
-                    .frame(width: Theme.Metrics.stepperButtonSize, height: Theme.Metrics.stepperButtonSize)
+                    .frame(
+                        width: Theme.Metrics.stepperButtonSize,
+                        height: Theme.Metrics.stepperButtonSize
+                    )
                     .background(Circle().fill(Theme.Colors.secondaryBackground))
             }
             .buttonStyle(.plain)
@@ -543,7 +531,6 @@ struct ParticipantSplitCard: View {
                 .multilineTextAlignment(.trailing)
                 .frame(width: Theme.Metrics.splitInputWidth)
                 .onChange(of: adjustmentText) { _, newValue in
-                    // Filter to valid decimal input (allow negative)
                     let filtered = newValue.filter { $0.isNumber || $0 == "." || $0 == "-" }
                     if filtered != newValue {
                         adjustmentText = filtered
@@ -552,19 +539,12 @@ struct ParticipantSplitCard: View {
                         onAdjustmentChanged(value)
                     }
                 }
-                .onAppear {
-                    adjustmentText = String(format: "%.2f", calculated.adjustment)
-                }
-                .accessibilityLabel("Adjustment amount")
         }
-        .transactionInputFieldStyle()
-        .accessibilityLabel("Adjustment input")
+        .padding(8)
+        .background(Theme.Colors.secondaryBackground)
+        .cornerRadius(8)
     }
 }
-
-// MARK: - Input Field Style Modifier
-
-
 
 // MARK: - Preview
 
@@ -572,8 +552,8 @@ struct ParticipantSplitCard: View {
     Step3SplitMethodView(
         viewModel: {
             let vm = NewTransactionViewModel()
-            vm.isSplit = true
-            vm.amountString = "1240"
+            vm.splitOptions.isSplit = true
+            vm.basicDetails.amountString = "1240"
             return vm
         }()
     )

@@ -30,30 +30,56 @@ struct Step1BasicDetailsView: View {
 
     // MARK: - Body
 
+    // MARK: - Body
+
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: Theme.Metrics.paddingLarge) {
-                    Divider()
-                        .padding(.horizontal, -Theme.Metrics.paddingMedium)
+                VStack(spacing: Theme.Metrics.paddingLarge) {
 
-                    sectionTitle
-                    transactionNameField
-                        .id("nameField")
-                    amountCurrencyRow
+                    // Hero Amount Input
+                    heroAmountSection
                         .id("amountField")
-                    categorySection
+                        .padding(.top, Theme.Metrics.paddingLarge)
+
+                    // Form Fields
+                    VStack(spacing: Theme.Metrics.paddingMedium) {
+                        
+                        // Name Input Card
+                        inputCard(
+                            icon: "pencil",
+                            title: "Transaction Name",
+                            placeholder: "Enter description...",
+                            text: $viewModel.basicDetails.transactionName,
+                            field: .name
+                        )
+                        .id("nameField")
+
+                        // Category Section
+                        categorySection
+
+                        // Date Input Card (Custom implementation for DatePicker)
+                        dateInputCard
+
+                        // Notes Input Card
+                        inputCard(
+                            icon: "text.justify.left",
+                            title: "Notes (Optional)",
+                            placeholder: "Add details...",
+                            text: $viewModel.basicDetails.notes,
+                            field: nil
+                        )
+                    }
+                    .padding(.horizontal, Theme.Metrics.paddingMedium)
 
                     Spacer(minLength: 120)
                 }
-                .padding(.horizontal, Theme.Metrics.paddingMedium)
-                .padding(.top, Theme.Metrics.paddingSmall)
             }
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
-                nextStepButton
+                continueButton
                     .padding(.horizontal, Theme.Metrics.paddingMedium)
-                    .padding(.bottom, Theme.Metrics.paddingMedium)
+                    .padding(.bottom, Theme.Metrics.paddingLarge)
                     .background(
                         Theme.Colors.secondaryBackground
                             .ignoresSafeArea()
@@ -63,6 +89,7 @@ struct Step1BasicDetailsView: View {
                 scrollToField(newValue, proxy: proxy)
             }
         }
+        .background(Theme.Colors.background)
         .onTapGesture {
             dismissKeyboard()
         }
@@ -72,219 +99,170 @@ struct Step1BasicDetailsView: View {
 
     // MARK: - Subviews
 
-    private var sectionTitle: some View {
-        Text("Basic Info")
-            .font(Theme.Fonts.displayMedium)
-            .foregroundColor(Theme.Colors.textPrimary)
-            .accessibilityAddTraits(.isHeader)
-    }
-
-    private var transactionNameField: some View {
-        VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
-            Text("Transaction Name")
-                .font(Theme.Fonts.labelLarge)
-                .foregroundColor(Theme.Colors.textPrimary)
-
-            TextField("e.g., Dinner at Nobu", text: $viewModel.transactionName)
-                .font(Theme.Fonts.bodyLarge)
-                .padding(.horizontal, Theme.Metrics.paddingMedium)
-                .padding(.vertical, Theme.Metrics.paddingMedium)
-                .background(
-                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                        .fill(Theme.Colors.cardBackground)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                        .stroke(borderColor(for: .name), lineWidth: borderWidth(for: .name))
-                )
-                .focused($focusedField, equals: .name)
-                .submitLabel(.next)
-                .onSubmit {
-                    focusedField = .amount
-                }
-                .accessibilityLabel("Transaction name")
-                .accessibilityHint("Enter a descriptive name for this transaction")
-
-            if hasAttemptedProceed && viewModel.transactionName.trimmingCharacters(in: .whitespaces).isEmpty {
-                validationMessage("Enter a transaction name")
-            }
-        }
-    }
-
-    private var amountCurrencyRow: some View {
-        HStack(alignment: .top, spacing: Theme.Metrics.paddingMedium) {
-            amountField
-            currencyPicker
-        }
-    }
-
-    private var amountField: some View {
-        VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
-            Text("Amount")
-                .font(Theme.Fonts.labelLarge)
-                .foregroundColor(Theme.Colors.textPrimary)
-
-            HStack(spacing: Theme.Metrics.paddingSmall) {
-                Text(viewModel.selectedCurrency.symbol)
-                    .font(Theme.Fonts.bodyLarge)
-                    .foregroundColor(Theme.Colors.textSecondary)
-
-                TextField("0.00", text: $viewModel.amountString)
-                    .font(Theme.Fonts.bodyLarge)
-                    .keyboardType(.decimalPad)
-                    .focused($focusedField, equals: .amount)
-                    .onChange(of: viewModel.amountString) { _, newValue in
-                        filterAmountInput(newValue)
-                    }
-                    .accessibilityLabel("Amount")
-                    .accessibilityValue("\(viewModel.selectedCurrency.symbol)\(viewModel.amountString.isEmpty ? "0" : viewModel.amountString)")
-            }
-            .padding(.horizontal, Theme.Metrics.paddingMedium)
-            .padding(.vertical, Theme.Metrics.paddingMedium)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                    .fill(Theme.Colors.cardBackground)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                    .stroke(borderColor(for: .amount), lineWidth: borderWidth(for: .amount))
-            )
-
-            if hasAttemptedProceed && viewModel.amount <= 0 {
-                validationMessage("Enter an amount greater than 0")
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private var currencyPicker: some View {
-        VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
-            Text("Currency")
-                .font(Theme.Fonts.labelLarge)
-                .foregroundColor(Theme.Colors.textPrimary)
-
-            Menu {
-                ForEach(Currency.allCases, id: \.self) { currency in
-                    Button(action: {
-                        HapticManager.shared.selection()
-                        viewModel.selectedCurrency = currency
-                    }) {
-                        HStack {
-                            Text("\(currency.flag) \(currency.rawValue)")
-                            if currency == viewModel.selectedCurrency {
-                                Image(systemName: "checkmark")
+    private var heroAmountSection: some View {
+        VStack(spacing: Theme.Metrics.paddingSmall) {
+            HStack(alignment: .center, spacing: 4) {
+                Menu {
+                    ForEach(Currency.allCases, id: \.self) { currency in
+                        Button(action: {
+                            HapticManager.shared.selection()
+                            viewModel.basicDetails.selectedCurrency = currency
+                        }) {
+                            HStack {
+                                Text("\(currency.flag) \(currency.rawValue)")
+                                if currency == viewModel.basicDetails.selectedCurrency {
+                                    Image(systemName: "checkmark")
+                                }
                             }
                         }
                     }
-                }
-            } label: {
-                HStack {
-                    Text(viewModel.selectedCurrency.rawValue)
-                        .font(Theme.Fonts.bodyLarge)
-                        .foregroundColor(Theme.Colors.textPrimary)
-
-                    Spacer()
-
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: Theme.Metrics.iconSizeSmall - 2, weight: .regular))
+                } label: {
+                    Text(viewModel.basicDetails.selectedCurrency.symbol)
+                        .font(Theme.Fonts.displayLarge)
                         .foregroundColor(Theme.Colors.textSecondary)
                 }
-                .padding(.horizontal, Theme.Metrics.paddingMedium)
-                .padding(.vertical, Theme.Metrics.paddingMedium)
-                .background(
-                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                        .fill(Theme.Colors.cardBackground)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                        .stroke(Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
-                )
+
+                TextField("0", text: $viewModel.basicDetails.amountString)
+                    .font(Theme.Fonts.displayLarge)
+                    .foregroundColor(Theme.Colors.textPrimary)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.center)
+                    .focused($focusedField, equals: .amount)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .onChange(of: viewModel.basicDetails.amountString) { _, newValue in
+                        filterAmountInput(newValue)
+                    }
             }
-            .accessibilityLabel("Currency: \(viewModel.selectedCurrency.rawValue)")
-            .accessibilityHint("Double tap to change currency")
+
+            // Underline accent
+            Rectangle()
+                .fill(Theme.Colors.accentMedium)
+                .frame(height: 2)
+                .frame(maxWidth: 120)
+            
+            if hasAttemptedProceed && viewModel.basicDetails.amount <= 0 {
+                Text("Enter amount")
+                    .font(Theme.Fonts.labelSmall)
+                    .foregroundColor(Theme.Colors.statusError)
+            }
         }
-        .frame(width: Theme.Metrics.currencyPickerWidth)
+        .padding(.vertical, Theme.Metrics.paddingLarge)
+    }
+
+    private func inputCard(icon: String, title: String, placeholder: String, text: Binding<String>, field: Field?) -> some View {
+        HStack(spacing: Theme.Metrics.paddingMedium) {
+            // Icon circle
+            Circle()
+                .fill(Theme.Colors.accentLight)
+                .frame(width: 40, height: 40)
+                .overlay(
+                    Image(systemName: icon)
+                        .font(.system(size: Theme.Metrics.iconSizeSmall))
+                        .foregroundColor(Theme.Colors.accentDark)
+                )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(Theme.Fonts.labelSmall)
+                    .foregroundColor(Theme.Colors.textSecondary)
+
+                TextField(placeholder, text: text)
+                    .font(Theme.Fonts.bodyLarge)
+                    .foregroundColor(Theme.Colors.textPrimary)
+                    .focused($focusedField, equals: field)
+                    .submitLabel(field == .name ? .done : .return)
+            }
+        }
+        .padding(Theme.Metrics.paddingMedium)
+        .background(Theme.Colors.cardBackground)
+        .cornerRadius(Theme.Metrics.cornerRadiusMedium)
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                .stroke(
+                     field == .name && hasAttemptedProceed && text.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty ? Theme.Colors.statusError : Color.clear,
+                     lineWidth: 2
+                )
+        )
     }
 
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
             Text("Category")
-                .font(Theme.Fonts.labelLarge)
-                .foregroundColor(Theme.Colors.textPrimary)
+                .font(Theme.Fonts.labelSmall)
+                .foregroundColor(Theme.Colors.textSecondary)
+                .padding(.leading, Theme.Metrics.paddingMedium)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Theme.Metrics.paddingSmall) {
                     ForEach(TransactionCategory.allCases, id: \.self) { category in
-                        CategoryChip(
+                        CategoryPill(
                             category: category,
-                            isSelected: viewModel.selectedCategory == category,
+                            isSelected: viewModel.basicDetails.selectedCategory == category,
                             action: {
                                 HapticManager.shared.selection()
                                 withAnimation(.snappy) {
-                                    viewModel.selectedCategory = category
+                                    viewModel.basicDetails.selectedCategory = category
                                 }
-                                dismissKeyboard()
                             }
                         )
                     }
                 }
-                .padding(.vertical, 2)
+                .padding(.horizontal, Theme.Metrics.paddingMedium)
             }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel("Category selection")
         }
     }
 
-    private var nextStepButton: some View {
-        VStack(spacing: Theme.Metrics.paddingSmall) {
-            Button {
-                handleNextStep()
-            } label: {
-                HStack(spacing: Theme.Metrics.paddingSmall) {
-                    Text("Next Step")
-                        .font(Theme.Fonts.bodyLarge)
-                        .fontWeight(.semibold)
+    private var dateInputCard: some View {
+        HStack(spacing: Theme.Metrics.paddingMedium) {
+            // Icon circle
+            Circle()
+                .fill(Theme.Colors.accentLight)
+                .frame(width: 40, height: 40)
+                .overlay(
+                    Image(systemName: "calendar")
+                        .font(.system(size: Theme.Metrics.iconSizeSmall))
+                        .foregroundColor(Theme.Colors.accentDark)
+                )
 
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 15, weight: .semibold))
-                }
-                .foregroundColor(Theme.Colors.textOnPrimary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Date")
+                    .font(Theme.Fonts.labelSmall)
+                    .foregroundColor(Theme.Colors.textSecondary)
+
+                DatePicker(
+                    "",
+                    selection: $viewModel.basicDetails.transactionDate,
+                    displayedComponents: .date
+                )
+                .labelsHidden()
+                .datePickerStyle(.compact)
+            }
+            Spacer()
+        }
+        .padding(Theme.Metrics.paddingMedium)
+        .background(Theme.Colors.cardBackground)
+        .cornerRadius(Theme.Metrics.cornerRadiusMedium)
+    }
+
+    private var continueButton: some View {
+        Button(action: handleNextStep) {
+            Text("Continue")
+                .font(Theme.Fonts.labelLarge)
+                .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: SwiffButtonSize.large.height)
-                .background(
-                    RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                        .fill(Theme.Colors.brandPrimary)
-                        .opacity(viewModel.canProceedStep1 ? 1 : Theme.Opacity.disabled)
-                )
-            }
-            .disabled(!viewModel.canProceedStep1)
-            .buttonStyle(ScaleButtonStyle())
-            .accessibilityLabel("Next step")
-            .accessibilityHint(viewModel.canProceedStep1 ? "Proceed to split options" : "Fill in required fields first")
+                .background(Theme.Colors.accentDark)
+                .cornerRadius(Theme.Metrics.cornerRadiusMedium)
+                .opacity(viewModel.basicDetails.canProceed ? 1.0 : Theme.Opacity.disabled)
         }
+        .disabled(!viewModel.basicDetails.canProceed)
     }
-
-    // MARK: - Helper Views
-
-    private func validationMessage(_ message: String) -> some View {
-        HStack(spacing: Theme.Metrics.spacingTiny) {
-            Image(systemName: "exclamationmark.circle.fill")
-                .font(.system(size: 12))
-
-            Text(message)
-                .font(Theme.Fonts.labelSmall)
-        }
-        .foregroundColor(Theme.Colors.statusError)
-        .transition(.opacity.combined(with: .move(edge: .top)))
-        .accessibilityLabel("Error: \(message)")
-    }
-
+    
     // MARK: - Private Methods
 
     private func handleNextStep() {
         dismissKeyboard()
-
-        if viewModel.canProceedStep1 {
+        if viewModel.basicDetails.canProceed {
             HapticManager.shared.selection()
             viewModel.goToNextStep()
         } else {
@@ -297,81 +275,31 @@ struct Step1BasicDetailsView: View {
 
     private func scrollToField(_ field: Field?, proxy: ScrollViewProxy) {
         guard let field = field else { return }
-
         withAnimation(.smooth) {
             switch field {
             case .name:
-                proxy.scrollTo("nameField", anchor: .top)
+                proxy.scrollTo("nameField", anchor: .center)
             case .amount:
                 proxy.scrollTo("amountField", anchor: .center)
             }
         }
     }
 
-    private func borderColor(for field: Field) -> Color {
-        if focusedField == field {
-            return Theme.Colors.brandPrimary
-        }
-
-        if hasAttemptedProceed {
-            switch field {
-            case .name:
-                if viewModel.transactionName.trimmingCharacters(in: .whitespaces).isEmpty {
-                    return Theme.Colors.statusError
-                }
-            case .amount:
-                if viewModel.amount <= 0 {
-                    return Theme.Colors.statusError
-                }
-            }
-        }
-
-        return Theme.Colors.border
-    }
-
-    private func borderWidth(for field: Field) -> CGFloat {
-        if focusedField == field {
-            return Theme.Border.widthFocused
-        }
-
-        if hasAttemptedProceed {
-            switch field {
-            case .name:
-                if viewModel.transactionName.trimmingCharacters(in: .whitespaces).isEmpty {
-                    return Theme.Border.widthFocused
-                }
-            case .amount:
-                if viewModel.amount <= 0 {
-                    return Theme.Border.widthFocused
-                }
-            }
-        }
-
-        return Theme.Border.widthDefault
-    }
-
     private func filterAmountInput(_ newValue: String) {
         var filtered = newValue.filter { $0.isNumber || $0 == "." }
-
-        // Prevent leading zeros (except for "0.")
-        if filtered.hasPrefix("00") {
-            filtered = String(filtered.dropFirst())
-        }
-
-        // Add leading zero for decimal starting with "."
-        if filtered.hasPrefix(".") {
-            filtered = "0" + filtered
-        }
-
-        // Prevent multiple decimals
+        
+        // Basic filtering logic reuse
+        if filtered.hasPrefix("00") { filtered = String(filtered.dropFirst()) }
+        if filtered == "0" { } // Allow 0
+        if filtered.hasPrefix(".") { filtered = "0" + filtered }
+        
         let decimalCount = filtered.filter { $0 == "." }.count
         if decimalCount > 1 {
-            if let lastDecimalIndex = filtered.lastIndex(of: ".") {
-                filtered.remove(at: lastDecimalIndex)
-            }
+             if let lastIndex = filtered.lastIndex(of: ".") {
+                 filtered.remove(at: lastIndex)
+             }
         }
-
-        // Limit decimal places to 2
+        
         if let decimalIndex = filtered.firstIndex(of: ".") {
             let decimalPart = filtered[filtered.index(after: decimalIndex)...]
             if decimalPart.count > 2 {
@@ -381,74 +309,35 @@ struct Step1BasicDetailsView: View {
         }
 
         if filtered != newValue {
-            viewModel.amountString = filtered
+            viewModel.basicDetails.amountString = filtered
         }
     }
 
     private func dismissKeyboard() {
         focusedField = nil
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder),
-            to: nil,
-            from: nil,
-            for: nil
-        )
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 
-// MARK: - CategoryChip
-
-struct CategoryChip: View {
-
-    // MARK: - Properties
-
+struct CategoryPill: View {
     let category: TransactionCategory
     let isSelected: Bool
     let action: () -> Void
 
-    @State private var isPressed: Bool = false
-
-    // MARK: - Body
-
     var body: some View {
         Button(action: action) {
-            VStack(spacing: Theme.Metrics.paddingSmall) {
+            HStack(spacing: 6) {
                 Image(systemName: category.icon)
-                    .font(.system(size: Theme.Metrics.iconSizeMedium))
-
+                    .font(.system(size: Theme.Metrics.iconSizeSmall))
                 Text(category.rawValue)
-                    .font(Theme.Fonts.labelMedium)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .font(Theme.Fonts.labelSmall)
             }
-            .foregroundColor(isSelected ? Theme.Colors.textOnPrimary : Theme.Colors.textPrimary)
-            .frame(width: Theme.Metrics.categoryChipSize, height: Theme.Metrics.categoryChipSize)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                    .fill(isSelected ? Theme.Colors.brandPrimary : Theme.Colors.cardBackground)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                    .stroke(isSelected ? Color.clear : Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
-            )
-            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .padding(.horizontal, Theme.Metrics.paddingMedium)
+            .padding(.vertical, Theme.Metrics.paddingSmall)
+            .background(isSelected ? Theme.Colors.accentDark : Theme.Colors.secondaryBackground)
+            .foregroundColor(isSelected ? .white : Theme.Colors.textPrimary)
+            .clipShape(Capsule())
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(category.rawValue) category")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    withAnimation(.quickEase) {
-                        isPressed = true
-                    }
-                }
-                .onEnded { _ in
-                    withAnimation(.quickEase) {
-                        isPressed = false
-                    }
-                }
-        )
     }
 }
 

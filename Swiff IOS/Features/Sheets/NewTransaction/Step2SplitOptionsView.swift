@@ -16,19 +16,14 @@ struct Step2SplitOptionsView: View {
 
     @ObservedObject var viewModel: NewTransactionViewModel
     @EnvironmentObject var dataManager: DataManager
-
+    
     @State private var payerSearchText: String = ""
-    @State private var participantSearchText: String = ""
-
-    // MARK: - Constants
-
-    private let totalSteps = 3
 
     // MARK: - Body
 
     var body: some View {
         VStack(spacing: 0) {
-            stepHeader
+            // No header here as it's in the container
             scrollContent
         }
         .onTapGesture {
@@ -63,293 +58,141 @@ struct Step2SplitOptionsView: View {
     private var scrollContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Metrics.paddingLarge) {
-                progressBar
-                whoPaidSection
-                whoIsIncludedSection
+
+                // Summary Header
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(viewModel.basicDetails.amount.asCurrency) • \(viewModel.basicDetails.transactionName.isEmpty ? "Transaction" : viewModel.basicDetails.transactionName)")
+                        .font(Theme.Fonts.headerMedium)
+                        .foregroundColor(Theme.Colors.textPrimary)
+                }
+                .padding(.top, Theme.Metrics.paddingMedium)
+
+                // Who paid section
+                VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
+                    Text("Who paid?")
+                        .font(Theme.Fonts.headerSmall)
+                        .foregroundColor(Theme.Colors.textPrimary)
+
+                    // Payer Search
+                    searchField(
+                        placeholder: "Search payer...",
+                        text: $payerSearchText
+                    )
+                    
+                    // Payer List (Limited Height)
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                             // "Me" Option always avail if matches search or search empty
+                             if payerMatchesSearch(UserProfileManager.shared.profile.name) {
+                                  PayerSelectionRow(
+                                      person: UserProfileManager.shared.profile.asPerson,
+                                      isSelected: isSelfPayer,
+                                      action: {
+                                          HapticManager.shared.selection()
+                                          selectSelfAsPayer()
+                                      }
+                                  )
+                             }
+                             
+                             ForEach(filteredPayers) { person in
+                                 if person.id != UserProfileManager.shared.profile.id {
+                                     PayerSelectionRow(
+                                         person: person,
+                                         isSelected: viewModel.splitOptions.paidByUserId == person.id,
+                                         action: {
+                                             HapticManager.shared.selection()
+                                             viewModel.splitOptions.selectPayer(person.id)
+                                             if !viewModel.splitOptions.participantIds.contains(person.id) {
+                                                 viewModel.splitOptions.addParticipant(person.id)
+                                             }
+                                         }
+                                     )
+                                 }
+                             }
+                        }
+                    }
+                    .frame(maxHeight: 200)
+                    .background(Theme.Colors.cardBackground)
+                    .cornerRadius(Theme.Metrics.cornerRadiusMedium)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                            .stroke(Theme.Colors.border, lineWidth: 1)
+                    )
+                }
+
+                // Split with section
+                VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
+                    Text("Split with")
+                        .font(Theme.Fonts.headerSmall)
+                        .foregroundColor(Theme.Colors.textPrimary)
+
+                    searchField(
+                        placeholder: "Search people...",
+                        text: $viewModel.splitOptions.splitWithSearchText
+                    )
+
+                    // People List for Splitting
+                    LazyVStack(spacing: 0) {
+                        // Show "Me" if matches
+                        if matchesSearch(UserProfileManager.shared.profile.name, searchText: viewModel.splitOptions.splitWithSearchText) {
+                            PersonSelectionRow(
+                                person: UserProfileManager.shared.profile.asPerson,
+                                isSelected: viewModel.splitOptions.participantIds.contains(UserProfileManager.shared.profile.id),
+                                action: {
+                                    HapticManager.shared.selection()
+                                    toggleParticipant(UserProfileManager.shared.profile.id)
+                                }
+                            )
+                        }
+
+                        ForEach(filteredSplitPeople) { person in
+                            if person.id != UserProfileManager.shared.profile.id {
+                                PersonSelectionRow(
+                                    person: person,
+                                    isSelected: viewModel.splitOptions.participantIds.contains(person.id),
+                                    action: {
+                                        HapticManager.shared.selection()
+                                        toggleParticipant(person.id)
+                                    }
+                                )
+                                if person.id != filteredSplitPeople.last?.id {
+                                     Divider().padding(.leading, 72)
+                                }
+                            }
+                        }
+                    }
+                    .background(Theme.Colors.cardBackground)
+                    .cornerRadius(Theme.Metrics.cornerRadiusMedium)
+                }
+
                 Spacer(minLength: 100)
             }
             .padding(.horizontal, Theme.Metrics.paddingMedium)
         }
         .scrollDismissesKeyboard(.interactively)
         .safeAreaInset(edge: .bottom) {
-            nextButton
+            continueButton
                 .padding(.horizontal, Theme.Metrics.paddingMedium)
-                .padding(.bottom, Theme.Metrics.paddingMedium)
+                .padding(.bottom, Theme.Metrics.paddingLarge)
                 .background(
                     Theme.Colors.secondaryBackground
                         .ignoresSafeArea()
                 )
         }
     }
-
-    private var stepHeader: some View {
-        VStack(spacing: Theme.Metrics.paddingSmall) {
-            HStack {
-                Text("STEP 2 OF 3")
-                    .font(Theme.Fonts.labelMedium)
-                    .foregroundColor(Theme.Colors.brandPrimary)
-
-                Spacer()
-
-                Button(action: {
-                    HapticManager.shared.selection()
-                    withAnimation(.smooth) {
-                        viewModel.goToPreviousStep()
-                    }
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: Theme.Metrics.iconSizeSmall - 2, weight: .medium))
-                        .foregroundColor(Theme.Colors.textSecondary)
-                }
-                .accessibilityLabel("Go back")
-            }
-
-            HStack {
-                Text("People Involved")
-                    .font(Theme.Fonts.displayMedium)
-                    .foregroundColor(Theme.Colors.textPrimary)
-                    .accessibilityAddTraits(.isHeader)
-
-                Spacer()
-            }
+    
+    private var continueButton: some View {
+        Button(action: handleNextStep) {
+            Text("Continue")
+                .font(Theme.Fonts.labelLarge)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: SwiffButtonSize.large.height)
+                .background(Theme.Colors.accentDark)
+                .cornerRadius(Theme.Metrics.cornerRadiusMedium)
+                .opacity(viewModel.splitOptions.canProceed ? 1.0 : Theme.Opacity.disabled)
         }
-        .padding(.horizontal, Theme.Metrics.paddingMedium)
-        .padding(.top, Theme.Metrics.paddingMedium)
-    }
-
-    private var progressBar: some View {
-        HStack(spacing: Theme.Metrics.spacingTiny) {
-            ForEach(1...totalSteps, id: \.self) { step in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(step <= 2 ? Theme.Colors.brandPrimary : Theme.Colors.border)
-                    .frame(height: Theme.Metrics.progressBarHeight)
-            }
-        }
-        .accessibilityLabel("Step 2 of \(totalSteps) completed")
-    }
-
-    private var whoPaidSection: some View {
-        VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
-            Text("Who paid?")
-                .font(Theme.Fonts.headerSmall)
-                .foregroundColor(Theme.Colors.textPrimary)
-
-            searchField(
-                placeholder: "Search payer...",
-                text: $payerSearchText
-            )
-            .accessibilityLabel("Search for payer")
-
-            payerToggleButtons
-        }
-    }
-
-    private var payerToggleButtons: some View {
-        HStack(spacing: Theme.Metrics.paddingSmall) {
-            // Me (Self) button
-            Button(action: {
-                HapticManager.shared.selection()
-                selectSelfAsPayer()
-            }) {
-                HStack(spacing: Theme.Metrics.paddingSmall) {
-                    Image(systemName: "person.fill")
-                        .font(.system(size: Theme.Metrics.iconSizeSmall))
-
-                    Text("Me (Self)")
-                        .font(Theme.Fonts.labelLarge)
-
-                    if isSelfPayer {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                    }
-                }
-                .foregroundColor(isSelfPayer ? Theme.Colors.textOnPrimary : Theme.Colors.textPrimary)
-                .padding(.horizontal, Theme.Metrics.paddingMedium)
-                .padding(.vertical, Theme.Metrics.paddingSmall)
-                .background(
-                    Capsule()
-                        .fill(isSelfPayer ? Theme.Colors.brandPrimary : Theme.Colors.cardBackground)
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(isSelfPayer ? Color.clear : Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
-                )
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Me as payer")
-            .accessibilityAddTraits(isSelfPayer ? .isSelected : [])
-
-            // Someone else button
-            Button(action: {
-                HapticManager.shared.selection()
-                viewModel.isPaidBySearchFocused = true
-            }) {
-                HStack(spacing: Theme.Metrics.paddingSmall) {
-                    Text("Someone else")
-                        .font(Theme.Fonts.labelLarge)
-
-                    Image(systemName: "plus")
-                        .font(.system(size: Theme.Metrics.iconSizeSmall, weight: .medium))
-                }
-                .foregroundColor(Theme.Colors.textPrimary)
-                .padding(.horizontal, Theme.Metrics.paddingMedium)
-                .padding(.vertical, Theme.Metrics.paddingSmall)
-                .background(
-                    Capsule()
-                        .fill(Theme.Colors.cardBackground)
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
-                )
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Select someone else as payer")
-
-            Spacer()
-        }
-    }
-
-    private var whoIsIncludedSection: some View {
-        VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
-            Text("Who is included?")
-                .font(Theme.Fonts.headerSmall)
-                .foregroundColor(Theme.Colors.textPrimary)
-
-            searchField(
-                placeholder: "Find people to split with...",
-                text: $participantSearchText
-            )
-            .accessibilityLabel("Search for participants")
-
-            selectedParticipantsRow
-            peopleList
-        }
-    }
-
-    private var selectedParticipantsRow: some View {
-        let selectedPeople = dataManager.people.filter { viewModel.participantIds.contains($0.id) }
-
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Theme.Metrics.paddingSmall) {
-                ForEach(selectedPeople) { person in
-                    AvatarBubbleView(
-                        person: person,
-                        size: Theme.Metrics.avatarBubbleSize,
-                        isSelected: false,
-                        showRemoveButton: true,
-                        onRemove: {
-                            HapticManager.shared.selection()
-                            withAnimation(.smooth) {
-                                viewModel.toggleParticipant(person.id)
-                            }
-                        }
-                    )
-                }
-
-                addPersonPlaceholder
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Selected participants: \(selectedPeople.count)")
-    }
-
-    private var addPersonPlaceholder: some View {
-        Button(action: {
-            HapticManager.shared.selection()
-        }) {
-            VStack(spacing: Theme.Metrics.spacingTiny + 2) {
-                ZStack {
-                    Circle()
-                        .strokeBorder(Theme.Colors.border, style: StrokeStyle(lineWidth: Theme.Border.widthDefault, dash: [4]))
-                        .frame(width: Theme.Metrics.avatarBubbleSize, height: Theme.Metrics.avatarBubbleSize)
-
-                    Image(systemName: "person.badge.plus")
-                        .font(.system(size: 18))
-                        .foregroundColor(Theme.Colors.textSecondary)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Add person")
-    }
-
-    @ViewBuilder
-    private var peopleList: some View {
-        let filteredPeople = participantSearchText.isEmpty
-            ? dataManager.people
-            : dataManager.people.filter { $0.name.localizedCaseInsensitiveContains(participantSearchText) }
-
-        if filteredPeople.isEmpty {
-            EnhancedEmptyState(
-                icon: "person.crop.circle.badge.plus",
-                title: "No Contacts Found",
-                subtitle: "Try searching for a different name"
-            )
-            .padding(.vertical, Theme.Metrics.paddingLarge)
-        } else {
-            VStack(spacing: 0) {
-                ForEach(filteredPeople) { person in
-                    Button(action: {
-                        HapticManager.shared.selection()
-                        withAnimation(.smooth) {
-                            viewModel.toggleParticipant(person.id)
-                            if viewModel.paidByUserId == nil {
-                                viewModel.selectPayer(person.id)
-                            }
-                        }
-                    }) {
-                        PersonListRow(
-                            person: person,
-                            isSelected: viewModel.participantIds.contains(person.id)
-                        )
-                    }
-                    .buttonStyle(.plain)
-
-                    if person.id != filteredPeople.last?.id {
-                        Divider()
-                            .padding(.leading, 72)
-                    }
-                }
-            }
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                    .fill(Theme.Colors.cardBackground)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                    .stroke(Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
-            )
-        }
-    }
-
-    private var nextButton: some View {
-        let canProceed = viewModel.participantIds.count >= 2
-
-        return Button {
-            handleNextStep()
-        } label: {
-            HStack(spacing: Theme.Metrics.paddingSmall) {
-                Text("Next: Split Details")
-                    .font(Theme.Fonts.bodyLarge)
-                    .fontWeight(.semibold)
-
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 15, weight: .semibold))
-            }
-            .foregroundColor(Theme.Colors.textOnPrimary)
-            .frame(maxWidth: .infinity)
-            .frame(height: SwiffButtonSize.large.height)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                    .fill(Theme.Colors.brandPrimary)
-                    .opacity(canProceed ? 1 : Theme.Opacity.disabled)
-            )
-        }
-        .disabled(!canProceed)
-        .buttonStyle(ScaleButtonStyle())
-        .accessibilityLabel("Next: Split details")
-        .accessibilityHint(canProceed ? "Continue to split configuration" : "Select at least 2 participants first")
+        .disabled(!viewModel.splitOptions.canProceed)
     }
 
     // MARK: - Helper Views
@@ -358,30 +201,58 @@ struct Step2SplitOptionsView: View {
         HStack(spacing: Theme.Metrics.paddingSmall) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: Theme.Metrics.iconSizeSmall))
-                .foregroundColor(Theme.Colors.textSecondary)
+                .foregroundColor(Theme.Colors.textTertiary)
 
             TextField(placeholder, text: text)
-                .font(Theme.Fonts.bodyLarge)
+                .font(Theme.Fonts.bodyMedium)
+                .foregroundColor(Theme.Colors.textPrimary)
+            
+            if !text.wrappedValue.isEmpty {
+                 Button(action: { text.wrappedValue = "" }) {
+                     Image(systemName: "xmark.circle.fill")
+                         .font(.system(size: Theme.Metrics.iconSizeSmall))
+                         .foregroundColor(Theme.Colors.textTertiary)
+                 }
+            }
         }
         .padding(.horizontal, Theme.Metrics.paddingMedium)
         .padding(.vertical, Theme.Metrics.paddingSmall)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .fill(Theme.Colors.cardBackground)
-        )
+        .background(Theme.Colors.secondaryBackground)
+        .cornerRadius(Theme.Metrics.cornerRadiusMedium)
         .overlay(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .stroke(Theme.Colors.border, lineWidth: Theme.Border.widthDefault)
+             RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                 .stroke(Theme.Colors.border, lineWidth: 1)
         )
     }
 
     // MARK: - Private Methods
+    
+    private var filteredPayers: [Person] {
+        if payerSearchText.isEmpty {
+            return dataManager.people
+        }
+        return dataManager.people.filter { $0.name.localizedCaseInsensitiveContains(payerSearchText) }
+    }
+    
+    private var filteredSplitPeople: [Person] {
+        if viewModel.splitOptions.splitWithSearchText.isEmpty {
+            return dataManager.people
+        }
+        return dataManager.people.filter { $0.name.localizedCaseInsensitiveContains(viewModel.splitOptions.splitWithSearchText) }
+    }
+    
+    private func payerMatchesSearch(_ name: String) -> Bool {
+        payerSearchText.isEmpty || name.localizedCaseInsensitiveContains(payerSearchText)
+    }
+    
+    private func matchesSearch(_ name: String, searchText: String) -> Bool {
+        searchText.isEmpty || name.localizedCaseInsensitiveContains(searchText)
+    }
 
     private func handleNextStep() {
         HapticManager.shared.selection()
-        if viewModel.participantIds.count >= 2 {
-            viewModel.isSplit = true
-            viewModel.initializeSplitDefaults()
+        if viewModel.splitOptions.canProceed {
+            viewModel.splitOptions.isSplit = true
             withAnimation(.smooth) {
                 viewModel.goToNextStep()
             }
@@ -389,103 +260,149 @@ struct Step2SplitOptionsView: View {
     }
 
     /// Current user's ID from UserProfileManager
-    private var currentUserId: UUID {
+    private var currentUserId: UUID? {
         UserProfileManager.shared.profile.id
     }
 
     private var isSelfPayer: Bool {
-        guard let payerId = viewModel.paidByUserId else {
-            // No payer selected yet - default to self
-            return true
+        guard let payerId = viewModel.splitOptions.paidByUserId else { return false }
+        if let myId = currentUserId {
+            return payerId == myId
         }
-        return payerId == currentUserId
+        return false
     }
 
     private func selectSelfAsPayer() {
-        viewModel.selectPayer(currentUserId)
-        // Also ensure current user is a participant
-        if !viewModel.participantIds.contains(currentUserId) {
-            viewModel.participantIds.insert(currentUserId)
+        if let myId = currentUserId {
+            viewModel.splitOptions.selectPayer(myId)
+            if !viewModel.splitOptions.participantIds.contains(myId) {
+                viewModel.splitOptions.addParticipant(myId)
+            }
+        }
+    }
+    
+    private func toggleParticipant(_ id: UUID) {
+        if viewModel.splitOptions.participantIds.contains(id) {
+            viewModel.splitOptions.removeParticipant(id)
+        } else {
+            viewModel.splitOptions.addParticipant(id)
         }
     }
 }
 
-
-
-// MARK: - PersonListRow
-
-struct PersonListRow: View {
-
-    // MARK: - Properties
-
+// MARK: - PayerSelectionRow
+struct PayerSelectionRow: View {
     let person: Person
     let isSelected: Bool
-
-    // MARK: - Body
+    let action: () -> Void
 
     var body: some View {
-        HStack(spacing: Theme.Metrics.paddingMedium) {
-            AvatarView(avatarType: person.avatarType, size: .medium, style: .solid)
-                .frame(width: Theme.Metrics.avatarMedium, height: Theme.Metrics.avatarMedium)
+        Button(action: action) {
+            HStack(spacing: Theme.Metrics.paddingMedium) {
+                AvatarView(avatarType: person.avatarType, size: .small, style: .solid)
+                    .frame(width: Theme.Metrics.avatarStandard, height: Theme.Metrics.avatarStandard)
 
-            personInfo
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(person.name)
+                        .font(Theme.Fonts.bodyLarge)
+                        .foregroundColor(Theme.Colors.textPrimary)
 
-            Spacer()
+                    if !person.phone.isEmpty {
+                        Text(person.phone)
+                            .font(Theme.Fonts.bodySmall)
+                            .foregroundColor(Theme.Colors.textSecondary)
+                    }
+                }
 
-            selectionIndicator
-        }
-        .padding(.horizontal, Theme.Metrics.paddingMedium)
-        .padding(.vertical, Theme.Metrics.paddingMedium)
-        .contentShape(Rectangle())
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(person.name)\(isSelected ? ", selected" : "")")
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
+                Spacer()
 
-    // MARK: - Subviews
-
-    private var personInfo: some View {
-        VStack(alignment: .leading, spacing: Theme.Metrics.spacingTiny) {
-            Text(person.name)
-                .font(Theme.Fonts.bodyLarge)
-                .fontWeight(.medium)
-                .foregroundColor(Theme.Colors.textPrimary)
-
-            if !person.email.isEmpty {
-                Text(person.email)
-                    .font(Theme.Fonts.bodyMedium)
-                    .foregroundColor(Theme.Colors.textSecondary)
-            } else if !person.phone.isEmpty {
-                Text(person.phone)
-                    .font(Theme.Fonts.bodyMedium)
-                    .foregroundColor(Theme.Colors.textSecondary)
-            }
-        }
-    }
-
-    private var selectionIndicator: some View {
-        ZStack {
-            Circle()
-                .strokeBorder(
-                    isSelected ? Theme.Colors.brandPrimary : Theme.Colors.border,
-                    lineWidth: isSelected ? 0 : Theme.Border.widthSelected
-                )
-                .background(
+                // Radio button indicator
+                ZStack {
                     Circle()
-                        .fill(isSelected ? Theme.Colors.brandPrimary : Color.clear)
-                )
-                .frame(width: Theme.Metrics.selectionIndicatorSize, height: Theme.Metrics.selectionIndicatorSize)
+                        .stroke(isSelected ? Theme.Colors.accentDark : Theme.Colors.textTertiary, lineWidth: 2)
+                        .frame(width: 22, height: 22)
 
-            if isSelected {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(Theme.Colors.textOnPrimary)
+                    if isSelected {
+                        Circle()
+                            .fill(Theme.Colors.accentDark)
+                            .frame(width: 12, height: 12)
+                    }
+                }
             }
+            .padding(.horizontal, Theme.Metrics.paddingMedium)
+            .padding(.vertical, 12)
+            .background(isSelected ? Theme.Colors.accentLight.opacity(Theme.Opacity.subtle) : Color.clear)
         }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
-// MARK: - Preview
+// MARK: - PersonSelectionRow
+struct PersonSelectionRow: View {
+    let person: Person
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: Theme.Metrics.paddingMedium) {
+                AvatarView(avatarType: person.avatarType, size: .small, style: .solid)
+                    .frame(width: Theme.Metrics.avatarStandard, height: Theme.Metrics.avatarStandard)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(person.name)
+                        .font(Theme.Fonts.bodyLarge)
+                        .foregroundColor(Theme.Colors.textPrimary)
+                        
+                    if !person.phone.isEmpty {
+                         Text(person.phone)
+                             .font(Theme.Fonts.bodySmall)
+                             .foregroundColor(Theme.Colors.textSecondary)
+                     }
+                }
+
+                Spacer()
+
+                // Checkbox indicator
+                ZStack {
+                    Circle()
+                        .stroke(isSelected ? Theme.Colors.accentDark : Theme.Colors.textTertiary, lineWidth: 2)
+                        .frame(width: 24, height: 24)
+
+                    if isSelected {
+                        Circle()
+                            .fill(Theme.Colors.accentDark)
+                            .frame(width: 24, height: 24)
+
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+            .padding(.horizontal, Theme.Metrics.paddingMedium)
+            .padding(.vertical, 12)
+            .background(isSelected ? Theme.Colors.accentLight.opacity(Theme.Opacity.subtle) : Color.clear)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+extension Person {
+    var asPerson: Person { self }
+}
+
+extension UserProfile {
+    var asPerson: Person {
+        Person(
+            name: self.name + " (You)",
+            email: self.email,
+            phone: self.phone,
+            avatarType: self.avatarType
+        )
+    }
+}
 
 #Preview("Step 2 - People Involved") {
     Step2SplitOptionsView(viewModel: NewTransactionViewModel())

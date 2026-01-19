@@ -31,7 +31,7 @@ struct AddTransactionSheet: View {
     // MARK: - Computed Properties
 
     private var totalSteps: Int {
-        viewModel.isSplit ? 3 : 2
+        viewModel.splitOptions.isSplit ? 3 : 2
     }
 
     // MARK: - Body
@@ -50,7 +50,9 @@ struct AddTransactionSheet: View {
 
                 VStack(spacing: Theme.Metrics.paddingMedium) {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: Theme.Colors.textOnPrimary))
+                        .progressViewStyle(
+                            CircularProgressViewStyle(tint: Theme.Colors.textOnPrimary)
+                        )
                         .scaleEffect(1.3)
 
                     Text("Saving...")
@@ -89,55 +91,53 @@ struct AddTransactionSheet: View {
 
     // MARK: - Subviews
 
-    /// Header with close button, title, and step indicator
+    /// Header with navigation and step indicator
     private var sheetHeader: some View {
         HStack {
-            closeButton
+            // Left: Close or Back
+            Button(action: {
+                HapticManager.shared.selection()
+                if viewModel.currentStep > 1 {
+                    withAnimation(.smooth) {
+                        viewModel.goToPreviousStep()
+                    }
+                } else {
+                    showingAddTransactionSheet = false
+                    viewModel.reset()
+                }
+            }) {
+                Image(systemName: viewModel.currentStep > 1 ? "arrow.left" : "xmark")
+                    .font(.system(size: Theme.Metrics.iconSizeMedium))
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel(viewModel.currentStep > 1 ? "Go back" : "Close")
+
             Spacer()
-            titleView
+
+            // Center: Step Indicator
+            HStack(spacing: Theme.Metrics.paddingSmall) {
+                ForEach(1...3, id: \.self) { step in
+                    Circle()
+                        .fill(
+                            step <= viewModel.currentStep
+                                ? Theme.Colors.brandPrimary
+                                : Theme.Colors.textTertiary.opacity(Theme.Opacity.subtle)
+                        )
+                        .frame(width: 8, height: 8)
+                        .animation(.smooth, value: viewModel.currentStep)
+                }
+            }
+            .accessibilityLabel("Step \(viewModel.currentStep) of 3")
+
             Spacer()
-            stepIndicator
+
+            // Right: Balance placeholder (to center the dots)
+            Color.clear.frame(width: Theme.Metrics.iconSizeMedium)
         }
         .padding(.horizontal, Theme.Metrics.paddingMedium)
-        .padding(.top, Theme.Metrics.paddingMedium)
-        .padding(.bottom, Theme.Metrics.paddingSmall)
+        .padding(.vertical, Theme.Metrics.paddingSmall)
     }
-
-    private var closeButton: some View {
-        Button(action: {
-            HapticManager.shared.selection()
-            showingAddTransactionSheet = false
-            viewModel.reset()
-        }) {
-            Image(systemName: "xmark")
-                .font(.system(size: Theme.Metrics.iconSizeSmall, weight: .medium))
-                .foregroundColor(Theme.Colors.textSecondary)
-                .frame(width: Theme.Metrics.avatarCompact, height: Theme.Metrics.avatarCompact)
-        }
-        .accessibilityLabel("Close")
-        .accessibilityHint("Dismisses the new transaction sheet")
-    }
-
-    private var titleView: some View {
-        Text("New Transaction")
-            .font(Theme.Fonts.headerMedium)
-            .foregroundColor(Theme.Colors.textPrimary)
-            .accessibilityAddTraits(.isHeader)
-    }
-
-    private var stepIndicator: some View {
-        Text("STEP \(viewModel.currentStep) OF \(totalSteps)")
-            .font(Theme.Fonts.labelSmall)
-            .foregroundColor(Theme.Colors.textSecondary)
-            .padding(.horizontal, Theme.Metrics.paddingSmall)
-            .padding(.vertical, Theme.Metrics.spacingTiny + 2)
-            .background(
-                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusSmall)
-                    .fill(Theme.Colors.border.opacity(Theme.Opacity.border))
-            )
-            .accessibilityLabel("Step \(viewModel.currentStep) of \(totalSteps)")
-    }
-
     /// TabView-based step content with smooth transitions
     private var stepContent: some View {
         TabView(selection: $viewModel.currentStep) {
@@ -149,7 +149,7 @@ struct AddTransactionSheet: View {
                 .environmentObject(dataManager)
                 .tag(2)
 
-            if viewModel.isSplit {
+            if viewModel.splitOptions.isSplit {
                 Step3SplitMethodView(
                     viewModel: viewModel,
                     onBack: {
@@ -173,9 +173,12 @@ struct AddTransactionSheet: View {
 
     private func setupPreselectedParticipant() {
         if let person = preselectedParticipant {
-            viewModel.isSplit = true
-            viewModel.participantIds.insert(person.id)
-            viewModel.initializeSplitDefaults()
+            viewModel.splitOptions.isSplit = true
+            viewModel.splitOptions.addParticipant(person.id)
+            let myId = UserProfileManager.shared.profile.id
+            viewModel.splitOptions.addParticipant(myId)
+            viewModel.splitMethod.initializeDefaults(
+                for: viewModel.splitOptions.participantIds, totalAmount: 0)  // Amount might not be set yet
         }
     }
 
@@ -196,7 +199,7 @@ struct AddTransactionSheet: View {
         isSaving = true
 
         // Validate amount is safe
-        guard viewModel.amount > 0, viewModel.amount.isFinite else {
+        guard viewModel.basicDetails.amount > 0, viewModel.basicDetails.amount.isFinite else {
             HapticManager.shared.error()
             ToastManager.shared.showError("Invalid amount. Please enter a valid number.")
             isSaving = false
@@ -204,14 +207,14 @@ struct AddTransactionSheet: View {
         }
 
         let finalAmount =
-            viewModel.transactionType == .expense
-            ? -abs(viewModel.amount)
-            : abs(viewModel.amount)
+            viewModel.basicDetails.transactionType == .expense
+            ? -abs(viewModel.basicDetails.amount)
+            : abs(viewModel.basicDetails.amount)
 
         var splitBillId: UUID? = nil
 
         // Create split bill if splitting
-        if viewModel.isSplit, let payerId = viewModel.paidByUserId {
+        if viewModel.splitOptions.isSplit, let payerId = viewModel.splitOptions.paidByUserId {
             do {
                 splitBillId = try createSplitBill(payerId: payerId)
             } catch {
@@ -220,16 +223,18 @@ struct AddTransactionSheet: View {
             }
         }
 
-        let subtitle = viewModel.isSplit ? "Split Transaction" : viewModel.transactionType.rawValue
+        let subtitle =
+            viewModel.splitOptions.isSplit
+            ? "Split Transaction" : viewModel.basicDetails.transactionType.rawValue
         let newTransaction = Transaction(
-            title: viewModel.transactionName.trimmingCharacters(in: .whitespaces),
+            title: viewModel.basicDetails.transactionName.trimmingCharacters(in: .whitespaces),
             subtitle: subtitle,
             amount: finalAmount,
-            category: viewModel.selectedCategory,
-            date: viewModel.transactionDate,
+            category: viewModel.basicDetails.selectedCategory,
+            date: viewModel.basicDetails.transactionDate,
             isRecurring: false,
             tags: [],
-            notes: viewModel.notes,
+            notes: viewModel.basicDetails.notes,
             splitBillId: splitBillId
         )
 
@@ -246,15 +251,17 @@ struct AddTransactionSheet: View {
         var balanceChanges: [(person: Person, change: Double)] = []
 
         // Build participant list with stable ordering
-        let sortedParticipantIds = viewModel.participantIds.sorted()
+        let sortedParticipantIds = viewModel.splitOptions.participantIds.sorted()
+        let calculatedSplits = viewModel.calculatedSplits
+
         let participants = sortedParticipantIds.map { personId -> SplitParticipant in
-            let calculated = viewModel.calculatedSplits[personId] ?? SplitDetail()
+            let calculated = calculatedSplits[personId] ?? SplitDetail()
             return SplitParticipant(
                 personId: personId,
                 amount: calculated.amount,
                 hasPaid: personId == payerId,
                 percentage: calculated.percentage,
-                shares: viewModel.splitMethod == .shares ? calculated.shares : nil
+                shares: viewModel.splitMethod.splitMethod == .shares ? calculated.shares : nil
             )
         }
 
@@ -280,14 +287,14 @@ struct AddTransactionSheet: View {
 
         // Create split bill
         let splitBill = SplitBill(
-            title: viewModel.transactionName.trimmingCharacters(in: .whitespaces),
-            totalAmount: abs(viewModel.amount),
+            title: viewModel.basicDetails.transactionName.trimmingCharacters(in: .whitespaces),
+            totalAmount: abs(viewModel.basicDetails.amount),
             paidById: payerId,
-            splitType: viewModel.splitMethod,
+            splitType: viewModel.splitMethod.splitMethod,
             participants: participants,
-            notes: viewModel.notes,
-            category: viewModel.selectedCategory,
-            date: viewModel.transactionDate
+            notes: viewModel.basicDetails.notes,
+            category: viewModel.basicDetails.selectedCategory,
+            date: viewModel.basicDetails.transactionDate
         )
 
         try dataManager.addSplitBill(splitBill)
