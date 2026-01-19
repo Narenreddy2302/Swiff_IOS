@@ -7,6 +7,7 @@
 //
 
 import Combine
+import Contacts
 import Foundation
 import Supabase
 
@@ -60,10 +61,37 @@ class ContactSyncManager: ObservableObject {
     private let contactsService = ContactsService.shared
     private let supabaseService = SupabaseService.shared
     private let permissionManager = SystemPermissionManager.shared
+    private let cacheService = ContactCacheService.shared
+
+    private var contactsChangeObserver: NSObjectProtocol?
 
     // MARK: - Initialization
 
-    private init() {}
+    private init() {
+        setupChangeObserver()
+    }
+
+    deinit {
+        if let observer = contactsChangeObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
+    private func setupChangeObserver() {
+        contactsChangeObserver = NotificationCenter.default.addObserver(
+            forName: .CNContactStoreDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("DEBUG: Contact store changed externally")
+            Task { @MainActor [weak self] in
+                // Mark cache as stale so next load triggers sync
+                await self?.cacheService.invalidateCache()
+                // If we are currently displaying contacts, we might want to refresh UI?
+                // For now, just invalidate cache is enough - next view appear will re-sync.
+            }
+        }
+    }
 
     // MARK: - Sync Methods
 
@@ -84,8 +112,11 @@ class ContactSyncManager: ObservableObject {
     func syncContactsIfNeeded() async {
         // Skip if synced within the minimum interval
         if let lastSync = lastSyncTimestamp,
-           Date().timeIntervalSince(lastSync) < minimumSyncInterval {
-            print("DEBUG: Skipping sync - last sync was \(Int(Date().timeIntervalSince(lastSync)))s ago (min interval: \(Int(minimumSyncInterval))s)")
+            Date().timeIntervalSince(lastSync) < minimumSyncInterval
+        {
+            print(
+                "DEBUG: Skipping sync - last sync was \(Int(Date().timeIntervalSince(lastSync)))s ago (min interval: \(Int(minimumSyncInterval))s)"
+            )
             return
         }
 
@@ -98,44 +129,98 @@ class ContactSyncManager: ObservableObject {
         await syncContacts()
     }
 
-    /// Full sync of contacts from device and match with Swiff accounts
-    func syncContacts() async {
-        guard !isSyncing else { return }
+    /// Load contacts from cache first, then sync if needed
+    func loadContactsWithCache() async {
+        // 1. Immediately load cached contacts if available
+        if let cached = await cacheService.loadCachedContacts() {
+            print("DEBUG: Loaded \(cached.count) contacts from cache")
+            await MainActor.run {
+                self.contacts = cached
+            }
+        } else {
+            print("DEBUG: No cached contacts found")
+        }
 
+        // 2. Check if we need to sync (cache stale or empty)
+        let isFresh = await cacheService.isCacheFresh()
+        let needsSync = !isFresh || contacts.isEmpty
+
+        if needsSync {
+            print("DEBUG: Cache stale or empty, triggering sync")
+            await syncContactsIfNeeded()
+        } else {
+            print("DEBUG: Cache is fresh, skipping sync")
+        }
+    }
+
+    /// Sync contacts progressively - shows results as they load
+    func syncContactsProgressively() async {
+        guard !isSyncing else { return }
         isSyncing = true
         syncError = nil
 
+        // 1. Load cache first for instant display
+        if let cached = await cacheService.loadCachedContacts() {
+            await MainActor.run {
+                self.contacts = cached
+            }
+        }
+
+        // 2. Stream fresh contacts in batches
+        var allContacts: [ContactEntry] = []
+
         do {
-            print("DEBUG: ContactSyncManager starting sync")
-            // Step 1: Fetch all contacts from device
-            let deviceContacts = try await contactsService.fetchAllContacts()
+            print("DEBUG: ContactSyncManager starting progressive sync")
 
-            // Step 2: Get contacts with phone numbers for matching
-            let contactsWithPhones = deviceContacts.filter { $0.hasPhoneNumber }
+            // Note: contactsService.fetchContactsInBatches() yields [ContactEntry]
+            // We'll simulate batch processing since current ContactsService might not expose a stream yet
+            // If it doesn't, we'll implement a simple batching wrapper or use fetchAllContacts for now
+            // But based on user request, we should use 'fetchContactsInBatches' if it exists.
+            // Let's check ContactsService first.
+            // For now, I will assume fetchAllContacts is the only one fully available and working, but to follow the prompt's
+            // requirement of "Phase 2: Progressive Loading UI", I should check if I need to update ContactsService.
+            // The prompt says: "fetchContactsInBatches() returns AsyncThrowingStream<[ContactEntry], Error> (exists but unused)"
+            // So I can use it!
 
-            // Step 3: Match phone numbers against Swiff accounts
-            let matchedContacts = await matchContactsWithAccounts(
-                deviceContacts: deviceContacts, contactsWithPhones: contactsWithPhones)
+            for try await batch in contactsService.fetchContactsInBatches() {
+                allContacts.append(contentsOf: batch)
 
-            // Step 4: Update published contacts
-            contacts = ContactEntry.sortByAccountStatus(matchedContacts)
-            lastSyncDate = Date()
-            lastSyncTimestamp = Date()  // Record for debouncing
-
-            // Step 5: Check for newly matched app users to link dues
-            let newlyMatchedAppUsers = matchedContacts.filter { $0.hasAppAccount }
-            if !newlyMatchedAppUsers.isEmpty {
-                await DueLinkingService.shared.linkNewAppUsers(matchedContacts: newlyMatchedAppUsers)
+                // Update UI with each batch (throttled to avoid too many updates)
+                if allContacts.count % 100 == 0 || allContacts.count < 100 {
+                    await MainActor.run {
+                        // Sort by name for display
+                        self.contacts = allContacts.sorted { $0.name < $1.name }
+                    }
+                }
             }
 
-            print("DEBUG: ContactSyncManager sync complete - \(contacts.count) contacts")
+            // 3. Match with server accounts
+            let contactsWithPhones = allContacts.filter { $0.hasPhoneNumber }
+            let matchedContacts = await matchContactsWithAccounts(
+                deviceContacts: allContacts,
+                contactsWithPhones: contactsWithPhones
+            )
+
+            // 4. Final update with matched status
+            contacts = ContactEntry.sortByAccountStatus(matchedContacts)
+            lastSyncDate = Date()
+            lastSyncTimestamp = Date()
+
+            // 5. Cache results
+            await cacheService.cacheContacts(contacts)
 
         } catch {
-            syncError = error
             print("Contact sync error: \(error.localizedDescription)")
+            syncError = error
         }
 
         isSyncing = false
+    }
+
+    /// Full sync of contacts from device and match with Swiff accounts
+    func syncContacts() async {
+        // Redirect to progressive sync
+        await syncContactsProgressively()
     }
 
     // MARK: - Account Matching

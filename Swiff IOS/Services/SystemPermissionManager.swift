@@ -6,13 +6,13 @@
 //  Phase 5.5: Comprehensive system permission handling
 //
 
-import Combine
-import Foundation
 import AVFoundation
-import Photos
-import UserNotifications
-import UIKit
+import Combine
 import Contacts
+import Foundation
+import Photos
+import UIKit
+import UserNotifications
 
 // MARK: - Permission Type
 
@@ -43,7 +43,7 @@ enum PermissionStatus: String {
     case denied = "Denied"
     case notDetermined = "Not Determined"
     case restricted = "Restricted"
-    case limited = "Limited" // For photo library
+    case limited = "Limited"  // For photo library
 
     var isGranted: Bool {
         return self == .authorized || self == .limited
@@ -343,10 +343,15 @@ class SystemPermissionManager: ObservableObject {
         let currentStatus = CNContactStore.authorizationStatus(for: .contacts)
 
         switch currentStatus {
-        case .authorized, .limited:
+        case .authorized:
             contactsStatus = .authorized
             recordPermissionResult(.contacts, status: .authorized)
             return .authorized
+
+        case .limited:
+            contactsStatus = .limited
+            recordPermissionResult(.contacts, status: .limited)
+            return .limited
 
         case .denied:
             contactsStatus = .denied
@@ -359,7 +364,16 @@ class SystemPermissionManager: ObservableObject {
         case .notDetermined:
             do {
                 let granted = try await store.requestAccess(for: .contacts)
-                let status: PermissionStatus = granted ? .authorized : .denied
+                // Re-check status to catch limited access if granted
+                let newStatus = CNContactStore.authorizationStatus(for: .contacts)
+
+                let status: PermissionStatus
+                switch newStatus {
+                case .authorized: status = .authorized
+                case .limited: status = .limited
+                default: status = granted ? .authorized : .denied
+                }
+
                 contactsStatus = status
                 recordPermissionResult(.contacts, status: status)
 
@@ -384,9 +398,12 @@ class SystemPermissionManager: ObservableObject {
         let status = CNContactStore.authorizationStatus(for: .contacts)
 
         switch status {
-        case .authorized, .limited:
+        case .authorized:
             contactsStatus = .authorized
             return .authorized
+        case .limited:
+            contactsStatus = .limited
+            return .limited
         case .denied:
             contactsStatus = .denied
             return .denied
@@ -402,10 +419,20 @@ class SystemPermissionManager: ObservableObject {
         }
     }
 
+    /// Check if we have limited contact access (iOS 18+)
+    var hasLimitedContactAccess: Bool {
+        if #available(iOS 18.0, *) {
+            return contactsStatus == .limited
+        }
+        return false
+    }
+
     // MARK: - Batch Operations
 
     /// Request multiple permissions at once
-    func requestPermissions(_ types: [PermissionType]) async -> [PermissionType: Result<PermissionStatus, Error>] {
+    func requestPermissions(_ types: [PermissionType]) async -> [PermissionType: Result<
+        PermissionStatus, Error
+    >] {
         var results: [PermissionType: Result<PermissionStatus, Error>] = [:]
 
         for type in types {
@@ -449,7 +476,7 @@ class SystemPermissionManager: ObservableObject {
             .camera: cameraStatus,
             .photoLibrary: photoLibraryStatus,
             .notifications: notificationStatus,
-            .contacts: contactsStatus
+            .contacts: contactsStatus,
         ]
     }
 

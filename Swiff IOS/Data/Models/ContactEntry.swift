@@ -9,7 +9,7 @@
 import Foundation
 
 /// Represents a contact from the user's device with app account status
-struct ContactEntry: Identifiable, Equatable, Hashable {
+struct ContactEntry: Identifiable, Equatable, Hashable, Codable {
 
     // MARK: - Properties
 

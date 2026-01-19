@@ -26,7 +26,8 @@ struct AddPersonFromContactsSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Search bar (only show when we have contacts)
-                if permissionManager.contactsStatus == .authorized && !syncManager.contacts.isEmpty {
+                if permissionManager.contactsStatus == .authorized && !syncManager.contacts.isEmpty
+                {
                     searchBar
                         .padding(.horizontal, 16)
                         .padding(.top, 8)
@@ -53,7 +54,7 @@ struct AddPersonFromContactsSheet: View {
                     Button("Done") {
                         isPresented = false
                     }
-                    .font(.spotifyLabelMedium)
+                    .font(Theme.Fonts.labelMedium)
                     .foregroundColor(Theme.Colors.brandPrimary)
                 }
             }
@@ -65,7 +66,7 @@ struct AddPersonFromContactsSheet: View {
             // FIX 1.1: Use debounced sync to avoid redundant syncs
             if permissionManager.contactsStatus == .authorized {
                 Task {
-                    await syncManager.syncContactsIfNeeded()
+                    await syncManager.loadContactsWithCache()  // Changed from syncContactsIfNeeded()
                 }
             }
         }
@@ -113,27 +114,27 @@ struct AddPersonFromContactsSheet: View {
     // MARK: - Search Bar
 
     private var searchBar: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: Theme.Metrics.paddingSmall) {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(Theme.Colors.textSecondary)
-                .font(.system(size: 16))
+                .font(.system(size: Theme.Metrics.iconSizeSmall))
 
             TextField("Search contacts...", text: $searchText)
-                .font(.spotifyBodyMedium)
+                .font(Theme.Fonts.bodyLarge)
                 .foregroundColor(Theme.Colors.textPrimary)
 
             if !searchText.isEmpty {
                 Button(action: { searchText = "" }) {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(Theme.Colors.textTertiary)
-                        .font(.system(size: 16))
+                        .font(.system(size: Theme.Metrics.iconSizeSmall))
                 }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, Theme.Metrics.paddingMedium)
+        .padding(.vertical, Theme.Metrics.paddingSmall)
         .background(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
                 .fill(Theme.Colors.secondaryBackground)
         )
     }
@@ -141,30 +142,59 @@ struct AddPersonFromContactsSheet: View {
     // MARK: - Authorized Content (Has Permission)
 
     private var authorizedContent: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                // Manual Entry Row (Always at top)
+        List {
+            // Manual Entry Row (Always at top)
+            Section {
                 manualEntryRow
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+            }
 
-                Divider()
-                    .padding(.leading, 16)
-
-                // Loading state
-                if syncManager.isSyncing && syncManager.contacts.isEmpty {
-                    loadingView
-                } else if filteredContacts.isEmpty && debouncedSearchText.isEmpty {
-                    // No contacts on device
-                    emptyContactsView
-                } else if filteredContacts.isEmpty && !debouncedSearchText.isEmpty {
-                    // No search results
-                    noSearchResultsView
-                } else {
-                    // Contacts sections
-                    contactsSections
+            // iOS 18 Limited Access Button
+            if #available(iOS 18.0, *), permissionManager.hasLimitedContactAccess {
+                Section {
+                    ContactAccessButtonView { identifiers in
+                        // When new contacts are selected, refresh triggers automatically via change observer
+                        // But we can also force a sync just in case
+                        print("User selected \(identifiers.count) more contacts")
+                        Task {
+                            await syncManager.refreshContacts()
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
                 }
             }
-            .padding(.bottom, 40)
+
+            // Loading state
+            if syncManager.isSyncing && syncManager.contacts.isEmpty {
+                Section {
+                    loadingView
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                }
+            } else if filteredContacts.isEmpty && debouncedSearchText.isEmpty {
+                // No contacts on device
+                Section {
+                    emptyContactsView
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                }
+            } else if filteredContacts.isEmpty && !debouncedSearchText.isEmpty {
+                // No search results
+                Section {
+                    noSearchResultsView
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                }
+            } else {
+                // Contacts sections
+                contactsSections
+            }
         }
+        .listStyle(.plain)
         .refreshable {
             await syncManager.refreshContacts()
         }
@@ -174,25 +204,25 @@ struct AddPersonFromContactsSheet: View {
 
     private var manualEntryRow: some View {
         Button(action: { showingManualEntry = true }) {
-            HStack(spacing: 14) {
+            HStack(spacing: Theme.Metrics.paddingMedium) {
                 // Icon
                 Circle()
-                    .fill(Theme.Colors.brandPrimary.opacity(0.15))
-                    .frame(width: 48, height: 48)
+                    .fill(Theme.Colors.brandPrimary.opacity(Theme.Opacity.faint))
+                    .frame(width: Theme.Metrics.avatarMedium, height: Theme.Metrics.avatarMedium)
                     .overlay(
                         Image(systemName: "person.badge.plus")
-                            .font(.system(size: 20, weight: .medium))
+                            .font(.system(size: Theme.Metrics.iconSizeMedium, weight: .medium))
                             .foregroundColor(Theme.Colors.brandPrimary)
                     )
 
                 // Text
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Enter manually")
-                        .font(.spotifyBodyLarge)
+                        .font(Theme.Fonts.bodyLarge)
                         .foregroundColor(Theme.Colors.textPrimary)
 
                     Text("Add name, email, or phone")
-                        .font(.spotifyBodySmall)
+                        .font(Theme.Fonts.bodySmall)
                         .foregroundColor(Theme.Colors.textSecondary)
                 }
 
@@ -202,8 +232,8 @@ struct AddPersonFromContactsSheet: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(Theme.Colors.textTertiary)
             }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .padding(.horizontal, Theme.Metrics.paddingMedium)
         }
         .buttonStyle(PlainButtonStyle())
         .background(Theme.Colors.cardBackground)
@@ -212,22 +242,23 @@ struct AddPersonFromContactsSheet: View {
     // MARK: - Contacts Sections
 
     private var contactsSections: some View {
-        VStack(spacing: 0) {
+        SwiftUI.Group {
             // On Swiff Section
             let onSwiffContacts = filteredContacts.filter { $0.hasAppAccount }
             if !onSwiffContacts.isEmpty {
-                ContactImportSectionHeader(title: "On Swiff", count: onSwiffContacts.count, color: Theme.Colors.success)
-
-                ForEach(onSwiffContacts) { contact in
-                    ContactImportRow(
-                        contact: contact,
-                        onAdd: { handleContactSelection(contact) },
-                        onInvite: nil
+                Section(
+                    header: ContactImportSectionHeader(
+                        title: "On Swiff", count: onSwiffContacts.count, color: Theme.Colors.success
                     )
-
-                    if contact.id != onSwiffContacts.last?.id {
-                        Divider()
-                            .padding(.leading, 76)
+                ) {
+                    ForEach(onSwiffContacts) { contact in
+                        ContactImportRow(
+                            contact: contact,
+                            onAdd: { handleContactSelection(contact) },
+                            onInvite: nil
+                        )
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
                     }
                 }
             }
@@ -235,48 +266,44 @@ struct AddPersonFromContactsSheet: View {
             // Invite to Swiff Section
             let inviteContacts = filteredContacts.filter { !$0.hasAppAccount && $0.hasPhoneNumber }
             if !inviteContacts.isEmpty {
-                if !onSwiffContacts.isEmpty {
-                    Divider()
-                        .padding(.top, 8)
-                }
-
-                ContactImportSectionHeader(title: "Invite to Swiff", count: inviteContacts.count, color: Theme.Colors.info)
-
-                ForEach(inviteContacts) { contact in
-                    ContactImportRow(
-                        contact: contact,
-                        onAdd: { handleContactSelection(contact) },
-                        onInvite: {
-                            contactToInvite = contact
-                            showingInviteSheet = true
-                        }
-                    )
-
-                    if contact.id != inviteContacts.last?.id {
-                        Divider()
-                            .padding(.leading, 76)
+                Section(
+                    header: ContactImportSectionHeader(
+                        title: "Invite to Swiff", count: inviteContacts.count,
+                        color: Theme.Colors.info)
+                ) {
+                    ForEach(inviteContacts) { contact in
+                        ContactImportRow(
+                            contact: contact,
+                            onAdd: { handleContactSelection(contact) },
+                            onInvite: {
+                                contactToInvite = contact
+                                showingInviteSheet = true
+                            }
+                        )
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
                     }
                 }
             }
 
             // Contacts without phone (can still add but can't invite)
-            let noPhoneContacts = filteredContacts.filter { !$0.hasAppAccount && !$0.hasPhoneNumber }
+            let noPhoneContacts = filteredContacts.filter {
+                !$0.hasAppAccount && !$0.hasPhoneNumber
+            }
             if !noPhoneContacts.isEmpty {
-                Divider()
-                    .padding(.top, 8)
-
-                ContactImportSectionHeader(title: "Other Contacts", count: noPhoneContacts.count, color: Theme.Colors.textTertiary)
-
-                ForEach(noPhoneContacts) { contact in
-                    ContactImportRow(
-                        contact: contact,
-                        onAdd: { handleContactSelection(contact) },
-                        onInvite: nil
-                    )
-
-                    if contact.id != noPhoneContacts.last?.id {
-                        Divider()
-                            .padding(.leading, 76)
+                Section(
+                    header: ContactImportSectionHeader(
+                        title: "Other Contacts", count: noPhoneContacts.count,
+                        color: Theme.Colors.textTertiary)
+                ) {
+                    ForEach(noPhoneContacts) { contact in
+                        ContactImportRow(
+                            contact: contact,
+                            onAdd: { handleContactSelection(contact) },
+                            onInvite: nil
+                        )
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
                     }
                 }
             }
@@ -318,14 +345,16 @@ struct AddPersonFromContactsSheet: View {
                 }
 
                 Text("Contacts Access Denied")
-                    .font(.spotifyHeadingMedium)
+                    .font(Theme.Fonts.displayMedium)
                     .foregroundColor(Theme.Colors.textPrimary)
 
-                Text("Enable contacts access in Settings to see your contacts here, or add people manually above.")
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(Theme.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
+                Text(
+                    "Enable contacts access in Settings to see your contacts here, or add people manually above."
+                )
+                .font(Theme.Fonts.bodyMedium)
+                .foregroundColor(Theme.Colors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
 
                 Button(action: { permissionManager.openAppSettings() }) {
                     HStack {
@@ -373,27 +402,31 @@ struct AddPersonFromContactsSheet: View {
                 }
 
                 Text("See Your Contacts")
-                    .font(.spotifyHeadingMedium)
+                    .font(Theme.Fonts.displayMedium)
                     .foregroundColor(Theme.Colors.textPrimary)
 
-                Text("Allow access to see which contacts are on Swiff and easily add them to your people list.")
-                    .font(.spotifyBodyMedium)
-                    .foregroundColor(Theme.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
+                Text(
+                    "Allow access to see which contacts are on Swiff and easily add them to your people list."
+                )
+                .font(Theme.Fonts.bodyMedium)
+                .foregroundColor(Theme.Colors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
 
                 Button(action: requestPermission) {
                     HStack {
                         if isRequestingPermission {
                             ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: Theme.Colors.textOnPrimary))
+                                .progressViewStyle(
+                                    CircularProgressViewStyle(tint: Theme.Colors.textOnPrimary)
+                                )
                                 .scaleEffect(0.8)
                         } else {
                             Image(systemName: "person.2.fill")
                             Text("Allow Access")
                         }
                     }
-                    .font(.spotifyLabelLarge)
+                    .font(Theme.Fonts.labelLarge)
                     .foregroundColor(Theme.Colors.textOnPrimary)
                     .frame(width: 200)
                     .padding(.vertical, 14)
@@ -416,7 +449,7 @@ struct AddPersonFromContactsSheet: View {
             ProgressView()
                 .scaleEffect(1.2)
             Text("Loading contacts...")
-                .font(.spotifyBodyMedium)
+                .font(Theme.Fonts.bodyMedium)
                 .foregroundColor(Theme.Colors.textSecondary)
             Spacer()
         }
@@ -432,11 +465,11 @@ struct AddPersonFromContactsSheet: View {
                 .foregroundColor(Theme.Colors.textTertiary)
 
             Text("No contacts found")
-                .font(.spotifyBodyLarge)
+                .font(Theme.Fonts.bodyLarge)
                 .foregroundColor(Theme.Colors.textSecondary)
 
             Text("Add contacts to your phone's address book to see them here.")
-                .font(.spotifyBodySmall)
+                .font(Theme.Fonts.bodySmall)
                 .foregroundColor(Theme.Colors.textTertiary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -455,16 +488,16 @@ struct AddPersonFromContactsSheet: View {
                 .foregroundColor(Theme.Colors.textTertiary)
 
             Text("No results for \"\(searchText)\"")
-                .font(.spotifyBodyLarge)
+                .font(Theme.Fonts.bodyLarge)
                 .foregroundColor(Theme.Colors.textSecondary)
 
             Text("Try a different search or add manually")
-                .font(.spotifyBodySmall)
+                .font(Theme.Fonts.bodySmall)
                 .foregroundColor(Theme.Colors.textTertiary)
 
             Button(action: { showingManualEntry = true }) {
                 Text("Add manually")
-                    .font(.spotifyLabelMedium)
+                    .font(Theme.Fonts.labelMedium)
                     .foregroundColor(Theme.Colors.brandPrimary)
             }
             .padding(.top, 4)
@@ -541,20 +574,20 @@ struct ContactImportSectionHeader: View {
         HStack(spacing: 6) {
             Circle()
                 .fill(color)
-                .frame(width: 8, height: 8)
+                .frame(width: Theme.Metrics.paddingSmall, height: Theme.Metrics.paddingSmall)
 
             Text(title)
-                .font(.spotifyLabelMedium)
+                .font(Theme.Fonts.labelMedium)
                 .foregroundColor(Theme.Colors.textSecondary)
 
             Text("(\(count))")
-                .font(.spotifyCaptionMedium)
+                .font(Theme.Fonts.captionMedium)
                 .foregroundColor(Theme.Colors.textTertiary)
 
             Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, Theme.Metrics.paddingMedium)
+        .padding(.vertical, Theme.Metrics.paddingSmall)
         .background(Theme.Colors.background)
     }
 }
@@ -567,25 +600,25 @@ struct ContactImportRow: View {
     let onInvite: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Theme.Metrics.paddingMedium) {
             // Avatar
-            ContactAvatarView(contact: contact, size: 48)
+            ContactAvatarView(contact: contact, size: Theme.Metrics.avatarMedium)
 
             // Name and Phone
             VStack(alignment: .leading, spacing: 2) {
                 Text(contact.name)
-                    .font(.spotifyBodyLarge)
+                    .font(Theme.Fonts.bodyLarge)
                     .foregroundColor(Theme.Colors.textPrimary)
                     .lineLimit(1)
 
                 if let phone = contact.primaryPhone {
                     Text(formatPhoneForDisplay(phone))
-                        .font(.spotifyBodySmall)
+                        .font(Theme.Fonts.bodySmall)
                         .foregroundColor(Theme.Colors.textSecondary)
                         .lineLimit(1)
                 } else if let email = contact.email {
                     Text(email)
-                        .font(.spotifyBodySmall)
+                        .font(Theme.Fonts.bodySmall)
                         .foregroundColor(Theme.Colors.textSecondary)
                         .lineLimit(1)
                 }
@@ -599,7 +632,7 @@ struct ContactImportRow: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 12))
                     Text("On Swiff")
-                        .font(.spotifyCaptionMedium)
+                        .font(Theme.Fonts.captionMedium)
                 }
                 .foregroundColor(Theme.Colors.success)
                 .padding(.trailing, 4)
@@ -609,12 +642,12 @@ struct ContactImportRow: View {
             if let onInvite = onInvite, !contact.hasAppAccount && contact.canBeInvited {
                 Button(action: onInvite) {
                     Text("Invite")
-                        .font(.spotifyCaptionMedium)
+                        .font(Theme.Fonts.labelSmall)
                         .foregroundColor(Theme.Colors.info)
-                        .padding(.horizontal, 12)
+                        .padding(.horizontal, Theme.Metrics.paddingMedium)
                         .padding(.vertical, 6)
-                        .background(Theme.Colors.info.opacity(0.1))
-                        .cornerRadius(14)
+                        .background(Theme.Colors.info.opacity(Theme.Opacity.faint))
+                        .clipShape(Capsule())
                 }
                 .buttonStyle(PlainButtonStyle())
             }
@@ -622,13 +655,13 @@ struct ContactImportRow: View {
             // Add Button
             Button(action: onAdd) {
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 28))
+                    .font(.system(size: Theme.Metrics.iconSizeLarge))
                     .foregroundColor(Theme.Colors.brandPrimary)
             }
             .buttonStyle(PlainButtonStyle())
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .padding(.horizontal, Theme.Metrics.paddingMedium)
         .background(Theme.Colors.cardBackground)
         .contentShape(Rectangle())
         .onTapGesture {
