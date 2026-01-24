@@ -80,6 +80,7 @@ struct ConversationInputView: View {
                     icon: action.icon,
                     color: action.color,
                     isFlexible: true,
+                    accessibilityHintText: action.accessibilityHint,
                     action: action.action
                 )
             }
@@ -124,6 +125,8 @@ struct ConversationInputView: View {
                     sendMessage()
                 }
             }
+            .accessibilityLabel("Message input")
+            .accessibilityHint("Type a message to send")
     }
 
     // MARK: - Send Button
@@ -139,6 +142,8 @@ struct ConversationInputView: View {
         }
         .disabled(!canSend)
         .buttonStyle(ScaleButtonStyle())
+        .accessibilityLabel(canSend ? "Send message" : "Send disabled")
+        .accessibilityHint(canSend ? "Double tap to send your message" : "Enter text to enable sending")
     }
 
     // MARK: - Actions
@@ -209,6 +214,18 @@ enum ConversationInputAction: Identifiable {
         case .iOwe: return .wiseBlue
         case .splitBill: return .purple
         case .settle: return .wiseWarning
+        }
+    }
+
+    var accessibilityHint: String {
+        switch self {
+        case .addTransaction: return "Create a new payment or split"
+        case .remind: return "Send a payment reminder to this person"
+        case .settleUp: return "Mark the outstanding balance as paid"
+        case .theyOweMe: return "Record money owed to you"
+        case .iOwe: return "Record money you owe"
+        case .splitBill: return "Split a bill among multiple people"
+        case .settle: return "Settle the outstanding balance"
         }
     }
 
@@ -329,9 +346,9 @@ struct SimpleConversationInput: View {
             onSend: { message in print("Send: \(message)") },
             onAddTransaction: { print("Add transaction") },
             additionalActions: [
-                .theyOweMe { print("They owe me") },
-                .iOwe { print("I owe") },
-                .splitBill { print("Split bill") },
+                .addTransaction { print("Add transaction") },
+                .remind { print("Remind") },
+                .settleUp { print("Settle up") },
             ]
         )
     }
