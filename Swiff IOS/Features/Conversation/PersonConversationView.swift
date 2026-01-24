@@ -18,20 +18,61 @@ struct PersonConversationView: View {
     let person: Person?
     let group: Group?
     let members: [Person]
-    
+
     // State
     @State private var messageText: String = ""
     @FocusState private var isMessageFieldFocused: Bool
     @State private var showingTransactionSheet: Bool = false
-    
+    @State private var showingReminderSheet: Bool = false
+    @State private var showingSettleConfirmation: Bool = false
+
     // Callbacks
     var onBack: (() -> Void)?
     var onInfo: (() -> Void)?
     var onSendMessage: ((String) -> Void)?
     var onAddTransaction: (() -> Void)?
-    
+
     // Mock data for demo
     @State private var conversationItems: [ConversationItem] = []
+
+    // MARK: - Computed Properties
+
+    /// Returns the current balance amount for this conversation
+    private var currentBalance: Double {
+        person?.balance ?? 0
+    }
+
+    /// Determines if there's a balance that can be settled
+    private var hasSettleableBalance: Bool {
+        currentBalance != 0
+    }
+
+    /// Action buttons for the input area based on conversation type
+    private var conversationActions: [ConversationInputAction] {
+        var actions: [ConversationInputAction] = []
+
+        // Add transaction button (always present)
+        actions.append(.addTransaction {
+            showingTransactionSheet = true
+            onAddTransaction?()
+        })
+
+        // Remind button (only for person conversations with balance)
+        if person != nil && currentBalance != 0 {
+            actions.append(.remind {
+                showingReminderSheet = true
+            })
+        }
+
+        // Settle button (only when there's a balance to settle)
+        if hasSettleableBalance {
+            actions.append(.settleUp {
+                showingSettleConfirmation = true
+            })
+        }
+
+        return actions
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -52,30 +93,59 @@ struct PersonConversationView: View {
                     onInfo: onInfo
                 )
             }
-            
+
             // Timeline with messages and transactions
             ConversationTimelineView(
                 items: conversationItems
             )
-            
-            // Input bar
-            ConversationInputBarWrapper(
-                onSendMessage: { text in
+
+            // Input bar with action buttons
+            ConversationInputView(
+                messageText: $messageText,
+                placeholder: "iMessage",
+                onSend: { text in
                     handleSendMessage(text)
                 },
                 onAddTransaction: {
                     showingTransactionSheet = true
                     onAddTransaction?()
                 },
-                onScrollToBottom: {
-                    // Scroll to bottom logic
-                }
+                additionalActions: conversationActions
             )
         }
         .background(Color.wiseBackground)
         .navigationBarHidden(true)
         .onAppear {
             loadMockData()
+        }
+        // MARK: - Sheet Presentations
+        .sheet(isPresented: $showingReminderSheet) {
+            if let person = person {
+                SendReminderSheet(
+                    person: person,
+                    onReminderSent: {
+                        handleReminderSent()
+                    }
+                )
+            }
+        }
+        // MARK: - Settle Confirmation Alert
+        .alert("Settle Balance", isPresented: $showingSettleConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Settle") {
+                handleSettle()
+            }
+        } message: {
+            if let person = person {
+                let amountStr = abs(currentBalance).asCurrency
+                if currentBalance > 0 {
+                    Text("Mark \(person.name)'s balance of \(amountStr) as paid?")
+                } else {
+                    Text("Mark your balance of \(amountStr) to \(person.name) as paid?")
+                }
+            } else {
+                Text("Mark this balance as settled?")
+            }
         }
     }
     
@@ -96,7 +166,35 @@ struct PersonConversationView: View {
         conversationItems.append(newMessage)
         onSendMessage?(text)
     }
-    
+
+    private func handleReminderSent() {
+        HapticManager.shared.success()
+        // Add system message to conversation
+        let systemMessage = ConversationItem.systemMessage(
+            id: UUID(),
+            message: "Reminder sent",
+            icon: "bell.fill",
+            timestamp: Date()
+        )
+        conversationItems.append(systemMessage)
+    }
+
+    private func handleSettle() {
+        HapticManager.shared.success()
+        // Add system message to conversation
+        let amountStr = abs(currentBalance).asCurrency
+        let systemMessage = ConversationItem.systemMessage(
+            id: UUID(),
+            message: "Balance of \(amountStr) settled",
+            icon: "checkmark.circle.fill",
+            timestamp: Date()
+        )
+        conversationItems.append(systemMessage)
+
+        // Note: In a real implementation, this would update the person's balance
+        // through the DataManager. For now, this is a visual-only demo.
+    }
+
     private func loadMockData() {
         conversationItems = [
             .message(

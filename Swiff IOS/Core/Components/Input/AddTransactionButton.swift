@@ -48,6 +48,8 @@ struct AddTransactionButton: View {
             }
         }
         .buttonStyle(ScaleButtonStyle())
+        .accessibilityLabel("Add transaction")
+        .accessibilityHint("Create a new payment or split")
     }
 }
 
@@ -90,6 +92,7 @@ struct QuickActionPill: View {
     let icon: String
     let color: Color
     var isFlexible: Bool = false
+    var accessibilityHintText: String? = nil
     let action: () -> Void
 
     var body: some View {
@@ -114,6 +117,8 @@ struct QuickActionPill: View {
             .clipShape(Capsule())
         }
         .buttonStyle(ScaleButtonStyle())
+        .accessibilityLabel(title)
+        .accessibilityHint(accessibilityHintText ?? "Double tap to \(title.lowercased())")
     }
 }
 
