@@ -19,7 +19,7 @@ struct AnalyticsConfiguration: Sendable {
     let trackUserIDs: Bool
     let trackSessionIDs: Bool
 
-    static let `default` = AnalyticsConfiguration(
+    nonisolated static let `default` = AnalyticsConfiguration(
         maxEventsStored: 10000,
         retentionDays: 30,
         patternDetectionThreshold: 5,
@@ -28,7 +28,7 @@ struct AnalyticsConfiguration: Sendable {
         trackSessionIDs: true
     )
 
-    static let debug = AnalyticsConfiguration(
+    nonisolated static let debug = AnalyticsConfiguration(
         maxEventsStored: 1000,
         retentionDays: 7,
         patternDetectionThreshold: 3,
@@ -37,7 +37,7 @@ struct AnalyticsConfiguration: Sendable {
         trackSessionIDs: true
     )
 
-    static let production = AnalyticsConfiguration(
+    nonisolated static let production = AnalyticsConfiguration(
         maxEventsStored: 50000,
         retentionDays: 90,
         patternDetectionThreshold: 10,
@@ -55,21 +55,21 @@ struct NetworkRetryConfiguration: Sendable {
     let maxDelay: TimeInterval
     let multiplier: Double
 
-    static let `default` = NetworkRetryConfiguration(
+    nonisolated static let `default` = NetworkRetryConfiguration(
         maxRetries: 3,
         baseDelay: 1.0,
         maxDelay: 10.0,
         multiplier: 2.0
     )
 
-    static let aggressive = NetworkRetryConfiguration(
+    nonisolated static let aggressive = NetworkRetryConfiguration(
         maxRetries: 5,
         baseDelay: 0.5,
         maxDelay: 5.0,
         multiplier: 1.5
     )
 
-    static let conservative = NetworkRetryConfiguration(
+    nonisolated static let conservative = NetworkRetryConfiguration(
         maxRetries: 2,
         baseDelay: 2.0,
         maxDelay: 15.0,

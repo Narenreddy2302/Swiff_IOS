@@ -253,7 +253,7 @@ class ErrorAnalytics {
 
     // MARK: - Singleton
 
-    nonisolated(unsafe) static let shared = ErrorAnalytics()
+    static let shared = ErrorAnalytics()
 
     // MARK: - Properties
 

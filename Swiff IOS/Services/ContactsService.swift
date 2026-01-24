@@ -43,11 +43,6 @@ class ContactsService: ObservableObject {
         CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
     ]
 
-    /// Keys for thumbnail fetch only (used by lazy loading cache)
-    static let thumbnailKeys: [CNKeyDescriptor] = [
-        CNContactThumbnailImageDataKey as CNKeyDescriptor
-    ]
-
     // MARK: - Pagination Configuration
 
     /// Configuration for paginated contact fetching
@@ -57,7 +52,7 @@ class ContactsService: ObservableObject {
 
         nonisolated init() {}
 
-        static let `default` = FetchConfig()
+        nonisolated static let `default` = FetchConfig()
     }
 
     // MARK: - Initialization
@@ -274,10 +269,12 @@ class ContactsService: ObservableObject {
         guard hasPermission else { return nil }
 
         return await Task.detached {
+            let keys: [CNKeyDescriptor] = [CNContactThumbnailImageDataKey as CNKeyDescriptor]
+            let store = CNContactStore()
             do {
-                let contact = try self.store.unifiedContact(
+                let contact = try store.unifiedContact(
                     withIdentifier: contactId,
-                    keysToFetch: ContactsService.thumbnailKeys
+                    keysToFetch: keys
                 )
                 return contact.thumbnailImageData
             } catch {

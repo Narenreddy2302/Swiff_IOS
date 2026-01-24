@@ -14,10 +14,67 @@ struct PhoneNumberNormalizer: Sendable {
     // MARK: - Default Country Code
 
     /// Get default country calling code based on device locale
-    static var defaultCountryCode: String {
+    nonisolated static var defaultCountryCode: String {
         guard let regionCode = Locale.current.region?.identifier else {
             return "+1"  // Default to US
         }
+
+        let countryCallingCodes: [String: String] = [
+            "US": "+1",
+            "CA": "+1",
+            "GB": "+44",
+            "AU": "+61",
+            "DE": "+49",
+            "FR": "+33",
+            "IN": "+91",
+            "JP": "+81",
+            "CN": "+86",
+            "BR": "+55",
+            "MX": "+52",
+            "ES": "+34",
+            "IT": "+39",
+            "NL": "+31",
+            "BE": "+32",
+            "CH": "+41",
+            "AT": "+43",
+            "SE": "+46",
+            "NO": "+47",
+            "DK": "+45",
+            "FI": "+358",
+            "PL": "+48",
+            "RU": "+7",
+            "KR": "+82",
+            "SG": "+65",
+            "HK": "+852",
+            "TW": "+886",
+            "NZ": "+64",
+            "ZA": "+27",
+            "AE": "+971",
+            "SA": "+966",
+            "IL": "+972",
+            "PH": "+63",
+            "TH": "+66",
+            "MY": "+60",
+            "ID": "+62",
+            "VN": "+84",
+            "PK": "+92",
+            "BD": "+880",
+            "NG": "+234",
+            "EG": "+20",
+            "AR": "+54",
+            "CL": "+56",
+            "CO": "+57",
+            "PE": "+51",
+            "VE": "+58",
+            "IE": "+353",
+            "PT": "+351",
+            "GR": "+30",
+            "CZ": "+420",
+            "RO": "+40",
+            "HU": "+36",
+            "UA": "+380",
+            "TR": "+90",
+        ]
 
         return countryCallingCodes[regionCode] ?? "+1"
     }
@@ -27,7 +84,7 @@ struct PhoneNumberNormalizer: Sendable {
     /// Normalize a phone number to E.164 format
     /// - Parameter phoneNumber: Raw phone number in any format
     /// - Returns: Normalized phone number (e.g., +12345678901)
-    static func normalize(_ phoneNumber: String) -> String {
+    nonisolated static func normalize(_ phoneNumber: String) -> String {
         // Remove all non-digit characters except leading +
         var cleaned = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -65,7 +122,7 @@ struct PhoneNumberNormalizer: Sendable {
     /// Normalize multiple phone numbers
     /// - Parameter phoneNumbers: Array of raw phone numbers
     /// - Returns: Array of normalized phone numbers (non-empty only)
-    static func normalize(_ phoneNumbers: [String]) -> [String] {
+    nonisolated static func normalize(_ phoneNumbers: [String]) -> [String] {
         return
             phoneNumbers
             .map { normalize($0) }
@@ -73,7 +130,7 @@ struct PhoneNumberNormalizer: Sendable {
     }
 
     /// Check if two phone numbers are equal after normalization
-    static func areEqual(_ phone1: String, _ phone2: String) -> Bool {
+    nonisolated static func areEqual(_ phone1: String, _ phone2: String) -> Bool {
         let normalized1 = normalize(phone1)
         let normalized2 = normalize(phone2)
         return !normalized1.isEmpty && normalized1 == normalized2
@@ -101,7 +158,9 @@ struct PhoneNumberNormalizer: Sendable {
     /// Hash multiple phone numbers
     /// - Parameter phoneNumbers: Array of phone numbers to hash
     /// - Returns: Array of (normalized, hash) tuples for non-empty numbers
-    static func hashAll(_ phoneNumbers: [String]) -> [(normalized: String, hash: String)] {
+    nonisolated static func hashAll(_ phoneNumbers: [String]) -> [(
+        normalized: String, hash: String
+    )] {
         return phoneNumbers.compactMap { phone in
             let normalized = normalize(phone)
             guard !normalized.isEmpty else { return nil }
@@ -109,63 +168,4 @@ struct PhoneNumberNormalizer: Sendable {
         }
     }
 
-    // MARK: - Country Codes
-
-    /// Common country calling codes
-    private static let countryCallingCodes: [String: String] = [
-        "US": "+1",
-        "CA": "+1",
-        "GB": "+44",
-        "AU": "+61",
-        "DE": "+49",
-        "FR": "+33",
-        "IN": "+91",
-        "JP": "+81",
-        "CN": "+86",
-        "BR": "+55",
-        "MX": "+52",
-        "ES": "+34",
-        "IT": "+39",
-        "NL": "+31",
-        "BE": "+32",
-        "CH": "+41",
-        "AT": "+43",
-        "SE": "+46",
-        "NO": "+47",
-        "DK": "+45",
-        "FI": "+358",
-        "PL": "+48",
-        "RU": "+7",
-        "KR": "+82",
-        "SG": "+65",
-        "HK": "+852",
-        "TW": "+886",
-        "NZ": "+64",
-        "ZA": "+27",
-        "AE": "+971",
-        "SA": "+966",
-        "IL": "+972",
-        "PH": "+63",
-        "TH": "+66",
-        "MY": "+60",
-        "ID": "+62",
-        "VN": "+84",
-        "PK": "+92",
-        "BD": "+880",
-        "NG": "+234",
-        "EG": "+20",
-        "AR": "+54",
-        "CL": "+56",
-        "CO": "+57",
-        "PE": "+51",
-        "VE": "+58",
-        "IE": "+353",
-        "PT": "+351",
-        "GR": "+30",
-        "CZ": "+420",
-        "RO": "+40",
-        "HU": "+36",
-        "UA": "+380",
-        "TR": "+90",
-    ]
 }

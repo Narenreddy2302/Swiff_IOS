@@ -14,7 +14,7 @@ import UIKit
 // MARK: - Avatar System
 
 /// Avatar Type - Supports multiple avatar sources
-public enum AvatarType: Codable, Equatable {
+public enum AvatarType: Codable, Equatable, Sendable {
     case photo(Data)  // Photo from library or camera
     case emoji(String)  // Emoji character
     case initials(String, colorIndex: Int)  // Generated from name
