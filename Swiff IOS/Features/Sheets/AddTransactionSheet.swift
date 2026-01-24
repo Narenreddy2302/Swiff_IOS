@@ -91,31 +91,46 @@ struct AddTransactionSheet: View {
 
     // MARK: - Subviews
 
-    /// Header with navigation and step indicator
+    /// Header with navigation, title, and step indicator
     private var sheetHeader: some View {
-        HStack {
-            // Left: Close or Back
-            Button(action: {
-                HapticManager.shared.selection()
-                if viewModel.currentStep > 1 {
-                    withAnimation(.smooth) {
-                        viewModel.goToPreviousStep()
+        VStack(spacing: Theme.Metrics.paddingSmall) {
+            // Title Row
+            HStack {
+                // Left: Close or Back Button
+                Button(action: {
+                    HapticManager.shared.selection()
+                    if viewModel.currentStep > 1 {
+                        withAnimation(.smooth) {
+                            viewModel.goToPreviousStep()
+                        }
+                    } else {
+                        showingAddTransactionSheet = false
+                        viewModel.reset()
                     }
-                } else {
-                    showingAddTransactionSheet = false
-                    viewModel.reset()
+                }) {
+                    Image(systemName: viewModel.currentStep > 1 ? "arrow.left" : "xmark")
+                        .font(.system(size: Theme.Metrics.iconSizeMedium, weight: .medium))
+                        .foregroundColor(Theme.Colors.textSecondary)
+                        .frame(width: Theme.Metrics.minTapTarget, height: Theme.Metrics.minTapTarget)
+                        .contentShape(Rectangle())
                 }
-            }) {
-                Image(systemName: viewModel.currentStep > 1 ? "arrow.left" : "xmark")
-                    .font(.system(size: Theme.Metrics.iconSizeMedium))
-                    .foregroundColor(Theme.Colors.textSecondary)
-                    .contentShape(Rectangle())
+                .accessibilityLabel(viewModel.currentStep > 1 ? "Go back" : "Close")
+
+                Spacer()
+
+                // Center: Dynamic Title
+                Text(stepTitle)
+                    .font(Theme.Fonts.headerMedium)
+                    .foregroundColor(Theme.Colors.textPrimary)
+
+                Spacer()
+
+                // Right: Spacer for centering
+                Color.clear
+                    .frame(width: Theme.Metrics.minTapTarget, height: Theme.Metrics.minTapTarget)
             }
-            .accessibilityLabel(viewModel.currentStep > 1 ? "Go back" : "Close")
 
-            Spacer()
-
-            // Center: Step Indicator
+            // Step Indicator Row
             HStack(spacing: Theme.Metrics.paddingSmall) {
                 ForEach(1...3, id: \.self) { step in
                     Circle()
@@ -129,14 +144,20 @@ struct AddTransactionSheet: View {
                 }
             }
             .accessibilityLabel("Step \(viewModel.currentStep) of 3")
-
-            Spacer()
-
-            // Right: Balance placeholder (to center the dots)
-            Color.clear.frame(width: Theme.Metrics.iconSizeMedium)
         }
         .padding(.horizontal, Theme.Metrics.paddingMedium)
-        .padding(.vertical, Theme.Metrics.paddingSmall)
+        .padding(.top, Theme.Metrics.paddingSmall)
+        .padding(.bottom, Theme.Metrics.paddingMedium)
+    }
+
+    /// Dynamic title based on current step
+    private var stepTitle: String {
+        switch viewModel.currentStep {
+        case 1: return "New Transaction"
+        case 2: return "Split Options"
+        case 3: return "Split Details"
+        default: return "New Transaction"
+        }
     }
     /// TabView-based step content with smooth transitions
     private var stepContent: some View {

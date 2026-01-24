@@ -40,7 +40,7 @@ struct Step1BasicDetailsView: View {
                     // Hero Amount Input
                     heroAmountSection
                         .id("amountField")
-                        .padding(.top, Theme.Metrics.paddingLarge)
+                        .padding(.top, Theme.Metrics.paddingSmall)
 
                     // Form Fields
                     VStack(spacing: Theme.Metrics.paddingMedium) {

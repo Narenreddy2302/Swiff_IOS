@@ -8,14 +8,6 @@
 
 import SwiftUI
 
-// MARK: - Bubble Direction
-
-enum iMessageBubbleDirection: Sendable {
-    case incoming  // Left-aligned (gray) - other person
-    case outgoing  // Right-aligned (blue) - current user
-    case center  // Centered (system messages)
-}
-
 // MARK: - iMessage Bubble Shape
 
 struct iMessageBubbleShape: Shape {
