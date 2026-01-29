@@ -448,7 +448,7 @@ struct EnhancedPersonalSubscriptionsView: View {
                 EmptySubscriptionsView()
             } else {
                 ScrollView {
-                    // List View - Edge-to-edge like Feed
+                    // WhatsApp-style conversation list
                     VStack(spacing: 0) {
                         ForEach(Array(subscriptions.enumerated()), id: \.element.id) {
                             index, subscription in
@@ -456,17 +456,17 @@ struct EnhancedPersonalSubscriptionsView: View {
                                 destination: SubscriptionDetailView(
                                     subscriptionId: subscription.id)
                             ) {
-                                FeedSubscriptionRow(
-                                    subscription: subscription,
-                                    people: dataManager.people
+                                SubscriptionConversationListRow(
+                                    subscription: subscription
                                 )
+                                .environmentObject(dataManager)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .padding(.horizontal, 16)
 
-                            // Add divider between items (not after the last one)
+                            // WhatsApp-style indented divider
                             if index < subscriptions.count - 1 {
-                                FeedRowDivider()
+                                ConversationRowDivider()
                             }
                         }
                     }
@@ -774,7 +774,7 @@ struct EnhancedSharedSubscriptionsView: View {
             if sharedSubscriptions.isEmpty {
                 EmptySharedSubscriptionsView()
             } else {
-                // List View
+                // WhatsApp-style conversation list
                 VStack(spacing: 0) {
                     ForEach(Array(sharedSubscriptions.enumerated()), id: \.element.id) { index, sharedSub in
                         // Look up the linked subscription for name/date
@@ -782,11 +782,12 @@ struct EnhancedSharedSubscriptionsView: View {
                             $0.id == sharedSub.subscriptionId
                         }
 
-                        FeedSharedSubscriptionRow(
+                        SharedSubscriptionConversationListRow(
                             sharedSubscription: sharedSub,
                             people: people,
                             subscription: linkedSubscription
                         )
+                        .environmentObject(dataManager)
                         .padding(.horizontal, 16)
                         .contextMenu {
                             Button(role: .destructive) {
@@ -798,9 +799,9 @@ struct EnhancedSharedSubscriptionsView: View {
                             }
                         }
 
-                        // Add divider between items (not after the last one)
+                        // WhatsApp-style indented divider
                         if index < sharedSubscriptions.count - 1 {
-                            FeedRowDivider()
+                            ConversationRowDivider()
                         }
                     }
                 }

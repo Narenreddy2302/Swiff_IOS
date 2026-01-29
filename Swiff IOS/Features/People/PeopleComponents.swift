@@ -353,13 +353,12 @@ struct PeopleListView: View {
                         }
                         .frame(maxWidth: .infinity)
                     } else {
+                        // WhatsApp-style conversation list
                         ForEach(Array(filteredPeople.enumerated()), id: \.element.id) {
                             index, person in
                             NavigationLink(destination: PersonDetailView(personId: person.id)) {
-                                FeedPersonRow(
-                                    person: person,
-                                    transactions: dataManager.transactions
-                                )
+                                PersonConversationListRow(person: person)
+                                    .environmentObject(dataManager)
                             }
                             .buttonStyle(PlainButtonStyle())
                             .padding(.horizontal, 16)
@@ -390,9 +389,9 @@ struct PeopleListView: View {
                                 }
                             }
 
-                            // Divider (aligned with text, matching feed style)
+                            // WhatsApp-style indented divider
                             if index < filteredPeople.count - 1 {
-                                FeedRowDivider()
+                                ConversationRowDivider()
                             }
                         }
                     }
@@ -560,10 +559,12 @@ struct GroupsListView: View {
                     }
                     .frame(maxWidth: .infinity)
                 } else {
+                    // WhatsApp-style conversation list
                     ForEach(Array(filteredGroups.enumerated()), id: \.element.id) {
                         index, group in
                         NavigationLink(destination: GroupDetailView(groupId: group.id)) {
-                            FeedGroupRow(group: group)
+                            GroupConversationListRow(group: group)
+                                .environmentObject(dataManager)
                         }
                         .buttonStyle(PlainButtonStyle())
                         .padding(.horizontal, 16)
@@ -585,9 +586,9 @@ struct GroupsListView: View {
                             }
                         }
 
-                        // Divider (aligned with text, matching feed style)
+                        // WhatsApp-style indented divider
                         if index < filteredGroups.count - 1 {
-                            FeedRowDivider()
+                            ConversationRowDivider()
                         }
                     }
                 }

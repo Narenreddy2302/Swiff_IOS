@@ -1639,6 +1639,241 @@ public class DataManager: ObservableObject {
         return message
     }
 
+    // MARK: - Conversation Helpers (WhatsApp-style)
+
+    /// Get the last message for a specific entity (person/group/subscription)
+    /// Returns the most recent message by timestamp
+    func lastMessage(for entityId: UUID) -> ConversationMessage? {
+        return conversationMessages[entityId]?
+            .sorted { $0.timestamp > $1.timestamp }
+            .first
+    }
+
+    /// Get the unread message count for a specific entity
+    /// Counts incoming messages that haven't been read
+    func unreadMessageCount(for entityId: UUID) -> Int {
+        return conversationMessages[entityId]?
+            .filter { !$0.isSent && $0.status != .read }
+            .count ?? 0
+    }
+
+    /// Build a ConversationPreview for a person, combining messages and transactions
+    func conversationPreview(for person: Person) -> ConversationPreview {
+        let lastMsg = lastMessage(for: person.id)
+        let unread = unreadMessageCount(for: person.id)
+
+        // Also check the latest transaction involving this person
+        let lastTransaction = transactions
+            .filter { $0.title.contains(person.name) || $0.subtitle.contains(person.name) }
+            .sorted { $0.date > $1.date }
+            .first
+
+        // Determine which is more recent: message or transaction
+        let msgDate = lastMsg?.timestamp
+        let txnDate = lastTransaction?.date
+
+        if let msgDate = msgDate, let txnDate = txnDate {
+            if msgDate > txnDate {
+                return ConversationPreview(
+                    lastMessageText: lastMsg?.content ?? "No messages yet",
+                    lastMessageDate: msgDate,
+                    unreadCount: unread,
+                    isLastMessageSent: lastMsg?.isSent ?? false,
+                    messageStatus: lastMsg?.status,
+                    isTyping: false
+                )
+            } else {
+                let txnPreview = transactionPreviewText(lastTransaction!)
+                return ConversationPreview(
+                    lastMessageText: txnPreview,
+                    lastMessageDate: txnDate,
+                    unreadCount: unread,
+                    isLastMessageSent: true,
+                    messageStatus: .delivered,
+                    isTyping: false
+                )
+            }
+        } else if let msgDate = msgDate {
+            return ConversationPreview(
+                lastMessageText: lastMsg?.content ?? "No messages yet",
+                lastMessageDate: msgDate,
+                unreadCount: unread,
+                isLastMessageSent: lastMsg?.isSent ?? false,
+                messageStatus: lastMsg?.status,
+                isTyping: false
+            )
+        } else if let txnDate = txnDate {
+            let txnPreview = transactionPreviewText(lastTransaction!)
+            return ConversationPreview(
+                lastMessageText: txnPreview,
+                lastMessageDate: txnDate,
+                unreadCount: unread,
+                isLastMessageSent: true,
+                messageStatus: .delivered,
+                isTyping: false
+            )
+        }
+
+        // No messages or transactions - show balance info or default
+        if person.balance != 0 {
+            return ConversationPreview(
+                lastMessageText: person.balance > 0 ? "Owes you \(abs(person.balance).asCurrency)" : "You owe \(abs(person.balance).asCurrency)",
+                lastMessageDate: person.lastModifiedDate,
+                unreadCount: 0,
+                isLastMessageSent: false,
+                messageStatus: nil,
+                isTyping: false
+            )
+        }
+
+        return ConversationPreview(
+            lastMessageText: "Tap to start a conversation",
+            lastMessageDate: person.createdDate,
+            unreadCount: 0,
+            isLastMessageSent: false,
+            messageStatus: nil,
+            isTyping: false
+        )
+    }
+
+    /// Build a ConversationPreview for a subscription
+    func conversationPreview(for subscription: Subscription) -> ConversationPreview {
+        let lastMsg = lastMessage(for: subscription.id)
+        let unread = unreadMessageCount(for: subscription.id)
+
+        // Generate latest event text
+        let events = SubscriptionEventService.shared.generateEvents(
+            for: subscription,
+            priceHistory: getPriceHistory(for: subscription.id),
+            people: people
+        )
+        let latestEvent = events.sorted { $0.eventDate > $1.eventDate }.first
+
+        // Check if message is more recent than event
+        let msgDate = lastMsg?.timestamp
+        let eventDate = latestEvent?.eventDate
+
+        if let msgDate = msgDate, let eventDate = eventDate {
+            if msgDate > eventDate {
+                return ConversationPreview(
+                    lastMessageText: lastMsg?.content ?? "",
+                    lastMessageDate: msgDate,
+                    unreadCount: unread,
+                    isLastMessageSent: lastMsg?.isSent ?? false,
+                    messageStatus: lastMsg?.status,
+                    isTyping: false
+                )
+            }
+        } else if let msgDate = msgDate {
+            return ConversationPreview(
+                lastMessageText: lastMsg?.content ?? "",
+                lastMessageDate: msgDate,
+                unreadCount: unread,
+                isLastMessageSent: lastMsg?.isSent ?? false,
+                messageStatus: lastMsg?.status,
+                isTyping: false
+            )
+        }
+
+        // Use event as preview
+        if let event = latestEvent {
+            return ConversationPreview(
+                lastMessageText: event.title,
+                lastMessageDate: event.eventDate,
+                unreadCount: unread,
+                isLastMessageSent: false,
+                messageStatus: nil,
+                isTyping: false
+            )
+        }
+
+        // Fallback: billing info
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        let nextDate = formatter.string(from: subscription.nextBillingDate)
+        return ConversationPreview(
+            lastMessageText: "\(subscription.billingCycle.displayName) · Next: \(nextDate)",
+            lastMessageDate: subscription.createdDate,
+            unreadCount: 0,
+            isLastMessageSent: false,
+            messageStatus: nil,
+            isTyping: false
+        )
+    }
+
+    /// Build a ConversationPreview for a group
+    func conversationPreview(for group: Group) -> ConversationPreview {
+        let lastMsg = lastMessage(for: group.id)
+        let unread = unreadMessageCount(for: group.id)
+
+        // Latest group expense
+        let latestExpense = group.expenses.sorted { $0.date > $1.date }.first
+
+        let msgDate = lastMsg?.timestamp
+        let expenseDate = latestExpense?.date
+
+        if let msgDate = msgDate, let expenseDate = expenseDate {
+            if msgDate > expenseDate {
+                return ConversationPreview(
+                    lastMessageText: lastMsg?.content ?? "",
+                    lastMessageDate: msgDate,
+                    unreadCount: unread,
+                    isLastMessageSent: lastMsg?.isSent ?? false,
+                    messageStatus: lastMsg?.status,
+                    isTyping: false
+                )
+            } else {
+                return ConversationPreview(
+                    lastMessageText: "\(latestExpense!.title) · \(latestExpense!.amount.asCurrency)",
+                    lastMessageDate: expenseDate,
+                    unreadCount: unread,
+                    isLastMessageSent: false,
+                    messageStatus: nil,
+                    isTyping: false
+                )
+            }
+        } else if let msgDate = msgDate {
+            return ConversationPreview(
+                lastMessageText: lastMsg?.content ?? "",
+                lastMessageDate: msgDate,
+                unreadCount: unread,
+                isLastMessageSent: lastMsg?.isSent ?? false,
+                messageStatus: lastMsg?.status,
+                isTyping: false
+            )
+        } else if let expense = latestExpense {
+            return ConversationPreview(
+                lastMessageText: "\(expense.title) · \(expense.amount.asCurrency)",
+                lastMessageDate: expense.date,
+                unreadCount: unread,
+                isLastMessageSent: false,
+                messageStatus: nil,
+                isTyping: false
+            )
+        }
+
+        return ConversationPreview(
+            lastMessageText: "\(group.members.count) members · Tap to start",
+            lastMessageDate: group.createdDate,
+            unreadCount: 0,
+            isLastMessageSent: false,
+            messageStatus: nil,
+            isTyping: false
+        )
+    }
+
+    /// Generate a preview text from a transaction
+    private func transactionPreviewText(_ transaction: Transaction) -> String {
+        let amount = transaction.amount.asCurrency
+        if transaction.title.lowercased().contains("settlement") {
+            return "Settlement · \(amount)"
+        } else if transaction.title.lowercased().contains("payment") {
+            return "Payment · \(amount)"
+        } else {
+            return "\(transaction.title) · \(amount)"
+        }
+    }
+
     // MARK: - Statistics & Analytics
 
     func calculateTotalMonthlyCost() -> Double {
