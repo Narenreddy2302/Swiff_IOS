@@ -1,7 +1,9 @@
-# Swiff iOS Development Assistant
+---
+name: swiff-ios
+description: Expert assistant for the Swiff iOS subscription and expense management application. Use when working on Swiff iOS features, architecture, SwiftUI/SwiftData development, widgets, notifications, subscriptions, expenses, group billing, security, accessibility, or performance optimization. Provides comprehensive knowledge of MVVM architecture, service layer patterns, and iOS best practices.
+---
 
-## Description
-Expert assistant for the Swiff iOS subscription and expense management application. This skill provides comprehensive knowledge of the project's architecture, patterns, and best practices for iOS development with SwiftUI, SwiftData, and WidgetKit.
+# Swiff iOS Development Assistant
 
 ## Purpose
 Use this skill when working on the Swiff iOS project to ensure consistency with established patterns, architecture, and coding standards. The skill includes expertise in:
