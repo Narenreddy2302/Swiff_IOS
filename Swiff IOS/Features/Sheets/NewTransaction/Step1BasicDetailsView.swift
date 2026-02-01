@@ -2,8 +2,8 @@
 //  Step1BasicDetailsView.swift
 //  Swiff IOS
 //
-//  Step 1: Basic Info - Transaction name, amount, currency, category
-//  Production-ready with design system compliance and accessibility
+//  Step 1: Transaction Details — Amount (hero), Name, Category
+//  Features custom numeric keypad with right-to-left currency input
 //
 
 import SwiftUI
@@ -16,310 +16,360 @@ struct Step1BasicDetailsView: View {
 
     @ObservedObject var viewModel: NewTransactionViewModel
     @EnvironmentObject var dataManager: DataManager
-    @FocusState private var focusedField: Field?
-
-    /// Track if user has attempted to proceed (for showing validation)
+    @FocusState private var isNameFieldFocused: Bool
     @State private var hasAttemptedProceed: Bool = false
 
-    // MARK: - Types
-
-    private enum Field: Hashable {
-        case name
-        case amount
-    }
-
-    // MARK: - Body
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // MARK: - Body
 
     var body: some View {
-        ScrollViewReader { proxy in
+        VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: Theme.Metrics.paddingLarge) {
-
-                    // Hero Amount Input
+                    // Hero Amount Display
                     heroAmountSection
-                        .id("amountField")
-                        .padding(.top, Theme.Metrics.paddingSmall)
+                        .padding(.top, Theme.Metrics.paddingMedium)
 
-                    // Form Fields
-                    VStack(spacing: Theme.Metrics.paddingMedium) {
-                        
-                        // Name Input Card
-                        inputCard(
-                            icon: "pencil",
-                            title: "Transaction Name",
-                            placeholder: "Enter description...",
-                            text: $viewModel.basicDetails.transactionName,
-                            field: .name
-                        )
-                        .id("nameField")
+                    // Transaction Name
+                    nameInputSection
+                        .padding(.horizontal, Theme.Metrics.paddingMedium)
 
-                        // Category Section
-                        categorySection
+                    // Category Chips
+                    categorySection
 
-                        // Date Input Card (Custom implementation for DatePicker)
-                        dateInputCard
-
-                        // Notes Input Card
-                        inputCard(
-                            icon: "text.justify.left",
-                            title: "Notes (Optional)",
-                            placeholder: "Add details...",
-                            text: $viewModel.basicDetails.notes,
-                            field: nil
-                        )
-                    }
-                    .padding(.horizontal, Theme.Metrics.paddingMedium)
-
-                    Spacer(minLength: 120)
+                    Spacer(minLength: 16)
                 }
             }
             .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom) {
-                continueButton
-                    .padding(.horizontal, Theme.Metrics.paddingMedium)
-                    .padding(.bottom, Theme.Metrics.paddingLarge)
-                    .background(
-                        Theme.Colors.secondaryBackground
-                            .ignoresSafeArea()
-                    )
-            }
-            .onChange(of: focusedField) { _, newValue in
-                scrollToField(newValue, proxy: proxy)
+
+            // Bottom area: Keypad or spacer for system keyboard
+            if viewModel.basicDetails.isKeypadActive && !isNameFieldFocused {
+                numericKeypad
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .background(Theme.Colors.background)
+        .onChange(of: isNameFieldFocused) { _, focused in
+            withAnimation(.easeInOut(duration: 0.25)) {
+                viewModel.basicDetails.isKeypadActive = !focused
+            }
+        }
         .onTapGesture {
-            dismissKeyboard()
+            if isNameFieldFocused {
+                isNameFieldFocused = false
+            }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Step 1: Basic transaction details")
+        .accessibilityLabel("Step 1: Transaction details")
     }
 
-    // MARK: - Subviews
+    // MARK: - Hero Amount Section
 
     private var heroAmountSection: some View {
-        VStack(spacing: Theme.Metrics.paddingSmall) {
-            HStack(alignment: .center, spacing: 4) {
-                Menu {
-                    ForEach(Currency.allCases, id: \.self) { currency in
-                        Button(action: {
-                            HapticManager.shared.selection()
-                            viewModel.basicDetails.selectedCurrency = currency
-                        }) {
-                            HStack {
-                                Text("\(currency.flag) \(currency.rawValue)")
-                                if currency == viewModel.basicDetails.selectedCurrency {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    Text(viewModel.basicDetails.selectedCurrency.symbol)
-                        .font(Theme.Fonts.displayLarge)
-                        .foregroundColor(Theme.Colors.textSecondary)
+        VStack(spacing: 8) {
+            // Tap to activate keypad
+            Button {
+                isNameFieldFocused = false
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    viewModel.basicDetails.isKeypadActive = true
                 }
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(viewModel.basicDetails.currencySymbol)
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundColor(
+                            viewModel.basicDetails.isAmountZero
+                                ? Theme.Colors.textTertiary
+                                : Theme.Colors.textSecondary
+                        )
 
-                TextField("0", text: $viewModel.basicDetails.amountString)
-                    .font(Theme.Fonts.displayLarge)
-                    .foregroundColor(Theme.Colors.textPrimary)
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.center)
-                    .focused($focusedField, equals: .amount)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .onChange(of: viewModel.basicDetails.amountString) { _, newValue in
-                        filterAmountInput(newValue)
+                    Text(viewModel.basicDetails.formattedAmountRaw)
+                        .font(.system(size: 52, weight: .bold, design: .rounded))
+                        .foregroundColor(
+                            viewModel.basicDetails.isAmountZero
+                                ? Theme.Colors.textTertiary
+                                : Theme.Colors.textPrimary
+                        )
+                        .contentTransition(.numericText())
+
+                    // Blinking cursor
+                    if viewModel.basicDetails.isKeypadActive && !isNameFieldFocused {
+                        BlinkingCursor()
                     }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Theme.Metrics.paddingLarge)
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Amount: \(viewModel.basicDetails.currencySymbol)\(viewModel.basicDetails.formattedAmountRaw)")
+            .accessibilityHint("Tap to edit amount using keypad")
 
-            // Underline accent
-            Rectangle()
-                .fill(Theme.Colors.accentMedium)
-                .frame(height: 2)
-                .frame(maxWidth: 120)
-            
-            if hasAttemptedProceed && viewModel.basicDetails.amount <= 0 {
-                Text("Enter amount")
-                    .font(Theme.Fonts.labelSmall)
+            // Validation hint
+            if hasAttemptedProceed && viewModel.basicDetails.isAmountZero {
+                Text("Enter an amount")
+                    .font(Theme.Fonts.bodySmall)
                     .foregroundColor(Theme.Colors.statusError)
+                    .transition(.opacity)
             }
         }
-        .padding(.vertical, Theme.Metrics.paddingLarge)
     }
 
-    private func inputCard(icon: String, title: String, placeholder: String, text: Binding<String>, field: Field?) -> some View {
-        HStack(spacing: Theme.Metrics.paddingMedium) {
-            // Icon circle
-            Circle()
-                .fill(Theme.Colors.accentLight)
-                .frame(width: 40, height: 40)
-                .overlay(
-                    Image(systemName: icon)
-                        .font(.system(size: Theme.Metrics.iconSizeSmall))
-                        .foregroundColor(Theme.Colors.accentDark)
-                )
+    // MARK: - Name Input Section
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(Theme.Fonts.labelSmall)
-                    .foregroundColor(Theme.Colors.textSecondary)
+    private var nameInputSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: Theme.Metrics.paddingSmall) {
+                Image(systemName: "pencil")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(Theme.Colors.textTertiary)
+                    .frame(width: 20)
 
-                TextField(placeholder, text: text)
-                    .font(Theme.Fonts.bodyLarge)
+                TextField("Transaction name", text: $viewModel.basicDetails.transactionName)
+                    .font(.system(size: 17))
                     .foregroundColor(Theme.Colors.textPrimary)
-                    .focused($focusedField, equals: field)
-                    .submitLabel(field == .name ? .done : .return)
+                    .focused($isNameFieldFocused)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        isNameFieldFocused = false
+                    }
+                    .onChange(of: viewModel.basicDetails.transactionName) { _, _ in
+                        viewModel.basicDetails.enforceNameLimit()
+                    }
+
+                // Character counter near limit
+                if viewModel.basicDetails.isNearCharacterLimit {
+                    Text("\(viewModel.basicDetails.transactionName.count)/\(BasicDetailsState.nameCharacterLimit)")
+                        .font(.system(size: 12))
+                        .foregroundColor(
+                            viewModel.basicDetails.remainingCharacters <= 5
+                                ? Theme.Colors.statusError
+                                : Theme.Colors.textTertiary
+                        )
+                        .monospacedDigit()
+                }
+            }
+            .padding(.horizontal, Theme.Metrics.paddingMedium)
+            .padding(.vertical, 14)
+            .background(Theme.Colors.secondaryBackground)
+            .cornerRadius(Theme.Metrics.cornerRadiusMedium)
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
+                    .stroke(
+                        nameFieldBorderColor,
+                        lineWidth: isNameFieldFocused ? 2 : 0
+                    )
+            )
+
+            // Validation hint
+            if hasAttemptedProceed && viewModel.basicDetails.transactionName.trimmingCharacters(in: .whitespaces).isEmpty {
+                Text("Enter a name for this transaction")
+                    .font(Theme.Fonts.bodySmall)
+                    .foregroundColor(Theme.Colors.statusError)
+                    .padding(.leading, 4)
+                    .transition(.opacity)
             }
         }
-        .padding(Theme.Metrics.paddingMedium)
-        .background(Theme.Colors.cardBackground)
-        .cornerRadius(Theme.Metrics.cornerRadiusMedium)
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusMedium)
-                .stroke(
-                     field == .name && hasAttemptedProceed && text.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty ? Theme.Colors.statusError : Color.clear,
-                     lineWidth: 2
-                )
-        )
     }
+
+    private var nameFieldBorderColor: Color {
+        if hasAttemptedProceed && viewModel.basicDetails.transactionName.trimmingCharacters(in: .whitespaces).isEmpty {
+            return Theme.Colors.statusError
+        }
+        if isNameFieldFocused {
+            return Theme.Colors.brandPrimary
+        }
+        return .clear
+    }
+
+    // MARK: - Category Section
 
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: Theme.Metrics.paddingSmall) {
-            Text("Category")
-                .font(Theme.Fonts.labelSmall)
-                .foregroundColor(Theme.Colors.textSecondary)
-                .padding(.leading, Theme.Metrics.paddingMedium)
+            HStack {
+                Text(viewModel.basicDetails.selectedCategory == nil ? "Choose a category" : "Category")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .textCase(.uppercase)
+
+                Spacer()
+
+                if hasAttemptedProceed && viewModel.basicDetails.selectedCategory == nil {
+                    Text("Required")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Theme.Colors.statusError)
+                }
+            }
+            .padding(.horizontal, Theme.Metrics.paddingMedium)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: Theme.Metrics.paddingSmall) {
+                HStack(spacing: 10) {
                     ForEach(TransactionCategory.allCases, id: \.self) { category in
-                        CategoryPill(
+                        CategoryChip(
                             category: category,
-                            isSelected: viewModel.basicDetails.selectedCategory == category,
-                            action: {
-                                HapticManager.shared.selection()
-                                withAnimation(.snappy) {
-                                    viewModel.basicDetails.selectedCategory = category
-                                }
+                            isSelected: viewModel.basicDetails.selectedCategory == category
+                        ) {
+                            HapticManager.shared.light()
+                            withAnimation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.7)) {
+                                viewModel.basicDetails.selectedCategory = category
                             }
-                        )
+                        }
                     }
                 }
                 .padding(.horizontal, Theme.Metrics.paddingMedium)
+                .padding(.vertical, 2)
             }
         }
     }
 
-    private var dateInputCard: some View {
-        HStack(spacing: Theme.Metrics.paddingMedium) {
-            // Icon circle
-            Circle()
-                .fill(Theme.Colors.accentLight)
-                .frame(width: 40, height: 40)
-                .overlay(
-                    Image(systemName: "calendar")
-                        .font(.system(size: Theme.Metrics.iconSizeSmall))
-                        .foregroundColor(Theme.Colors.accentDark)
-                )
+    // MARK: - Custom Numeric Keypad
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Date")
-                    .font(Theme.Fonts.labelSmall)
-                    .foregroundColor(Theme.Colors.textSecondary)
+    private var numericKeypad: some View {
+        VStack(spacing: 0) {
+            Divider()
 
-                DatePicker(
-                    "",
-                    selection: $viewModel.basicDetails.transactionDate,
-                    displayedComponents: .date
-                )
-                .labelsHidden()
-                .datePickerStyle(.compact)
+            VStack(spacing: 8) {
+                ForEach(keypadRows, id: \.self) { row in
+                    HStack(spacing: 8) {
+                        ForEach(row, id: \.self) { key in
+                            KeypadButton(key: key) {
+                                handleKeypadTap(key)
+                            }
+                        }
+                    }
+                }
             }
-            Spacer()
+            .padding(.horizontal, Theme.Metrics.paddingMedium)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
         }
-        .padding(Theme.Metrics.paddingMedium)
-        .background(Theme.Colors.cardBackground)
-        .cornerRadius(Theme.Metrics.cornerRadiusMedium)
+        .background(Theme.Colors.secondaryBackground)
     }
 
-    private var continueButton: some View {
-        Button(action: handleNextStep) {
-            Text("Continue")
-                .font(Theme.Fonts.labelLarge)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: SwiffButtonSize.large.height)
-                .background(Theme.Colors.accentDark)
-                .cornerRadius(Theme.Metrics.cornerRadiusMedium)
-                .opacity(viewModel.basicDetails.canProceed ? 1.0 : Theme.Opacity.disabled)
-        }
-        .disabled(!viewModel.basicDetails.canProceed)
+    private var keypadRows: [[KeypadKey]] {
+        [
+            [.digit(1), .digit(2), .digit(3)],
+            [.digit(4), .digit(5), .digit(6)],
+            [.digit(7), .digit(8), .digit(9)],
+            [.empty, .digit(0), .backspace],
+        ]
     }
-    
-    // MARK: - Private Methods
 
-    private func handleNextStep() {
-        dismissKeyboard()
+    private func handleKeypadTap(_ key: KeypadKey) {
+        switch key {
+        case .digit(let d):
+            viewModel.basicDetails.appendDigit(d)
+            HapticManager.shared.light()
+        case .backspace:
+            viewModel.basicDetails.deleteLastDigit()
+            HapticManager.shared.light()
+        case .empty:
+            break
+        }
+    }
+
+    // MARK: - Public Methods
+
+    func attemptProceed() {
         if viewModel.basicDetails.canProceed {
-            HapticManager.shared.selection()
+            isNameFieldFocused = false
             viewModel.goToNextStep()
         } else {
-            withAnimation(.smooth) {
+            withAnimation(.easeOut(duration: 0.2)) {
                 hasAttemptedProceed = true
             }
             HapticManager.shared.warning()
         }
     }
+}
 
-    private func scrollToField(_ field: Field?, proxy: ScrollViewProxy) {
-        guard let field = field else { return }
-        withAnimation(.smooth) {
-            switch field {
-            case .name:
-                proxy.scrollTo("nameField", anchor: .center)
-            case .amount:
-                proxy.scrollTo("amountField", anchor: .center)
+// MARK: - Keypad Key Enum
+
+enum KeypadKey: Hashable {
+    case digit(Int)
+    case backspace
+    case empty
+}
+
+// MARK: - Keypad Button
+
+private struct KeypadButton: View {
+    let key: KeypadKey
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Group {
+                switch key {
+                case .digit(let d):
+                    Text("\(d)")
+                        .font(.system(size: 24, weight: .medium, design: .rounded))
+                        .foregroundColor(Theme.Colors.textPrimary)
+
+                case .backspace:
+                    Image(systemName: "delete.backward")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(Theme.Colors.textPrimary)
+
+                case .empty:
+                    Color.clear
+                }
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(
+                key == .empty
+                    ? Color.clear
+                    : Theme.Colors.cardBackground
+            )
+            .cornerRadius(Theme.Metrics.cornerRadiusMedium)
         }
+        .buttonStyle(KeypadPressStyle())
+        .disabled(key == .empty)
+        .accessibilityLabel(keyAccessibilityLabel)
     }
 
-    private func filterAmountInput(_ newValue: String) {
-        var filtered = newValue.filter { $0.isNumber || $0 == "." }
-        
-        // Basic filtering logic reuse
-        if filtered.hasPrefix("00") { filtered = String(filtered.dropFirst()) }
-        if filtered == "0" { } // Allow 0
-        if filtered.hasPrefix(".") { filtered = "0" + filtered }
-        
-        let decimalCount = filtered.filter { $0 == "." }.count
-        if decimalCount > 1 {
-             if let lastIndex = filtered.lastIndex(of: ".") {
-                 filtered.remove(at: lastIndex)
-             }
+    private var keyAccessibilityLabel: String {
+        switch key {
+        case .digit(let d): return "\(d)"
+        case .backspace: return "Delete"
+        case .empty: return ""
         }
-        
-        if let decimalIndex = filtered.firstIndex(of: ".") {
-            let decimalPart = filtered[filtered.index(after: decimalIndex)...]
-            if decimalPart.count > 2 {
-                let endIndex = filtered.index(decimalIndex, offsetBy: 3)
-                filtered = String(filtered[..<endIndex])
-            }
-        }
-
-        if filtered != newValue {
-            viewModel.basicDetails.amountString = filtered
-        }
-    }
-
-    private func dismissKeyboard() {
-        focusedField = nil
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 
-struct CategoryPill: View {
+// MARK: - Keypad Press Style
+
+private struct KeypadPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Blinking Cursor
+
+private struct BlinkingCursor: View {
+    @State private var isVisible = true
+
+    var body: some View {
+        Rectangle()
+            .fill(Theme.Colors.brandPrimary)
+            .frame(width: 2, height: 36)
+            .opacity(isVisible ? 1 : 0)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
+                    isVisible = false
+                }
+            }
+    }
+}
+
+// MARK: - Category Chip
+
+struct CategoryChip: View {
     let category: TransactionCategory
     let isSelected: Bool
     let action: () -> Void
@@ -328,23 +378,41 @@ struct CategoryPill: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: category.icon)
-                    .font(.system(size: Theme.Metrics.iconSizeSmall))
+                    .font(.system(size: 14, weight: .medium))
+
                 Text(category.rawValue)
-                    .font(Theme.Fonts.labelSmall)
+                    .font(.system(size: 14, weight: .medium))
+                    .lineLimit(1)
             }
-            .padding(.horizontal, Theme.Metrics.paddingMedium)
-            .padding(.vertical, Theme.Metrics.paddingSmall)
-            .background(isSelected ? Theme.Colors.accentDark : Theme.Colors.secondaryBackground)
-            .foregroundColor(isSelected ? .white : Theme.Colors.textPrimary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(
+                isSelected
+                    ? category.color
+                    : Theme.Colors.secondaryBackground
+            )
+            .foregroundColor(
+                isSelected ? .white : Theme.Colors.textPrimary
+            )
             .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(
+                        isSelected ? Color.clear : Theme.Colors.border,
+                        lineWidth: 1
+                    )
+            )
+            .scaleEffect(isSelected ? 1.0 : 0.98)
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(category.rawValue) category")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
 // MARK: - Preview
 
-#Preview("Step 1 - Basic Details") {
+#Preview("Step 1 - Transaction Details") {
     Step1BasicDetailsView(viewModel: NewTransactionViewModel())
         .environmentObject(DataManager.shared)
-        .background(Theme.Colors.secondaryBackground)
 }

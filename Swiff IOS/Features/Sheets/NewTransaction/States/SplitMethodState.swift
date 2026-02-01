@@ -2,8 +2,8 @@
 //  SplitMethodState.swift
 //  Swiff IOS
 //
-//  Created by Swiff AI on 11/18/25.
 //  State management for Step 3: Split Method & Calculations
+//  Supports 5 split types with proper rounding and penny distribution
 //
 
 import Combine
@@ -17,12 +17,15 @@ struct SplitDetail: Equatable {
     var shares: Int = 1
     var adjustment: Double = 0
 
-    /// Tolerance-based equality for floating point comparisons
     static func == (lhs: SplitDetail, rhs: SplitDetail) -> Bool {
-        return abs(lhs.amount - rhs.amount) < 0.001 && abs(lhs.percentage - rhs.percentage) < 0.001
-            && lhs.shares == rhs.shares && abs(lhs.adjustment - rhs.adjustment) < 0.001
+        abs(lhs.amount - rhs.amount) < 0.001
+            && abs(lhs.percentage - rhs.percentage) < 0.001
+            && lhs.shares == rhs.shares
+            && abs(lhs.adjustment - rhs.adjustment) < 0.001
     }
 }
+
+// MARK: - SplitMethodState
 
 @MainActor
 class SplitMethodState: ObservableObject {
@@ -32,85 +35,174 @@ class SplitMethodState: ObservableObject {
     @Published var splitMethod: SplitType = .equally
     @Published var splitDetails: [UUID: SplitDetail] = [:]
 
-    // MARK: - Internal Helper
+    // MARK: - Constants
 
     private let epsilon: Double = 0.01
 
-    // MARK: - Calculations
+    // MARK: - Split Calculations
 
+    /// Calculate splits for all participants based on current method
     func calculateSplits(amount: Double, participantIds: Set<UUID>) -> [UUID: SplitDetail] {
-        let count = Double(participantIds.count)
+        let count = participantIds.count
         guard count > 0, amount > 0 else { return [:] }
 
         switch splitMethod {
         case .equally:
-            let perPersonAmount = amount / count
-            let perPersonPercentage = 100.0 / count
-            return participantIds.reduce(into: [:]) { result, id in
-                result[id] = SplitDetail(
-                    amount: perPersonAmount,
-                    percentage: perPersonPercentage,
-                    shares: 1
-                )
-            }
+            return calculateEqualSplit(amount: amount, participantIds: participantIds)
 
         case .exactAmounts:
-            return participantIds.reduce(into: [:]) { result, id in
-                let detail = splitDetails[id] ?? SplitDetail()
-                result[id] = SplitDetail(
-                    amount: detail.amount,
-                    percentage: amount > 0 ? (detail.amount / amount) * 100 : 0,
-                    shares: 1
-                )
-            }
+            return calculateExactAmounts(amount: amount, participantIds: participantIds)
 
         case .percentages:
-            return participantIds.reduce(into: [:]) { result, id in
-                let detail = splitDetails[id] ?? SplitDetail()
-                result[id] = SplitDetail(
-                    amount: (detail.percentage / 100) * amount,
-                    percentage: detail.percentage,
-                    shares: 1
-                )
-            }
+            return calculatePercentages(amount: amount, participantIds: participantIds)
 
         case .shares:
-            let totalShares = totalShares(participantIds: participantIds)
-            let totalSharesDouble = Double(totalShares)
-            guard totalSharesDouble > 0 else { return [:] }
-
-            return participantIds.reduce(into: [:]) { result, id in
-                let shares = splitDetails[id]?.shares ?? 1
-                let shareDouble = Double(shares)
-                result[id] = SplitDetail(
-                    amount: (shareDouble / totalSharesDouble) * amount,
-                    percentage: (shareDouble / totalSharesDouble) * 100,
-                    shares: shares
-                )
-            }
+            return calculateShares(amount: amount, participantIds: participantIds)
 
         case .adjustments:
-            let totalAdjustments = participantIds.reduce(0.0) { sum, id in
-                sum + (splitDetails[id]?.adjustment ?? 0)
-            }
-            let baseAmount = (amount - totalAdjustments) / count
-
-            return participantIds.reduce(into: [:]) { result, id in
-                let adjustment = splitDetails[id]?.adjustment ?? 0
-                let personAmount = baseAmount + adjustment
-                result[id] = SplitDetail(
-                    amount: max(0, personAmount),
-                    percentage: amount > 0 ? (max(0, personAmount) / amount) * 100 : 0,
-                    shares: 1,
-                    adjustment: adjustment
-                )
-            }
+            return calculateAdjustments(amount: amount, participantIds: participantIds)
         }
     }
+
+    // MARK: - Equal Split (with penny distribution)
+
+    private func calculateEqualSplit(amount: Double, participantIds: Set<UUID>) -> [UUID: SplitDetail] {
+        let count = participantIds.count
+        let countDouble = Double(count)
+
+        // Calculate base amount per person (floor to 2 decimal places)
+        let baseAmountCents = Int(amount * 100) / count
+        let remainderCents = Int(amount * 100) - (baseAmountCents * count)
+
+        let baseAmount = Double(baseAmountCents) / 100.0
+        let percentage = 100.0 / countDouble
+
+        // Sort participant IDs for deterministic penny distribution
+        let sorted = participantIds.sorted()
+        var result: [UUID: SplitDetail] = [:]
+
+        for (index, id) in sorted.enumerated() {
+            // Distribute remainder pennies to the first N people
+            let extraCent = index < remainderCents ? 0.01 : 0.0
+            let personAmount = baseAmount + extraCent
+
+            result[id] = SplitDetail(
+                amount: personAmount,
+                percentage: percentage,
+                shares: 1
+            )
+        }
+
+        return result
+    }
+
+    // MARK: - Exact Amounts
+
+    private func calculateExactAmounts(amount: Double, participantIds: Set<UUID>) -> [UUID: SplitDetail] {
+        return participantIds.reduce(into: [:]) { result, id in
+            let detail = splitDetails[id] ?? SplitDetail()
+            result[id] = SplitDetail(
+                amount: detail.amount,
+                percentage: amount > 0 ? (detail.amount / amount) * 100 : 0,
+                shares: 1
+            )
+        }
+    }
+
+    // MARK: - Percentages
+
+    private func calculatePercentages(amount: Double, participantIds: Set<UUID>) -> [UUID: SplitDetail] {
+        return participantIds.reduce(into: [:]) { result, id in
+            let detail = splitDetails[id] ?? SplitDetail()
+            let personAmount = (detail.percentage / 100.0) * amount
+            // Round to 2 decimal places
+            let rounded = (personAmount * 100).rounded() / 100.0
+            result[id] = SplitDetail(
+                amount: rounded,
+                percentage: detail.percentage,
+                shares: 1
+            )
+        }
+    }
+
+    // MARK: - Shares
+
+    private func calculateShares(amount: Double, participantIds: Set<UUID>) -> [UUID: SplitDetail] {
+        let totalShareCount = totalShares(participantIds: participantIds)
+        guard totalShareCount > 0 else { return [:] }
+        let totalSharesDouble = Double(totalShareCount)
+
+        // Use penny distribution for shares too
+        let totalCents = Int(amount * 100)
+        let sorted = participantIds.sorted()
+        var result: [UUID: SplitDetail] = [:]
+        var distributedCents = 0
+
+        for (index, id) in sorted.enumerated() {
+            let shares = splitDetails[id]?.shares ?? 1
+            let shareDouble = Double(shares)
+            let percentage = (shareDouble / totalSharesDouble) * 100
+
+            let personCents: Int
+            if index == sorted.count - 1 {
+                // Last person gets the remainder to avoid rounding errors
+                personCents = totalCents - distributedCents
+            } else {
+                personCents = Int((shareDouble / totalSharesDouble) * Double(totalCents))
+            }
+
+            distributedCents += personCents
+            let personAmount = Double(personCents) / 100.0
+
+            result[id] = SplitDetail(
+                amount: personAmount,
+                percentage: percentage,
+                shares: shares
+            )
+        }
+
+        return result
+    }
+
+    // MARK: - Adjustments
+
+    private func calculateAdjustments(amount: Double, participantIds: Set<UUID>) -> [UUID: SplitDetail] {
+        let count = Double(participantIds.count)
+        let totalAdjustments = participantIds.reduce(0.0) { sum, id in
+            sum + (splitDetails[id]?.adjustment ?? 0)
+        }
+        let baseAmount = (amount - totalAdjustments) / count
+
+        return participantIds.reduce(into: [:]) { result, id in
+            let adjustment = splitDetails[id]?.adjustment ?? 0
+            let personAmount = max(0, baseAmount + adjustment)
+            let rounded = (personAmount * 100).rounded() / 100.0
+            result[id] = SplitDetail(
+                amount: rounded,
+                percentage: amount > 0 ? (rounded / amount) * 100 : 0,
+                shares: 1,
+                adjustment: adjustment
+            )
+        }
+    }
+
+    // MARK: - Totals
 
     func totalShares(participantIds: Set<UUID>) -> Int {
         participantIds.reduce(0) { sum, id in
             sum + (splitDetails[id]?.shares ?? 1)
+        }
+    }
+
+    func totalPercentage(participantIds: Set<UUID>) -> Double {
+        participantIds.reduce(0.0) { sum, id in
+            sum + (splitDetails[id]?.percentage ?? 0)
+        }
+    }
+
+    func totalAllocatedAmount(participantIds: Set<UUID>) -> Double {
+        participantIds.reduce(0.0) { sum, id in
+            sum + (splitDetails[id]?.amount ?? 0)
         }
     }
 
@@ -127,63 +219,28 @@ class SplitMethodState: ObservableObject {
             return totalShares(participantIds: participantIds) > 0
 
         case .exactAmounts:
-            let total = participantIds.reduce(0.0) { sum, id in
-                sum + (splitDetails[id]?.amount ?? 0)
-            }
+            let total = totalAllocatedAmount(participantIds: participantIds)
             return abs(total - amount) < epsilon
 
         case .percentages:
-            let total = participantIds.reduce(0.0) { sum, id in
-                sum + (splitDetails[id]?.percentage ?? 0)
-            }
-            return abs(total - 100) < 0.1
+            let total = totalPercentage(participantIds: participantIds)
+            return abs(total - 100.0) < 0.1
 
         case .adjustments:
             return true
         }
     }
 
-    func validationMessage(amount: Double, participantIds: Set<UUID>) -> String? {
+    func remainingAmount(amount: Double, participantIds: Set<UUID>) -> Double {
         switch splitMethod {
-        case .equally:
-            let count = Double(participantIds.count)
-            let perPerson = count > 0 ? amount / count : 0
-            return "Split equally: \(perPerson.asCurrency) each"
-
+        case .equally, .shares, .adjustments:
+            return 0
         case .exactAmounts:
-            let total = participantIds.reduce(0.0) { sum, id in
-                sum + (splitDetails[id]?.amount ?? 0)
-            }
-            if abs(total - amount) < epsilon {
-                return "Amounts match total"
-            } else {
-                let remaining = amount - total
-                // Use epsilon comparison for remaining amount display
-                return remaining > epsilon
-                    ? "\(remaining.asCurrency) remaining"
-                    : "\(abs(remaining).asCurrency) over"
-            }
-
+            let total = totalAllocatedAmount(participantIds: participantIds)
+            return max(0, amount - total)
         case .percentages:
-            let total = participantIds.reduce(0.0) { sum, id in
-                sum + (splitDetails[id]?.percentage ?? 0)
-            }
-            if abs(total - 100) < 0.1 {
-                return "Percentages add up to 100%"
-            } else {
-                return "Total: \(String(format: "%.0f", total))% / 100%"
-            }
-
-        case .shares:
-            let total = totalShares(participantIds: participantIds)
-            return "\(total) share\(total == 1 ? "" : "s") total"
-
-        case .adjustments:
-            let totalAdjustments = participantIds.reduce(0.0) { sum, id in
-                sum + (splitDetails[id]?.adjustment ?? 0)
-            }
-            let sign = totalAdjustments >= 0 ? "+" : ""
-            return "Adjustments: \(sign)\(totalAdjustments.asCurrency)"
+            let total = totalPercentage(participantIds: participantIds)
+            return max(0, 100.0 - total)
         }
     }
 
@@ -203,7 +260,7 @@ class SplitMethodState: ObservableObject {
 
     func updateSplitShares(for personId: UUID, shares: Int) {
         var detail = splitDetails[personId] ?? SplitDetail()
-        detail.shares = max(1, min(10, shares))
+        detail.shares = max(1, min(99, shares))
         splitDetails[personId] = detail
     }
 
@@ -213,23 +270,33 @@ class SplitMethodState: ObservableObject {
         splitDetails[personId] = detail
     }
 
+    // MARK: - Initialize Defaults
+
     func initializeDefaults(for participantIds: Set<UUID>, totalAmount: Double) {
         let count = Double(participantIds.count)
         guard count > 0 else { return }
 
-        for personId in participantIds where splitDetails[personId] == nil {
+        // Reset all details for the current method
+        var newDetails: [UUID: SplitDetail] = [:]
+
+        for personId in participantIds {
             switch splitMethod {
-            case .equally: break
+            case .equally:
+                break // No per-person details needed
             case .exactAmounts:
-                splitDetails[personId] = SplitDetail(amount: totalAmount / count)
+                let equalAmount = (totalAmount * 100).rounded() / 100.0 / count
+                newDetails[personId] = SplitDetail(amount: (equalAmount * 100).rounded() / 100.0)
             case .percentages:
-                splitDetails[personId] = SplitDetail(percentage: 100.0 / count)
+                let equalPct = (100.0 / count * 10).rounded() / 10.0
+                newDetails[personId] = SplitDetail(percentage: equalPct)
             case .shares:
-                splitDetails[personId] = SplitDetail(shares: 1)
+                newDetails[personId] = SplitDetail(shares: 1)
             case .adjustments:
-                splitDetails[personId] = SplitDetail(adjustment: 0)
+                newDetails[personId] = SplitDetail(adjustment: 0)
             }
         }
+
+        splitDetails = newDetails
     }
 
     // MARK: - Reset

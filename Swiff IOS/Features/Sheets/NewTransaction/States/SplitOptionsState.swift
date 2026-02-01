@@ -2,8 +2,8 @@
 //  SplitOptionsState.swift
 //  Swiff IOS
 //
-//  Created by Swiff AI on 11/18/25.
-//  State management for Step 2: Split Options (People & Payer)
+//  State management for Step 2: People Selection
+//  Manages payer (single select) and split members (multi select)
 //
 
 import Combine
@@ -14,12 +14,19 @@ class SplitOptionsState: ObservableObject {
 
     // MARK: - Published Properties
 
+    /// Whether this transaction involves a split
     @Published var isSplit: Bool = false
+
+    /// The person who paid — single selection
     @Published var paidByUserId: UUID?
+
+    /// People included in the split
     @Published var participantIds: Set<UUID> = []
+
+    /// Selected group (auto-adds all members)
     @Published var selectedGroup: Group?
 
-    // MARK: - UI State
+    // MARK: - Search State
 
     @Published var paidBySearchText: String = ""
     @Published var splitWithSearchText: String = ""
@@ -28,14 +35,43 @@ class SplitOptionsState: ObservableObject {
 
     // MARK: - Computed Properties
 
+    /// Validation: payer must be set and at least 2 people in split
     var canProceed: Bool {
-        if !isSplit { return true }
-        return paidByUserId != nil && participantIds.count >= 2
+        paidByUserId != nil && participantIds.count >= 2
     }
 
-    /// Current user's ID
+    /// Current user's ID from UserProfileManager
     var currentUserId: UUID? {
         UserProfileManager.shared.profile.id
+    }
+
+    /// Ordered array of participant IDs — current user first, then alphabetically
+    var orderedParticipantIds: [UUID] {
+        var ordered: [UUID] = []
+        if let myId = currentUserId, participantIds.contains(myId) {
+            ordered.append(myId)
+        }
+        let others = participantIds
+            .filter { $0 != currentUserId }
+            .sorted()
+        ordered.append(contentsOf: others)
+        return ordered
+    }
+
+    /// Number of participants for display
+    var participantCount: Int {
+        participantIds.count
+    }
+
+    /// Validation message when not enough participants
+    var validationMessage: String? {
+        if participantIds.count == 1 {
+            return "Add at least one more person to split with"
+        }
+        if participantIds.isEmpty {
+            return "Select people to split with"
+        }
+        return nil
     }
 
     // MARK: - Actions
@@ -43,7 +79,7 @@ class SplitOptionsState: ObservableObject {
     func addParticipant(_ personId: UUID) {
         participantIds.insert(personId)
 
-        // Default payer to self if not set, else first added person
+        // Auto-set payer to self if not yet set
         if paidByUserId == nil {
             if let myId = currentUserId, personId == myId {
                 paidByUserId = myId
@@ -56,9 +92,8 @@ class SplitOptionsState: ObservableObject {
     func removeParticipant(_ personId: UUID) {
         participantIds.remove(personId)
 
-        // Handle payer removal
+        // Reassign payer if the payer was removed
         if paidByUserId == personId {
-            // Prefer current user
             if let myId = currentUserId, participantIds.contains(myId) {
                 paidByUserId = myId
             } else {
@@ -66,14 +101,22 @@ class SplitOptionsState: ObservableObject {
             }
         }
 
+        // Clear group selection if we manually changed members
         if selectedGroup != nil {
             selectedGroup = nil
         }
     }
 
+    func toggleParticipant(_ personId: UUID) {
+        if participantIds.contains(personId) {
+            removeParticipant(personId)
+        } else {
+            addParticipant(personId)
+        }
+    }
+
     func selectPayer(_ personId: UUID) {
         paidByUserId = personId
-        participantIds.insert(personId)
         paidBySearchText = ""
         isPaidBySearchFocused = false
     }
@@ -91,13 +134,19 @@ class SplitOptionsState: ObservableObject {
     func filteredPaidByContacts(from people: [Person]) -> [Person] {
         guard !paidBySearchText.isEmpty else { return people }
         let search = paidBySearchText.lowercased()
-        return people.filter { $0.matches(search) }
+        return people.filter { $0.matchesSearch(search) }
     }
 
     func filteredSplitWithContacts(from people: [Person]) -> [Person] {
         guard !splitWithSearchText.isEmpty else { return people }
         let search = splitWithSearchText.lowercased()
-        return people.filter { $0.matches(search) }
+        return people.filter { $0.matchesSearch(search) }
+    }
+
+    // MARK: - Helpers
+
+    func isCurrentUser(_ personId: UUID) -> Bool {
+        personId == currentUserId
     }
 
     // MARK: - Reset
@@ -114,11 +163,12 @@ class SplitOptionsState: ObservableObject {
     }
 }
 
-// MARK: - Helper Extension
+// MARK: - Person Search Extension
 
 extension Person {
-    fileprivate func matches(_ query: String) -> Bool {
-        name.lowercased().contains(query) || email.lowercased().contains(query)
+    fileprivate func matchesSearch(_ query: String) -> Bool {
+        name.lowercased().contains(query)
+            || email.lowercased().contains(query)
             || phone.contains(query)
     }
 }
