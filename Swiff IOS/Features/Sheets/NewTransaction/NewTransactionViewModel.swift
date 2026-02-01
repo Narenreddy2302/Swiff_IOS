@@ -3,7 +3,7 @@
 //  Swiff IOS
 //
 //  ViewModel for the 3-step New Transaction flow
-//  Refactored to use Coordinator pattern with separate State objects
+//  Coordinator pattern with navigation direction tracking
 //
 
 import Combine
@@ -31,6 +31,13 @@ enum TransactionTypeOption: String, CaseIterable {
     }
 }
 
+// MARK: - Navigation Direction
+
+enum StepNavigationDirection {
+    case forward
+    case backward
+}
+
 // MARK: - NewTransactionViewModel
 
 @MainActor
@@ -44,14 +51,11 @@ class NewTransactionViewModel: ObservableObject {
 
     // MARK: - Navigation State
 
-    /// Current step in the 3-step flow (1, 2, or 3)
     @Published var currentStep: Int = 1
-
-    /// Prevents double-tap navigation issues
+    @Published var navigationDirection: StepNavigationDirection = .forward
     @Published var isTransitioning: Bool = false
-
-    /// Loading state for network/async operations
     @Published var isLoading: Bool = false
+    @Published var showCancelConfirmation: Bool = false
 
     // MARK: - Private Properties
 
@@ -74,49 +78,52 @@ class NewTransactionViewModel: ObservableObject {
     // MARK: - Setup
 
     private func setupObservers() {
-        // Sync basic details amount changes to split method state if needed
-        basicDetails.$amountString
-            .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
+        // Forward child state changes to trigger UI updates
+        basicDetails.objectWillChange
+            .sink { [weak self] in self?.objectWillChange.send() }
             .store(in: &cancellables)
 
-        // Sync split options changes to split method initialization
-        splitOptions.$participantIds
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
+        splitOptions.objectWillChange
+            .sink { [weak self] in self?.objectWillChange.send() }
             .store(in: &cancellables)
 
-        // Observe child state changes to trigger UI updates
-        basicDetails.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(
-            in: &cancellables)
-        splitOptions.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(
-            in: &cancellables)
-        splitMethod.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(
-            in: &cancellables)
+        splitMethod.objectWillChange
+            .sink { [weak self] in self?.objectWillChange.send() }
+            .store(in: &cancellables)
     }
 
-    // MARK: - Validation - Final Submission
+    // MARK: - Computed Properties
+
+    /// Whether the user has entered any data (for cancel confirmation)
+    var hasUnsavedData: Bool {
+        basicDetails.amountInCents > 0
+            || !basicDetails.transactionName.trimmingCharacters(in: .whitespaces).isEmpty
+            || basicDetails.selectedCategory != nil
+            || !splitOptions.participantIds.isEmpty
+    }
 
     /// Final validation check for transaction submission
     var canSubmit: Bool {
         if !splitOptions.isSplit {
             return basicDetails.canProceed
         }
-        return basicDetails.canProceed && splitOptions.canProceed
+        return basicDetails.canProceed
+            && splitOptions.canProceed
             && splitMethod.isBalanced(
-                amount: basicDetails.amount, participantIds: splitOptions.participantIds)
+                amount: basicDetails.amount,
+                participantIds: splitOptions.participantIds
+            )
     }
 
-    // MARK: - Computed Properties for Views (Facade)
-
+    /// Calculated splits for all participants
     var calculatedSplits: [UUID: SplitDetail] {
         splitMethod.calculateSplits(
-            amount: basicDetails.amount, participantIds: splitOptions.participantIds)
+            amount: basicDetails.amount,
+            participantIds: splitOptions.participantIds
+        )
     }
 
+    /// Remaining amount to allocate
     var remainingAmount: Double {
         let allocated = splitOptions.participantIds.reduce(0.0) { sum, id in
             sum + (calculatedSplits[id]?.amount ?? 0)
@@ -126,7 +133,6 @@ class NewTransactionViewModel: ObservableObject {
 
     // MARK: - Navigation
 
-    /// Advances to the next step with validation
     func goToNextStep() {
         guard !isTransitioning else { return }
 
@@ -142,10 +148,12 @@ class NewTransactionViewModel: ObservableObject {
                 HapticManager.shared.warning()
                 return
             }
-            // Initialize defaults when moving to Step 3
+            // Initialize split method defaults when entering Step 3
             if splitOptions.isSplit {
                 splitMethod.initializeDefaults(
-                    for: splitOptions.participantIds, totalAmount: basicDetails.amount)
+                    for: splitOptions.participantIds,
+                    totalAmount: basicDetails.amount
+                )
             }
 
         default:
@@ -153,9 +161,10 @@ class NewTransactionViewModel: ObservableObject {
         }
 
         isTransitioning = true
+        navigationDirection = .forward
         HapticManager.shared.selection()
 
-        withAnimation(.smooth(duration: 0.3)) {
+        withAnimation(.easeInOut(duration: 0.3)) {
             if currentStep < 3 {
                 currentStep += 1
             }
@@ -166,15 +175,15 @@ class NewTransactionViewModel: ObservableObject {
         }
     }
 
-    /// Returns to the previous step
     func goToPreviousStep() {
         guard !isTransitioning else { return }
         guard currentStep > 1 else { return }
 
         isTransitioning = true
+        navigationDirection = .backward
         HapticManager.shared.selection()
 
-        withAnimation(.smooth(duration: 0.3)) {
+        withAnimation(.easeInOut(duration: 0.3)) {
             currentStep -= 1
         }
 
@@ -183,13 +192,23 @@ class NewTransactionViewModel: ObservableObject {
         }
     }
 
+    /// Handle cancel: show confirmation if data has been entered
+    func handleCancel() -> Bool {
+        if hasUnsavedData {
+            showCancelConfirmation = true
+            return false // Don't dismiss yet
+        }
+        return true // OK to dismiss
+    }
+
     // MARK: - Reset
 
-    /// Resets all state to initial values
     func reset() {
         currentStep = 1
+        navigationDirection = .forward
         isTransitioning = false
         isLoading = false
+        showCancelConfirmation = false
 
         basicDetails.reset()
         splitOptions.reset()
