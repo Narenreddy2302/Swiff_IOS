@@ -32,6 +32,7 @@ struct ConversationTransactionCard: View {
             Text(headerText)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.wiseSecondaryText)
+                .lineLimit(1)
                 .padding(.leading, 16)
 
             // Main card
@@ -190,7 +191,7 @@ struct ConversationTransactionCardBuilder {
         ]
 
         return ConversationTransactionCard(
-            headerText: "\(creatorName) Created the transaction",
+            headerText: "\(creatorName) created this",
             title: "Payment to \(personName)",
             amount: amount,
             amountLabel: "You Lent",
@@ -219,7 +220,7 @@ struct ConversationTransactionCardBuilder {
         ]
 
         return ConversationTransactionCard(
-            headerText: "\(creatorName) Created the transaction",
+            headerText: "\(creatorName) created this",
             title: "Request from \(personName)",
             amount: amount,
             amountLabel: "You Lent",
@@ -248,7 +249,7 @@ struct ConversationTransactionCardBuilder {
         ]
 
         return ConversationTransactionCard(
-            headerText: "\(creatorName) Created the transaction",
+            headerText: "\(creatorName) created this",
             title: "Payment from \(personName)",
             amount: amount,
             amountLabel: "You Owe",
@@ -281,7 +282,7 @@ struct ConversationTransactionCardBuilder {
         let amountColor: Color = isUserPayer ? .wiseBrightGreen : .wiseOrange
 
         return ConversationTransactionCard(
-            headerText: "\(creatorName) Created the transaction",
+            headerText: "\(creatorName) created this",
             title: description,
             amount: amount,
             amountLabel: amountLabel,
@@ -310,7 +311,7 @@ struct ConversationTransactionCardBuilder {
         ]
 
         return ConversationTransactionCard(
-            headerText: "\(creatorName) Created the transaction",
+            headerText: "\(creatorName) created this",
             title: description,
             amount: amount,
             amountLabel: "Your Share",

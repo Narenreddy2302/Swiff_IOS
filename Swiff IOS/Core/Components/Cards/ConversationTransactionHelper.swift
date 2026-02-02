@@ -14,10 +14,16 @@ import SwiftUI
 struct ConversationTransactionHelper {
     
     // MARK: - Currency Formatting
-    
+
     /// Format amount as currency string
     static func formatCurrency(_ amount: Double) -> String {
         amount.asCurrency
+    }
+
+    /// Extract first name from a full name for compact display
+    static func firstName(_ fullName: String) -> String {
+        if fullName == "You" { return fullName }
+        return fullName.components(separatedBy: " ").first ?? fullName
     }
     
     // MARK: - Person-to-Person Transaction
@@ -45,7 +51,7 @@ struct ConversationTransactionHelper {
         
         let absAmount = abs(amount)
         let formattedAmount = formatCurrency(absAmount)
-        let creatorName = isCurrentUserCreator ? "You" : personName
+        let creatorName = isCurrentUserCreator ? "You" : firstName(personName)
         let paidByName = isCurrentUserPayer ? "You" : personName
         let participantNames = participants.joined(separator: ", ")
         
@@ -104,13 +110,18 @@ struct ConversationTransactionHelper {
         splitBill: SplitBill,
         currentUserId: UUID,
         payerName: String,
+        creatorName: String? = nil,
         participantNames: [String],
         onTap: (() -> Void)? = nil
     ) -> ConversationTransactionCard {
-        
+
         let isCurrentUserPayer = splitBill.paidById == currentUserId
         let yourShare = splitBill.totalAmount / Double(max(splitBill.participants.count, 1))
-        
+
+        // Use createdById to determine creator (falls back to current user for legacy data without createdById)
+        let isCurrentUserCreator = splitBill.createdById == nil || splitBill.createdById == currentUserId
+        let resolvedCreatorName = firstName(creatorName ?? (isCurrentUserCreator ? "You" : payerName))
+
         let splitMethodText: String
         switch splitBill.splitType {
         case .equally:
@@ -124,7 +135,7 @@ struct ConversationTransactionHelper {
         case .adjustments:
             splitMethodText = "With Adjustments"
         }
-        
+
         return ConversationTransactionCardBuilder.split(
             description: splitBill.title,
             amount: formatCurrency(yourShare),
@@ -132,7 +143,7 @@ struct ConversationTransactionHelper {
             paidBy: payerName,
             splitMethod: splitMethodText,
             participants: participantNames.joined(separator: ", "),
-            creatorName: isCurrentUserPayer ? "You" : payerName,
+            creatorName: resolvedCreatorName,
             isUserPayer: isCurrentUserPayer,
             onTap: onTap
         )
@@ -149,10 +160,11 @@ struct ConversationTransactionHelper {
     static func createGroupExpenseCard(
         expense: GroupExpense,
         payerName: String,
+        creatorName: String = "You",
         participantNames: [String],
         onTap: (() -> Void)? = nil
     ) -> ConversationTransactionCard {
-        
+
         return ConversationTransactionCardBuilder.groupExpense(
             description: expense.title,
             amount: formatCurrency(expense.amountPerPerson),
@@ -160,11 +172,11 @@ struct ConversationTransactionHelper {
             paidBy: payerName,
             splitMethod: "Equally",
             participants: participantNames.joined(separator: ", "),
-            creatorName: payerName,
+            creatorName: firstName(creatorName),
             onTap: onTap
         )
     }
-    
+
     // MARK: - Transaction Display Data
     
     /// Create card from TransactionDisplayData protocol
@@ -188,7 +200,7 @@ struct ConversationTransactionHelper {
             paidBy: transaction.displayPaidByName,
             splitMethod: transaction.displaySplitMethod,
             participants: participantNames,
-            creatorName: transaction.displayCreatorName,
+            creatorName: firstName(transaction.displayCreatorName),
             isUserPayer: isCurrentUserPayer,
             onTap: onTap
         )
@@ -204,12 +216,14 @@ struct ConversationTransactionHelper {
     static func createSimpleTransactionCard(
         transaction: Transaction,
         personName: String,
+        creatorName: String = "You",
         onTap: (() -> Void)? = nil
     ) -> ConversationTransactionCard {
-        
+
         let isExpense = transaction.amount < 0
         let absAmount = abs(transaction.amount)
-        
+        let displayCreatorName = firstName(creatorName)
+
         if isExpense {
             // You owe them
             return ConversationTransactionCardBuilder.owe(
@@ -219,7 +233,7 @@ struct ConversationTransactionHelper {
                 paidBy: personName,
                 splitMethod: "Personal",
                 participants: "You, \(personName)",
-                creatorName: personName,
+                creatorName: displayCreatorName,
                 onTap: onTap
             )
         } else {
@@ -231,7 +245,7 @@ struct ConversationTransactionHelper {
                 paidBy: "You",
                 splitMethod: "Personal",
                 participants: "You, \(personName)",
-                creatorName: "You",
+                creatorName: displayCreatorName,
                 onTap: onTap
             )
         }

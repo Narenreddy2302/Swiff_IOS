@@ -69,6 +69,7 @@ struct TransactionBubbleView: View {
             Text(creatorName == "You" ? "You created this" : "\(creatorName) created this")
                 .font(.system(size: 12))
                 .foregroundColor(.wiseSecondaryText)
+                .lineLimit(1)
 
             // Transaction card (inside bubble)
             transactionCard

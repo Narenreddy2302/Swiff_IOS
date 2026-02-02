@@ -1465,6 +1465,7 @@ public class DataManager: ObservableObject {
             title: description,
             totalAmount: amount,
             paidById: paidById,
+            createdById: currentUserId,
             splitType: .exactAmounts,
             participants: [participant],
             notes: notes ?? "",
