@@ -79,6 +79,12 @@ struct PeopleView: View {
             AddPersonFromContactsSheet(isPresented: $showingAddPersonSheet)
                 .environmentObject(dataManager)
         }
+        .onAppear {
+            // Pre-load contacts in background so they display instantly when "+" is tapped
+            Task {
+                await ContactSyncManager.shared.loadContactsWithCache()
+            }
+        }
     }
 }
 

@@ -31,7 +31,8 @@ struct ConversationTransactionCard: View {
             // Header text outside the card
             Text(headerText)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(Color(UIColor.systemGray))
+                .foregroundColor(.wiseSecondaryText)
+                .lineLimit(1)
                 .padding(.leading, 16)
 
             // Main card
@@ -41,7 +42,7 @@ struct ConversationTransactionCard: View {
                     // Title
                     Text(title)
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
+                        .foregroundColor(.wisePrimaryText)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(2)
 
@@ -62,7 +63,7 @@ struct ConversationTransactionCard: View {
 
                 // Divider
                 Rectangle()
-                    .fill(Color(UIColor.separator).opacity(0.5))
+                    .fill(Color.wiseSeparator.opacity(0.5))
                     .frame(height: 0.5)
 
                 // Detail rows
@@ -74,11 +75,11 @@ struct ConversationTransactionCard: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
             }
-            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .background(Color.wiseCardBackground)
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color(UIColor.separator).opacity(0.5), lineWidth: 0.5)
+                    .stroke(Color.wiseSeparator.opacity(0.5), lineWidth: 0.5)
             )
         }
         .padding(.vertical, 3)
@@ -142,7 +143,7 @@ struct ConversationTransactionMetadataRow: View {
             // Label (left-aligned)
             Text(metadata.label)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.secondary)
+                .foregroundColor(.wiseSecondaryText)
 
             Spacer()
 
@@ -151,12 +152,12 @@ struct ConversationTransactionMetadataRow: View {
                 if let icon = metadata.icon {
                     Image(systemName: icon)
                         .font(.system(size: 12))
-                        .foregroundColor(metadata.valueColor ?? .primary)
+                        .foregroundColor(metadata.valueColor ?? .wisePrimaryText)
                 }
 
                 Text(metadata.value)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(metadata.valueColor ?? .primary)
+                    .foregroundColor(metadata.valueColor ?? .wisePrimaryText)
                     .multilineTextAlignment(.trailing)
                     .lineLimit(2)
             }
@@ -190,7 +191,7 @@ struct ConversationTransactionCardBuilder {
         ]
 
         return ConversationTransactionCard(
-            headerText: "\(creatorName) Created the transaction",
+            headerText: "\(creatorName) created this",
             title: "Payment to \(personName)",
             amount: amount,
             amountLabel: "You Lent",
@@ -219,7 +220,7 @@ struct ConversationTransactionCardBuilder {
         ]
 
         return ConversationTransactionCard(
-            headerText: "\(creatorName) Created the transaction",
+            headerText: "\(creatorName) created this",
             title: "Request from \(personName)",
             amount: amount,
             amountLabel: "You Lent",
@@ -248,7 +249,7 @@ struct ConversationTransactionCardBuilder {
         ]
 
         return ConversationTransactionCard(
-            headerText: "\(creatorName) Created the transaction",
+            headerText: "\(creatorName) created this",
             title: "Payment from \(personName)",
             amount: amount,
             amountLabel: "You Owe",
@@ -281,7 +282,7 @@ struct ConversationTransactionCardBuilder {
         let amountColor: Color = isUserPayer ? .wiseBrightGreen : .wiseOrange
 
         return ConversationTransactionCard(
-            headerText: "\(creatorName) Created the transaction",
+            headerText: "\(creatorName) created this",
             title: description,
             amount: amount,
             amountLabel: amountLabel,
@@ -310,7 +311,7 @@ struct ConversationTransactionCardBuilder {
         ]
 
         return ConversationTransactionCard(
-            headerText: "\(creatorName) Created the transaction",
+            headerText: "\(creatorName) created this",
             title: description,
             amount: amount,
             amountLabel: "Your Share",

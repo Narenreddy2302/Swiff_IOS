@@ -262,7 +262,7 @@ struct GroupDetailView: View {
                             paidBy: payer?.name ?? "Unknown",
                             splitMethod: "Equally",
                             participants: splitMembers.isEmpty ? "All Members" : splitMembers.map { $0.name }.joined(separator: ", "),
-                            creatorName: payer?.name ?? "Unknown",
+                            creatorName: "You",
                             onTap: {
                                 // Handle tap - could navigate to expense detail view
                                 HapticManager.shared.impact(.light)

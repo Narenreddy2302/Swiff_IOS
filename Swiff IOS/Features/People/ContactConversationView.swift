@@ -77,19 +77,22 @@ struct ContactConversationView: View {
 
     // MARK: - Helper Methods
 
-    /// Get creator name for a split bill
+    /// Get creator name for a split bill (uses createdById, not paidById)
     private func getCreatorName(for splitBill: SplitBill) -> String {
         let currentUserId = UserProfileManager.shared.profile.id
-        if splitBill.paidById == currentUserId {
+        // Use createdById if available; nil means current user created it (legacy data)
+        let creatorId = splitBill.createdById ?? currentUserId
+        if creatorId == currentUserId {
             return "You"
         }
-        return dataManager.people.first { $0.id == splitBill.paidById }?.name ?? contact.name
+        return dataManager.people.first { $0.id == creatorId }?.name.components(separatedBy: " ").first ?? contact.name.components(separatedBy: " ").first ?? contact.name
     }
 
     /// Check if current user created the split bill
     private func isCurrentUserCreator(_ splitBill: SplitBill) -> Bool {
         let currentUserId = UserProfileManager.shared.profile.id
-        return splitBill.paidById == currentUserId
+        // nil createdById means current user created it (legacy data)
+        return splitBill.createdById == nil || splitBill.createdById == currentUserId
     }
 
     /// Get bubble direction for timeline item

@@ -4,7 +4,7 @@
 //
 //  Created by Agent 10 on 11/21/25.
 //  Additional data models for widget communication
-//  Note: Core widget data models (WidgetSubscription, WidgetMonthlySpending)
+//  Note: Core widget data models (WidgetSubscription)
 //  are defined in WidgetDataService.swift to avoid duplicate type declarations.
 //
 

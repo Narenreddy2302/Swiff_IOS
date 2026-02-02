@@ -111,7 +111,7 @@ struct AdvancedSearchFilterSheet: View {
             sectionHeader(title: "Search In", icon: "line.3.horizontal.decrease.circle.fill")
 
             VStack(spacing: 12) {
-                ForEach(SearchResultType.allCases, id: \.self) { type in
+                ForEach([SearchResultType.subscription, .transaction], id: \.self) { type in
                     FilterToggleRow(
                         title: type.rawValue,
                         icon: type.icon,

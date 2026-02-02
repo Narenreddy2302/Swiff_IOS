@@ -191,7 +191,7 @@ struct ChatDateHeader: View {
     var body: some View {
         Text(formatDate(date))
             .font(.system(size: 11, weight: .semibold))  // 11pt Semibold for clear legibility at small size
-            .foregroundColor(Color(UIColor.secondaryLabel))  // Standard secondary label color
+            .foregroundColor(.wiseSecondaryText)  // Theme-aware secondary text color
             .padding(.horizontal, 12)
             .padding(.vertical, 6)  // Slightly more breathing room
     }

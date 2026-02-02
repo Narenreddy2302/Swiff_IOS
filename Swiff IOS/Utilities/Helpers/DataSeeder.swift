@@ -516,6 +516,7 @@ class DataSeeder {
                 title: data.title,
                 totalAmount: data.amount,
                 paidById: payer.id,
+                createdById: UserProfileManager.shared.profile.id,
                 splitType: .equally,
                 participants: participants,
                 notes: "Split \(data.participantCount) ways",

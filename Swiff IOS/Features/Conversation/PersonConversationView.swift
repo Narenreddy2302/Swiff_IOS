@@ -380,7 +380,7 @@ struct ConversationTimelineView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(Color.white.opacity(0.1))
+            .background(Color.wiseBorder.opacity(0.3))
             .cornerRadius(8)
             .padding(.horizontal, 14)
             .padding(.bottom, 8)
@@ -397,7 +397,7 @@ struct ConversationTimelineView: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(Color.white.opacity(0.1))
+            .background(Color.wiseBorder.opacity(0.3))
             .cornerRadius(8)
             .padding(.horizontal, 14)
             .padding(.bottom, 8)

@@ -97,6 +97,7 @@ struct SplitBill: Identifiable, Codable, Sendable {
     var title: String                    // "Dinner at Italian Restaurant"
     var totalAmount: Double              // Total bill amount
     var paidById: UUID                   // Person who paid the bill
+    var createdById: UUID?               // User who created this transaction (nil = current user for legacy data)
     var splitType: SplitType             // How the bill is split
     var participants: [SplitParticipant] // Who owes what
     var notes: String                    // Optional notes
@@ -140,6 +141,7 @@ struct SplitBill: Identifiable, Codable, Sendable {
         title: String,
         totalAmount: Double,
         paidById: UUID,
+        createdById: UUID? = nil,
         splitType: SplitType,
         participants: [SplitParticipant] = [],
         notes: String = "",
@@ -150,6 +152,7 @@ struct SplitBill: Identifiable, Codable, Sendable {
         self.title = title
         self.totalAmount = totalAmount
         self.paidById = paidById
+        self.createdById = createdById
         self.splitType = splitType
         self.participants = participants
         self.notes = notes

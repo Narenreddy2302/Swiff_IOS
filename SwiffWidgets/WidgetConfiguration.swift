@@ -15,7 +15,6 @@ enum WidgetConfiguration {
 
     // Widget kinds
     static let upcomingRenewalsWidgetKind = "UpcomingRenewalsWidget"
-    static let monthlySpendingWidgetKind = "MonthlySpendingWidget"
     static let quickActionsWidgetKind = "QuickActionsWidget"
 
     // Deep link URLs

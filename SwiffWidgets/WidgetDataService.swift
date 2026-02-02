@@ -47,73 +47,6 @@ struct WidgetSubscription: Codable, Identifiable {
     }
 }
 
-/// Monthly spending data for widgets
-struct WidgetMonthlySpending: Codable {
-    let currentMonth: Double
-    let previousMonth: Double
-    let monthlyHistory: [MonthData] // Last 12 months
-    let categoryBreakdown: [CategorySpending]
-    let topCategories: [CategorySpending] // Top 3
-
-    var percentageChange: Double {
-        guard previousMonth > 0 else { return 0 }
-        return ((currentMonth - previousMonth) / previousMonth) * 100
-    }
-
-    var trendDirection: TrendDirection {
-        if percentageChange > 5 {
-            return .up
-        } else if percentageChange < -5 {
-            return .down
-        } else {
-            return .stable
-        }
-    }
-
-    var formattedCurrentMonth: String {
-        return currentMonth.asCurrencyString
-    }
-
-    var formattedPercentageChange: String {
-        let sign = percentageChange >= 0 ? "+" : ""
-        return String(format: "%@%.1f%%", sign, percentageChange)
-    }
-
-    struct MonthData: Codable {
-        let month: String
-        let amount: Double
-    }
-
-    struct CategorySpending: Codable, Identifiable {
-        let id = UUID()
-        let category: String
-        let amount: Double
-        let percentage: Double
-
-        var formattedAmount: String {
-            return amount.asCurrencyString
-        }
-
-        var formattedPercentage: String {
-            return String(format: "%.0f%%", percentage)
-        }
-    }
-
-    enum TrendDirection: String, Codable {
-        case up = "↑"
-        case down = "↓"
-        case stable = "→"
-
-        var color: String {
-            switch self {
-            case .up: return "#E74C3C" // Red
-            case .down: return "#2ECC71" // Green
-            case .stable: return "#95A5A6" // Gray
-            }
-        }
-    }
-}
-
 // MARK: - Widget Data Service
 
 /// Service for reading and writing widget data using App Groups
@@ -125,7 +58,6 @@ class WidgetDataService {
 
     // Storage keys
     private let upcomingRenewalsKey = "widget.upcomingRenewals"
-    private let monthlySpendingKey = "widget.monthlySpending"
     private let lastUpdateKey = "widget.lastUpdate"
 
     private init() {
@@ -166,34 +98,6 @@ class WidgetDataService {
         }
 
         return subscriptions
-    }
-
-    // MARK: - Monthly Spending
-
-    /// Save monthly spending to shared storage
-    func saveMonthlySpending(_ spending: WidgetMonthlySpending) {
-        guard let data = try? JSONEncoder().encode(spending) else {
-            print("❌ Failed to encode monthly spending")
-            return
-        }
-
-        let storage = userDefaults ?? UserDefaults.standard
-        storage.set(data, forKey: monthlySpendingKey)
-        storage.set(Date(), forKey: lastUpdateKey)
-        print("✅ Saved monthly spending to widget storage")
-    }
-
-    /// Load monthly spending from shared storage
-    func loadMonthlySpending() -> WidgetMonthlySpending {
-        let storage = userDefaults ?? UserDefaults.standard
-
-        guard let data = storage.data(forKey: monthlySpendingKey),
-              let spending = try? JSONDecoder().decode(WidgetMonthlySpending.self, from: data) else {
-            print("⚠️ No monthly spending found in widget storage. Using mock data.")
-            return mockMonthlySpending()
-        }
-
-        return spending
     }
 
     // MARK: - Last Update
@@ -296,37 +200,4 @@ class WidgetDataService {
         ]
     }
 
-    /// Mock monthly spending for testing
-    private func mockMonthlySpending() -> WidgetMonthlySpending {
-        let monthlyHistory = [
-            WidgetMonthlySpending.MonthData(month: "Jan", amount: 245.50),
-            WidgetMonthlySpending.MonthData(month: "Feb", amount: 267.80),
-            WidgetMonthlySpending.MonthData(month: "Mar", amount: 289.20),
-            WidgetMonthlySpending.MonthData(month: "Apr", amount: 256.40),
-            WidgetMonthlySpending.MonthData(month: "May", amount: 278.90),
-            WidgetMonthlySpending.MonthData(month: "Jun", amount: 302.15),
-            WidgetMonthlySpending.MonthData(month: "Jul", amount: 295.60),
-            WidgetMonthlySpending.MonthData(month: "Aug", amount: 312.45),
-            WidgetMonthlySpending.MonthData(month: "Sep", amount: 298.70),
-            WidgetMonthlySpending.MonthData(month: "Oct", amount: 325.80),
-            WidgetMonthlySpending.MonthData(month: "Nov", amount: 342.50),
-            WidgetMonthlySpending.MonthData(month: "Dec", amount: 358.90)
-        ]
-
-        let categoryBreakdown = [
-            WidgetMonthlySpending.CategorySpending(category: "Entertainment", amount: 125.50, percentage: 35),
-            WidgetMonthlySpending.CategorySpending(category: "Productivity", amount: 89.20, percentage: 25),
-            WidgetMonthlySpending.CategorySpending(category: "Utilities", amount: 67.80, percentage: 19),
-            WidgetMonthlySpending.CategorySpending(category: "Shopping", amount: 45.60, percentage: 13),
-            WidgetMonthlySpending.CategorySpending(category: "Health", amount: 30.80, percentage: 8)
-        ]
-
-        return WidgetMonthlySpending(
-            currentMonth: 358.90,
-            previousMonth: 342.50,
-            monthlyHistory: monthlyHistory,
-            categoryBreakdown: categoryBreakdown,
-            topCategories: Array(categoryBreakdown.prefix(3))
-        )
-    }
 }

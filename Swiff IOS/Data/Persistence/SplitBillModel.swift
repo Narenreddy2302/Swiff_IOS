@@ -14,6 +14,7 @@ final class SplitBillModel {
     var title: String
     var totalAmount: Double
     var paidById: UUID?
+    var createdById: UUID?
     var splitTypeRaw: String
     var participantsData: Data  // Encoded [SplitParticipant]
     var notes: String
@@ -40,6 +41,7 @@ final class SplitBillModel {
         self.title = splitBill.title
         self.totalAmount = splitBill.totalAmount
         self.paidById = splitBill.paidById
+        self.createdById = splitBill.createdById
         self.splitTypeRaw = splitBill.splitType.rawValue
         self.participantsData = (try? JSONEncoder().encode(splitBill.participants)) ?? Data()
         self.notes = splitBill.notes
@@ -58,6 +60,7 @@ final class SplitBillModel {
             title: title,
             totalAmount: totalAmount,
             paidById: paidById ?? UUID(),
+            createdById: createdById,
             splitType: splitType,
             participants: participants,
             notes: notes,

@@ -25,9 +25,9 @@ struct TimelineInputArea: View {
                 Button(action: onQuickAction) {
                     Image(systemName: "plus")
                         .font(.system(size: 20, weight: .light))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.wiseSecondaryText)
                         .frame(width: 32, height: 32)
-                        .background(Color(UIColor.systemGray5))
+                        .background(Color.wiseBorder)
                         .clipShape(Circle())
                 }
 
@@ -41,7 +41,7 @@ struct TimelineInputArea: View {
                 }
                 .background(
                     Capsule()
-                        .stroke(Color(UIColor.systemGray4), lineWidth: 1)
+                        .stroke(Color.wiseBorder, lineWidth: 1)
                 )
 
                 // Send Button (Right) - Only visible when typing
@@ -52,7 +52,7 @@ struct TimelineInputArea: View {
                     }) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 30))
-                            .foregroundColor(.blue)
+                            .foregroundColor(.iMessageBlue)
                     }
                     .transition(.scale)
                 } else {
@@ -62,7 +62,7 @@ struct TimelineInputArea: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(Color(UIColor.systemBackground))
+            .background(Color.wiseBackground)
         }
     }
 }
