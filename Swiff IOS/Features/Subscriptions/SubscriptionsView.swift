@@ -105,36 +105,6 @@ struct SubscriptionsView: View {
         return result
     }
 
-    // Calculation properties for header
-    var totalMonthlySpend: Double {
-        dataManager.subscriptions.filter { $0.isActive }.reduce(0.0) { $0 + $1.monthlyEquivalent }
-    }
-
-    var totalAnnualSpend: Double {
-        totalMonthlySpend * 12
-    }
-
-    var activeSubscriptionsCount: Int {
-        dataManager.subscriptions.filter { $0.isActive }.count
-    }
-
-    var nextBillingDate: Date? {
-        dataManager.subscriptions
-            .filter { $0.isActive }
-            .sorted { $0.nextBillingDate < $1.nextBillingDate }
-            .first?.nextBillingDate
-    }
-
-    var upcomingBillsCount: Int {
-        let oneWeekFromNow = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
-        return dataManager.subscriptions
-            .filter {
-                $0.isActive && $0.nextBillingDate <= oneWeekFromNow
-                    && $0.nextBillingDate >= Date()
-            }
-            .count
-    }
-
     var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
@@ -149,11 +119,7 @@ struct SubscriptionsView: View {
                         showingInsightsSheet: $showingInsightsSheet,
                         showingRenewalCalendarSheet: $showingRenewalCalendarSheet,
                         showSearchBar: $showSearchBar,
-                        searchText: $searchText,
-                        totalMonthlySpend: totalMonthlySpend,
-                        totalAnnualSpend: totalAnnualSpend,
-                        nextBillingDate: nextBillingDate,
-                        upcomingBillsCount: upcomingBillsCount
+                        searchText: $searchText
                     )
                     .background(Theme.Colors.background)
                     .zIndex(1)
@@ -163,28 +129,15 @@ struct SubscriptionsView: View {
                             // No subscriptions at all - still show stats
                             ScrollView {
                                 VStack(spacing: 20) {
-                                    // Stats Cards (shows $0 when empty)
-                                    SubscriptionQuickStatsView(
-                                        subscriptions: dataManager.subscriptions,
-                                        sharedSubscriptions: []
-                                    )
-                                    .padding(.top, 8)
-
                                     EmptySubscriptionsView()
                                 }
+                                .padding(.top, 8)
                                 .padding(.bottom, 100)
                             }
                         } else if filteredPersonalSubscriptions.isEmpty && selectedCategory != nil {
                             // Category filter has no matches - show stats, filter, and category empty state
                             ScrollView {
                                 VStack(spacing: 20) {
-                                    // Stats Cards
-                                    SubscriptionQuickStatsView(
-                                        subscriptions: dataManager.subscriptions,
-                                        sharedSubscriptions: []
-                                    )
-                                    .padding(.top, 8)
-
                                     // Category Filter
                                     SubscriptionsCategoryFilterSection(
                                         selectedCategory: $selectedCategory)
@@ -201,13 +154,6 @@ struct SubscriptionsView: View {
                         } else {
                             ScrollView {
                                 VStack(spacing: 20) {
-                                    // Stats Cards
-                                    SubscriptionQuickStatsView(
-                                        subscriptions: dataManager.subscriptions,
-                                        sharedSubscriptions: []
-                                    )
-                                    .padding(.top, 8)
-
                                     // Category Filter
                                     SubscriptionsCategoryFilterSection(
                                         selectedCategory: $selectedCategory)
@@ -230,15 +176,9 @@ struct SubscriptionsView: View {
                             // No shared subscriptions at all - still show stats
                             ScrollView {
                                 VStack(spacing: 20) {
-                                    // Stats Cards (shows $0 when empty)
-                                    SharedSubscriptionQuickStatsView(
-                                        sharedSubscriptions: [],
-                                        people: dataManager.people
-                                    )
-                                    .padding(.top, 8)
-
                                     EmptySharedSubscriptionsView()
                                 }
+                                .padding(.top, 8)
                                 .padding(.bottom, 100)
                             }
                             .refreshable {
@@ -250,13 +190,6 @@ struct SubscriptionsView: View {
                             // Category filter has no matches
                             ScrollView {
                                 VStack(spacing: 20) {
-                                    // Stats Cards for Shared
-                                    SharedSubscriptionQuickStatsView(
-                                        sharedSubscriptions: filteredSharedSubscriptions,
-                                        people: dataManager.people
-                                    )
-                                    .padding(.top, 8)
-
                                     // Category Filter
                                     SubscriptionsCategoryFilterSection(
                                         selectedCategory: $selectedCategory
@@ -279,13 +212,6 @@ struct SubscriptionsView: View {
                         } else {
                             ScrollView {
                                 VStack(spacing: 20) {
-                                    // Stats Cards for Shared
-                                    SharedSubscriptionQuickStatsView(
-                                        sharedSubscriptions: filteredSharedSubscriptions,
-                                        people: dataManager.people
-                                    )
-                                    .padding(.top, 8)
-
                                     // Category Filter
                                     SubscriptionsCategoryFilterSection(
                                         selectedCategory: $selectedCategory
