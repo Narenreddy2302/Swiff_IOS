@@ -12,7 +12,6 @@ struct FeedHeader: View {
     @Binding var showingSearchBar: Bool
     @Binding var showingAddSheet: Bool
     @Binding var showingAdvancedFilterSheet: Bool
-    let monthlySpending: Double
     let activeFilterCount: Int
 
     var body: some View {
@@ -82,9 +81,6 @@ struct FeedHeader: View {
         .padding(.top, 10)
     }
 
-    private var spendingSummary: String {
-        "\(monthlySpending.asCurrency) spent this month"
-    }
 }
 
 // MARK: - Search Bar View
@@ -135,7 +131,6 @@ struct SearchBarView: View {
             showingSearchBar: .constant(false),
             showingAddSheet: .constant(false),
             showingAdvancedFilterSheet: .constant(false),
-            monthlySpending: 2450.32,
             activeFilterCount: 0
         )
 
@@ -151,7 +146,6 @@ struct SearchBarView: View {
             showingSearchBar: .constant(true),
             showingAddSheet: .constant(false),
             showingAdvancedFilterSheet: .constant(false),
-            monthlySpending: 1250.00,
             activeFilterCount: 2
         )
 

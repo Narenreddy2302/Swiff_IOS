@@ -148,10 +148,6 @@ struct Swiff_IOSApp: App {
         // let widgetSubscriptions = subscriptions.map { WidgetSubscription(from: $0) }
         // WidgetDataService.shared.saveUpcomingRenewals(widgetSubscriptions)
 
-        // Example: Update monthly spending
-        // let spending = calculateMonthlySpending()
-        // WidgetDataService.shared.saveMonthlySpending(spending)
-
         // Reload all widgets
         WidgetCenter.shared.reloadAllTimelines()
 
