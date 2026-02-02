@@ -40,7 +40,7 @@ struct MessageBubbleView: View {
     }
 
     private var textColor: Color {
-        message.isSent ? .white : .primary
+        message.isSent ? .white : .wisePrimaryText
     }
 
     private var alignment: HorizontalAlignment {
@@ -147,7 +147,7 @@ struct SimpleMessageBubble: View {
     }
 
     private var textColor: Color {
-        isSent ? .white : .primary
+        isSent ? .white : .wisePrimaryText
     }
 
     var body: some View {

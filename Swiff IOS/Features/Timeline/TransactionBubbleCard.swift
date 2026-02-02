@@ -98,7 +98,7 @@ struct TransactionBubbleCard: View {
             // 1. "Who Created" label (Outside the card)
             Text(headerText)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundColor(Color(UIColor.systemGray))
+                .foregroundColor(.wiseSecondaryText)
                 .padding(.leading, 16)
 
             // 2. The Rectangular Card
@@ -108,7 +108,7 @@ struct TransactionBubbleCard: View {
                 HStack(alignment: .top, spacing: 8) {
                     Text(title)
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
+                        .foregroundColor(.wisePrimaryText)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineLimit(2)
 
@@ -128,7 +128,7 @@ struct TransactionBubbleCard: View {
 
                 // Divider
                 Rectangle()
-                    .fill(Color(UIColor.separator).opacity(0.5))
+                    .fill(Color.wiseSeparator.opacity(0.5))
                     .frame(height: 0.5)
                     .padding(.horizontal, -14)
 
@@ -138,13 +138,13 @@ struct TransactionBubbleCard: View {
                         HStack(alignment: .top) {
                             Text(row.label)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.wiseSecondaryText)
 
                             Spacer()
 
                             Text(row.value)
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.primary)
+                                .foregroundColor(.wisePrimaryText)
                                 .multilineTextAlignment(.trailing)
                                 .lineLimit(2)
                         }
@@ -152,11 +152,11 @@ struct TransactionBubbleCard: View {
                 }
             }
             .padding(14)
-            .background(Color(UIColor.secondarySystemGroupedBackground))
+            .background(Color.wiseCardBackground)
             .cornerRadius(16)  // Simple rounded corners - rectangular style
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color(UIColor.separator), lineWidth: 0.5)
+                    .stroke(Color.wiseSeparator.opacity(0.5), lineWidth: 0.5)
             )
         }
         .padding(.vertical, 3)

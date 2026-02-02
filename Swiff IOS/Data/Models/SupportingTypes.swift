@@ -801,8 +801,13 @@ extension Color {
     /// iMessage sent bubble blue (#007AFF)
     public static let iMessageBlue = Color(red: 0.0, green: 0.478, blue: 1.0)  // #007AFF
 
-    /// iMessage received bubble gray (#E9E9EB)
-    public static let iMessageGray = Color(red: 0.914, green: 0.914, blue: 0.922)  // #E9E9EB
+    /// iMessage received bubble gray - adaptive (#E9E9EB light, #2C2C2E dark)
+    public static let iMessageGray = Color(
+        uiColor: UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark
+                ? UIColor(red: 44 / 255, green: 44 / 255, blue: 46 / 255, alpha: 1.0)  // #2C2C2E for dark
+                : UIColor(red: 0.914, green: 0.914, blue: 0.922, alpha: 1.0)  // #E9E9EB for light
+        })
 
     /// Transaction amount yellow for sent bubbles (#FFD60A)
     public static let transactionYellow = Color(red: 1.0, green: 0.839, blue: 0.039)  // #FFD60A
