@@ -229,40 +229,52 @@ struct AddPersonSheet: View {
             name = trimmedInput
         }
 
-        // Check for existing person by email or phone
+        // Check for existing person by email, phone, or name
         let existingPerson = dataManager.people.first { person in
-            (!email.isEmpty && person.email.lowercased() == email.lowercased())
-                || (!phone.isEmpty
-                    && person.phone.replacingOccurrences(of: " ", with: "").replacingOccurrences(
-                        of: "-", with: "")
-                        == phone.replacingOccurrences(of: " ", with: "").replacingOccurrences(
-                            of: "-", with: ""))
-        }
-
-        if existingPerson != nil {
-            HapticManager.shared.warning()
-            ToastManager.shared.showInfo("Person already exists")
-        } else {
-            let newPerson = Person(
-                name: name,
-                email: email,
-                phone: phone,
-                avatarType: .initials(
-                    AvatarGenerator.generateInitials(from: name),
-                    colorIndex: AvatarColorPalette.colorIndex(for: name)
-                )
-            )
-
-            do {
-                try dataManager.addPerson(newPerson)
-                HapticManager.shared.success()
-                ToastManager.shared.showSuccess("Person added!")
-            } catch {
-                dataManager.error = error
+            // Check by email
+            if !email.isEmpty && person.email.lowercased() == email.lowercased() {
+                return true
             }
+            // Check by phone (normalized)
+            if !phone.isEmpty {
+                let normalizedExisting = PhoneNumberNormalizer.normalize(person.phone)
+                let normalizedNew = PhoneNumberNormalizer.normalize(phone)
+                if !normalizedExisting.isEmpty && normalizedExisting == normalizedNew {
+                    return true
+                }
+            }
+            // Check by name (case-insensitive) to prevent duplicate name entries
+            if !name.isEmpty && person.name.trimmingCharacters(in: .whitespaces).lowercased() == name.lowercased() {
+                return true
+            }
+            return false
         }
 
-        inputValue = ""
-        isPresented = false
+        if let existing = existingPerson {
+            HapticManager.shared.warning()
+            ToastManager.shared.showInfo("\(existing.name) already exists in People")
+            // Don't close sheet - let user see the message and correct input
+            return
+        }
+
+        let newPerson = Person(
+            name: name,
+            email: email,
+            phone: phone,
+            avatarType: .initials(
+                AvatarGenerator.generateInitials(from: name),
+                colorIndex: AvatarColorPalette.colorIndex(for: name)
+            )
+        )
+
+        do {
+            try dataManager.addPerson(newPerson)
+            HapticManager.shared.success()
+            ToastManager.shared.showSuccess("Person added!")
+            inputValue = ""
+            isPresented = false
+        } catch {
+            dataManager.error = error
+        }
     }
 }
