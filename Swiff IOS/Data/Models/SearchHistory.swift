@@ -205,7 +205,7 @@ struct SearchFilters: Equatable {
     var paymentMethods: Set<String> = []
 
     // Result type filter
-    var resultTypes: Set<SearchResultType> = [.person, .subscription, .transaction]
+    var resultTypes: Set<SearchResultType> = [.subscription, .transaction]
 
     var isActive: Bool {
         !selectedCategories.isEmpty ||
@@ -216,7 +216,7 @@ struct SearchFilters: Equatable {
         !statusFilters.isEmpty ||
         !selectedTags.isEmpty ||
         !paymentMethods.isEmpty ||
-        resultTypes.count < SearchResultType.allCases.count
+        resultTypes.count < 2 // subscription + transaction
     }
 
     mutating func reset() {
@@ -228,6 +228,6 @@ struct SearchFilters: Equatable {
         statusFilters.removeAll()
         selectedTags.removeAll()
         paymentMethods.removeAll()
-        resultTypes = Set(SearchResultType.allCases)
+        resultTypes = [.subscription, .transaction]
     }
 }
