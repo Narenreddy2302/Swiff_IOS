@@ -299,31 +299,29 @@ private struct KeypadButton: View {
 
     var body: some View {
         Button(action: action) {
-            Group {
-                switch key {
-                case .digit(let d):
-                    Text("\(d)")
-                        .font(.system(size: 24, weight: .medium, design: .rounded))
-                        .foregroundColor(Theme.Colors.textPrimary)
+            switch key {
+            case .digit(let d):
+                Text("\(d)")
+                    .font(.system(size: 24, weight: .medium, design: .rounded))
+                    .foregroundColor(Theme.Colors.textPrimary)
 
-                case .backspace:
-                    Image(systemName: "delete.backward")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(Theme.Colors.textPrimary)
+            case .backspace:
+                Image(systemName: "delete.backward")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(Theme.Colors.textPrimary)
 
-                case .empty:
-                    Color.clear
-                }
+            case .empty:
+                Color.clear
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(
-                key == .empty
-                    ? Color.clear
-                    : Theme.Colors.cardBackground
-            )
-            .cornerRadius(Theme.Metrics.cornerRadiusMedium)
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: 52)
+        .background(
+            key == .empty
+                ? Color.clear
+                : Theme.Colors.cardBackground
+        )
+        .cornerRadius(Theme.Metrics.cornerRadiusMedium)
         .buttonStyle(KeypadPressStyle())
         .disabled(key == .empty)
         .accessibilityLabel(keyAccessibilityLabel)

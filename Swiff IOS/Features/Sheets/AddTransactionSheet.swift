@@ -156,31 +156,36 @@ struct AddTransactionSheet: View {
 
     // MARK: - Step Content
 
+    @ViewBuilder
+    private var currentStepView: some View {
+        switch viewModel.currentStep {
+        case 1:
+            Step1BasicDetailsView(viewModel: viewModel)
+                .environmentObject(dataManager)
+        case 2:
+            Step2SplitOptionsView(viewModel: viewModel)
+                .environmentObject(dataManager)
+        case 3:
+            Step3SplitMethodView(
+                viewModel: viewModel,
+                onBack: {
+                    viewModel.goToPreviousStep()
+                },
+                onSave: {
+                    saveTransaction()
+                }
+            )
+            .environmentObject(dataManager)
+        default:
+            EmptyView()
+        }
+    }
+
     private var stepContentView: some View {
         ZStack {
-            // Step views with transitions based on navigation direction
-            Group {
-                if viewModel.currentStep == 1 {
-                    Step1BasicDetailsView(viewModel: viewModel)
-                        .environmentObject(dataManager)
-                } else if viewModel.currentStep == 2 {
-                    Step2SplitOptionsView(viewModel: viewModel)
-                        .environmentObject(dataManager)
-                } else if viewModel.currentStep == 3 {
-                    Step3SplitMethodView(
-                        viewModel: viewModel,
-                        onBack: {
-                            viewModel.goToPreviousStep()
-                        },
-                        onSave: {
-                            saveTransaction()
-                        }
-                    )
-                    .environmentObject(dataManager)
-                }
-            }
-            .transition(stepTransition)
-            .id(viewModel.currentStep)
+            currentStepView
+                .transition(stepTransition)
+                .id(viewModel.currentStep)
         }
         .clipped()
         .animation(
