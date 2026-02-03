@@ -254,6 +254,7 @@ struct AddPersonFromContactsSheet: View {
                     ForEach(onSwiffContacts) { contact in
                         ContactImportRow(
                             contact: contact,
+                            isAlreadyAdded: isContactAlreadyAdded(contact),
                             onAdd: { handleContactSelection(contact) },
                             onInvite: nil
                         )
@@ -274,6 +275,7 @@ struct AddPersonFromContactsSheet: View {
                     ForEach(inviteContacts) { contact in
                         ContactImportRow(
                             contact: contact,
+                            isAlreadyAdded: isContactAlreadyAdded(contact),
                             onAdd: { handleContactSelection(contact) },
                             onInvite: {
                                 contactToInvite = contact
@@ -299,6 +301,7 @@ struct AddPersonFromContactsSheet: View {
                     ForEach(noPhoneContacts) { contact in
                         ContactImportRow(
                             contact: contact,
+                            isAlreadyAdded: isContactAlreadyAdded(contact),
                             onAdd: { handleContactSelection(contact) },
                             onInvite: nil
                         )
@@ -318,6 +321,39 @@ struct AddPersonFromContactsSheet: View {
             return syncManager.contacts
         }
         return syncManager.contacts.search(debouncedSearchText)
+    }
+
+    // MARK: - Duplicate Detection
+
+    /// Check if a contact is already added to the People list
+    private func isContactAlreadyAdded(_ contact: ContactEntry) -> Bool {
+        // 1. Check by contactId
+        if dataManager.people.contains(where: { $0.contactId == contact.id }) {
+            return true
+        }
+
+        // 2. Check by normalized phone number
+        let contactPhones = contact.phoneNumbers.map { PhoneNumberNormalizer.normalize($0) }
+        if !contactPhones.isEmpty {
+            if dataManager.people.contains(where: { person in
+                let personPhone = PhoneNumberNormalizer.normalize(person.phone)
+                return !personPhone.isEmpty && contactPhones.contains(personPhone)
+            }) {
+                return true
+            }
+        }
+
+        // 3. Check by name (case-insensitive)
+        let contactName = contact.name.trimmingCharacters(in: .whitespaces).lowercased()
+        if !contactName.isEmpty {
+            if dataManager.people.contains(where: {
+                $0.name.trimmingCharacters(in: .whitespaces).lowercased() == contactName
+            }) {
+                return true
+            }
+        }
+
+        return false
     }
 
     // MARK: - Denied Permission Content
@@ -596,6 +632,7 @@ struct ContactImportSectionHeader: View {
 
 struct ContactImportRow: View {
     let contact: ContactEntry
+    var isAlreadyAdded: Bool = false
     let onAdd: () -> Void
     let onInvite: (() -> Void)?
 
@@ -603,69 +640,83 @@ struct ContactImportRow: View {
         HStack(spacing: Theme.Metrics.paddingMedium) {
             // Avatar
             ContactAvatarView(contact: contact, size: Theme.Metrics.avatarMedium)
+                .opacity(isAlreadyAdded ? 0.5 : 1.0)
 
             // Name and Phone
             VStack(alignment: .leading, spacing: 2) {
                 Text(contact.name)
                     .font(Theme.Fonts.bodyLarge)
-                    .foregroundColor(Theme.Colors.textPrimary)
+                    .foregroundColor(isAlreadyAdded ? Theme.Colors.textTertiary : Theme.Colors.textPrimary)
                     .lineLimit(1)
 
                 if let phone = contact.primaryPhone {
                     Text(formatPhoneForDisplay(phone))
                         .font(Theme.Fonts.bodySmall)
-                        .foregroundColor(Theme.Colors.textSecondary)
+                        .foregroundColor(isAlreadyAdded ? Theme.Colors.textTertiary : Theme.Colors.textSecondary)
                         .lineLimit(1)
                 } else if let email = contact.email {
                     Text(email)
                         .font(Theme.Fonts.bodySmall)
-                        .foregroundColor(Theme.Colors.textSecondary)
+                        .foregroundColor(isAlreadyAdded ? Theme.Colors.textTertiary : Theme.Colors.textSecondary)
                         .lineLimit(1)
                 }
             }
 
             Spacer()
 
-            // Status Badge (On Swiff)
-            if contact.hasAppAccount {
+            if isAlreadyAdded {
+                // Already added indicator
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 12))
-                    Text("On Swiff")
+                        .font(.system(size: 14))
+                    Text("Added")
                         .font(Theme.Fonts.captionMedium)
                 }
                 .foregroundColor(Theme.Colors.success)
-                .padding(.trailing, 4)
-            }
+            } else {
+                // Status Badge (On Swiff)
+                if contact.hasAppAccount {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 12))
+                        Text("On Swiff")
+                            .font(Theme.Fonts.captionMedium)
+                    }
+                    .foregroundColor(Theme.Colors.success)
+                    .padding(.trailing, 4)
+                }
 
-            // Invite Button (for non-Swiff contacts with phone)
-            if let onInvite = onInvite, !contact.hasAppAccount && contact.canBeInvited {
-                Button(action: onInvite) {
-                    Text("Invite")
-                        .font(Theme.Fonts.labelSmall)
-                        .foregroundColor(Theme.Colors.info)
-                        .padding(.horizontal, Theme.Metrics.paddingMedium)
-                        .padding(.vertical, 6)
-                        .background(Theme.Colors.info.opacity(Theme.Opacity.faint))
-                        .clipShape(Capsule())
+                // Invite Button (for non-Swiff contacts with phone)
+                if let onInvite = onInvite, !contact.hasAppAccount && contact.canBeInvited {
+                    Button(action: onInvite) {
+                        Text("Invite")
+                            .font(Theme.Fonts.labelSmall)
+                            .foregroundColor(Theme.Colors.info)
+                            .padding(.horizontal, Theme.Metrics.paddingMedium)
+                            .padding(.vertical, 6)
+                            .background(Theme.Colors.info.opacity(Theme.Opacity.faint))
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+
+                // Add Button
+                Button(action: onAdd) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: Theme.Metrics.iconSizeLarge))
+                        .foregroundColor(Theme.Colors.brandPrimary)
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-
-            // Add Button
-            Button(action: onAdd) {
-                Image(systemName: "plus.circle.fill")
-                    .font(.system(size: Theme.Metrics.iconSizeLarge))
-                    .foregroundColor(Theme.Colors.brandPrimary)
-            }
-            .buttonStyle(PlainButtonStyle())
         }
         .padding(.vertical, 12)
         .padding(.horizontal, Theme.Metrics.paddingMedium)
         .background(Theme.Colors.cardBackground)
         .contentShape(Rectangle())
         .onTapGesture {
-            onAdd()
+            if !isAlreadyAdded {
+                onAdd()
+            }
         }
     }
 

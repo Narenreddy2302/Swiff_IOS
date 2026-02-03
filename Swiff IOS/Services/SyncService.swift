@@ -1186,10 +1186,12 @@ extension SplitBillModel {
         let paidById = remote.paidByPersonId ?? remote.paidByUserId ?? UUID()
 
         // Create a domain SplitBill first
+        // For synced data, the userId who owns the record is the creator
         var splitBill = SplitBill(
             title: remote.title,
             totalAmount: NSDecimalNumber(decimal: remote.totalAmount).doubleValue,
             paidById: paidById,
+            createdById: remote.userId,
             splitType: splitType,
             participants: [], // Participants loaded separately
             notes: remote.notes ?? "",

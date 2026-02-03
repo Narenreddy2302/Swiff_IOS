@@ -85,7 +85,7 @@ struct SearchView: View {
                     .foregroundColor(.wiseSecondaryText)
 
                 // Text field
-                TextField("Search people, subscriptions, transactions...", text: $searchQuery)
+                TextField("Search subscriptions, transactions...", text: $searchQuery)
                     .font(.system(size: 16))
                     .autocorrectionDisabled()
 
@@ -239,7 +239,7 @@ struct SearchView: View {
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.wisePrimaryText)
 
-                        Text("Find people, subscriptions, and transactions")
+                        Text("Find subscriptions and transactions")
                             .font(.system(size: 15))
                             .foregroundColor(.wiseSecondaryText)
                             .multilineTextAlignment(.center)
@@ -374,12 +374,6 @@ struct SearchView: View {
         let query = searchQuery.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         var results: [SearchResult] = []
 
-        // Search people
-        if searchFilters.resultTypes.contains(.person) {
-            let peopleResults = searchPeople(query: query)
-            results.append(contentsOf: peopleResults)
-        }
-
         // Search subscriptions
         if searchFilters.resultTypes.contains(.subscription) {
             let subscriptionResults = searchSubscriptions(query: query)
@@ -409,32 +403,6 @@ struct SearchView: View {
         searchHistory.addSearch(searchQuery, resultCount: results.count)
 
         isSearching = false
-    }
-
-    private func searchPeople(query: String) -> [SearchResult] {
-        return dataManager.people.compactMap { person in
-            let nameMatch = person.name.lowercased().contains(query)
-            let emailMatch = person.email.lowercased().contains(query)
-            let phoneMatch = person.phone.contains(query)
-
-            guard nameMatch || emailMatch || phoneMatch else { return nil }
-
-            let score = calculateMatchScore(
-                text: person.name + person.email + person.phone,
-                query: query
-            )
-
-            return SearchResult(
-                id: person.id,
-                type: .person,
-                title: person.name,
-                subtitle: person.email,
-                metadata: person.balance.asCurrency,
-                icon: "person.circle.fill",
-                color: "#007AFF",
-                matchScore: score
-            )
-        }
     }
 
     private func searchSubscriptions(query: String) -> [SearchResult] {
@@ -634,7 +602,7 @@ struct SearchView: View {
         case .transaction:
             return abs(dataManager.transactions.first(where: { $0.id == result.id })?.amount ?? 0)
         case .person:
-            return abs(dataManager.people.first(where: { $0.id == result.id })?.balance ?? 0)
+            return 0
         }
     }
 

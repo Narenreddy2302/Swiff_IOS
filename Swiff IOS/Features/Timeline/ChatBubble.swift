@@ -90,7 +90,7 @@ struct ChatBubble<Content: View>: View {
     private var textColor: Color {
         switch direction {
         case .incoming:
-            return .primary
+            return .wisePrimaryText
         case .outgoing:
             return .white
         case .center:
@@ -101,7 +101,7 @@ struct ChatBubble<Content: View>: View {
     private var backgroundColor: Color {
         switch direction {
         case .incoming:
-            return Color(UIColor.secondarySystemGroupedBackground)  // Light gray for incoming
+            return .iMessageGray  // Adaptive: #E9E9EB light, #2C2C2E dark
         case .outgoing:
             return .iMessageBlue  // #007AFF - Keep the blue for outgoing
         case .center:

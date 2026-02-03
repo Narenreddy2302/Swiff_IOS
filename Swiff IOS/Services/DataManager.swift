@@ -305,6 +305,36 @@ public class DataManager: ObservableObject {
     // MARK: - Person CRUD Operations
 
     public func addPerson(_ person: Person) throws {
+        // Prevent duplicate entries by checking name, phone, and email
+        let duplicateExists = people.contains { existing in
+            // Check by name (case-insensitive)
+            if !person.name.isEmpty && existing.name.trimmingCharacters(in: .whitespaces).lowercased() == person.name.trimmingCharacters(in: .whitespaces).lowercased() {
+                return true
+            }
+            // Check by phone (normalized)
+            if !person.phone.isEmpty {
+                let existingPhone = PhoneNumberNormalizer.normalize(existing.phone)
+                let newPhone = PhoneNumberNormalizer.normalize(person.phone)
+                if !existingPhone.isEmpty && existingPhone == newPhone {
+                    return true
+                }
+            }
+            // Check by email (case-insensitive)
+            if !person.email.isEmpty && existing.email.lowercased() == person.email.lowercased() {
+                return true
+            }
+            // Check by contactId
+            if let contactId = person.contactId, existing.contactId == contactId {
+                return true
+            }
+            return false
+        }
+
+        if duplicateExists {
+            print("Person already exists: \(person.name) - skipping add")
+            throw NSError(domain: "DataManager", code: 409, userInfo: [NSLocalizedDescriptionKey: "\(person.name) already exists in People"])
+        }
+
         // Save locally first
         try persistenceService.savePerson(person)
         people.append(person)
@@ -1435,6 +1465,7 @@ public class DataManager: ObservableObject {
             title: description,
             totalAmount: amount,
             paidById: paidById,
+            createdById: currentUserId,
             splitType: .exactAmounts,
             participants: [participant],
             notes: notes ?? "",

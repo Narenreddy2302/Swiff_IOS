@@ -402,6 +402,7 @@ struct AddTransactionSheet: View {
             title: viewModel.basicDetails.transactionName.trimmingCharacters(in: .whitespaces),
             totalAmount: abs(viewModel.basicDetails.amount),
             paidById: payerId,
+            createdById: UserProfileManager.shared.profile.id,
             splitType: viewModel.splitMethod.splitMethod,
             participants: participants,
             notes: viewModel.basicDetails.notes,

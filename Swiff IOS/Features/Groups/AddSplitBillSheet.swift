@@ -322,6 +322,7 @@ struct AddSplitBillSheet: View {
             title: title,
             totalAmount: amount,
             paidById: payer.id,
+            createdById: UserProfileManager.shared.profile.id,
             splitType: selectedSplitType,
             participants: participants,
             notes: notes,
