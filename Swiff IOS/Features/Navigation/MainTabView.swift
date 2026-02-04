@@ -85,8 +85,8 @@ struct MainTabView: View {
                 }
                 .tag(3)
 
-            // Tab 4: Recent Activity (Feed)
-            RecentActivityView()
+            // Tab 4: Twitter-style Feed
+            TwitterFeedView()
                 .tabItem {
                     Label {
                         tabLabel("Feed", tag: 4)
