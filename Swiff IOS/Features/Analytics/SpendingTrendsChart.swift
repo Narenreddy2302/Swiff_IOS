@@ -18,8 +18,14 @@ struct SpendingTrendsChart: View {
     // MARK: - Properties
     
     @EnvironmentObject var dataManager: DataManager
-    @State private var selectedMonth: MonthlySpending?
+    @State private var selectedDate: Date?
     @State private var animateChart = false
+    
+    // Computed selected month from date
+    private var selectedMonth: MonthlySpending? {
+        guard let date = selectedDate else { return nil }
+        return monthlyData.first { Calendar.current.isDate($0.month, equalTo: date, toGranularity: .month) }
+    }
     
     // MARK: - Computed Properties
     
@@ -156,7 +162,7 @@ struct SpendingTrendsChart: View {
                 .foregroundStyle(Theme.Colors.brandPrimary)
             }
         }
-        .chartXSelection(value: $selectedMonth)
+        .chartXSelection(value: $selectedDate)
         .chartXAxis {
             AxisMarks(values: .automatic) { value in
                 if let date = value.as(Date.self) {

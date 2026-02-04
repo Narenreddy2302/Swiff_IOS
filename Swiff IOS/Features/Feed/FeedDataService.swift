@@ -181,22 +181,24 @@ class FeedDataService: ObservableObject {
     
     private func colorForCategory(_ category: TransactionCategory) -> Color {
         switch category {
-        case .food, .groceries:
+        case .food, .dining, .groceries:
             return Theme.Colors.success
         case .shopping:
             return Theme.Colors.brandPrimary
-        case .transportation:
+        case .transportation, .travel:
             return Theme.Colors.info
         case .entertainment:
             return Theme.Colors.warning
         case .bills, .utilities:
-            return Theme.Colors.amountNegative
+            return Theme.Colors.statusError
         case .healthcare:
             return .pink
         case .income:
-            return Theme.Colors.amountPositive
+            return Theme.Colors.success
         case .transfer:
             return Theme.Colors.info
+        case .investment:
+            return Theme.Colors.brandSecondary
         case .other:
             return Theme.Colors.textSecondary
         }
