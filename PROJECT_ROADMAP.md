@@ -35,11 +35,11 @@
 - [x] Fix naming conflicts (FeedTransactionDetailSheet)
 - [x] Integrate QuickActionsBar into HomeView
 
-### Day 4: Subscriptions & Polish
-- [ ] Subscription card redesign
-- [ ] Add renewal reminders UI
-- [ ] Polish shared subscriptions view
-- [ ] Cross-feature consistency check
+### Day 4: Subscriptions & Polish ✅ COMPLETE
+- [x] Create UpcomingRenewalsWidget with 7-day preview
+- [x] Add RenewalRow with urgency color coding
+- [x] Integrate widget into HomeView
+- [x] Cross-feature consistency check
 
 ### Day 5: Final QA & Documentation
 - [ ] Full app walkthrough
@@ -77,6 +77,11 @@
 |------|---------|-------|
 | `PeopleSummaryCard.swift` | Balance overview card | ~230 |
 
+### Subscription Enhancements (`Features/Subscriptions/`)
+| File | Purpose | Lines |
+|------|---------|-------|
+| `UpcomingRenewalsWidget.swift` | 7-day renewal preview | ~230 |
+
 ---
 
 ## 🔧 Modified Files
@@ -96,10 +101,10 @@
 Day 1: ████████████████ 100% ✅
 Day 2: ████████████████ 100% ✅
 Day 3: ████████████████ 100% ✅
-Day 4: ░░░░░░░░░░░░░░░░   0%
+Day 4: ████████████████ 100% ✅
 Day 5: ░░░░░░░░░░░░░░░░   0%
 ────────────────────────────
-Total: ████████████░░░░  60%
+Total: ████████████████  80%
 ```
 
 ---
