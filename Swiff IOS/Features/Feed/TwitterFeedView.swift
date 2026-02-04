@@ -135,37 +135,145 @@ struct TwitterFeedView: View {
                         .padding(.vertical, 20)
                 }
                 
-                // Transaction Posts
-                ForEach(Array(filteredTransactions.enumerated()), id: \.element.id) { index, transaction in
-                    TransactionPostCard(
-                        transaction: transaction,
-                        onLike: { handleLike(transaction) },
-                        onComment: { handleComment(transaction) },
-                        onShare: { handleShare(transaction) },
-                        onTap: { selectedTransaction = transaction }
-                    )
-                    .opacity(animateCards ? 1 : 0)
-                    .offset(y: animateCards ? 0 : 20)
-                    .animation(
-                        .spring(response: 0.4, dampingFraction: 0.8)
-                        .delay(Double(index) * 0.05),
-                        value: animateCards
-                    )
-                    
-                    // Divider between posts
-                    Divider()
-                        .background(Theme.Colors.border)
+                // Summary Card (only show on All filter)
+                if selectedFilter == .all && !feedService.feedTransactions.isEmpty {
+                    FeedSummaryCard()
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                 }
                 
-                // Load more indicator
-                if !feedService.feedTransactions.isEmpty {
-                    loadMoreIndicator
+                // Empty State or Transaction Posts
+                if filteredTransactions.isEmpty {
+                    emptyStateView
+                } else {
+                    // Transaction Posts
+                    ForEach(Array(filteredTransactions.enumerated()), id: \.element.id) { index, transaction in
+                        TransactionPostCard(
+                            transaction: transaction,
+                            onLike: { handleLike(transaction) },
+                            onComment: { handleComment(transaction) },
+                            onShare: { handleShare(transaction) },
+                            onTap: { selectedTransaction = transaction }
+                        )
+                        .opacity(animateCards ? 1 : 0)
+                        .offset(y: animateCards ? 0 : 20)
+                        .animation(
+                            .spring(response: 0.4, dampingFraction: 0.8)
+                            .delay(Double(index) * 0.05),
+                            value: animateCards
+                        )
+                        
+                        // Divider between posts
+                        Divider()
+                            .background(Theme.Colors.border)
+                    }
+                    
+                    // End of feed message
+                    endOfFeedView
                 }
             }
         }
         .refreshable {
             await refreshFeed()
         }
+    }
+    
+    // MARK: - Empty State
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+                .frame(height: 60)
+            
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(Theme.Colors.brandPrimary.opacity(0.1))
+                    .frame(width: 80, height: 80)
+                
+                Image(systemName: emptyStateIcon)
+                    .font(.system(size: 32, weight: .medium))
+                    .foregroundColor(Theme.Colors.brandPrimary)
+            }
+            
+            // Title
+            Text(emptyStateTitle)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(Theme.Colors.textPrimary)
+            
+            // Subtitle
+            Text(emptyStateSubtitle)
+                .font(.system(size: 15))
+                .foregroundColor(Theme.Colors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+            
+            // CTA Button
+            Button(action: {
+                HapticManager.shared.impact(.medium)
+                showingCompose = true
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("Add Transaction")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(Theme.Colors.textOnPrimary)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .background(Theme.Colors.brandPrimary)
+                .cornerRadius(25)
+            }
+            .padding(.top, 8)
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+    }
+    
+    private var emptyStateIcon: String {
+        switch selectedFilter {
+        case .all: return "square.stack.3d.up"
+        case .youOwe: return "arrow.up.circle"
+        case .theyOwe: return "arrow.down.circle"
+        case .settled: return "checkmark.circle"
+        }
+    }
+    
+    private var emptyStateTitle: String {
+        switch selectedFilter {
+        case .all: return "No Transactions Yet"
+        case .youOwe: return "Nothing You Owe"
+        case .theyOwe: return "No One Owes You"
+        case .settled: return "No Settled Transactions"
+        }
+    }
+    
+    private var emptyStateSubtitle: String {
+        switch selectedFilter {
+        case .all: return "Add your first transaction to start tracking expenses with friends"
+        case .youOwe: return "You're all caught up! No pending payments"
+        case .theyOwe: return "No one owes you money right now"
+        case .settled: return "Settled transactions will appear here"
+        }
+    }
+    
+    // MARK: - End of Feed
+    
+    private var endOfFeedView: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 28))
+                .foregroundColor(Theme.Colors.success.opacity(0.6))
+            
+            Text("You're all caught up!")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Theme.Colors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
     }
     
     // MARK: - Compose Button
@@ -185,20 +293,6 @@ struct TwitterFeedView: View {
         }
         .padding(.trailing, 20)
         .padding(.bottom, 20)
-    }
-    
-    // MARK: - Load More
-    
-    private var loadMoreIndicator: some View {
-        HStack {
-            Spacer()
-            ProgressView()
-                .padding(.vertical, 20)
-            Spacer()
-        }
-        .onAppear {
-            loadMoreTransactions()
-        }
     }
     
     // MARK: - Computed Properties
@@ -237,10 +331,6 @@ struct TwitterFeedView: View {
         isRefreshing = false
     }
     
-    private func loadMoreTransactions() {
-        // Implement pagination
-    }
-    
     private func handleLike(_ transaction: FeedTransaction) {
         HapticManager.shared.impact(.light)
         // Toggle like state
@@ -257,7 +347,7 @@ struct TwitterFeedView: View {
     
     private func handleShare(_ transaction: FeedTransaction) {
         HapticManager.shared.light()
-        // Show share sheet
+        ShareHelper.shareTransaction(transaction)
     }
 }
 
