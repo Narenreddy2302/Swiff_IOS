@@ -39,6 +39,9 @@ struct HomeView: View {
 
                             // Four Card Grid
                             FinancialOverviewGrid(selectedTab: $selectedTab)
+                            
+                            // Upcoming Renewals Widget
+                            UpcomingRenewalsWidget()
 
                             // Recent Transactions Section
                             RecentActivitySection()
