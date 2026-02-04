@@ -34,6 +34,9 @@ struct HomeView: View {
                             // Today Section (moved down)
                             TodaySection()
 
+                            // Quick Actions Bar
+                            QuickActionsBar()
+
                             // Four Card Grid
                             FinancialOverviewGrid(selectedTab: $selectedTab)
 

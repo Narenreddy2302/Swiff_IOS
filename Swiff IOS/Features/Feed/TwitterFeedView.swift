@@ -63,7 +63,7 @@ struct TwitterFeedView: View {
             .environmentObject(dataManager)
         }
         .sheet(item: $selectedTransaction) { transaction in
-            TransactionDetailSheet(transaction: transaction)
+            FeedTransactionDetailSheet(transaction: transaction)
         }
     }
     

@@ -1,5 +1,5 @@
 //
-//  TransactionDetailSheet.swift
+//  FeedTransactionDetailSheet.swift
 //  Swiff IOS
 //
 //  Detailed view of a transaction with full history and actions
@@ -13,7 +13,7 @@ import SwiftUI
 
 /// Full detail view for a transaction, shown as a sheet
 /// Includes comments, history, and action buttons
-struct TransactionDetailSheet: View {
+struct FeedTransactionDetailSheet: View {
     
     // MARK: - Properties
     
@@ -419,5 +419,5 @@ struct CommentRow: View {
 // MARK: - Preview
 
 #Preview {
-    TransactionDetailSheet(transaction: FeedTransaction.mockData[0])
+    FeedTransactionDetailSheet(transaction: FeedTransaction.mockData[0])
 }
