@@ -82,6 +82,18 @@ struct AnalyticsView: View {
                         subscriptionOverviewSection
                             .padding(.horizontal, 20)
                             .padding(.bottom, 28)
+                        
+                        // NEW: Spending trends chart
+                        SpendingTrendsChart()
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 28)
+                            .premiumCardEntrance(isVisible: animateCards, delay: 0.25)
+                        
+                        // NEW: Monthly comparison card
+                        MonthlyComparisonCard()
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 28)
+                            .premiumCardEntrance(isVisible: animateCards, delay: 0.3)
 
                         // Task 6.9, 6.10, 6.11: Savings opportunities, unused subscriptions, annual conversion suggestions
                         savingsOpportunitiesSection
