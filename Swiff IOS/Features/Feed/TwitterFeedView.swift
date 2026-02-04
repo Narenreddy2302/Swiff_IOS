@@ -18,9 +18,9 @@ struct TwitterFeedView: View {
     // MARK: - Properties
     
     @EnvironmentObject var dataManager: DataManager
+    @StateObject private var feedService = FeedDataService.shared
     @Environment(\.colorScheme) var colorScheme
     
-    @State private var transactions: [FeedTransaction] = []
     @State private var isRefreshing = false
     @State private var showingCompose = false
     @State private var selectedTransaction: FeedTransaction?
@@ -158,7 +158,7 @@ struct TwitterFeedView: View {
                 }
                 
                 // Load more indicator
-                if !transactions.isEmpty {
+                if !feedService.feedTransactions.isEmpty {
                     loadMoreIndicator
                 }
             }
@@ -206,22 +206,21 @@ struct TwitterFeedView: View {
     private var filteredTransactions: [FeedTransaction] {
         switch selectedFilter {
         case .all:
-            return transactions
+            return feedService.feedTransactions
         case .youOwe:
-            return transactions.filter { $0.balanceType == .youOwe }
+            return feedService.feedTransactions.filter { $0.balanceType == .youOwe }
         case .theyOwe:
-            return transactions.filter { $0.balanceType == .theyOwe }
+            return feedService.feedTransactions.filter { $0.balanceType == .theyOwe }
         case .settled:
-            return transactions.filter { $0.isSettled }
+            return feedService.feedTransactions.filter { $0.isSettled }
         }
     }
     
     // MARK: - Actions
     
     private func loadTransactions() {
-        // Load from DataManager
-        // For now, using mock data
-        transactions = FeedTransaction.mockData
+        // Load from FeedDataService (which pulls from DataManager)
+        feedService.loadTransactions()
     }
     
     private func animateEntrance() {
@@ -234,9 +233,7 @@ struct TwitterFeedView: View {
     
     private func refreshFeed() async {
         isRefreshing = true
-        // Simulate network delay
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        loadTransactions()
+        await feedService.refresh()
         isRefreshing = false
     }
     
@@ -247,9 +244,9 @@ struct TwitterFeedView: View {
     private func handleLike(_ transaction: FeedTransaction) {
         HapticManager.shared.impact(.light)
         // Toggle like state
-        if let index = transactions.firstIndex(where: { $0.id == transaction.id }) {
-            transactions[index].isLiked.toggle()
-            transactions[index].likeCount += transactions[index].isLiked ? 1 : -1
+        if let index = feedService.feedTransactions.firstIndex(where: { $0.id == transaction.id }) {
+            feedService.feedTransactions[index].isLiked.toggle()
+            feedService.feedTransactions[index].likeCount += feedService.feedTransactions[index].isLiked ? 1 : -1
         }
     }
     
