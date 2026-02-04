@@ -29,11 +29,11 @@
 - [x] Add trend indicators and percentage changes
 - [x] Premium animations on all components
 
-### Day 3: Home & People Improvements 🔄 IN PROGRESS
-- [ ] Polish HomeView cards and animations
-- [ ] Enhance PeopleView list design
-- [ ] Add quick action shortcuts
-- [ ] Improve balance display consistency
+### Day 3: Home & People Improvements ✅ COMPLETE
+- [x] Add QuickActionsBar with shortcuts (Add Expense, Request, Split, Settle)
+- [x] Create PeopleSummaryCard component
+- [x] Fix naming conflicts (FeedTransactionDetailSheet)
+- [x] Integrate QuickActionsBar into HomeView
 
 ### Day 4: Subscriptions & Polish
 - [ ] Subscription card redesign
@@ -67,6 +67,16 @@
 | `SpendingTrendsChart.swift` | 6-month spending line chart | ~280 |
 | `MonthlyComparisonCard.swift` | Month-over-month comparison | ~210 |
 
+### Home Enhancements (`Features/Home/`)
+| File | Purpose | Lines |
+|------|---------|-------|
+| `QuickActionsBar.swift` | Quick action shortcuts | ~130 |
+
+### People Enhancements (`Features/People/`)
+| File | Purpose | Lines |
+|------|---------|-------|
+| `PeopleSummaryCard.swift` | Balance overview card | ~230 |
+
 ---
 
 ## 🔧 Modified Files
@@ -75,6 +85,8 @@
 |------|---------|
 | `MainTabView.swift` | Replaced RecentActivityView with TwitterFeedView |
 | `AnalyticsView.swift` | Added SpendingTrendsChart and MonthlyComparisonCard |
+| `HomeView.swift` | Added QuickActionsBar integration |
+| `FeedTransactionDetailSheet.swift` | Renamed from TransactionDetailSheet to avoid conflicts |
 
 ---
 
@@ -83,11 +95,11 @@
 ```
 Day 1: ████████████████ 100% ✅
 Day 2: ████████████████ 100% ✅
-Day 3: ██░░░░░░░░░░░░░░  12% 🔄
+Day 3: ████████████████ 100% ✅
 Day 4: ░░░░░░░░░░░░░░░░   0%
 Day 5: ░░░░░░░░░░░░░░░░   0%
 ────────────────────────────
-Total: ████████░░░░░░░░  42%
+Total: ████████████░░░░  60%
 ```
 
 ---
