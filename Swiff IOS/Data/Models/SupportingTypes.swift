@@ -552,94 +552,90 @@ struct SubscriptionDocument: Identifiable, Codable, Equatable {
     }
 }
 
-// MARK: - Wise Color System (Dark Mode Enhanced)
+// MARK: - Wise Color System (New UI Design System)
 
 extension Color {
     // MARK: - Background Colors (Adaptive)
 
-    // App Background - adapts to color scheme
+    // App Background - Pure Black (dark) / Off-White (light)
     public static let wiseBackground = Theme.Colors.background
 
-    // Card Background - adapts to color scheme
+    // Card Background - Dark Charcoal (dark) / White (light)
     public static let wiseCardBackground = Theme.Colors.cardBackground
 
     // Tertiary Background - for nested cards
     public static let wiseTertiaryBackground = Theme.Colors.secondaryBackground
 
     // Elevated Background - for modals/sheets
-    public static let wiseElevatedBackground = Color(
-        uiColor: UIColor { traitCollection in
-            traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 0.173, green: 0.173, blue: 0.18, alpha: 1.0)
-                :  // #2C2C2E for dark
-                UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)  // #FFFFFF for light
-        })
+    public static let wiseElevatedBackground = Theme.Colors.elevatedBackground
 
     // Grouped Background - for list backgrounds
     public static let wiseGroupedBackground = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)
-                :  // #000000 for dark
-                UIColor(red: 0.949, green: 0.949, blue: 0.969, alpha: 1.0)  // #F2F2F7 for light
+                ? UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)  // #000000 for dark
+                : UIColor(red: 250 / 255, green: 249 / 255, blue: 246 / 255, alpha: 1.0)  // #FAF9F6 Off-White
         })
 
-    // MARK: - Text Colors (Adaptive)
-    // NOTE: These are defined directly to avoid circular references with Theme.Colors
+    // MARK: - Text Colors (Adaptive - New UI Design System)
+    // Using Cream White (#F5F0E6) for dark mode, Pure Black (#000000) for light mode
 
     public static let wisePrimaryText = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor.white
-                : UIColor(red: 0.102, green: 0.102, blue: 0.102, alpha: 1.0)
+                ? UIColor(red: 245 / 255, green: 240 / 255, blue: 230 / 255, alpha: 1.0)  // #F5F0E6 Cream
+                : UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)  // #000000 Black
         })
 
     public static let wiseSecondaryText = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 0.92, green: 0.92, blue: 0.96, alpha: 1.0)
-                : UIColor(red: 0.235, green: 0.235, blue: 0.235, alpha: 1.0)
+                ? UIColor(red: 245 / 255, green: 240 / 255, blue: 230 / 255, alpha: 0.7)  // Cream 70%
+                : UIColor(red: 74 / 255, green: 74 / 255, blue: 74 / 255, alpha: 1.0)  // #4A4A4A Olive Gray
         })
 
     public static let wiseBodyText = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1.0)
-                :  // #E6E6E6 for dark
-                UIColor(red: 0.125, green: 0.129, blue: 0.137, alpha: 1.0)  // #202123 for light
+                ? UIColor(red: 245 / 255, green: 240 / 255, blue: 230 / 255, alpha: 1.0)  // Cream
+                : UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0)  // Black
         })
 
-    // Tertiary Text - for hints/disabled text
+    // Tertiary Text - for hints/disabled text (50% opacity)
     public static let wiseTertiaryText = Theme.Colors.textTertiary
 
-    // Link Text - for clickable links
+    // Link Text - using Teal for interactive elements
     public static let wiseLinkText = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 0.039, green: 0.518, blue: 1.0, alpha: 1.0)
-                :  // #0A84FF for dark
-                UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1.0)  // #007AFF for light
+                ? UIColor(red: 78 / 255, green: 205 / 255, blue: 196 / 255, alpha: 1.0)  // #4ECDC4 Teal
+                : UIColor(red: 59 / 255, green: 169 / 255, blue: 156 / 255, alpha: 1.0)  // #3BA99C Teal Dark
         })
 
-    // Placeholder Text - for input placeholders
+    // Placeholder Text - for input placeholders (50% opacity cream/gray)
     public static let wisePlaceholderText = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 0.282, green: 0.282, blue: 0.29, alpha: 1.0)
-                :  // #48484A for dark
-                UIColor(red: 0.78, green: 0.78, blue: 0.8, alpha: 1.0)  // #C7C7CC for light
+                ? UIColor(red: 245 / 255, green: 240 / 255, blue: 230 / 255, alpha: 0.5)  // Cream 50%
+                : UIColor(red: 154 / 255, green: 154 / 255, blue: 154 / 255, alpha: 1.0)  // #9A9A9A
         })
 
-    // MARK: - Brand Colors (Static - New 5-tier Green Palette)
+    // MARK: - Brand Colors (New UI Design System)
 
-    public static let wiseBrightGreen = Theme.Colors.green3  // #78C51C - Bright lime for positive indicators
-    public static let wiseForestGreen = Theme.Colors.green5  // #043F2E - Primary brand (darkest green)
+    public static let wiseBrightGreen = Theme.Colors.teal  // #4ECDC4 - Teal for positive indicators
+    public static let wiseForestGreen = Theme.Colors.tealDark  // #3BA99C - Teal Dark
     public static let wiseCharcoal = Theme.Colors.textPrimary  // Mapping to primary text
-    public static let wiseOrange = Theme.Colors.brandAccent
+    public static let wiseOrange = Theme.Colors.orangeBadge  // #F5A623 Orange Badge
     // wisePurple is defined below with adaptive dark mode support
     public static let wiseMidGray = Theme.Colors.textTertiary
 
-    // MARK: - New Palette Access
+    // MARK: - New Primary Palette Access
+    public static let wiseCream = Theme.Colors.creamWhite  // #F5F0E6 - Cream White
+    public static let wiseOffWhite = Theme.Colors.offWhite  // #FAF9F6 - Off-White
+    public static let wiseTeal = Theme.Colors.teal  // #4ECDC4 - Teal (Primary Accent)
+    public static let wiseTealDark = Theme.Colors.tealDark  // #3BA99C - Teal Dark
+
+    // MARK: - Legacy Green Palette Access (maintained for compatibility)
     public static let wiseGreen1 = Theme.Colors.green1  // #EEF2E3 - Light backgrounds
     public static let wiseGreen2 = Theme.Colors.green2  // #C8F169 - Highlights, hover states
     public static let wiseGreen3 = Theme.Colors.green3  // #78C51C - Success, active states
@@ -663,13 +659,13 @@ extension Color {
     /// Pastel purple for avatars - used for entertainment
     public static let pastelAvatarPurple = Color(red: 196 / 255, green: 177 / 255, blue: 255 / 255)  // #C4B1FF
 
-    // MARK: - Amount Display Colors (Updated to new palette)
+    // MARK: - Amount Display Colors (New UI Design System)
 
-    /// Positive amount color - green for income/owes you
-    public static let amountPositive = Theme.Colors.amountPositive  // GREEN 4 #2A6F2B
+    /// Positive amount color - Teal for income/owes you
+    public static let amountPositive = Theme.Colors.teal  // #4ECDC4 Teal
 
-    /// Negative amount color - red for expense/you owe
-    public static let amountNegative = Theme.Colors.amountNegative  // Red #D92D20
+    /// Negative amount color - Error Red for expense/you owe
+    public static let amountNegative = Theme.Colors.errorRed  // #E74C3C
 
     // MARK: - List Design Colors (New Unified Design)
 
@@ -708,76 +704,75 @@ extension Color {
                 : UIColor(white: 0.9, alpha: 1.0)  // Light gray for light mode
         })
 
-    // MARK: - Status Colors (Adaptive)
+    // MARK: - Status Colors (New UI Design System)
 
-    // Success - green
-    public static let wiseSuccess = Theme.Colors.success
+    // Success - Teal #4ECDC4
+    public static let wiseSuccess = Theme.Colors.teal
 
-    // Warning - orange
-    public static let wiseWarning = Theme.Colors.warning
+    // Warning - Amber Yellow #FFCC02
+    public static let wiseWarning = Theme.Colors.amberYellow
 
-    // Error - red (adaptive)
-    public static let wiseError = Theme.Colors.statusError
+    // Error - Error Red #E74C3C
+    public static let wiseError = Theme.Colors.errorRed
 
-    // Info - blue
-    public static let wiseInfo = Theme.Colors.info
+    // Info - Teal #4ECDC4
+    public static let wiseInfo = Theme.Colors.teal
 
-    // MARK: - Button Colors (Adaptive)
+    // MARK: - Button Colors (New UI Design System)
 
-    // Primary Button Background
+    // Primary Button Background - Cream (dark mode) / Teal (light mode)
     public static let wisePrimaryButton = Theme.Colors.buttonPrimary
 
-    // Primary Button Text
+    // Primary Button Text - Black (dark mode) / White (light mode)
     public static let wisePrimaryButtonText = Theme.Colors.buttonPrimaryText
 
-    // Secondary Button Background
+    // Secondary Button Background - Transparent with border
     public static let wiseSecondaryButton = Theme.Colors.buttonSecondary
 
     // Secondary Button Text
     public static let wiseSecondaryButtonText = Theme.Colors.buttonSecondaryText
 
-    // Destructive Button
-    public static let wiseDestructiveButton = Theme.Colors.statusError
+    // Secondary Button Border
+    public static let wiseSecondaryButtonBorder = Theme.Colors.buttonSecondaryBorder
+
+    // Destructive Button - Error Red
+    public static let wiseDestructiveButton = Theme.Colors.errorRed
 
     // Disabled Button
     public static let wiseDisabledButton = Theme.Colors.buttonDisabled
 
-    // MARK: - Border & Divider Colors (Adaptive)
+    // MARK: - Border & Divider Colors (New UI Design System)
 
-    // Primary Border
+    // Primary Border - Cream 15% (dark) / Light Gray (light)
     public static let wiseBorder = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 0.3, green: 0.3, blue: 0.3, alpha: 1.0)
-                :  // #4D4D4D for dark
-                UIColor(red: 0.941, green: 0.945, blue: 0.953, alpha: 1.0)  // #F0F1F3 for light
+                ? UIColor(red: 245 / 255, green: 240 / 255, blue: 230 / 255, alpha: 0.15)  // Cream 15%
+                : UIColor(red: 229 / 255, green: 229 / 255, blue: 229 / 255, alpha: 1.0)  // #E5E5E5
         })
 
-    // Secondary Border - for subtle borders
+    // Secondary Border - for subtle borders (10% opacity)
     public static let wiseSecondaryBorder = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 0.22, green: 0.22, blue: 0.227, alpha: 1.0)
-                :  // #38383A for dark
-                UIColor(red: 0.898, green: 0.898, blue: 0.918, alpha: 1.0)  // #E5E5EA for light
+                ? UIColor(red: 245 / 255, green: 240 / 255, blue: 230 / 255, alpha: 0.1)  // Cream 10%
+                : UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.06)  // Black 6%
         })
 
     // Separator - for dividers
     public static let wiseSeparator = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 0.22, green: 0.22, blue: 0.227, alpha: 1.0)
-                :  // #38383A for dark
-                UIColor(red: 0.776, green: 0.776, blue: 0.784, alpha: 1.0)  // #C6C6C8 for light
+                ? UIColor(red: 58 / 255, green: 58 / 255, blue: 60 / 255, alpha: 1.0)  // #3A3A3C Medium Gray
+                : UIColor(red: 229 / 255, green: 229 / 255, blue: 229 / 255, alpha: 1.0)  // #E5E5E5
         })
 
-    // Focus Border - for focus states
+    // Focus Border - Teal for focus states
     public static let wiseFocusBorder = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 0.039, green: 0.518, blue: 1.0, alpha: 1.0)
-                :  // #0A84FF for dark
-                UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1.0)  // #007AFF for light
+                ? UIColor(red: 78 / 255, green: 205 / 255, blue: 196 / 255, alpha: 1.0)  // #4ECDC4 Teal
+                : UIColor(red: 59 / 255, green: 169 / 255, blue: 156 / 255, alpha: 1.0)  // #3BA99C Teal Dark
         })
 
     // MARK: - Effect Colors
@@ -790,34 +785,39 @@ extension Color {
     public static let wiseOverlayLight = Color.black.opacity(0.4)
     public static let wiseOverlayDark = Color.black.opacity(0.6)
 
-    // MARK: - System Colors (Static)
+    // MARK: - Accent Colors (New UI Design System)
 
-    public static let wiseBlue = Color(red: 0.0, green: 0.478, blue: 1.0)  // #007AFF - iMessage blue
-    public static let wiseAccentBlue = Color(red: 0.0, green: 0.478, blue: 1.0)  // #007AFF
-    public static let wiseAccentOrange = Color(red: 1.0, green: 0.596, blue: 0.0)  // #FF9800
+    public static let wiseBlue = Theme.Colors.teal  // #4ECDC4 Teal - Primary accent
+    public static let wiseAccentBlue = Theme.Colors.teal  // #4ECDC4 Teal
+    public static let wiseAccentOrange = Theme.Colors.orangeBadge  // #F5A623 Orange Badge
 
-    // MARK: - iMessage Bubble Colors
+    // MARK: - Chat Bubble Colors (New UI Design System)
 
-    /// iMessage sent bubble blue (#007AFF)
-    public static let iMessageBlue = Color(red: 0.0, green: 0.478, blue: 1.0)  // #007AFF
+    /// Outgoing message bubble - Olive Gray (#4A5148) in dark mode, Teal in light
+    public static let iMessageBlue = Color(
+        uiColor: UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark
+                ? UIColor(red: 74 / 255, green: 81 / 255, blue: 72 / 255, alpha: 1.0)  // #4A5148 Olive Gray
+                : UIColor(red: 78 / 255, green: 205 / 255, blue: 196 / 255, alpha: 1.0)  // #4ECDC4 Teal
+        })
 
-    /// iMessage received bubble gray - adaptive (#E9E9EB light, #2C2C2E dark)
+    /// Incoming message bubble - Medium Gray (#3A3A3C) in dark mode
     public static let iMessageGray = Color(
         uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark
-                ? UIColor(red: 44 / 255, green: 44 / 255, blue: 46 / 255, alpha: 1.0)  // #2C2C2E for dark
-                : UIColor(red: 0.914, green: 0.914, blue: 0.922, alpha: 1.0)  // #E9E9EB for light
+                ? UIColor(red: 58 / 255, green: 58 / 255, blue: 60 / 255, alpha: 1.0)  // #3A3A3C Medium Gray
+                : UIColor(red: 233 / 255, green: 233 / 255, blue: 235 / 255, alpha: 1.0)  // #E9E9EB
         })
 
-    /// Transaction amount yellow for sent bubbles (#FFD60A)
-    public static let transactionYellow = Color(red: 1.0, green: 0.839, blue: 0.039)  // #FFD60A
+    /// Transaction amount - Orange Badge (#F5A623)
+    public static let transactionYellow = Theme.Colors.orangeBadge  // #F5A623
 
-    /// Transaction amount orange for received bubbles (#FF6B35)
-    public static let transactionOrange = Color(red: 1.0, green: 0.420, blue: 0.208)  // #FF6B35
+    /// Transaction amount - Amber Yellow (#FFCC02)
+    public static let transactionOrange = Theme.Colors.amberYellow  // #FFCC02
 
     // Additional UI Colors
-    public static let wiseGray = Color(red: 0.557, green: 0.557, blue: 0.576)  // #8E8E93
-    public static let wiseGreen = Color(red: 0.204, green: 0.780, blue: 0.349)  // #34C759
+    public static let wiseGray = Color(red: 74 / 255, green: 74 / 255, blue: 74 / 255)  // #4A4A4A Olive Gray
+    public static let wiseGreen = Theme.Colors.teal  // #4ECDC4 Teal
 
     // Purple - adaptive for dark mode
     public static let wisePurple = Color(

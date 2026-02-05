@@ -4,11 +4,12 @@
 //
 //  Created by Agent 5 on 11/21/25.
 //  Theme and appearance settings models
+//  Updated with new UI Design System
 //
 
 import SwiftUI
 
-// AGENT 5: App theme mode options
+// App theme mode options
 enum ThemeMode: String, Codable, CaseIterable {
     case light = "Light"
     case dark = "Dark"
@@ -27,36 +28,38 @@ enum ThemeMode: String, Codable, CaseIterable {
     }
 }
 
-// AGENT 5: App accent color options
+// App accent color options - Updated with new UI Design System colors
 enum AccentColor: String, Codable, CaseIterable {
-    case forestGreen = "Forest Green"
+    case teal = "Teal"  // Primary accent - #4ECDC4
+    case cream = "Cream"  // #F5F0E6
+    case forestGreen = "Forest Green"  // Legacy
     case blue = "Blue"
     case purple = "Purple"
-    case orange = "Orange"
+    case orange = "Orange"  // #F5A623
     case pink = "Pink"
     case red = "Red"
-    case teal = "Teal"
     case indigo = "Indigo"
     case mint = "Mint"
-    case yellow = "Yellow"
+    case yellow = "Yellow"  // #FFCC02
 
     var color: Color {
         switch self {
-        case .forestGreen: return .wiseForestGreen
-        case .blue: return .wiseBlue
+        case .teal: return Theme.Colors.teal  // #4ECDC4
+        case .cream: return Theme.Colors.creamWhite  // #F5F0E6
+        case .forestGreen: return Theme.Colors.green5  // #043F2E
+        case .blue: return Color(red: 0.0, green: 0.478, blue: 1.0)  // #007AFF
         case .purple: return Color(red: 0.6, green: 0.4, blue: 0.8)
-        case .orange: return Color(red: 0.95, green: 0.55, blue: 0.2)
+        case .orange: return Theme.Colors.orangeBadge  // #F5A623
         case .pink: return Color(red: 0.9, green: 0.4, blue: 0.6)
-        case .red: return .wiseError
-        case .teal: return Color(red: 0.2, green: 0.7, blue: 0.7)
+        case .red: return Theme.Colors.errorRed  // #E74C3C
         case .indigo: return Color(red: 0.4, green: 0.4, blue: 0.8)
-        case .mint: return Color(red: 0.4, green: 0.8, blue: 0.7)
-        case .yellow: return Color(red: 0.95, green: 0.8, blue: 0.2)
+        case .mint: return Theme.Colors.tealDark  // #3BA99C
+        case .yellow: return Theme.Colors.amberYellow  // #FFCC02
         }
     }
 }
 
-// AGENT 5: App icon options
+// App icon options
 enum AppIcon: String, Codable, CaseIterable {
     case `default` = "Default"
     case dark = "Dark"
@@ -88,7 +91,7 @@ enum AppIcon: String, Codable, CaseIterable {
     }
 }
 
-// AGENT 5: Appearance settings model
+// Appearance settings model - Updated default to Teal
 struct AppearanceSettings: Codable {
     var themeMode: ThemeMode
     var accentColor: AccentColor
@@ -96,7 +99,7 @@ struct AppearanceSettings: Codable {
 
     init(
         themeMode: ThemeMode = .system,
-        accentColor: AccentColor = .forestGreen,
+        accentColor: AccentColor = .teal,  // Changed default from forestGreen to teal
         appIcon: AppIcon = .default
     ) {
         self.themeMode = themeMode

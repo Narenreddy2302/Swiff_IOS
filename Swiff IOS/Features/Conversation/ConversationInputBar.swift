@@ -3,7 +3,8 @@
 //  Swiff IOS
 //
 //  Professional input bar for conversation views
-//  Follows Apple Messages app design patterns
+//  Updated with new UI Design System specifications
+//  Features: Pill-shaped input, Dark Gray (#2C2C2E) background, Teal send button
 //
 
 import SwiftUI
@@ -11,33 +12,35 @@ import SwiftUI
 // MARK: - Conversation Input Bar
 
 /// Professional input bar with message field and action buttons
-/// Follows Apple Messages design with clear visual hierarchy
+/// Per design system: Pill-shaped input with dark gray background
 struct ConversationInputBar: View {
+    @Environment(\.colorScheme) var colorScheme
     @Binding var messageText: String
     @FocusState.Binding var isMessageFieldFocused: Bool
-    
+
     let onSendMessage: () -> Void
     let onAddTransaction: () -> Void
     let onScrollToBottom: () -> Void
-    
+
     var body: some View {
         VStack(spacing: 0) {
             Divider()
-            
+                .background(Theme.Colors.borderSubtle)
+
             HStack(spacing: 12) {
                 // Add transaction button
                 Button(action: onAddTransaction) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 28))
-                        .foregroundColor(.wiseBrightGreen)
+                        .foregroundColor(Theme.Colors.teal)
                 }
                 .accessibilityLabel("Add transaction")
                 .accessibilityHint("Create a new payment or split")
-                
-                // Message input field
+
+                // Message input field - Pill shape with dark gray background
                 HStack(spacing: 8) {
                     TextField("iMessage", text: $messageText)
-                        .font(.system(size: 16))
+                        .font(Theme.Fonts.inputText)
                         .foregroundColor(.wisePrimaryText)
                         .focused($isMessageFieldFocused)
                         .submitLabel(.send)
@@ -47,17 +50,20 @@ struct ConversationInputBar: View {
                             }
                         }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.wiseSecondaryText.opacity(0.08))
-                .cornerRadius(20)
-                
+                .padding(.horizontal, Theme.Metrics.inputPaddingH)
+                .padding(.vertical, Theme.Metrics.inputPaddingV)
+                .background(
+                    // Dark Gray (#2C2C2E) in dark mode
+                    colorScheme == .dark ? Theme.Colors.darkGray : Theme.Colors.secondaryBackground
+                )
+                .cornerRadius(Theme.Metrics.inputCornerRadius)  // Pill shape
+
                 // Send/Scroll to bottom button
                 if !messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Button(action: onSendMessage) {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.system(size: 28))
-                            .foregroundColor(.wiseBlue)
+                            .foregroundColor(Theme.Colors.teal)
                     }
                     .accessibilityLabel("Send message")
                     .transition(.scale.combined(with: .opacity))
@@ -84,11 +90,11 @@ struct ConversationInputBar: View {
 struct ConversationInputBarWrapper: View {
     @State private var messageText: String = ""
     @FocusState private var isMessageFieldFocused: Bool
-    
+
     let onSendMessage: (String) -> Void
     let onAddTransaction: () -> Void
     let onScrollToBottom: () -> Void
-    
+
     var body: some View {
         ConversationInputBar(
             messageText: $messageText,
@@ -107,12 +113,37 @@ struct ConversationInputBarWrapper: View {
     }
 }
 
+// MARK: - Message Input View Modifier
+
+/// Standalone input style modifier for text fields
+struct MessageInputStyle: ViewModifier {
+    @Environment(\.colorScheme) var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .font(Theme.Fonts.inputText)
+            .foregroundColor(.wisePrimaryText)
+            .padding(.horizontal, Theme.Metrics.inputPaddingH)
+            .padding(.vertical, Theme.Metrics.inputPaddingV)
+            .background(
+                colorScheme == .dark ? Theme.Colors.darkGray : Theme.Colors.secondaryBackground
+            )
+            .cornerRadius(Theme.Metrics.inputCornerRadius)
+    }
+}
+
+extension View {
+    func messageInputStyle() -> some View {
+        modifier(MessageInputStyle())
+    }
+}
+
 // MARK: - Preview
 
 #Preview("Input Bar") {
     VStack {
         Spacer()
-        
+
         // Empty state
         ConversationInputBarWrapper(
             onSendMessage: { text in
@@ -132,7 +163,7 @@ struct ConversationInputBarWrapper: View {
 #Preview("Input Bar with Text") {
     VStack {
         Spacer()
-        
+
         // With text
         ConversationInputBarPreviewHelper(initialText: "Hey! Want to grab lunch this week?")
     }
@@ -143,11 +174,11 @@ struct ConversationInputBarWrapper: View {
 private struct ConversationInputBarPreviewHelper: View {
     @State private var messageText: String
     @FocusState private var isMessageFieldFocused: Bool
-    
+
     init(initialText: String) {
         _messageText = State(initialValue: initialText)
     }
-    
+
     var body: some View {
         ConversationInputBar(
             messageText: $messageText,

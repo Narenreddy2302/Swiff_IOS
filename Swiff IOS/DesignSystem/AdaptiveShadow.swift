@@ -3,6 +3,7 @@
 //  Swiff IOS
 //
 //  Created for Dark Mode Implementation
+//  Updated with new UI Design System shadow specifications
 //  Provides adaptive shadow that adjusts opacity based on color scheme
 //
 
@@ -22,7 +23,7 @@ struct AdaptiveShadow: ViewModifier {
     let lightOpacity: Double
     let darkOpacity: Double
 
-    init(radius: CGFloat = 8, x: CGFloat = 0, y: CGFloat = 2, lightOpacity: Double = 0.1, darkOpacity: Double = 0.3) {
+    init(radius: CGFloat = 8, x: CGFloat = 0, y: CGFloat = 2, lightOpacity: Double = 0.08, darkOpacity: Double = 0.25) {
         self.radius = radius
         self.x = x
         self.y = y
@@ -45,6 +46,7 @@ struct AdaptiveShadow: ViewModifier {
 
 /// A specialized shadow modifier for card-like UI elements.
 /// Provides slightly elevated appearance with appropriate depth for each color scheme.
+/// Per design system: Light mode 0.08 opacity, Dark mode 0.25 opacity
 struct AdaptiveCardShadow: ViewModifier {
     @Environment(\.colorScheme) var colorScheme
 
@@ -54,7 +56,7 @@ struct AdaptiveCardShadow: ViewModifier {
                 color: Color.black.opacity(colorScheme == .dark ? 0.25 : 0.08),
                 radius: 8,
                 x: 0,
-                y: 2
+                y: 4
             )
     }
 }
@@ -63,6 +65,7 @@ struct AdaptiveCardShadow: ViewModifier {
 
 /// A shadow modifier for elevated UI elements like floating buttons or popovers.
 /// More pronounced than card shadows for stronger visual hierarchy.
+/// Per design system: Light mode 0.15 opacity, Dark mode 0.4 opacity
 struct AdaptiveElevatedShadow: ViewModifier {
     @Environment(\.colorScheme) var colorScheme
 
@@ -81,6 +84,7 @@ struct AdaptiveElevatedShadow: ViewModifier {
 
 /// A very subtle shadow for minimal depth indication.
 /// Useful for list items or subtle separations between elements.
+/// Per design system: Light mode 0.05 opacity, Dark mode 0.15 opacity
 struct AdaptiveSubtleShadow: ViewModifier {
     @Environment(\.colorScheme) var colorScheme
 
@@ -103,15 +107,15 @@ extension View {
     ///   - radius: The blur radius of the shadow. Default is 8.
     ///   - x: The horizontal offset of the shadow. Default is 0.
     ///   - y: The vertical offset of the shadow. Default is 2.
-    ///   - lightOpacity: Shadow opacity in light mode. Default is 0.1.
-    ///   - darkOpacity: Shadow opacity in dark mode. Default is 0.3.
+    ///   - lightOpacity: Shadow opacity in light mode. Default is 0.08.
+    ///   - darkOpacity: Shadow opacity in dark mode. Default is 0.25.
     /// - Returns: A view with an adaptive shadow applied.
     func adaptiveShadow(
         radius: CGFloat = 8,
         x: CGFloat = 0,
         y: CGFloat = 2,
-        lightOpacity: Double = 0.1,
-        darkOpacity: Double = 0.3
+        lightOpacity: Double = 0.08,
+        darkOpacity: Double = 0.25
     ) -> some View {
         self.modifier(AdaptiveShadow(
             radius: radius,
@@ -181,28 +185,28 @@ extension View {
             .font(.headline)
 
         // Card Shadow
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius)
             .fill(Color.wiseCardBackground)
             .frame(width: 200, height: 100)
             .cardShadow()
             .overlay(Text("Card Shadow"))
 
         // Elevated Shadow
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius)
             .fill(Color.wiseCardBackground)
             .frame(width: 200, height: 100)
             .elevatedShadow()
             .overlay(Text("Elevated Shadow"))
 
         // Subtle Shadow
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius)
             .fill(Color.wiseCardBackground)
             .frame(width: 200, height: 100)
             .subtleShadow()
             .overlay(Text("Subtle Shadow"))
 
         // Custom Shadow
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: Theme.Metrics.cardCornerRadius)
             .fill(Color.wiseCardBackground)
             .frame(width: 200, height: 100)
             .adaptiveShadow(radius: 12, x: 4, y: 4)
