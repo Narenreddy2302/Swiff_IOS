@@ -9,24 +9,32 @@ enum SwiffButtonSize {
 
     var height: CGFloat {
         switch self {
-        case .small: return 36
-        case .medium: return 44
-        case .large: return 52
+        case .small: return Theme.Metrics.buttonHeightSmall  // 36
+        case .medium: return Theme.Metrics.buttonHeightMedium  // 44
+        case .large: return Theme.Metrics.buttonHeightLarge  // 52
         }
     }
 
     var horizontalPadding: CGFloat {
         switch self {
-        case .small: return 16
-        case .medium: return 20
-        case .large: return 24
+        case .small: return Theme.Metrics.buttonHorizontalPaddingSmall  // 24
+        case .medium: return Theme.Metrics.buttonHorizontalPaddingLarge  // 28
+        case .large: return Theme.Metrics.buttonHorizontalPaddingLarge  // 28
+        }
+    }
+
+    var verticalPadding: CGFloat {
+        switch self {
+        case .small: return Theme.Metrics.buttonPaddingSmall  // 12
+        case .medium: return Theme.Metrics.buttonPaddingMedium  // 14
+        case .large: return Theme.Metrics.buttonPaddingLarge  // 14
         }
     }
 
     var fontSize: CGFloat {
         switch self {
-        case .small: return 13
-        case .medium: return 14
+        case .small: return 14
+        case .medium: return 16
         case .large: return 16
         }
     }
@@ -46,34 +54,54 @@ enum SwiffButtonVariant {
     case tertiary
     case destructive
 
-    var foregroundColor: Color {
+    func foregroundColor(colorScheme: ColorScheme) -> Color {
         switch self {
-        case .primary: return Theme.Colors.textOnPrimary
-        case .secondary: return Theme.Colors.brandPrimary
-        case .tertiary: return Theme.Colors.textPrimary
-        case .destructive: return Theme.Colors.textOnPrimary
+        case .primary:
+            // Black text on cream (dark mode), white text on teal (light mode)
+            return colorScheme == .dark ? Theme.Colors.pureBlack : Color.white
+        case .secondary:
+            // Cream text (dark mode), black text (light mode) - outlined button
+            return colorScheme == .dark ? Theme.Colors.creamWhite : Theme.Colors.pureBlack
+        case .tertiary:
+            return Theme.Colors.textPrimary
+        case .destructive:
+            return Color.white
         }
     }
 
-    func backgroundColor(isPressed: Bool) -> AnyView {
+    func backgroundColor(colorScheme: ColorScheme, isPressed: Bool) -> Color {
         switch self {
         case .primary:
-            return AnyView(Theme.Colors.brandPrimary)
+            // Cream (dark mode), Teal (light mode)
+            let baseColor = colorScheme == .dark ? Theme.Colors.creamWhite : Theme.Colors.teal
+            return isPressed ? baseColor.opacity(0.9) : baseColor
         case .secondary:
-            return AnyView(Theme.Colors.brandSecondary)
+            // Transparent with border
+            return isPressed ? Theme.Colors.hoverOverlay : Color.clear
         case .tertiary:
-            return AnyView(Theme.Colors.border.opacity(isPressed ? 0.8 : 0.5))
+            return isPressed ? Theme.Colors.activeOverlay : Theme.Colors.hoverOverlay
         case .destructive:
-            return AnyView(Theme.Colors.statusError)
+            let baseColor = Theme.Colors.errorRed
+            return isPressed ? baseColor.opacity(0.9) : baseColor
+        }
+    }
+
+    func borderColor(colorScheme: ColorScheme) -> Color? {
+        switch self {
+        case .secondary:
+            // Cream border (dark mode), black border (light mode)
+            return colorScheme == .dark ? Theme.Colors.creamWhite : Theme.Colors.pureBlack
+        default:
+            return nil
         }
     }
 
     var shadowColor: Color {
         switch self {
-        case .primary: return Theme.Colors.brandPrimary
+        case .primary: return Theme.Colors.teal
         case .secondary: return .clear
         case .tertiary: return .clear
-        case .destructive: return Theme.Colors.statusError
+        case .destructive: return Theme.Colors.errorRed
         }
     }
 }
@@ -81,6 +109,8 @@ enum SwiffButtonVariant {
 // MARK: - Primary Button Component
 
 struct SwiffButton: View {
+    @Environment(\.colorScheme) var colorScheme
+
     let title: String
     let icon: String?
     let variant: SwiffButtonVariant
@@ -110,16 +140,20 @@ struct SwiffButton: View {
             HStack(spacing: 8) {
                 if let icon = icon {
                     Image(systemName: icon)
-                        .font(.system(size: size.iconSize, weight: .semibold))
+                        .font(.system(size: size.iconSize, weight: .medium))
                 }
                 Text(title)
-                    .font(.system(size: size.fontSize, weight: .semibold))
+                    .font(.system(size: size.fontSize, weight: .medium))
             }
-            .foregroundColor(variant.foregroundColor)
+            .foregroundColor(variant.foregroundColor(colorScheme: colorScheme))
             .frame(height: size.height)
             .padding(.horizontal, size.horizontalPadding)
-            .background(variant.backgroundColor(isPressed: isPressed))
-            .cornerRadius(size.height / 2)
+            .background(variant.backgroundColor(colorScheme: colorScheme, isPressed: isPressed))
+            .cornerRadius(Theme.Metrics.cornerRadiusFull)  // Pill shape - 100px
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Metrics.cornerRadiusFull)
+                    .stroke(variant.borderColor(colorScheme: colorScheme) ?? Color.clear, lineWidth: variant == .secondary ? Theme.Border.widthMedium : 0)
+            )
             .shadow(
                 color: variant.shadowColor.opacity(0.3),
                 radius: 4,
@@ -131,12 +165,14 @@ struct SwiffButton: View {
     }
 }
 
-// MARK: - Icon Button Component
+// MARK: - Icon Button Component (Circular)
 
 struct SwiffIconButton: View {
+    @Environment(\.colorScheme) var colorScheme
+
     let icon: String
     let size: CGFloat
-    let color: Color
+    let color: Color?
     let backgroundColor: Color?
     let action: () -> Void
 
@@ -145,7 +181,7 @@ struct SwiffIconButton: View {
     init(
         icon: String,
         size: CGFloat = 24,
-        color: Color = Theme.Colors.brandPrimary,
+        color: Color? = nil,
         backgroundColor: Color? = nil,
         action: @escaping () -> Void
     ) {
@@ -160,12 +196,12 @@ struct SwiffIconButton: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: size, weight: .semibold))
-                .foregroundColor(color)
-                .frame(width: size + 20, height: size + 20)
+                .foregroundColor(color ?? (colorScheme == .dark ? Theme.Colors.creamWhite : Theme.Colors.pureBlack))
+                .frame(width: Theme.Metrics.iconButtonMedium, height: Theme.Metrics.iconButtonMedium)
                 .background(
-                    backgroundColor.map { color in
+                    backgroundColor.map { bgColor in
                         Circle()
-                            .fill(color)
+                            .fill(bgColor)
                     }
                 )
         }
@@ -173,9 +209,40 @@ struct SwiffIconButton: View {
     }
 }
 
+// MARK: - Send Button (Circular with Arrow) - Per Design System
+
+struct SwiffSendButton: View {
+    @Environment(\.colorScheme) var colorScheme
+
+    let action: () -> Void
+    let isEnabled: Bool
+
+    init(isEnabled: Bool = true, action: @escaping () -> Void) {
+        self.isEnabled = isEnabled
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "arrow.up")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(isEnabled ? Color.white : Theme.Colors.textTertiary)
+                .frame(width: Theme.Metrics.sendButtonSize, height: Theme.Metrics.sendButtonSize)
+                .background(
+                    Circle()
+                        .fill(isEnabled ? Theme.Colors.teal : Theme.Colors.buttonDisabled)
+                )
+        }
+        .disabled(!isEnabled)
+        .buttonStyle(ScaleButtonStyle(scaleAmount: 0.9))
+    }
+}
+
 // MARK: - Floating Action Button
 
 struct SwiffFloatingActionButton: View {
+    @Environment(\.colorScheme) var colorScheme
+
     let icon: String
     let action: () -> Void
 
@@ -193,19 +260,13 @@ struct SwiffFloatingActionButton: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 24, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(colorScheme == .dark ? Theme.Colors.pureBlack : Color.white)
                 .frame(width: 60, height: 60)
                 .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Theme.Colors.brandPrimary, Theme.Colors.brandSecondary,
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
+                    Circle()
+                        .fill(colorScheme == .dark ? Theme.Colors.creamWhite : Theme.Colors.teal)
                 )
-                .clipShape(Circle())
-                .shadow(color: Theme.Colors.brandPrimary.opacity(0.4), radius: 8, x: 0, y: 4)
+                .shadow(color: Theme.Colors.teal.opacity(0.4), radius: 8, x: 0, y: 4)
         }
         .buttonStyle(ScaleButtonStyle(scaleAmount: 0.9))
     }
@@ -214,6 +275,8 @@ struct SwiffFloatingActionButton: View {
 // MARK: - Filter Pill Button
 
 struct SwiffFilterPillButton: View {
+    @Environment(\.colorScheme) var colorScheme
+
     let title: String
     let icon: String?
     let isSelected: Bool
@@ -239,21 +302,31 @@ struct SwiffFilterPillButton: View {
                         .font(.system(size: 14, weight: .medium))
                 }
                 Text(title)
-                    .font(Theme.Fonts.bodyMedium)
+                    .font(Theme.Fonts.bodySmall)
             }
-            .foregroundColor(isSelected ? Theme.Colors.textOnPrimary : Theme.Colors.textPrimary)
+            .foregroundColor(
+                isSelected
+                    ? (colorScheme == .dark ? Theme.Colors.pureBlack : Color.white)
+                    : Theme.Colors.textPrimary
+            )
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
-            .background(isSelected ? Theme.Colors.brandPrimary : Theme.Colors.border.opacity(0.5))
+            .background(
+                isSelected
+                    ? (colorScheme == .dark ? Theme.Colors.creamWhite : Theme.Colors.teal)
+                    : Theme.Colors.hoverOverlay
+            )
             .cornerRadius(20)
         }
-        .animation(.easeInOut(duration: 0.2), value: isSelected)
+        .animation(.easeInOut(duration: Theme.Animation.normal), value: isSelected)
     }
 }
 
 // MARK: - Segmented Control Button
 
 struct SwiffSegmentedControlButton: View {
+    @Environment(\.colorScheme) var colorScheme
+
     let title: String
     let icon: String?
     let isSelected: Bool
@@ -279,28 +352,38 @@ struct SwiffSegmentedControlButton: View {
                         .font(.system(size: 14, weight: .medium))
                 }
                 Text(title)
-                    .font(Theme.Fonts.bodyMedium)
+                    .font(Theme.Fonts.bodySmall)
             }
-            .foregroundColor(isSelected ? Theme.Colors.textOnPrimary : Theme.Colors.textSecondary)
+            .foregroundColor(
+                isSelected
+                    ? (colorScheme == .dark ? Theme.Colors.pureBlack : Color.white)
+                    : Theme.Colors.textSecondary
+            )
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(isSelected ? Theme.Colors.brandPrimary : Color.clear)
+            .background(
+                isSelected
+                    ? (colorScheme == .dark ? Theme.Colors.creamWhite : Theme.Colors.teal)
+                    : Color.clear
+            )
             .cornerRadius(20)
         }
-        .animation(.easeInOut(duration: 0.2), value: isSelected)
+        .animation(.easeInOut(duration: Theme.Animation.normal), value: isSelected)
     }
 }
 
 // MARK: - Header Action Button (Standardized)
 
 struct HeaderActionButton: View {
+    @Environment(\.colorScheme) var colorScheme
+
     let icon: String
-    let color: Color
+    let color: Color?
     let action: () -> Void
 
     init(
         icon: String = "plus.circle.fill",
-        color: Color = Theme.Colors.brandPrimary,
+        color: Color? = nil,
         action: @escaping () -> Void
     ) {
         self.icon = icon
@@ -312,7 +395,7 @@ struct HeaderActionButton: View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(size: 24, weight: .semibold))
-                .foregroundColor(color)
+                .foregroundColor(color ?? Theme.Colors.teal)
         }
         .buttonStyle(ScaleButtonStyle(scaleAmount: 0.9))
     }
@@ -330,12 +413,26 @@ struct ScaleButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - Card Button Style
+
+struct CardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .animation(.easeInOut(duration: Theme.Animation.fast), value: configuration.isPressed)
+    }
+}
+
 #Preview {
     VStack(spacing: 20) {
         SwiffButton("Primary Action") {}
         SwiffButton("Secondary", variant: .secondary) {}
+        SwiffButton("Tertiary", variant: .tertiary) {}
         SwiffButton("Destructive", variant: .destructive) {}
+        SwiffSendButton {}
         HeaderActionButton {}
     }
     .padding()
+    .background(Color.wiseBackground)
 }

@@ -2,9 +2,8 @@
 //  ChatBubble.swift
 //  Swiff IOS
 //
-//  Simple rectangular chat bubble component
-//  Features: Clean rectangular design, minimal styling, functional approach
-//
+//  Chat bubble component with new UI Design System styling
+//  Features: 20px corner radius, 4px tail, cream text on dark backgrounds
 //
 
 import SwiftUI
@@ -12,16 +11,18 @@ import SwiftUI
 // MARK: - Chat Bubble Direction
 
 enum ChatBubbleDirection {
-    case incoming  // Left (Other person) - gray
-    case outgoing  // Right (Current user) - blue
+    case incoming  // Left (Other person) - Medium Gray (#3A3A3C)
+    case outgoing  // Right (Current user) - Olive Gray (#4A5148)
     case center  // System/Status messages
 }
 
 // MARK: - Chat Bubble View
 
 struct ChatBubble<Content: View>: View {
+    @Environment(\.colorScheme) var colorScheme
+
     let direction: ChatBubbleDirection
-    let showTail: Bool  // Kept for API compatibility but not used
+    let showTail: Bool
     let timestamp: Date?
     let maxWidthRatio: CGFloat
 
@@ -33,7 +34,7 @@ struct ChatBubble<Content: View>: View {
         direction: ChatBubbleDirection,
         showTail: Bool = true,
         timestamp: Date? = nil,
-        maxWidthRatio: CGFloat = 0.75,
+        maxWidthRatio: CGFloat = Theme.Metrics.chatBubbleMaxWidthRatio,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.direction = direction
@@ -47,7 +48,7 @@ struct ChatBubble<Content: View>: View {
     init(
         direction: ChatBubbleDirection,
         timestamp: Date?,
-        maxWidthRatio: CGFloat = 0.75,
+        maxWidthRatio: CGFloat = Theme.Metrics.chatBubbleMaxWidthRatio,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self.direction = direction
@@ -62,17 +63,17 @@ struct ChatBubble<Content: View>: View {
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             if direction == .outgoing {
-                Spacer(minLength: 40)  // More space on left for outgoing
+                Spacer(minLength: 40)
             }
 
             bubbleContent
                 .frame(maxWidth: direction == .center ? .infinity : nil)
 
             if direction == .incoming {
-                Spacer(minLength: 40)  // More space on right for incoming
+                Spacer(minLength: 40)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, Theme.Metrics.spaceMD)
         .padding(.vertical, 3)
     }
 
@@ -81,7 +82,7 @@ struct ChatBubble<Content: View>: View {
     private var bubbleContent: some View {
         content()
             .background(backgroundColor)
-            .cornerRadius(16)  // Simple rounded corners
+            .clipShape(BubbleShape(direction: direction, showTail: showTail))
             .foregroundColor(textColor)
     }
 
@@ -90,9 +91,11 @@ struct ChatBubble<Content: View>: View {
     private var textColor: Color {
         switch direction {
         case .incoming:
-            return .wisePrimaryText
+            // Cream text in dark mode, dark text in light mode
+            return colorScheme == .dark ? Theme.Colors.creamWhite : .wisePrimaryText
         case .outgoing:
-            return .white
+            // Cream text in dark mode, white on teal in light mode
+            return colorScheme == .dark ? Theme.Colors.creamWhite : .white
         case .center:
             return .wiseSecondaryText
         }
@@ -101,61 +104,107 @@ struct ChatBubble<Content: View>: View {
     private var backgroundColor: Color {
         switch direction {
         case .incoming:
-            return .iMessageGray  // Adaptive: #E9E9EB light, #2C2C2E dark
+            // Medium Gray (#3A3A3C) in dark mode
+            return colorScheme == .dark ? Theme.Colors.mediumGray : Color.iMessageGray
         case .outgoing:
-            return .iMessageBlue  // #007AFF - Keep the blue for outgoing
+            // Olive Gray (#4A5148) in dark mode, Teal in light mode
+            return colorScheme == .dark ? Theme.Colors.oliveGray : Theme.Colors.teal
         case .center:
             return .clear
         }
     }
 }
 
+// MARK: - Bubble Shape with Tail
+
+struct BubbleShape: Shape {
+    let direction: ChatBubbleDirection
+    let showTail: Bool
+
+    func path(in rect: CGRect) -> Path {
+        let cornerRadius: CGFloat = Theme.Metrics.chatBubbleCornerRadius  // 20px
+        let tailRadius: CGFloat = Theme.Metrics.chatBubbleTailRadius  // 4px
+
+        var path = Path()
+
+        switch direction {
+        case .incoming:
+            // Incoming bubble - tail on bottom left
+            path.addRoundedRect(
+                in: rect,
+                cornerRadii: RectangleCornerRadii(
+                    topLeading: cornerRadius,
+                    bottomLeading: showTail ? tailRadius : cornerRadius,
+                    bottomTrailing: cornerRadius,
+                    topTrailing: cornerRadius
+                )
+            )
+        case .outgoing:
+            // Outgoing bubble - tail on bottom right
+            path.addRoundedRect(
+                in: rect,
+                cornerRadii: RectangleCornerRadii(
+                    topLeading: cornerRadius,
+                    bottomLeading: cornerRadius,
+                    bottomTrailing: showTail ? tailRadius : cornerRadius,
+                    topTrailing: cornerRadius
+                )
+            )
+        case .center:
+            // System message - uniform corners
+            path.addRoundedRect(in: rect, cornerSize: CGSize(width: 12, height: 12))
+        }
+
+        return path
+    }
+}
+
 // MARK: - Preview
 
-#Preview("Chat Bubbles - Rectangular Style") {
+#Preview("Chat Bubbles - New Design System") {
     ScrollView {
         VStack(spacing: 8) {
             // Date header
             Text("Today")
-                .font(.system(size: 11, weight: .medium))
+                .font(Theme.Fonts.chatTimestamp)
                 .foregroundColor(.wiseSecondaryText)
                 .padding(.vertical, 16)
 
-            // Incoming messages
+            // Incoming messages - Medium Gray (#3A3A3C)
             ChatBubble(direction: .incoming, timestamp: Date()) {
                 Text("Hey, did you pay for dinner?")
-                    .font(.system(size: 16))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                    .font(Theme.Fonts.chatMessage)
+                    .padding(.horizontal, Theme.Metrics.chatBubblePaddingH)
+                    .padding(.vertical, Theme.Metrics.chatBubblePaddingV)
             }
 
-            ChatBubble(direction: .incoming, timestamp: Date()) {
+            ChatBubble(direction: .incoming, showTail: false, timestamp: Date()) {
                 Text("I can Venmo you later")
-                    .font(.system(size: 16))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                    .font(Theme.Fonts.chatMessage)
+                    .padding(.horizontal, Theme.Metrics.chatBubblePaddingH)
+                    .padding(.vertical, Theme.Metrics.chatBubblePaddingV)
             }
 
-            // Outgoing messages
+            // Outgoing messages - Olive Gray (#4A5148) in dark mode
             ChatBubble(direction: .outgoing, timestamp: Date()) {
                 Text("Yes!")
-                    .font(.system(size: 16))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                    .font(Theme.Fonts.chatMessage)
+                    .padding(.horizontal, Theme.Metrics.chatBubblePaddingH)
+                    .padding(.vertical, Theme.Metrics.chatBubblePaddingV)
             }
 
-            ChatBubble(direction: .outgoing, timestamp: Date()) {
+            ChatBubble(direction: .outgoing, showTail: false, timestamp: Date()) {
                 Text("It was $45 total")
-                    .font(.system(size: 16))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                    .font(Theme.Fonts.chatMessage)
+                    .padding(.horizontal, Theme.Metrics.chatBubblePaddingH)
+                    .padding(.vertical, Theme.Metrics.chatBubblePaddingV)
             }
 
             ChatBubble(direction: .outgoing, timestamp: Date()) {
                 Text("I'll create a split now")
-                    .font(.system(size: 16))
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                    .font(Theme.Fonts.chatMessage)
+                    .padding(.horizontal, Theme.Metrics.chatBubblePaddingH)
+                    .padding(.vertical, Theme.Metrics.chatBubblePaddingV)
             }
 
             // Center system message
@@ -163,13 +212,13 @@ struct ChatBubble<Content: View>: View {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 12))
-                        .foregroundColor(.wiseBrightGreen)
+                        .foregroundColor(Theme.Colors.teal)
                     Text("Bill split successfully")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(Theme.Fonts.chatSystemMessage)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color.wiseSecondaryText.opacity(0.1))
+                .background(Theme.Colors.hoverOverlay)
                 .cornerRadius(12)
             }
         }
